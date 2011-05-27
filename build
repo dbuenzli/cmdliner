@@ -67,6 +67,7 @@ distrib ()
 
   $RM -f TODO
   $RM -R -f .git
+  $RM -f .gitignore
   $FIND $ROOTDIR \
     \( -name "*~" -o -name ".DS_Store" -o -name ".gdb_history" \) \
     -exec $RM {} ';'
