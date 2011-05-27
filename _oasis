@@ -1,4 +1,4 @@
-OASISFormat: 1.0
+OASISFormat: 0.1
 Name: cmdliner
 Version: %%VERSION%%
 Synopsis: %%SYNOPSIS%%
@@ -10,7 +10,7 @@ Library cmdliner
  Path:src
  Modules:Cmdliner
 
-SourceRepository erratique.ch
+SourceRepository "erratique.ch"
  Type: git
  Location: git://erratique.ch/repos/cmdliner.git
  Browser: http://erratique.ch/repos/cmdliner
