@@ -1,0 +1,96 @@
+#!/bin/sh
+set -e
+
+# Project info
+PROJECTNAME="cmdliner"
+VERSION="0.9.0"
+COPYRIGHTYEAR="2011"
+SYNOPSIS="Declarative definition of command line interfaces for OCaml"
+EMAIL="daniel.buenzl i\\\@erratique.ch"
+
+INSTALLDIR=${INSTALLDIR:="`ocamlc -where`/$PROJECTNAME"}
+B=${B:="_build"}
+F=${F:="$B/src/$PROJECTNAME"}
+
+# Caml tools
+OCAMLDOC=${OCAMLDOC:="ocamldoc -colorize-code"}
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild"}
+BUILDFLAGS=${BUILDFLAGS:="-classic-display"}
+
+# Misc tools needed for install
+CP=${CP:="cp"}
+RM=${RM:="rm"}
+MKDIR=${MKDIR:="mkdir"}
+ECHO=${ECHO:="echo"}
+
+ocb () { $OCAMLBUILD $BUILDFLAGS "$@" ; }
+
+action () 
+{
+  case $1 in
+    module-byte) ocb $PROJECTNAME.cmo ;;
+    module-native) ocb $PROJECTNAME.cmx ;;
+    module-plugin) ocb $PROJECTNAME.cmxs ;;
+    module) action module-byte; action module-native ;;
+    doc)
+      ocb -ocamldoc "$OCAMLDOC" -no-links \
+      doc/doc.docdir/index.html
+      $CP doc/style.css _build/doc/doc.docdir/style.css ;; 
+    install-byte)
+      $ECHO "Installing in $INSTALLDIR"
+      $MKDIR -p $INSTALLDIR
+      $CP $F.ml $F.mli $F.cmi $F.cmo src/META $INSTALLDIR ;;
+    install) action install-byte; $CP $F.cmx $F.o $INSTALLDIR ;;
+    install-plugin) action install; $CP $F.cmxs $INSTALLDIR ;;
+    distrib) distrib ;;
+    clean) ocb -clean ;;
+    *) ocb $1;;
+  esac;
+} 
+
+distrib ()
+{
+  CD=${CD:="cd"}
+  FIND=${FIND:="find"}
+  GREP=${GREP:="grep"}
+  TAR=${TAR:="tar"}
+  SED=${SED:="sed"}
+  MV=${MV:="mv"}
+
+  DIRNAME=$PROJECTNAME-$VERSION
+  ROOTDIR=/tmp/$DIRNAME
+  $RM -R -f $ROOTDIR
+  $MKDIR -p $ROOTDIR
+  $CP -R . $ROOTDIR
+  $CD $ROOTDIR
+  action clean
+
+  $RM -f TODO
+  $RM -R -f .git
+  $FIND $ROOTDIR \
+    \( -name "*~" -o -name ".DS_Store" -o -name ".gdb_history" \) \
+    -exec $RM {} ';'
+  for file in `$FIND $ROOTDIR -type f -not -name "build" -print`; do
+    $SED      "s/%%VERSION%%/$VERSION/; \
+               s/%%COPYRIGHTYEAR%%/$COPYRIGHTYEAR/; \
+               s/%%SYNOPSIS%%/$SYNOPSIS/; \
+               s/%%PROJECTNAME%%/$PROJECTNAME/; \
+               s/%%EMAIL%%/$EMAIL/;" \
+	$file > $file.tmp
+    $MV -f $file.tmp $file
+  done
+
+  action module
+  action tests.otarget
+  action doc
+  $CP $B/doc/doc.docdir/*.html doc/
+  action clean
+
+  $CD ..
+  $TAR -cvjf $DIRNAME.tbz $DIRNAME
+  $RM -r $DIRNAME
+}
+
+if [ $# -eq 0 ]; then action module ; else
+  while [ $# -gt 0 ]; do action $1; shift ; done
+fi

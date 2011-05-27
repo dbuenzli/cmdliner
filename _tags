@@ -1,0 +1,3 @@
+<**/*.ml> : annot, debug
+<src> : include
+<test> : include

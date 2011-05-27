@@ -1,0 +1,5 @@
+version = "%%VERSION%%"
+description = "%%SYNOPSIS%%"
+archive(byte) = "%%PROJECTNAME%%.cmo"
+archive(native) = "%%PROJECTNAME%%.cmx"
+archive(plugin,native) = "%%PROJECTNAME%%.cmxs"

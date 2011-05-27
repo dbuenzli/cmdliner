@@ -1,0 +1,17 @@
+OASISFormat: 1.0
+Name: cmdliner
+Version: %%VERSION%%
+Synopsis: %%SYNOPSIS%%
+Authors: Daniel Bünzli
+License: BSD3
+Homepage: http://erratique.ch/software/cmdliner
+
+Library cmdliner
+ Path:src
+ Modules:Cmdliner
+
+SourceRepository erratique.ch
+ Type: git
+ Location: git://erratique.ch/repos/cmdliner.git
+ Browser: http://erratique.ch/repos/cmdliner
+ Tag: v%%VERSION%%
