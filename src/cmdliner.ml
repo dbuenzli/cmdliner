@@ -662,29 +662,28 @@ end = struct
        in the list index posi, is given a value according the list 
        of positional arguments values [pargs]. *)
     if pargs = [] then cl else
-    let rec take n acc l = 
+    let rec take n acc l =
       if n = 0 then List.rev acc else
       take (n - 1) (List.hd l :: acc) (List.tl l) 
     in
     let rec aux pargs last cl max_spec = function
       | a :: al ->
-	  let pos rev k = 
-	    if rev then last - k, max_int else k, max k max_spec 
-	  in
 	  let arg, max_spec = match a.p_kind with 
-	  | All -> P pargs, max_int
+	  | All -> P pargs, last
 	  | Nth (rev, k) -> 
-	      let k, max_spec = pos rev k in
-	      if k < 0 || k > last then P [], max_spec else
+              let k = if rev then last - k else k in
+              let max_spec = max k max_spec in
+              if k < 0 || k > last then P [], max_spec else
 	      P ([List.nth pargs k]), max_spec
 	  | Left (rev, k) ->
-	      let k, max_spec = pos rev k in
-	      if k <= 0 || k > last then P [], max_spec else
+              let k = if rev then last - k else k in
+              let max_spec = max k max_spec in
+              if k <= 0 || k > last then P [], max_spec else
 	      P (take k [] pargs), max_spec
 	  | Right (rev, k) ->
-	      let k, max_spec = pos rev k in
-	      if k < 0 || k >= last then P [], max_spec else
-	      P (take (last - k) [] (List.rev pargs)), max_spec
+              let k = if rev then last - k else k in
+	      if k < 0 || k >= last then P [], last else
+	      P (List.rev (take (last - k) [] (List.rev pargs))), last
 	  in
 	  aux pargs last (Amap.add a arg cl) max_spec al
       | [] -> cl, max_spec
