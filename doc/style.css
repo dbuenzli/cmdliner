@@ -12,26 +12,17 @@ form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td
 
 table { border-collapse: collapse; border-spacing: 0; }
 
-/* Center body on page */
-html, body { height: 100%;  margin: auto; }
+/* Basic page layout using the user's preferred font sizes */
 
-html { font-size: 10pt }
-body { font-size: 1em;
-       line-height: 1.375em; 
-       font-family: "helvetica neue", helvetica, arial, sans-serif; 
-       text-align:left;
-       padding-left: 1.85em; padding-right: 1.85em; /* body "margins" */
-       padding-top: 1.375em;
-       padding-bottom: 1.375em;
-       margin-top: 1px; /* force scroll bar */
-       min-width: 20ex; max-width: 70ex;
-       color: black; 
-       /* background: url(line-height-22.gif); */ }
+body { font: normal 1em/1.375em helvetica, arial, sans-serif; text-align:left;
+       margin: 1.375em 10%; min-width: 40ex; max-width: 70ex;
+       color: black; background: transparent /* url(line-height-22.gif) */; }
 
 b { font-weight: bold }
 em { font-style: italic } 
 
-tt, code, pre { font-family: WorkAroundWebKitAndMozilla, monospace; }
+tt, code, pre { font-family: WorkAroundWebKitAndMozilla, monospace; 
+                font-size: 1em; }
 pre code { font-size : inherit; }
 
 .superscript,.subscript 
@@ -50,6 +41,7 @@ pre + code { white-space:nowrap; /* in code examples we don't wrap. */
 code + pre { margin-bottom:1.375em} /* after code example we introduce space. */
 center { text-align: left } 
 center + br + pre { margin-bottom:1.375em} /* Toplevel module description */
+div.info + br + code { display:block; margin-top: 1.375em} /* Records */ 
 
 /* Sections and document divisions */
 
@@ -68,8 +60,8 @@ h4 { font-style: italic;  }
 
 p { margin-top: 1.375em }
 pre { margin-top: 1.375em }
-.info { margin: 0.458em 0em -0.458em 2ex;}/* Description of types values etc. */
-td .info { margin:0; padding:0; margin-left: 2ex;} /* Description in indexes */
+.info { margin: 0.458em 0em -0.458em 2em;}/* Description of types values etc. */
+td .info { margin:0; padding:0; margin-left: 2em;} /* Description in indexes */
 
 ul, ol { margin-top:0.688em; padding-bottom:0.687em;  
 	 list-style-position:outside}
