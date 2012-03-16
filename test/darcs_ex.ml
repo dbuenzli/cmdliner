@@ -73,9 +73,10 @@ let initialize_cmd =
         `P "Turns the current directory into a Darcs repository. Any
             existing files and subdirectories become ..."] @ help_secs);
   in
-  info, pure initialize $ copts_t $ 
+  pure initialize $ copts_t $ 
   Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
-	 ~docv:"DIR" ~doc:"Run the program in repository directory $(docv).")
+	 ~docv:"DIR" ~doc:"Run the program in repository directory $(docv)."),
+  info
 
 let record_cmd =
   let open Term in
@@ -85,7 +86,6 @@ let record_cmd =
         `P "Creates a patch from changes in the working tree. If you specify 
 	    a set of files ..."] @ help_secs)
   in 
-  info,
   pure record $ copts_t $
   Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
 	 ~doc:"Name of the patch.") $
@@ -95,7 +95,7 @@ let record_cmd =
 	 ~doc:"Answer yes to all patches.") $
   Arg.(value & flag & info ["ask-deps"]
 	 ~doc:"Ask for extra dependencies.") $
-  Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR")
+  Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR"), info
 
 let help_cmd = 
   let open Term in
@@ -105,18 +105,17 @@ let help_cmd =
         `P "Without a $(i,TOPIC), prints a list of darcs commands and a short
 	    description of each one ..."] @ help_secs)
   in
-  info,
   ret (pure help $ copts_t $ Term.choice_names $
   Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" 
 	 ~doc:"The topic to get help on: a $(i,COMMAND), `patterns' or 
-	       `environment'."))
+	       `environment'.")), info
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 let no_cmd = Term.(ret (pure help $ copts_t $ Term.choice_names $ pure None))
 let info = Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect
     ~doc:"a revision control system" ~man:help_secs
 
-let () = match Term.eval_choice info no_cmd cmds with 
+let () = match Term.eval_choice (no_cmd, info)  cmds with 
 | `Error _ -> exit 1 | _ -> exit 0
 
   

@@ -39,4 +39,4 @@ let info = Term.info "cp" ~version:"1.6.1" ~doc:"copy files" ~man:
     [`S "BUGS"; `P "Email them to <hehey at example.org>.";
      `S "SEE ALSO"; `P "mv(1), scp(1), umask(2), symlink(7)"]
 
-let () = match Term.eval info cp_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (cp_t, info)  with `Error _ -> exit 1 | _ -> exit 0

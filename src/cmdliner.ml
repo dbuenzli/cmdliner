@@ -1143,7 +1143,7 @@ module Term = struct
         Help.print fmt help ei; `Help 
 	 
   let eval ?(help = Format.std_formatter) ?(err = Format.err_formatter) 
-      ?(catch = true) ?(argv = Sys.argv) ti (al, f) =
+      ?(catch = true) ?(argv = Sys.argv) ((al, f), ti)  =
     let term = ti, al in
     let ei = { term = term; main = term; choices = [] } in
     try eval_term help err ei f (remove_exec argv) with
@@ -1151,13 +1151,14 @@ module Term = struct
 	Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter) 
-      ?(catch = true) ?(argv = Sys.argv) ti ((al, f) as t) choices =
-    let ei_choices = List.rev_map (fun (ti, (al, _)) -> ti, al) choices in 
+      ?(catch = true) ?(argv = Sys.argv) (((al, f) as t), ti) choices =
+    let ei_choices = List.rev_map (fun ((al, _), ti) -> ti, al) choices in 
     let main = (ti, al) in
     let ei = { term = main; main = main; choices = ei_choices } in
     try 
       let chosen, args = Cmdline.choose_term ti ei_choices (remove_exec argv) in
-      let (al, f) = List.assoc chosen ((ti, t) :: choices) in
+      let find_chosen (_, ti) = ti = chosen in  
+      let (al, f), _ = List.find find_chosen ((t, ti) :: choices) in
       let ei = { ei with term = (chosen, al) } in
       eval_term help err ei f args
     with

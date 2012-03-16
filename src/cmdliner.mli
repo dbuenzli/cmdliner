@@ -163,8 +163,8 @@ module Term : sig
          on the error formatter (see the [~catch] parameter of {!eval}).}} *)
 
   val eval : ?help:Format.formatter -> ?err:Format.formatter -> 
-    ?catch:bool -> ?argv:string array -> info -> 'a t -> 'a result
-(** [eval help err catch argv i t]  is the evaluation result
+    ?catch:bool -> ?argv:string array -> ('a t * info) -> 'a result
+(** [eval help err catch argv (t,i)]  is the evaluation result
     of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
 
     If [catch] is [true] (default) uncaught exeptions
@@ -177,9 +177,9 @@ module Term : sig
 
 
   val eval_choice : ?help:Format.formatter -> ?err:Format.formatter -> 
-    ?catch:bool -> ?argv:string array ->
-      info -> 'a t -> (info * 'a t) list -> 'a result
-  (** [eval_choice help err catch argv default i t choices] is like {!eval} 
+    ?catch:bool -> ?argv:string array -> 'a t * info -> ('a t * info) list -> 
+    'a result
+  (** [eval_choice help err catch argv default (t,i) choices] is like {!eval} 
       except that if the first argument on the command line is not an option 
       name it will look in [choices] for a term whose information has this 
       name and evaluate it.
@@ -460,7 +460,7 @@ let revolt_t = Term.(pure revolt $ pure ())]}
     is a term that evaluates to the result (and effect) of the [revolt] 
     function.
     Terms are evaluated with {!Term.eval}:
-{[let () = match Term.eval (Term.info "revolt") revolt_t with 
+{[let () = match Term.eval (revolt_t, Term.info "revolt") with 
 | `Error _ -> exit 1 | _ -> exit 0]}
     This defines a command line program named ["revolt"], without command line 
     arguments arguments, that just prints ["Revolt!"] on [stdout].
@@ -515,7 +515,7 @@ let info = Term.info "chorus" ~version:"1.6.1"
     ~doc:"print a customizable message repeatedly"
     ~man:[ `S "BUGS"; `P "Email bug reports to <hehey at example.org>.";]
 
-let () = match Term.eval info chorus_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
     The [info] value created with {!Term.info} gives more information
     about the term we execute and is used to generate the program's
@@ -740,7 +740,7 @@ let info = Term.info "rm" ~version:"1.6.1" ~doc:"remove files or directories"
      `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
      `S "SEE ALSO"; `P "rmdir(1), unlink(2)"]
 
-let () = match Term.eval info rm_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (rm_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
     {2:excp A [cp] command} 
 
@@ -794,7 +794,7 @@ let info = Term.info "cp" ~version:"1.6.1" ~doc:"copy files" ~man:
     [`S "BUGS"; `P "Email them to <hehey at example.org>.";
      `S "SEE ALSO"; `P "mv(1), scp(1), umask(2), symlink(7)"]
 
-let () = match Term.eval info cp_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (cp_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
 
 {2:extail A [tail] command}
@@ -878,7 +878,7 @@ let info = Term.info "tail" ~version:"1.6.1"
      `S "BUGS"; `P "Report them to <hehey at example.org>.";
      `S "SEE ALSO"; `P "cat(1), head(1)" ]
 
-let () = match Term.eval info tail_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (tail_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
 
 {2:exdarcs A [darcs] command}
@@ -978,9 +978,10 @@ let initialize_cmd =
         `P "Turns the current directory into a Darcs repository. Any
             existing files and subdirectories become ..."] @ help_secs);
   in
-  info, pure initialize $ copts_t $ 
+  pure initialize $ copts_t $ 
   Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
-	 ~docv:"DIR" ~doc:"Run the program in repository directory $(docv).")
+	 ~docv:"DIR" ~doc:"Run the program in repository directory $(docv)."), 
+  info 
 
 let record_cmd =
   let open Term in
@@ -990,7 +991,6 @@ let record_cmd =
         `P "Creates a patch from changes in the working tree. If you specify 
 	    a set of files ..."] @ help_secs)
   in 
-  info,
   pure record $ copts_t $
   Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
 	 ~doc:"Name of the patch.") $
@@ -1000,7 +1000,7 @@ let record_cmd =
 	 ~doc:"Answer yes to all patches.") $
   Arg.(value & flag & info ["ask-deps"]
 	 ~doc:"Ask for extra dependencies.") $
-  Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR")
+  Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR"), info
 
 let help_cmd = 
   let open Term in
@@ -1010,18 +1010,17 @@ let help_cmd =
         `P "Without a $(i,TOPIC), prints a list of darcs commands and a short
 	    description of each one ..."] @ help_secs)
   in
-  info,
   ret (pure help $ copts_t $ Term.choice_names $
   Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" 
 	 ~doc:"The topic to get help on: a $(i,COMMAND), `patterns' or 
-	       `environment'."))
+	       `environment'.")), info
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 let no_cmd = Term.(ret (pure help $ copts_t $ Term.choice_names $ pure None))
 let info = Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect
     ~doc:"a revision control system" ~man:help_secs
 
-let () = match Term.eval_choice info no_cmd cmds with 
+let () = match Term.eval_choice (no_cmd, info) cmds with 
 | `Error _ -> exit 1 | _ -> exit 0
 ]}
 *)

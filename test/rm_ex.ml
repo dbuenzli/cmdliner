@@ -44,4 +44,4 @@ let info = Term.info "rm" ~version:"1.6.1" ~doc:"remove files or directories"
      `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
      `S "SEE ALSO"; `P "rmdir(1), unlink(2)"]
 
-let () = match Term.eval info rm_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (rm_t, info)  with `Error _ -> exit 1 | _ -> exit 0

@@ -60,4 +60,4 @@ let info = Term.info "tail" ~version:"1.6.1"
      `S "BUGS"; `P "Report them to <hehey at example.org>.";
      `S "SEE ALSO"; `P "cat(1), head(1)" ]
 
-let () = match Term.eval info tail_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (tail_t, info)  with `Error _ -> exit 1 | _ -> exit 0

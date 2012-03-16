@@ -19,7 +19,7 @@ let info = Term.info "chorus" ~version:"1.6.1"
     ~doc:"print a customizable message repeatedly"
     ~man:[ `S "BUGS"; `P "Email bug reports to <hehey at example.org>.";]
 
-let () = match Term.eval info chorus_t with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval (chorus_t, info)  with `Error _ -> exit 1 | _ -> exit 0
 
 
 

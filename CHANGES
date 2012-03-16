@@ -2,17 +2,19 @@ v0.9.1 2012-03-15 La Forclaz (VS)
 ---------------------------------
 
 - OASIS support.
+- Fixed broken `Arg.pos_right`.
 - Support for custom variable substitution.
-- Fixed broken Arg.pos_right.
 - Support for custom variable substitution in `Manpage.print`.
-- Variables $(tname) and $(mname) can be used in a term's man
+- Variables `$(tname)` and `$(mname)` can be used in a term's man
   page to respectively refer to the term's name and the main term
   name. 
 
 # Incompatible API changes
 
-- The signature 
-
+- The signature of `Term.eval` and `Term.eval_choice` changed to make
+  it more regular: the given term and its info must be tupled together
+  even for the main term and the tuple order was swapped to make it
+  consistent with the one for arguments.
 
 
 v0.9.0 2011-05-27 Lausanne
