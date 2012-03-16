@@ -193,14 +193,18 @@ module Manpage = struct
 
   let p_indent = 7                                  (* paragraph indentation. *)
   let l_indent = 4                                      (* label indentation. *)
-  let escape esc buf s =
+  let escape subst esc buf s =
     let subst s = 
       let len = String.length s in 
-      if not (len > 1 && s.[1] = ',') then s else
+      if not (len > 1 && s.[1] = ',') then (subst s) else
       if len = 2 then "" else
       esc s.[0] (String.sub s 2 (len - 2))
     in
-    Buffer.clear buf; Buffer.add_substitute buf subst s; Buffer.contents buf
+    Buffer.clear buf; Buffer.add_substitute buf subst s; 
+    let s = Buffer.contents buf in (* twice for $(i,$(mname)). *)
+    Buffer.clear buf; Buffer.add_substitute buf subst s; 
+    Buffer.contents buf
+    
 
   let pr_tokens ?(groff = false) ppf s = 
     let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
@@ -225,9 +229,9 @@ module Manpage = struct
 
   let plain_esc c s = match c with 'g' -> "" (* groff specific *) | _ ->  s
   let pr_indent ppf c = for i = 1 to c do pr_char ppf ' ' done
-  let pr_plain_blocks ppf ts = 
+  let pr_plain_blocks subst ppf ts = 
     let buf = Buffer.create 1024 in
-    let escape t = escape plain_esc buf t in
+    let escape t = escape subst plain_esc buf t in
     let pr_tokens ppf t = pr_tokens ppf (escape t) in
     let rec aux = function
       | [] -> ()
@@ -254,7 +258,8 @@ module Manpage = struct
     in
     aux ts
       
-  let pr_plain_page ppf (_, text) = pr ppf "@[<v>%a@]" pr_plain_blocks text
+  let pr_plain_page subst ppf (_, text) = 
+    pr ppf "@[<v>%a@]" (pr_plain_blocks subst) text
       
   (* Groff output *)
 
@@ -264,9 +269,9 @@ module Manpage = struct
   | 'p' -> "" (* plain text specific *)
   | _ -> s
 
-  let pr_groff_blocks ppf text = 
+  let pr_groff_blocks subst ppf text = 
     let buf = Buffer.create 1024 in
-    let escape t = escape groff_esc buf t in
+    let escape t = escape subst groff_esc buf t in
     let pr_tokens ppf t = pr_tokens ~groff:true ppf (escape t) in
     let pr_block = function 
       | `P s -> pr ppf "@\n.P@\n%a" pr_tokens s
@@ -276,7 +281,7 @@ module Manpage = struct
     in 
     List.iter pr_block text
       
-  let pr_groff_page ppf ((n, s, a1, a2, a3), t) =
+  let pr_groff_page subst ppf ((n, s, a1, a2, a3), t) =
     pr ppf ".\\\" Pipe this output to groff -man -Tutf8 | less@\n\
             .\\\"@\n\
             .TH \"%s\" %d \"%s\" \"%s\" \"%s\"@\n\
@@ -284,7 +289,7 @@ module Manpage = struct
             .nh@\n\
 	    .ad l\
 	    %a@?" 
-      n s a1 a2 a3 pr_groff_blocks t
+      n s a1 a2 a3 (pr_groff_blocks subst) t
 
   (* Printing to a pager *)
 
@@ -320,10 +325,10 @@ module Manpage = struct
 	| None -> print `Plain ppf v
 	| Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
 
-  let rec print fmt ppf page = match fmt with
-  | `Pager -> pr_to_pager print ppf page 
-  | `Plain -> pr_plain_page ppf page
-  | `Groff -> pr_groff_page ppf page
+  let rec print ?(subst = fun x -> x) fmt ppf page = match fmt with
+  | `Pager -> pr_to_pager (print ~subst) ppf page 
+  | `Plain -> pr_plain_page subst ppf page
+  | `Groff -> pr_groff_page subst ppf page
 end
 
 module Help = struct
@@ -482,12 +487,18 @@ module Help = struct
       merge_items [`Orphan_mark] [] false items ((fst ei.term).man) 
     in
     merge_orphans [] orphans rev_text
-            
+
+  let ei_subst ei = function 
+    | "tname" -> (fst ei.term).name
+    | "mname" -> (fst ei.main).name
+    | s -> s
+
   let man ei = title ei, (name_section ei) @ (synopsis_section ei) @ (text ei)
-  let print fmt ppf ei = Manpage.print fmt ppf (man ei)
+  let print fmt ppf ei = Manpage.print ~subst:(ei_subst ei) fmt ppf (man ei)
   let pr_synopsis ppf ei =
     pr ppf "@[%s@]" 
-      (Manpage.escape Manpage.plain_esc (Buffer.create 100) (synopsis ei))
+      (Manpage.escape (ei_subst ei) 
+         Manpage.plain_esc (Buffer.create 100) (synopsis ei))
 
   let pr_version ppf ei = match (fst ei.main).version with None -> assert false
   | Some v -> pr ppf "@[%a@]@." pr_text v
