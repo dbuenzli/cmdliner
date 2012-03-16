@@ -1,3 +1,21 @@
-# Version 0.9.0, 2001-05-27, Lausanne
+v0.9.1 2012-03-15 La Forclaz (VS)
+---------------------------------
 
-First release.
+- OASIS support.
+- Support for custom variable substitution.
+- Fixed broken Arg.pos_right.
+- Support for custom variable substitution in `Manpage.print`.
+- Variables $(tname) and $(mname) can be used in a term's man
+  page to respectively refer to the term's name and the main term
+  name. 
+
+# Incompatible API changes
+
+- The signature 
+
+
+
+v0.9.0 2011-05-27 Lausanne
+--------------------------
+
+- First release.

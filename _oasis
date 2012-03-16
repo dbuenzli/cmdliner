@@ -1,17 +1,90 @@
-OASISFormat: 0.1
+OASISFormat: 0.3
 Name: cmdliner
-Version: %%VERSION%%
-Synopsis: %%SYNOPSIS%%
-Authors: Daniel Bünzli
+Version: 0.9.1
+Synopsis: Declarative definition of command line interfaces for OCaml
+Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
+Copyrights: (c) 2011-2012 Daniel C. Bünzli
 License: BSD3
 Homepage: http://erratique.ch/software/cmdliner
+Description:
+ Cmdliner is a module for the declarative definition of command line
+ interfaces.
+ .
+ It provides a simple and compositional mechanism to convert command
+ line arguments to OCaml values and pass them to your functions. The
+ module automatically handles syntax errors, help messages and UNIX man
+ page generation. It supports programs with single or multiple commands
+ and respects most of the POSIX and GNU conventions.
+ .
+ Cmdliner is made of a single independent module and distributed under
+ the BSD3 license.
+
+OCamlVersion: >= 3.12.0
+Plugins: META (0.3)
+BuildTools:ocamlbuild
 
 Library cmdliner
- Path:src
- Modules:Cmdliner
+ Path: src
+ Modules: Cmdliner
 
-SourceRepository "erratique.ch"
+Executable revolt
+ Path: test
+ MainIs: revolt.ml
+ CompiledObject: Best
+ BuildDepends: cmdliner
+ Install: false
+
+Executable chorus
+ Path: test
+ MainIs: chorus.ml
+ CompiledObject: Best
+ BuildDepends: cmdliner
+ Install: false
+
+Executable cp_ex
+ Path: test
+ MainIs: cp.ml
+ CompiledObject: Best
+ BuildDepends: cmdliner
+ Install: false
+
+Executable tail_ex
+ Path: test
+ MainIs: tail.ml
+ CompiledObject: Best
+ BuildDepends: cmdliner
+ Install: false
+
+Executable darcs_ex
+ Path: test
+ MainIs: darcs.ml
+ CompiledObject: Best
+ BuildDepends: cmdliner
+ Install: false
+
+Executable rm_ex
+ Path: test
+ MainIs: rm.ml
+ CompiledObject: Best
+ BuildDepends: cmdliner
+ Install: false
+
+Document api
+ Title: Cmdliner's documentation and API reference
+ Type: ocamlbuild (0.3)
+ BuildTools+: ocamldoc
+ XOCamlbuildLibraries: cmdliner
+ XOCamlbuildPath: doc
+
+Document distribution
+ Title: "Cmdliner's README and CHANGES files"
+ DataFiles: README CHANGES
+
+Document samples
+ Title: "Cmdliner's sample code"
+ DataFiles: test/*.ml
+
+SourceRepository head
  Type: git
  Location: git://erratique.ch/repos/cmdliner.git
  Browser: http://erratique.ch/repos/cmdliner
- Tag: v%%VERSION%%
