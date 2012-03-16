@@ -1,6 +1,6 @@
 revolt.native
 chorus.native
-cp.native
-tail.native
-darcs.native	
-rm.native
+cp_ex.native
+tail_ex.native
+darcs_ex.native	
+rm_ex.native

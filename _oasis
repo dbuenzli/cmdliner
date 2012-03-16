@@ -43,28 +43,28 @@ Executable chorus
 
 Executable cp_ex
  Path: test
- MainIs: cp.ml
+ MainIs: cp_ex.ml
  CompiledObject: Best
  BuildDepends: cmdliner
  Install: false
 
 Executable tail_ex
  Path: test
- MainIs: tail.ml
+ MainIs: tail_ex.ml
  CompiledObject: Best
  BuildDepends: cmdliner
  Install: false
 
 Executable darcs_ex
  Path: test
- MainIs: darcs.ml
+ MainIs: darcs_ex.ml
  CompiledObject: Best
  BuildDepends: cmdliner
  Install: false
 
 Executable rm_ex
  Path: test
- MainIs: rm.ml
+ MainIs: rm_ex.ml
  CompiledObject: Best
  BuildDepends: cmdliner
  Install: false
