@@ -23,12 +23,18 @@ let record copts name email all ask_deps files = Printf.printf
     pr_copts copts (opt_str_str name) (opt_str_str email) all ask_deps 
     (String.concat ", " files)
 
-let help copts cmds topic = match topic with
+let help copts man_format cmds topic = match topic with
 | None -> `Help (`Pager, None) (* help about the program. *)
 | Some topic -> 
-    if List.mem topic cmds then `Help (`Pager, (Some topic)) else
-    let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
-    `Ok (Cmdliner.Manpage.print `Pager Format.std_formatter page)
+    let topics = "topics" :: "patterns" :: "environment" :: cmds in 
+    let conv, _ = Cmdliner.Arg.enum (List.rev_map (fun s -> (s, s)) topics) in
+    match conv topic with 
+    | `Error e -> `Error (false, e)
+    | `Ok t when t = "topics" -> List.iter print_endline topics; `Ok ()
+    | `Ok t when List.mem t cmds -> `Help (man_format, Some t)
+    | `Ok t -> 
+        let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
+        `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
 open Cmdliner;;
 
@@ -36,86 +42,104 @@ open Cmdliner;;
 
 let copts_sect = "COMMON OPTIONS"
 let help_secs = [ 
-  `S copts_sect; 
-  `P "These options are common to all commands.";
-  `S "MORE HELP";
-  `P "Use `darcs $(i,COMMAND) --help' for help on a single command.";`Noblank;
-  `P "Use `darcs help patterns' for help on patch matching."; `Noblank;
-  `P "Use `darcs help environment' for help on environment variables.";
-  `S "BUGS"; `P "Check bug reports at http://bugs.example.org.";]
+ `S copts_sect; 
+ `P "These options are common to all commands.";
+ `S "MORE HELP";
+ `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
+ `P "Use `$(mname) help patterns' for help on patch matching."; `Noblank;
+ `P "Use `$(mname) help environment' for help on environment variables.";
+ `S "BUGS"; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
 
 let copts debug verb prehook = { debug; verb; prehook }
 let copts_t = 
   let docs = copts_sect in 
-  let debug = Arg.(value & flag & info ["debug"] ~docs
-        ~doc:"Give only debug output.") in
+  let debug = 
+    let doc = "Give only debug output." in
+    Arg.(value & flag & info ["debug"] ~docs ~doc)
+  in
   let verb =
-    let quiet = Quiet, Arg.info ["q"; "quiet"] ~docs
-	~doc:"Suppress informational output." in
-    let verbose = Verbose, Arg.info ["v"; "verbose"] ~docs
-	~doc:"Give verbose output." in 
+    let doc = "Suppress informational output." in 
+    let quiet = Quiet, Arg.info ["q"; "quiet"] ~docs ~doc in
+    let doc = "Give verbose output." in
+    let verbose = Verbose, Arg.info ["v"; "verbose"] ~docs ~doc in 
     Arg.(last & vflag_all [Normal] [quiet; verbose]) 
   in 
-  let prehook = Arg.(value & opt (some string) None & info ["prehook"] ~docs
-        ~doc:"Specify command to run before this darcs command.")
+  let prehook = 
+    let doc = "Specify command to run before this $(mname) command." in 
+    Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
   Term.(pure copts $ debug $ verb $ prehook)
     
 (* Commands *)
 
 let initialize_cmd = 
-  let open Term in
-  let info = info "initialize" ~sdocs:copts_sect
-      ~doc:"make the current directory a repository" ~man:
-      ([`S "DESCRIPTION";
-        `P "Turns the current directory into a Darcs repository. Any
-            existing files and subdirectories become ..."] @ help_secs);
+  let repodir = 
+    let doc = "Run the program in repository directory $(docv)." in
+    Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
+           ~docv:"DIR" ~doc)
   in
-  pure initialize $ copts_t $ 
-  Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
-	 ~docv:"DIR" ~doc:"Run the program in repository directory $(docv)."),
-  info
+  let doc = "make the current directory a repository" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "Turns the current directory into a Darcs repository. Any
+       existing files and subdirectories become ..."] @ help_secs
+  in
+  Term.(pure initialize $ copts_t $ repodir),
+  Term.info "initialize" ~sdocs:copts_sect ~doc ~man
 
 let record_cmd =
-  let open Term in
-  let info = info "record"
-      ~doc:"create a patch from unrecorded changes" ~sdocs:copts_sect ~man:
-      ([`S "DESCRIPTION";
-        `P "Creates a patch from changes in the working tree. If you specify 
-	    a set of files ..."] @ help_secs)
-  in 
-  pure record $ copts_t $
-  Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
-	 ~doc:"Name of the patch.") $
-  Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
-	 ~doc:"Specifies the author's identity.") $
-  Arg.(value & flag & info ["a"; "all"]
-	 ~doc:"Answer yes to all patches.") $
-  Arg.(value & flag & info ["ask-deps"]
-	 ~doc:"Ask for extra dependencies.") $
-  Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR"), info
+  let pname = 
+    let doc = "Name of the patch." in
+    Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
+	   ~doc)
+  in
+  let author = 
+    let doc = "Specifies the author's identity." in
+    Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
+	   ~doc)
+  in
+  let all = 
+    let doc = "Answer yes to all patches." in  
+    Arg.(value & flag & info ["a"; "all"] ~doc)
+  in
+  let ask_deps = 
+    let doc = "Ask for extra dependencies." in 
+    Arg.(value & flag & info ["ask-deps"] ~doc)
+  in
+  let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
+  let doc = "create a patch from unrecorded changes" in 
+  let man = 
+    [`S "DESCRIPTION";
+     `P "Creates a patch from changes in the working tree. If you specify 
+	    a set of files ..."] @ help_secs
+  in    
+  Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
+  Term.info "record" ~doc ~sdocs:copts_sect ~man
 
 let help_cmd = 
-  let open Term in
-  let info = info "help" ~sdocs:copts_sect
-      ~doc:"display help about darcs and darcs commands" ~man:
-      ([`S "DESCRIPTION";
-        `P "Without a $(i,TOPIC), prints a list of darcs commands and a short
-	    description of each one ..."] @ help_secs)
+  let topic = 
+    let doc = "The topic to get help on. `topics' lists the topics." in 
+    Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" ~doc)
   in
-  ret (pure help $ copts_t $ Term.choice_names $
-  Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" 
-	 ~doc:"The topic to get help on: a $(i,COMMAND), `patterns' or 
-	       `environment'.")), info
+  let doc = "display help about darcs and darcs commands" in
+  let man = 
+    [`S "DESCRIPTION";
+     `P "Prints help about darcs commands and other subjects..."] @ help_secs
+  in
+  Term.(ret (pure help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
+  Term.info "help" ~doc ~man
 
+let default_cmd = 
+  let doc = "a revision control system" in 
+  let man = help_secs in
+  Term.(ret (pure (fun _ -> `Help (`Pager, None)) $ copts_t)),
+  Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
+       
 let cmds = [initialize_cmd; record_cmd; help_cmd]
-let no_cmd = Term.(ret (pure help $ copts_t $ Term.choice_names $ pure None))
-let info = Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect
-    ~doc:"a revision control system" ~man:help_secs
 
-let () = match Term.eval_choice (no_cmd, info)  cmds with 
+let () = match Term.eval_choice default_cmd cmds with 
 | `Error _ -> exit 1 | _ -> exit 0
 
   

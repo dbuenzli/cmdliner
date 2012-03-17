@@ -489,8 +489,9 @@ Revolt!]}
     We first define a term corresponding to the [--count]
     option:
 {[
-let doc = "Repeat the message $(docv) times."
-let count = Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
+let count = 
+  let doc = "Repeat the message $(docv) times." in
+  Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
 ]}
     This says that [count] is a term that evaluates to the 
     value of an optional argument of type [int] that 
@@ -500,8 +501,9 @@ let count = Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
 
     The term for the positional argument [MSG] is:
 {[
-let doc = "The message to print."
-let msg = Arg.(value & pos 0 string "Revolt!" & info [] ~docv:"MSG" ~doc)
+let msg = 
+  let doc = "The message to print." in
+  Arg.(value & pos 0 string "Revolt!" & info [] ~docv:"MSG" ~doc)
 ]}
     which says that [msg] is a term whose value is 
     the positional argument at index [0] of type [string] and
@@ -515,9 +517,10 @@ let chorus_t = Term.(pure chorus $ count $ msg)
 ]}
     and we are now ready to define our program:
 {[
-let info = Term.info "chorus" ~version:"1.6.1"
-    ~doc:"print a customizable message repeatedly"
-    ~man:[ `S "BUGS"; `P "Email bug reports to <hehey at example.org>.";]
+let info = 
+  let doc = "print a customizable message repeatedly" in
+  let man = [ `S "BUGS"; `P "Email bug reports to <hehey at example.org>.";] in
+  Term.info "chorus" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
@@ -703,7 +706,7 @@ rm [OPTION]... FILE...
 
 type prompt = Always | Once | Never
 let prompt_str = function 
-  | Always -> "always" | Once -> "once" | Never -> "never"
+| Always -> "always" | Once -> "once" | Never -> "never"
 
 let rm prompt recurse files =
   Printf.printf "prompt = %s\nrecurse = %b\nfiles = %s\n"
@@ -715,36 +718,41 @@ open Cmdliner;;
 
 let files = Arg.(non_empty & pos_all file [] & info [] ~docv:"FILE")
 let prompt =
-  let always = Always, Arg.info ["i"] 
-      ~doc:"Prompt before every removal." in
-  let never = Never, Arg.info ["f"; "force"]
-      ~doc:"Ignore nonexistent files and never prompt." in
-  let once = Once, Arg.info ["I"]
-      ~doc:"Prompt once before removing more than three files, or when
-            removing recursively. Less intrusive than $(b,-i), while 
-	    still giving protection against most mistakes." in
+  let doc = "Prompt before every removal." in  
+  let always = Always, Arg.info ["i"] ~doc in
+  let doc = "Ignore nonexistent files and never prompt." in
+  let never = Never, Arg.info ["f"; "force"] ~doc in
+  let doc = "Prompt once before removing more than three files, or when
+             removing recursively. Less intrusive than $(b,-i), while 
+	     still giving protection against most mistakes." 
+  in
+  let once = Once, Arg.info ["I"] ~doc in
   Arg.(last & vflag_all [Always] [always; never; once])
 
-let recursive = Arg.(value & flag & info ["r"; "R"; "recursive"] 
-		     ~doc:"Remove directories and their contents recursively.")
+let recursive = 
+  let doc = "Remove directories and their contents recursively." in
+  Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
 
+let cmd = 
+  let doc = "remove files or directories" in 
+  let man = [
+    `S "DESCRIPTION";
+    `P "$(tname) removes each specified $(i,FILE). By default it does not 
+        remove directories, to also remove them and their contents, use the
+        option $(b,--recursive) ($(b,-r) or $(b,-R)).";
+    `P "To remove a file whose name starts with a `-', for example
+        `-foo', use one of these commands:";
+    `P "rm -- -foo"; `Noblank;
+    `P "rm ./-foo";
+    `P "$(tname) removes symbolic links, not the files referenced by the 
+        links.";
+    `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
+    `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ] 
+  in
+  Term.(pure rm $ prompt $ recursive $ files),
+  Term.info "rm" ~version:"1.6.1" ~doc ~man
 
-let rm_t = Term.(pure rm $ prompt $ recursive $ files)
-let info = Term.info "rm" ~version:"1.6.1" ~doc:"remove files or directories"
-    ~man:
-    [`S "DESCRIPTION";
-     `P "rm removes each specified $(i,FILE). By default it does not remove
-         directories, to also remove them and their contents, use the
-         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
-     `P "To remove a file whose name starts with a `-', for example
-         `-foo', use one of these commands:";
-     `P "> rm -- -foo"; `Noblank;
-     `P "> rm ./-foo";
-     `P "rm removes symbolic links, not the files referenced by the links.";
-     `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
-     `S "SEE ALSO"; `P "rmdir(1), unlink(2)"]
-
-let () = match Term.eval (rm_t, info) with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
     {2:excp A [cp] command} 
 
@@ -763,8 +771,8 @@ let () = match Term.eval (rm_t, info) with `Error _ -> exit 1 | _ -> exit 0
 
 let cp verbose recurse force srcs dest =
   if List.length srcs > 1 && 
-    (not (Sys.file_exists dest) || not (Sys.is_directory dest)) 
-  then
+  (not (Sys.file_exists dest) || not (Sys.is_directory dest)) 
+  then 
     `Error (false, dest ^ " is not a directory") 
   else 
     `Ok (Printf.printf 
@@ -775,30 +783,40 @@ let cp verbose recurse force srcs dest =
 
 open Cmdliner;;
 
-let doc = "Print file names as they are copied." 
-let verbose = Arg.(value & flag & info ["v"; "verbose"] ~doc) 
+let verbose = 
+  let doc = "Print file names as they are copied." in
+  Arg.(value & flag & info ["v"; "verbose"] ~doc) 
 
-let doc = "Copy directories recursively."
-let recurse = Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
+let recurse = 
+  let doc = "Copy directories recursively." in
+  Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
 
-let doc = "If a destination file cannot be opened, remove it and try again."
-let force = Arg.(value & flag & info ["f"; "force"] ~doc) 
+let force = 
+  let doc = "If a destination file cannot be opened, remove it and try again."in
+  Arg.(value & flag & info ["f"; "force"] ~doc)
 
-let doc = "Source file(s) to copy."
-let srcs = Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] 
-		~docv:"SOURCE" ~doc) 
+let srcs = 
+  let doc = "Source file(s) to copy." in
+  Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] ~docv:"SOURCE" ~doc) 
 
-let doc = "Destination of the copy. Must be a directory if there is more 
-           than one $(i,SOURCE)."
-let dest = Arg.(required & pos ~rev:true 0 (some string) None & info [] 
-		~docv:"DEST" ~doc)
+let dest = 
+  let doc = "Destination of the copy. Must be a directory if there is more 
+           than one $(i,SOURCE)." in
+  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DEST" 
+         ~doc)
 
-let cp_t = Term.(ret (pure cp $ verbose $ recurse $ force $ srcs $ dest))
-let info = Term.info "cp" ~version:"1.6.1" ~doc:"copy files" ~man:
-    [`S "BUGS"; `P "Email them to <hehey at example.org>.";
-     `S "SEE ALSO"; `P "mv(1), scp(1), umask(2), symlink(7)"]
+let cmd = 
+  let doc = "copy files" in
+  let man = [
+    `S "BUGS"; 
+    `P "Email them to <hehey at example.org>."; 
+    `S "SEE ALSO";
+    `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
+  in
+  Term.(ret (pure cp $ verbose $ recurse $ force $ srcs $ dest)), 
+  Term.info "cp" ~version:"1.6.1" ~doc ~man
 
-let () = match Term.eval (cp_t, info) with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
 
 {2:extail A [tail] command}
@@ -856,33 +874,41 @@ let lines =
 	 ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start 
 	       output after the $(i,N)-1th line.") 
 let follow = 
+  let doc = "Output appended data as the file grows. $(docv) specifies how the
+	       file should be tracked, by its `name' or by its `descriptor'." in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None & 
-       info ["f"; "follow"] ~docv:"ID" 
-	 ~doc:"Output appended data as the file grows. $(docv) specifies how the
-	       file should be tracked, by its `name' or by its `descriptor'.") 
+       info ["f"; "follow"] ~docv:"ID" ~doc) 
+
 let verb = 
-  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"]
-      ~doc:"Never output headers giving file names." in 
-  let verbose = Verbose, Arg.info ["v"; "verbose"]
-      ~doc:"Always output headers giving file names." in 
+  let doc = "Never output headers giving file names." in 
+  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"] ~doc in 
+  let doc = "Always output headers giving file names." in
+  let verbose = Verbose, Arg.info ["v"; "verbose"] ~doc in 
   Arg.(last & vflag_all [Quiet] [quiet; verbose])
 
-let pid = Arg.(value & opt (some int) None & info ["pid"] ~docv:"PID"
-		~doc:"With -f, terminate after process $(docv) dies.")
+let pid = 
+  let doc = "With -f, terminate after process $(docv) dies." in
+  Arg.(value & opt (some int) None & info ["pid"] ~docv:"PID" ~doc)
+
 let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 
-let tail_t = Term.(pure tail $ lines $ follow $ verb $ pid $ files)
-let info = Term.info "tail" ~version:"1.6.1" 
-    ~doc:"display the last part of a file" ~man:
-    [`S "DESCRIPTION";
-     `P "tail prints the last lines of each $(i,FILE) to standard output. If
-         no file is specified reads standard input. The number of printed
-	 lines can be  specified with the $(b,-n) option.";
-     `S "BUGS"; `P "Report them to <hehey at example.org>.";
-     `S "SEE ALSO"; `P "cat(1), head(1)" ]
+let cmd = 
+  let doc = "display the last part of a file" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
+        no file is specified reads standard input. The number of printed
+	lines can be  specified with the $(b,-n) option.";
+    `S "BUGS"; 
+    `P "Report them to <hehey at example.org>.";
+    `S "SEE ALSO"; 
+    `P "$(b,cat)(1), $(b,head)(1)" ]
+  in
+  Term.(pure tail $ lines $ follow $ verb $ pid $ files),
+  Term.info "tail" ~version:"1.6.1" ~doc ~man
 
-let () = match Term.eval (tail_t, info) with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
 
 {2:exdarcs A [darcs] command}
@@ -932,12 +958,18 @@ let record copts name email all ask_deps files = Printf.printf
     pr_copts copts (opt_str_str name) (opt_str_str email) all ask_deps 
     (String.concat ", " files)
 
-let help copts cmds topic = match topic with
+let help copts man_format cmds topic = match topic with
 | None -> `Help (`Pager, None) (* help about the program. *)
 | Some topic -> 
-    if List.mem topic cmds then `Help (`Pager, (Some topic)) else
-    let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
-    `Ok (Cmdliner.Manpage.print `Pager Format.std_formatter page)
+    let topics = "topics" :: "patterns" :: "environment" :: cmds in 
+    let conv, _ = Cmdliner.Arg.enum (List.rev_map (fun s -> (s, s)) topics) in
+    match conv topic with 
+    | `Error e -> `Error (false, e)
+    | `Ok t when t = "topics" -> List.iter print_endline topics; `Ok ()
+    | `Ok t when List.mem t cmds -> `Help (man_format, Some t)
+    | `Ok t -> 
+        let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
+        `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
 open Cmdliner;;
 
@@ -945,86 +977,104 @@ open Cmdliner;;
 
 let copts_sect = "COMMON OPTIONS"
 let help_secs = [ 
-  `S copts_sect; 
-  `P "These options are common to all commands.";
-  `S "MORE HELP";
-  `P "Use `darcs $(i,COMMAND) --help' for help on a single command.";`Noblank;
-  `P "Use `darcs help patterns' for help on patch matching."; `Noblank;
-  `P "Use `darcs help environment' for help on environment variables.";
-  `S "BUGS"; `P "Check bug reports at http://bugs.example.org.";]
+ `S copts_sect; 
+ `P "These options are common to all commands.";
+ `S "MORE HELP";
+ `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
+ `P "Use `$(mname) help patterns' for help on patch matching."; `Noblank;
+ `P "Use `$(mname) help environment' for help on environment variables.";
+ `S "BUGS"; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
 
 let copts debug verb prehook = { debug; verb; prehook }
 let copts_t = 
   let docs = copts_sect in 
-  let debug = Arg.(value & flag & info ["debug"] ~docs
-        ~doc:"Give only debug output.") in
+  let debug = 
+    let doc = "Give only debug output." in
+    Arg.(value & flag & info ["debug"] ~docs ~doc)
+  in
   let verb =
-    let quiet = Quiet, Arg.info ["q"; "quiet"] ~docs
-	~doc:"Suppress informational output." in
-    let verbose = Verbose, Arg.info ["v"; "verbose"] ~docs
-	~doc:"Give verbose output." in 
+    let doc = "Suppress informational output." in 
+    let quiet = Quiet, Arg.info ["q"; "quiet"] ~docs ~doc in
+    let doc = "Give verbose output." in
+    let verbose = Verbose, Arg.info ["v"; "verbose"] ~docs ~doc in 
     Arg.(last & vflag_all [Normal] [quiet; verbose]) 
   in 
-  let prehook = Arg.(value & opt (some string) None & info ["prehook"] ~docs
-        ~doc:"Specify command to run before this darcs command.")
+  let prehook = 
+    let doc = "Specify command to run before this $(mname) command." in 
+    Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
   Term.(pure copts $ debug $ verb $ prehook)
     
 (* Commands *)
 
 let initialize_cmd = 
-  let open Term in
-  let info = info "initialize" ~sdocs:copts_sect
-      ~doc:"make the current directory a repository" ~man:
-      ([`S "DESCRIPTION";
-        `P "Turns the current directory into a Darcs repository. Any
-            existing files and subdirectories become ..."] @ help_secs);
+  let repodir = 
+    let doc = "Run the program in repository directory $(docv)." in
+    Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
+           ~docv:"DIR" ~doc)
   in
-  pure initialize $ copts_t $ 
-  Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
-	 ~docv:"DIR" ~doc:"Run the program in repository directory $(docv)."), 
-  info 
+  let doc = "make the current directory a repository" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "Turns the current directory into a Darcs repository. Any
+       existing files and subdirectories become ..."] @ help_secs
+  in
+  Term.(pure initialize $ copts_t $ repodir),
+  Term.info "initialize" ~sdocs:copts_sect ~doc ~man
 
 let record_cmd =
-  let open Term in
-  let info = info "record"
-      ~doc:"create a patch from unrecorded changes" ~sdocs:copts_sect ~man:
-      ([`S "DESCRIPTION";
-        `P "Creates a patch from changes in the working tree. If you specify 
-	    a set of files ..."] @ help_secs)
-  in 
-  pure record $ copts_t $
-  Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
-	 ~doc:"Name of the patch.") $
-  Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
-	 ~doc:"Specifies the author's identity.") $
-  Arg.(value & flag & info ["a"; "all"]
-	 ~doc:"Answer yes to all patches.") $
-  Arg.(value & flag & info ["ask-deps"]
-	 ~doc:"Ask for extra dependencies.") $
-  Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR"), info
+  let pname = 
+    let doc = "Name of the patch." in
+    Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
+	   ~doc)
+  in
+  let author = 
+    let doc = "Specifies the author's identity." in
+    Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
+	   ~doc)
+  in
+  let all = 
+    let doc = "Answer yes to all patches." in  
+    Arg.(value & flag & info ["a"; "all"] ~doc)
+  in
+  let ask_deps = 
+    let doc = "Ask for extra dependencies." in 
+    Arg.(value & flag & info ["ask-deps"] ~doc)
+  in
+  let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
+  let doc = "create a patch from unrecorded changes" in 
+  let man = 
+    [`S "DESCRIPTION";
+     `P "Creates a patch from changes in the working tree. If you specify 
+	    a set of files ..."] @ help_secs
+  in    
+  Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
+  Term.info "record" ~doc ~sdocs:copts_sect ~man
 
 let help_cmd = 
-  let open Term in
-  let info = info "help" ~sdocs:copts_sect
-      ~doc:"display help about darcs and darcs commands" ~man:
-      ([`S "DESCRIPTION";
-        `P "Without a $(i,TOPIC), prints a list of darcs commands and a short
-	    description of each one ..."] @ help_secs)
+  let topic = 
+    let doc = "The topic to get help on. `topics' lists the topics." in 
+    Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" ~doc)
   in
-  ret (pure help $ copts_t $ Term.choice_names $
-  Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" 
-	 ~doc:"The topic to get help on: a $(i,COMMAND), `patterns' or 
-	       `environment'.")), info
+  let doc = "display help about darcs and darcs commands" in
+  let man = 
+    [`S "DESCRIPTION";
+     `P "Prints help about darcs commands and other subjects..."] @ help_secs
+  in
+  Term.(ret (pure help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
+  Term.info "help" ~doc ~man
 
+let default_cmd = 
+  let doc = "a revision control system" in 
+  let man = help_secs in
+  Term.(ret (pure (fun _ -> `Help (`Pager, None)) $ copts_t)),
+  Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
+       
 let cmds = [initialize_cmd; record_cmd; help_cmd]
-let no_cmd = Term.(ret (pure help $ copts_t $ Term.choice_names $ pure None))
-let info = Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect
-    ~doc:"a revision control system" ~man:help_secs
 
-let () = match Term.eval_choice (no_cmd, info) cmds with 
+let () = match Term.eval_choice default_cmd cmds with 
 | `Error _ -> exit 1 | _ -> exit 0
 ]}
 *)

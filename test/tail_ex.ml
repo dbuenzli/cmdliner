@@ -34,30 +34,38 @@ let lines =
 	 ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start 
 	       output after the $(i,N)-1th line.") 
 let follow = 
+  let doc = "Output appended data as the file grows. $(docv) specifies how the
+	       file should be tracked, by its `name' or by its `descriptor'." in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None & 
-       info ["f"; "follow"] ~docv:"ID" 
-	 ~doc:"Output appended data as the file grows. $(docv) specifies how the
-	       file should be tracked, by its `name' or by its `descriptor'.") 
+       info ["f"; "follow"] ~docv:"ID" ~doc) 
+
 let verb = 
-  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"]
-      ~doc:"Never output headers giving file names." in 
-  let verbose = Verbose, Arg.info ["v"; "verbose"]
-      ~doc:"Always output headers giving file names." in 
+  let doc = "Never output headers giving file names." in 
+  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"] ~doc in 
+  let doc = "Always output headers giving file names." in
+  let verbose = Verbose, Arg.info ["v"; "verbose"] ~doc in 
   Arg.(last & vflag_all [Quiet] [quiet; verbose])
 
-let pid = Arg.(value & opt (some int) None & info ["pid"] ~docv:"PID"
-		~doc:"With -f, terminate after process $(docv) dies.")
+let pid = 
+  let doc = "With -f, terminate after process $(docv) dies." in
+  Arg.(value & opt (some int) None & info ["pid"] ~docv:"PID" ~doc)
+
 let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 
-let tail_t = Term.(pure tail $ lines $ follow $ verb $ pid $ files)
-let info = Term.info "tail" ~version:"1.6.1" 
-    ~doc:"display the last part of a file" ~man:
-    [`S "DESCRIPTION";
-     `P "tail prints the last lines of each $(i,FILE) to standard output. If
-         no file is specified reads standard input. The number of printed
-	 lines can be  specified with the $(b,-n) option.";
-     `S "BUGS"; `P "Report them to <hehey at example.org>.";
-     `S "SEE ALSO"; `P "cat(1), head(1)" ]
+let cmd = 
+  let doc = "display the last part of a file" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
+        no file is specified reads standard input. The number of printed
+	lines can be  specified with the $(b,-n) option.";
+    `S "BUGS"; 
+    `P "Report them to <hehey at example.org>.";
+    `S "SEE ALSO"; 
+    `P "$(b,cat)(1), $(b,head)(1)" ]
+  in
+  Term.(pure tail $ lines $ follow $ verb $ pid $ files),
+  Term.info "tail" ~version:"1.6.1" ~doc ~man
 
-let () = match Term.eval (tail_t, info)  with `Error _ -> exit 1 | _ -> exit 0
+let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
