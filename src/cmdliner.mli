@@ -111,6 +111,10 @@ module Term : sig
   (** [choice_names] is a term that evaluates to the names of the terms
       to choose from. *)
 
+  val man_format : [`Pager | `Plain | `Groff] t 
+  (** [man_format] is a term that defines a [--man-format] option and 
+      evaluates to a value that can be used with {!Manpage.print}. *)
+
   (** {1:tinfo Term information} 
       
       Term information defines the name and man page of a term.
@@ -565,9 +569,9 @@ v}
     [Cmdliner] also provides support for programs like [darcs] or
     [git] that have multiple commands each with their own syntax:
     {[prog COMMAND [OPTION]... ARG...]}
-    A command is defined by coupling a {{!Term.tinfo}term information}
-    with a term. The term information defines the command name and its
-    man page. Given a list of commands the function
+    A command is defined by coupling a term with 
+    {{!Term.tinfo}term information}. The term information defines the 
+    command name and its man page. Given a list of commands the function
     {!Term.eval_choice} will execute the term corresponding to the
     [COMMAND] argument or or a specific "main" term if there is
     no [COMMAND] argument.

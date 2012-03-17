@@ -1090,6 +1090,11 @@ module Term = struct
   let choice_names = [], 
     fun ei _ -> List.rev_map (fun e -> (fst e).name) ei.choices
 
+  let man_format =
+    let fmts = ["pager", `Pager; "groff", `Groff; "plain", `Plain] in
+    let doc = "Show output in format $(docv) (pager, plain or groff)."in
+    Arg.(value & opt (enum fmts) `Pager & info ["man-format"] ~docv:"FMT" ~doc)
+
   (* Evaluation *)  
 
   let remove_exec argv =
@@ -1107,9 +1112,8 @@ module Term = struct
     let args, h_lookup =
       let (a, lookup) = 
 	let fmt = Arg.enum ["pager",`Pager; "groff",`Groff; "plain",`Plain] in
-	let a = Arg.info ["help"] ~docv:"FMT" ~docs
-	    ~doc:"Show this help in format $(docv) (pager, plain or groff)."
-	in
+        let doc = "Show this help in format $(docv) (pager, plain or groff)."in 
+	let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
 	Arg.opt ~vopt:(Some `Pager) (Arg.some fmt) None a
       in
       List.rev_append a args, lookup
