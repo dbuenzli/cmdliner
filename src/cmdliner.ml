@@ -317,7 +317,7 @@ module Manpage = struct
 	    | None -> None 
 	    | Some f -> 
                 (* TODO use -Tutf8, but annoyingly maps U+002D to U+2212. *)
-		let xroff = if c = "groff" then c ^ " -Tascii" else c in
+		let xroff = if c = "groff" then c ^ " -Tascii -P-c" else c in
 		Some (str "%s -man < %s | %s" xroff f pager)
 	    end
 	in
