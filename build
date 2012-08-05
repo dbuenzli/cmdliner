@@ -119,7 +119,7 @@ publish ()
     project_info
     DIRNAME=$NAME-$VERSION
     ARCHIVE=/tmp/$DIRNAME.tbz
-    SITEGENROOT=~/erratique
+    SITEGENROOT=~/sync/erratique
     PAGEROOT=$SITEGENROOT/maps/software/$NAME
 
     $CP $ARCHIVE $PAGEROOT/releases/
