@@ -15,7 +15,7 @@ table { border-collapse: collapse; border-spacing: 0; }
 /* Basic page layout using the user's preferred font sizes */
 
 body { font: normal 1em/1.375em helvetica, arial, sans-serif; text-align:left;
-       margin: 1.375em 10%; min-width: 40ex; max-width: 70ex;
+       margin: 1.375em 10%; min-width: 40ex; max-width: 72ex;
        color: black; background: transparent /* url(line-height-22.gif) */; }
 
 b { font-weight: bold }
@@ -24,6 +24,7 @@ em { font-style: italic }
 tt, code, pre { font-family: WorkAroundWebKitAndMozilla, monospace; 
                 font-size: 1em; }
 pre code { font-size : inherit; }
+.codepre { margin-bottom:1.375em /* after code example we introduce space. */ } 
 
 .superscript,.subscript 
 { font-size : 0.813em; line-height:0; margin-left:0.4ex;}
@@ -36,12 +37,7 @@ hr, hr + br, div + br, center + br, span + br, ul + br, ol + br, pre + br
 { display: none } /* annoying */
 
 code br { display: inline } /* because of the above span + br rule */
-pre + code { white-space:nowrap; /* in code examples we don't wrap. */
-	     line-height:1.375em; } /* and the line height is too large. */
-code + pre { margin-bottom:1.375em} /* after code example we introduce space. */
-center { text-align: left } 
-center + br + pre { margin-bottom:1.375em} /* Toplevel module description */
-div.info + br + code { display:block; margin-top: 1.375em} /* Records */ 
+h1 + pre { margin-bottom:1.375em} /* Toplevel module description */
 
 /* Sections and document divisions */
 
