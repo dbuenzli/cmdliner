@@ -17,8 +17,8 @@ TAR=${TAR:="tar"}
 FIND=${FIND:="find"}
 WEBGLUE=${WEBGLUE:="webglue"}
 
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 OCAMLDOCFLAGS=${OCAMLDOCFLAGS:="-docflags -colorize-code,-charset,utf-8"}
-OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display"}
 OASIS=${OASIS:="oasis -quiet"}
 OASISQ=${OASISQ:="$OASIS query"}
 
@@ -28,8 +28,7 @@ action ()
   case $1 in
     module) ocb `$OASISQ Name`.cmx ;;
     doc)
-      ocb $OCAMLDOCFLAGS -I src -no-links \
-      doc/api.docdir/index.html
+      ocb $OCAMLDOCFLAGS -no-links doc/api.docdir/index.html
       $CP doc/style.css _build/doc/api.docdir/style.css ;;
     distrib) distrib ;;
     publish) publish ;;
