@@ -381,7 +381,15 @@ module Help = struct
       let args = String.concat " " (List.rev_map snd args) in 
       str "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) args 
 	
-  let synopsis_section ei = [ `S "SYNOPSIS"; `P (synopsis ei); ] 
+  let get_synopsis_section ei =
+    let rec extract_synopsis syn = function   
+    | `S _ :: _ as man -> List.rev syn, man
+    |  block :: rest -> extract_synopsis (block :: syn) rest
+    | [] -> List.rev syn, []
+    in
+    match (fst ei.term).man with 
+    | `S "SYNOPSIS" as s :: rest -> extract_synopsis [s] rest (* user-defined *)
+    | man -> [ `S "SYNOPSIS"; `P (synopsis ei); ], man           (* automatic *)
 
   let make_arg_label a = 
     if is_pos a then str "$(i,%s)" a.docv else
@@ -447,7 +455,7 @@ module Help = struct
       in
       List.sort rev_compare (List.fold_left add_cmd [] ei.choices)
 
-  let text ei =
+  let text ei =                  (* man that code is particulary unreadable. *)
     let rec merge_items acc to_insert mark il = function
       | `S s as sec :: ts -> 
 	  let acc = List.rev_append to_insert acc in 
@@ -483,17 +491,20 @@ module Help = struct
     let args = make_arg_items ei in
     let cmp (s, _) (s', _) = compare s s' in
     let items = List.rev (List.stable_sort cmp (List.rev_append cmds args)) in
-    let rev_text, orphans = 
-      merge_items [`Orphan_mark] [] false items ((fst ei.term).man) 
+    let synopsis, man = get_synopsis_section ei in
+    let rev_text, orphans =
+      merge_items [`Orphan_mark] [] false items man
     in
-    merge_orphans [] orphans rev_text
+    synopsis @ merge_orphans [] orphans rev_text
 
   let ei_subst ei = function 
     | "tname" -> (fst ei.term).name
     | "mname" -> (fst ei.main).name
     | s -> s
 
-  let man ei = title ei, (name_section ei) @ (synopsis_section ei) @ (text ei)
+  let man ei = 
+    title ei, (name_section ei) @ (text ei)
+
   let print fmt ppf ei = Manpage.print ~subst:(ei_subst ei) fmt ppf (man ei)
   let pr_synopsis ppf ei =
     pr ppf "@[%s@]" 

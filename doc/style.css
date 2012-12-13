@@ -36,7 +36,7 @@ pre code { font-size : inherit; }
 hr, hr + br, div + br, center + br, span + br, ul + br, ol + br, pre + br
 { display: none } /* annoying */
 
-code br { display: inline } /* because of the above span + br rule */
+.codepre br + br { display: none }
 h1 + pre { margin-bottom:1.375em} /* Toplevel module description */
 
 /* Sections and document divisions */

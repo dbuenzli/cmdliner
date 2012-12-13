@@ -28,7 +28,7 @@ action ()
   case $1 in
     module) ocb `$OASISQ Name`.cmx ;;
     doc)
-      ocb $OCAMLDOCFLAGS -no-links doc/api.docdir/index.html
+      ocb $OCAMLDOCFLAGS -I src -no-links doc/api.docdir/index.html
       $CP doc/style.css _build/doc/api.docdir/style.css ;;
     distrib) distrib ;;
     publish) publish ;;

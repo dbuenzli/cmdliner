@@ -593,6 +593,11 @@ v}
     inserted just after the ["SYNOPSIS"] section or after a section
     named ["DESCRIPTION"] if there is one. 
 
+    The ["SYNOPSIS"] section of a man page is generated automatically
+    from a term's information and its arguments. To substitute your
+    own instead, start the term's information man page with 
+    a ["SYNOPSIS"] section. 
+
     Ideally all manual strings should be UTF-8 encoded. However at the
     moment Groff (at least [1.19.2]) doesn't seem to cope with UTF-8
     input and UTF-8 characters beyond the ASCII set will look garbled.
