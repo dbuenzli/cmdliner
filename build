@@ -21,6 +21,7 @@ OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 OCAMLDOCFLAGS=${OCAMLDOCFLAGS:="-docflags -colorize-code,-charset,utf-8"}
 OASIS=${OASIS:="oasis -quiet"}
 OASISQ=${OASISQ:="$OASIS query"}
+OPAMMKREPO=${OPAMMKREPO:="opam-mk-repo"}
 
 ocb () { $OCAMLBUILD "$@" ; }
 action () 
@@ -32,6 +33,7 @@ action ()
       $CP doc/style.css _build/doc/api.docdir/style.css ;;
     distrib) distrib ;;
     publish) publish ;;
+    opam) publish_opam ;;
     clean)
       ocb -clean
       $RM -f myocamlbuild.ml setup.ml setup.data setup.log src/META \
@@ -56,6 +58,10 @@ project_info ()
   if [ "$DEPS" ]; then
   PPDEPS=`$ECHO ", $DEPS"| $SED "s|,|,   |g" | $TR "," "\n" | $SED "s|$|\\\\\|"`
   fi;
+
+  OPAMDESCRIPTION=`$OASISQ Description`
+  OPAMDEPS=`$ECHO "$DEPS" | $SED "s/\(\b\w\+\b\)/\"\0\"/g"` 
+  OPAMOCAMLVERSION=`$OASISQ OCamlVersion | $SED "s/\([[:digit:]\.]\+\)/\"\0\"/"`
 }
 
 distrib ()
@@ -111,6 +117,60 @@ distrib ()
   $CD ..
   $TAR -cvjf $DIRNAME.tbz $DIRNAME
   $RM -R $DIRNAME
+}
+
+publish_opam () 
+{
+    project_info 
+    ARCHIVE=$NAME-$VERSION.tbz
+    OPAMPACK=$NAME.$VERSION
+    SITEGENROOT=~/sync/erratique
+    OPAMROOT=$SITEGENROOT/maps/software/opam
+    $RM -rf $OPAMROOT/packages/$OPAMPACK
+    $MKDIR -p $OPAMROOT/packages/$OPAMPACK/files
+
+    $CD $OPAMROOT/packages/$OPAMPACK
+    
+    cat > descr <<EOF
+$SYNOPSIS
+
+$OPAMDESCRIPTION
+EOF
+
+    cat > opam <<EOF
+opam-version: "1"
+maintainer: "$AUTHORS"
+homepage: "$HOMEPAGE"
+authors: ["$AUTHORS"]
+doc: "$HOMEPAGE/doc/$MODNAME"
+license: "BSD3"
+build: [
+  ["ocaml" "setup.ml" "-configure" "--prefix" "%{prefix}%" ]
+  ["ocaml" "setup.ml" "-build"]
+  ["ocaml" "setup.ml" "-install"]
+]
+remove: [
+  ["ocamlfind" "remove" "$NAME"]
+]
+depends: ["ocamlfind" $OPAMDEPS]
+ocaml-version: [$OPAMOCAMLVERSION]
+EOF
+
+  cat > url <<EOF
+archive: "$HOMEPAGE/releases/$ARCHIVE"
+checksum: ""
+EOF
+
+
+  cat > files/$NAME.install <<EOF
+opam-version: "1"
+EOF
+#doc:[ "README" "CHANGES" "doc/index.html"]
+
+  $CD $OPAMROOT
+  $OPAMMKREPO --generate-checksums $OPAMPACK
+  $RM -rf archives
+  $OPAMMKREPO --index
 }
 
 publish ()
