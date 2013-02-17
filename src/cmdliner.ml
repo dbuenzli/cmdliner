@@ -301,6 +301,7 @@ module Manpage = struct
     let pager = 
       let cmds = ["less"; "more"] in
       let cmds = try (Sys.getenv "PAGER") :: cmds with Not_found -> cmds in
+      let cmds = try (Sys.getenv "MANPAGER") :: cmds with Not_found -> cmds in
       find_cmd cmds
     in
     match pager with 
