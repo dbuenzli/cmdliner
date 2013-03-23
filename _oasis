@@ -1,7 +1,8 @@
 OASISFormat: 0.3
 Name: cmdliner
-Version: 0.9.3
+Version: %%VERSION%%
 Synopsis: Declarative definition of command line interfaces for OCaml
+Maintainers: Daniel Bünzli <daniel.buenzli at erratique.ch>
 Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
 Copyrights: (c) 2011-2012 Daniel C. Bünzli
 License: BSD3
