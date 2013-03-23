@@ -52,7 +52,6 @@ project_info ()
   DESCRIPTION=`$OASISQ Description | $SED "s|$|\\\\\|"`
   HOMEPAGE=`$OASISQ Homepage`
   AUTHORS=`$OASISQ Authors`
-  COPYRIGHT=`$OASISQ Copyrights`
   OCAMLVERSION=`$OASISQ OCamlVersion`
   DEPS=`$OASISQ "Library(\"$NAME\").BuildDepends"`
   if [ "$DEPS" ]; then
@@ -94,7 +93,6 @@ distrib ()
             s|%%DESCRIPTION%%|$DESCRIPTION |g; \
             s|%%HOMEPAGE%%|$HOMEPAGE|g; \
             s|%%AUTHORS%%|$AUTHORS|g; \
-            s|%%COPYRIGHT%%|$COPYRIGHT|g; \
             s|%%OCAMLVERSION%%|$OCAMLVERSION|g; \
             s|%%DEPS%%|$DEPS|g; \
             s|%%PPDEPS%%|$PPDEPS |g;" \
