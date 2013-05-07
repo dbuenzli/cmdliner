@@ -153,7 +153,12 @@ type arg_info =                (* information about a command line argument. *)
       o_names : string list;                        (* names (for opt args). *)
       o_all : bool; }                          (* repeatable (for opt args). *)
 
-let arg_id () = Oo.id (object end)                      (* thread-safe UIDs. *)
+let arg_id =        (* thread-safe UIDs, Oo.id (object end) was used before. *)
+  let c = ref 0 in
+  fun () -> 
+    let id = !c in 
+    incr c; if id > !c then assert false (* too many ids *) else id
+    
 let is_opt a = a.o_names <> []
 let is_pos a = a.o_names = []
 
