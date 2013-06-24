@@ -39,7 +39,8 @@ let pr_to_temp_file pr v = try
   let exec = Filename.basename Sys.argv.(0) in
   let file, oc = Filename.open_temp_file exec "out" in
   let ppf = Format.formatter_of_out_channel oc in
-  pr ppf v; Format.pp_print_flush ppf (); close_out oc; 
+  pr ppf v; Format.pp_print_flush ppf (); close_out oc;
+  at_exit (fun () -> try Sys.remove file with Sys_error e -> ());
   Some file
 with Sys_error _ -> None
 
