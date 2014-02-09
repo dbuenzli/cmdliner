@@ -1,4 +1,4 @@
-v0.9.4 2013-02-09 La Forclaz (VS)
+v0.9.4 2014-02-09 La Forclaz (VS)
 ---------------------------------
 
 - Remove temporary files created for paged help. Thanks to Kaustuv Chaudhuri
