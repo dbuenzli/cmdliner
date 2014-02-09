@@ -1,5 +1,7 @@
 _build
 tmp
+dist
 *~
+\.\#*
 \#*#
-TODO
+CLOCK.org

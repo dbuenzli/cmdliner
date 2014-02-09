@@ -1,10 +1,12 @@
-
+v0.9.4 2013-02-09 La Forclaz (VS)
+---------------------------------
 
 - Remove temporary files created for paged help. Thanks to Kaustuv Chaudhuri
   for the suggestion.
 - Avoid linking against Oo (was used to get program uuid).
 - Check the environment for $MANPAGER aswell. Thanks to Raphaël Proust
   for the patch.
+- OPAM friendly workflow and drop OASIS support.
 
 v0.9.3 2013-01-04 La Forclaz (VS)
 ---------------------------------

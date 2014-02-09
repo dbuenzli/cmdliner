@@ -1,0 +1,7 @@
+version = "%%VERSION%%"
+description = "Declarative definition of command line interfaces"
+archive(byte) = "cmdliner.cma"
+archive(byte, plugin) = "cmdliner.cma"
+archive(native) = "cmdliner.cmxa"
+archive(native, plugin) = "cmdliner.cmxs"
+exists_if = "cmdliner.cma"

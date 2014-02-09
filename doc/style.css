@@ -12,9 +12,9 @@ form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td
 
 table { border-collapse: collapse; border-spacing: 0; }
 
-/* Basic page layout using the user's preferred font sizes */
+/* Basic page layout */
 
-body { font: normal 1em/1.375em helvetica, arial, sans-serif; text-align:left;
+body { font: normal 10pt/1.375em helvetica, arial, sans-serif; text-align:left;
        margin: 1.375em 10%; min-width: 40ex; max-width: 72ex;
        color: black; background: transparent /* url(line-height-22.gif) */; }
 
@@ -33,8 +33,12 @@ pre code { font-size : inherit; }
 
 /* ocamldoc markup workaround hacks */
 
+
+
 hr, hr + br, div + br, center + br, span + br, ul + br, ol + br, pre + br
 { display: none } /* annoying */
+
+div.info + br { display:block}
 
 .codepre br + br { display: none }
 h1 + pre { margin-bottom:1.375em} /* Toplevel module description */
@@ -88,6 +92,9 @@ a:hover { text-decoration : underline }
 .paramstable code { margin-left: 1ex; margin-right: 1ex }
 .sig_block {margin-left: 1em}
 
+/* Images */
+
+img { margin-top: 1.375em }
 
 
 

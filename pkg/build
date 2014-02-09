@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Usage: build has_native
+
+set -e 
+LOC=`dirname $0`
+
+. $LOC/pkg-builder
+
+NATIVE=$1
+
+add lib pkg/META		
+add lib src/cmdliner.mli	
+add lib src/cmdliner.cmi
+add lib src/cmdliner.cmx
+add lib src/cmdliner.cma
+add lib src/cmdliner.a
+add lib src/cmdliner.cmxa
+add lib src/cmdliner.cmxs
+
+add doc README.md
+add doc CHANGES.md
+add doc chorus.ml
+add doc cp_ex.ml 
+add doc darcs_ex.ml
+add doc revolt.ml
+add doc rm_ex.ml
+add doc tail_ex.ml
+
+build
+install cmdliner
