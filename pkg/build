@@ -20,12 +20,12 @@ add lib src/cmdliner.cmxs
 
 add doc README.md
 add doc CHANGES.md
-add doc chorus.ml
-add doc cp_ex.ml 
-add doc darcs_ex.ml
-add doc revolt.ml
-add doc rm_ex.ml
-add doc tail_ex.ml
+add doc test/chorus.ml
+add doc test/cp_ex.ml 
+add doc test/darcs_ex.ml
+add doc test/revolt.ml
+add doc test/rm_ex.ml
+add doc test/tail_ex.ml
 
 build
 install cmdliner
