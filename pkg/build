@@ -10,7 +10,8 @@ LOC=`dirname $0`
 NATIVE=$1
 
 add lib pkg/META		
-add lib src/cmdliner.mli	
+add lib src/cmdliner.mli
+add lib src/cmdliner.cmti
 add lib src/cmdliner.cmi
 add lib src/cmdliner.cmx
 add lib src/cmdliner.cma
