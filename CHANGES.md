@@ -33,7 +33,7 @@ v0.9.1 2012-03-17 La Forclaz (VS)
 - Adds `Term.man_format`, to facilitate the definition of help commands.
 - Rewrote the examples with a better and consistant style. 
 
-# Incompatible API changes
+Incompatible API changes:
 
 - The signature of `Term.eval` and `Term.eval_choice` changed to make
   it more regular: the given term and its info must be tupled together
