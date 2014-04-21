@@ -245,7 +245,7 @@ module Manpage = struct
         begin match t with 
         | `Noblank -> ()
         | `P s -> pr ppf "%a@[%a@]@," pr_indent p_indent pr_tokens s
-        | `S s -> pr ppf "%a" pr_tokens s
+        | `S s -> pr ppf "@[%a@]" pr_tokens s
         | `I (label, s) ->
             let label = escape label in
             let ll = String.length label in 
