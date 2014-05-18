@@ -78,7 +78,7 @@ end
 module Term : sig
   (** {1 Terms} *)
 
-  type 'a t 
+  type +'a t 
   (** The type for terms evaluating to values of type 'a. *)
 
   val pure : 'a -> 'a t

@@ -1082,7 +1082,7 @@ end
 
 module Term = struct
   type info = term_info
-  type 'a t = arg_info list * (eval_info -> cmdline -> 'a)
+  type +'a t = arg_info list * (eval_info -> cmdline -> 'a)
   type 'a result = [ 
     | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
   
