@@ -1,3 +1,11 @@
+v0.9.5 2014-07-04 Cambridge (UK)
+--------------------------------
+
+- Add variance annotation to Term.t. Thanks to Peter Zotov for suggesting.
+- Fix section name formatting in plain text output. Thanks to Mikhail
+  Sobolev for reporting.
+
+
 v0.9.4 2014-02-09 La Forclaz (VS)
 ---------------------------------
 
