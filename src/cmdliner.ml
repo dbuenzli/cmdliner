@@ -124,6 +124,40 @@ end = struct
   let of_list l = List.fold_left (fun t (s, v) -> add t s v) empty l
 end
 
+module Hetero_Hashtbl : sig
+  type 'a tag
+  type t
+
+  val create: int -> t
+  val create_tag: unit -> 'a tag
+  val int_of_tag: 'a tag -> int
+  val find: t -> 'a tag -> 'a (** raise Not_found if no binding *)
+  val add: t -> 'a tag -> 'a -> unit
+end = struct
+
+  type 'a tag = int
+  module H = Hashtbl.Make(struct
+      type t = int
+      let compare (x:int) y = compare x y
+      let equal (x:int) y = x = y
+      let hash x : int = x
+    end)
+  type t = Obj.t H.t
+
+  let arg_id =       (* thread-safe UIDs, Oo.id (object end) was used before. *)
+    let c = ref 0 in
+    fun () ->
+      let id = !c in
+      incr c; if id > !c then assert false (* too many ids *) else id
+
+  let create = H.create
+  let create_tag () : 'a tag = arg_id ()
+  let int_of_tag t = t
+  let find h (tag: 'a tag) : 'a = Obj.obj (H.find h tag)
+  let add h (tag:'a tag) (v:'a) = H.add h tag (Obj.repr v)
+end
+
+
 (* The following types keep untyped information about arguments and
    terms. This data is used to parse the command line, report errors
    and format man page information. *)
@@ -186,12 +220,49 @@ type term_info =
 type eval_info =                (* information about the evaluation context. *)
   { term : term_info * arg_info list;             (* term being evaluated. *)
     main : term_info * arg_info list;                        (* main term. *)
-    choices : (term_info * arg_info list) list}       (* all term choices. *)
-  
+    choices : (term_info * arg_info list) list;       (* all term choices. *)
+    cache_table : Hetero_Hashtbl.t;    (** table of already computed values*)
+  }
+
 let eval_kind ei =                       (* evaluation with multiple terms ? *) 
   if ei.choices = [] then `Simple else
   if (fst ei.term) == (fst ei.main) then `M_main else `M_choice
     
+
+module MkExec : sig
+  type +'a t
+  val mk: (eval_info -> cmdline -> 'a) -> 'a t
+  val mk_infos: arg_info list -> (eval_info -> cmdline -> 'a) ->
+    (int * arg_info list) list * 'a t
+  val exec: 'a t -> eval_info -> cmdline -> 'a
+end = struct
+
+  type 'a t = (eval_info -> cmdline -> 'a)
+
+  let mk exec =
+    let tag = Hetero_Hashtbl.create_tag () in
+    (** We don't have to memoize on ei or cl because
+        one cache_table is used for only one ei and one cl
+    *)
+    let f ei cl =
+      try
+        Hetero_Hashtbl.find ei.cache_table tag
+      with Not_found ->
+        let v = exec ei cl in
+        Hetero_Hashtbl.add ei.cache_table tag v;
+        v in
+    tag, f
+
+  let mk_infos infos exec =
+    let tag, exec = mk exec in
+    [Hetero_Hashtbl.int_of_tag tag, infos], exec
+
+  let mk exec = snd (mk exec)
+
+  let exec x = x
+
+end
+
 module Manpage = struct
   type title = string * int * string * string * string
   type block = man_block
@@ -893,14 +964,14 @@ module Arg = struct
   (* Arguments as terms *)
       
   let absent_error al = List.rev_map (fun a -> { a with absent = Error }) al
-  let value a = a
+  let value (arg_info,exec) = MkExec.mk_infos arg_info exec
   let required (al, convert) =
     let al = absent_error al in 
     let convert ei cl = match convert ei cl with 
     | Some v -> v
     | None -> parse_error (Err.arg_missing (List.hd al))
     in
-    al, convert
+    MkExec.mk_infos al convert
     
   let non_empty (al, convert) =
     let al = absent_error al in 
@@ -908,14 +979,14 @@ module Arg = struct
     | [] -> parse_error (Err.arg_missing (List.hd al)) 
     | l -> l
     in
-    al, convert
+    MkExec.mk_infos al convert
     
   let last (al, convert) =
     let convert ei cl = match convert ei cl with
     | [] -> parse_error (Err.arg_missing (List.hd al))
     | l -> List.hd (List.rev l)
     in
-    al, convert
+    MkExec.mk_infos al convert
     
   (* Predefined converters. *)
     
@@ -1082,7 +1153,8 @@ end
 
 module Term = struct
   type info = term_info
-  type +'a t = arg_info list * (eval_info -> cmdline -> 'a)
+  type +'a t = (int * arg_info list) list * 'a MkExec.t
+
   type 'a result = [ 
     | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
   
@@ -1096,21 +1168,21 @@ module Term = struct
       man = man }
     
   let name ti = ti.name
-  let pure v = [], (fun _ _ -> v)
+  let pure v = [], MkExec.mk (fun _ _ -> v)
   let app (al, f) (al', v) = 
     List.rev_append al al', 
-    fun ei cl -> (f ei cl) (v ei cl)
+    MkExec.mk (fun ei cl -> (MkExec.exec f ei cl) (MkExec.exec v ei cl))
         
   let ( $ ) = app
   let ret (al, v) = 
-    al, fun ei cl -> match v ei cl with 
+    al, MkExec.mk (fun ei cl -> match MkExec.exec v ei cl with 
     | `Ok v -> v 
     | `Error (u,e) -> raise (Term (`Error (u,e)))
-    | `Help h -> raise (Term (`Help h))
+    | `Help h -> raise (Term (`Help h)))
                    
-  let main_name = [], (fun ei _ -> (fst ei.main).name)
+  let main_name = [], MkExec.mk (fun ei _ -> (fst ei.main).name)
   let choice_names = 
-    [], fun ei _ -> List.rev_map (fun e -> (fst e).name) ei.choices
+    [], MkExec.mk (fun ei _ -> List.rev_map (fun e -> (fst e).name) ei.choices)
         
   let man_format =
     let fmts = ["pager", `Pager; "groff", `Groff; "plain", `Plain] in
@@ -1150,7 +1222,7 @@ module Term = struct
       match help_arg ei cl, vers_arg with 
       | Some fmt, _ -> Help.print fmt help ei; `Help
       | None, Some v_arg when v_arg ei cl -> Help.pr_version help ei; `Version 
-      | _ -> `Ok (f ei cl)
+      | _ -> `Ok (MkExec.exec f ei cl)
     with
     | Cmdline.Error e -> Err.pr_usage err ei e; `Error `Parse
     | Term (`Error (usage, e)) -> 
@@ -1167,20 +1239,37 @@ module Term = struct
         in
         let _, _, ei = add_std_opts ei in 
         Help.print fmt help ei; `Help 
-        
+
+  (** Since the same arguments can appear more than once,
+      this function remove the duplicates *)
+  let uniquify_infos (((al : (int * arg_info list) list),f),ti) =
+    let al = List.fast_sort (fun (i1,_) (i2,_) -> compare i1 i2) al in
+    let rec aux (i:int) acc = function
+      | [] -> acc
+      | (i',l)::al when i = i' -> aux i acc al
+      | (i',l)::al -> aux i' (List.rev_append l acc) al in
+    let al = match al with
+      | [] -> []
+      | (i,l)::al -> aux i l al in
+    (al,f), ti
+
   let eval ?(help = Format.std_formatter) ?(err = Format.err_formatter) 
       ?(catch = true) ?(argv = Sys.argv) ((al, f), ti)  =
     let term = ti, al in
-    let ei = { term = term; main = term; choices = [] } in
+    let ei = { term = term; main = term; choices = [];
+               cache_table = Hetero_Hashtbl.create 16 } in
     try eval_term help err ei f (remove_exec argv) with
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
           
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter) 
-      ?(catch = true) ?(argv = Sys.argv) (((al, f) as t), ti) choices =
+      ?(catch = true) ?(argv = Sys.argv) al_f_ti choices =
+    let (((al, f) as t), ti) = uniquify_infos al_f_ti in
+    let choices = List.map uniquify_infos choices in
     let ei_choices = List.rev_map (fun ((al, _), ti) -> ti, al) choices in 
     let main = (ti, al) in
-    let ei = { term = main; main = main; choices = ei_choices } in
+    let ei = { term = main; main = main; choices = ei_choices;
+               cache_table = Hetero_Hashtbl.create 16 } in
     try 
       let chosen, args = Cmdline.choose_term ti ei_choices (remove_exec argv) in
       let find_chosen (_, ti) = ti = chosen in  
@@ -1192,6 +1281,9 @@ module Term = struct
         Err.pr_usage err ei e; `Error `Parse
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
+
+  let eval ?help ?err ?catch ?argv al_f_ti =
+    eval ?help ?err ?catch ?argv (uniquify_infos al_f_ti)
 end
 
 (*---------------------------------------------------------------------------
