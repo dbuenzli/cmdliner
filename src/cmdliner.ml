@@ -675,7 +675,11 @@ end = struct
         match Trie.find opti name with
         | `Ok a -> 
             let value, args =
-              if (value <> None || a.o_kind = Flag) then value, args else
+              match value, a with
+              | None, {o_kind = Flag} -> value, args
+              | Some v, {o_kind = Flag} when String.length name = 2 -> None, ("-" ^ v)::args
+              | Some v, _ -> value,args
+              | None, _ ->
               match args with 
               | v :: rest -> if is_opt v then None, args else Some v, rest
               | [] -> None, args
