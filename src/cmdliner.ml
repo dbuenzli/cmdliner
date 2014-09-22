@@ -682,7 +682,12 @@ end = struct
       in
       match Trie.find index maybe with 
       | `Ok choice -> choice, args' 
-      | `Not_found -> raise (Error (Err.unknown "command" maybe))
+      | `Not_found ->
+        let all = Trie.ambiguities index "" in
+        let hint = match suggest maybe all with
+          | Some (_,l) -> Some (String.concat " or " l)
+          | None -> None in
+        raise (Error (Err.unknown "command" ?hint maybe))
       | `Ambiguous ->
           let ambs = List.sort compare (Trie.ambiguities index maybe) in
           raise (Error (Err.ambiguous "command" maybe ambs))
