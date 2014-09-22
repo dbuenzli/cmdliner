@@ -544,7 +544,10 @@ module Err = struct
   let is_dir s = str "%s is a directory" (quote s)
   let element kind s exp = str "invalid element in %s (`%s'): %s" kind s exp
   let sep_miss sep s = invalid_val s (str "missing a `%c' separator" sep)
-  let unknown kind v = str "unknown %s %s" kind (quote v)
+  let with_hint s = str "Did you mean %s ?" (quote s)
+  let unknown kind ?hint v =
+    let rem = match hint with None -> "" | Some h -> with_hint h in
+    str "unknown %s %s. %s" kind (quote v) rem
   let ambiguous kind s ambs =
     str "%s %s ambiguous, could be %s" kind (quote s) (alts ambs)
 
@@ -650,7 +653,7 @@ end = struct
     let rec aux opti posi cl = function
     | a :: l ->
         if is_pos a then aux opti (a :: posi) (Amap.add a (P []) cl) l else
-        let add t name = Trie.add t name a in
+        let add t name = Trie.add t name (name,a) in
         aux (List.fold_left add opti a.o_names) posi (Amap.add a (O []) cl) l
     | [] -> opti, posi, cl
     in
@@ -679,7 +682,7 @@ end = struct
         if not (is_opt s) then aux (k+1) opti cl (s :: pargs) args else
         let name, value = parse_opt_arg s in
         match Trie.find opti name with
-        | `Ok a ->
+        | `Ok (_, a) ->
             let value, args = match value, a.o_kind with
             | Some v, Flag when is_short_opt name -> None, ("-" ^ v) :: args
             | Some v, _ -> value, args
@@ -691,7 +694,16 @@ end = struct
             in
             let arg = O ((k, name, value) :: opt_arg cl a) in
             aux (k+1) opti (Amap.add a arg cl) pargs args
-        | `Not_found -> raise (Error (Err.unknown "option" name))
+        | `Not_found ->
+            let hint =
+              if String.length s > 2 && s.[1] <> '-'
+              then
+                let opt_name = Printf.sprintf "-%s" s in
+                match Trie.find opti opt_name with
+                  | `Ok (opt_name,_) -> Some opt_name
+                  | _ -> None
+              else None in
+            raise (Error (Err.unknown "option" ?hint name))
         | `Ambiguous ->
             let ambs = List.sort compare (Trie.ambiguities opti name) in
             raise (Error (Err.ambiguous "option" name ambs))
