@@ -687,9 +687,13 @@ end = struct
             aux (k+1) opti (Amap.add a arg cl) pargs args
         | `Not_found ->
             let hint =
-              if String.length s > 2 && s.[1] <> '-'
+              if String.length s > 2
               then
-                let opt_name = Printf.sprintf "-%s" s in
+                let opt_name =
+                  if s.[1] <> '-'
+                  then Printf.sprintf "-%s" s
+                  else String.sub s 1 (String.length s - 1) in
+                let opt_name, _ = parse_opt_arg opt_name in
                 match Trie.find opti opt_name with
                   | `Ok (opt_name,_) -> Some opt_name
                   | _ -> None
