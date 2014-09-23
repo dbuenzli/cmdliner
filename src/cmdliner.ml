@@ -300,7 +300,8 @@ module Manpage = struct
   (* Printing to a pager *)
       
   let find_cmd cmds =
-    let cmd c = Sys.command (str "type %s 1>/dev/null 2>/dev/null" c) = 0 in
+    let null = match Sys.os_type with "Win32" -> " NUL" | _ -> "/dev/null" in
+    let cmd c = Sys.command (str "type %s 1>%s 2>%s" c null null) = 0 in
     try Some (List.find cmd cmds) with Not_found -> None
       
   let pr_to_pager print ppf v = 
