@@ -4,6 +4,12 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+let posix_compat = ref true
+let drop_posix_compat () = posix_compat := false
+let posix () = !posix_compat
+
+let dash n = if String.length n = 1 || not (posix ()) then "-" ^ n else "--" ^ n
+
 (* Invalid_arg strings *)
 
 let err_argv = "argv array must have at least one element"
@@ -590,11 +596,12 @@ module Err = struct
   let pr_try_help ppf ei = 
     let exec = Help.invocation ei in 
     let main = (fst ei.main).name in 
+    let help_opt = dash "help" in
     if exec = main then 
-      pr ppf "@[<2>Try `%s --help' for more information.@]" exec 
+      pr ppf "@[<2>Try `%s %s' for more information.@]" exec help_opt
     else
-    pr ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]" 
-      exec main 
+    pr ppf "@[<2>Try `%s %s' or `%s %s' for more information.@]"
+      exec help_opt main help_opt
       
   let pr_usage ppf ei e =
     pr ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
@@ -654,13 +661,16 @@ end = struct
       
   let parse_opt_arg s =          (* (name,value) of opt arg, assert len > 1. *)
     let l = String.length s in
-    if s.[1] <> '-' then
-      if l = 2 then s, None else
-      String.sub s 0 2, Some (String.sub s 2 (l - 2))
-    else try 
+    let doubledash = s.[1] = '-' in
+    if l = 2 && not doubledash
+    then s, None
+    else if doubledash || not (posix ())
+    then try
       let i = String.index s '=' in 
       String.sub s 0 i, Some (String.sub s (i + 1) (l - i - 1))
     with Not_found -> s, None
+    else
+      String.sub s 0 2, Some (String.sub s 2 (l - 2))
                       
   let parse_args opti cl args =
     (* returns an updated [cl] cmdline according to the options found in [args]
@@ -748,7 +758,6 @@ module Arg = struct
     (fun ppf v -> match v with None -> pr_str ppf none| Some v -> print ppf v)
     
   let info ?docs ?(docv = "") ?(doc = "") names = 
-    let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let docs = match docs with 
     | None -> if names = [] then "ARGUMENTS" else "OPTIONS"
     | Some s -> s

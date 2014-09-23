@@ -443,7 +443,9 @@ module Arg : sig
       with [c0], [c1], [c2] and [c3]. *)
 end
 
-(** 
+val drop_posix_compat : unit -> unit
+
+(**
     {1:basics Basics}
 
     With [Cmdliner] your program evaluates a term. A {e term}
