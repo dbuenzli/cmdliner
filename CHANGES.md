@@ -1,3 +1,16 @@
+
+v0.9.6 YYYY-MM-DD Location
+-------------------------------
+
+- Parsed command line syntax: allow short flags to be specified
+  together under a single dash, possibly ending with a short option.
+  This allows to specify e.g. `tar -xvzf archive.tgz` or `tar
+  -xvzfarchive.tgz`. Previously this resulted in an error, all the
+  flags had to be specified separately. Backward compatible in the
+  sense that only more command lines are parsed. Thanks to Hugo
+  Heuzard for the patch.
+
+
 v0.9.5 2014-07-04 Cambridge (UK)
 --------------------------------
 

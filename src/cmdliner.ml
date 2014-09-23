@@ -674,19 +674,19 @@ end = struct
     | "--" :: args -> cl, (List.rev_append pargs args)
     | s :: args -> 
         let is_opt s = String.length s > 1 && s.[0] = '-' in
+        let is_short_opt s = String.length s = 2 && s.[0] = '-' in
         if not (is_opt s) then aux (k+1) opti cl (s :: pargs) args else
         let name, value = parse_opt_arg s in
         match Trie.find opti name with
         | `Ok a -> 
-            let value, args =
-              match value, a with
-              | None, {o_kind = Flag} -> value, args
-              | Some v, {o_kind = Flag} when String.length name = 2 -> None, ("-" ^ v)::args
-              | Some v, _ -> value,args
-              | None, _ ->
-              match args with 
-              | v :: rest -> if is_opt v then None, args else Some v, rest
-              | [] -> None, args
+            let value, args = match value, a.o_kind with
+            | Some v, Flag when is_short_opt name -> None, ("-" ^ v) :: args
+            | Some v, _ -> value, args
+            | None, Flag -> value, args
+            | None, _ ->
+                match args with 
+                | v :: rest -> if is_opt v then None, args else Some v, rest
+                | [] -> None, args
             in
             let arg = O ((k, name, value) :: opt_arg cl a) in
             aux (k+1) opti (Amap.add a arg cl) pargs args
