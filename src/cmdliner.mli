@@ -673,13 +673,13 @@ v}
     (see {!Arg.flag}, {!Arg.vflag}) or an optional argument with an optional 
     value (see the [~vopt] argument of {!Arg.opt}). 
 
-    Short flags can be grouped togheter to share a single dash and the group 
+    Short flags can be grouped together to share a single dash and the group 
     can end with a short option. For example assuming ["-v"] and ["-x"] 
     are flags and ["-f"] is a short option:
     {ul
       {- ["-vx"] will be parsed as ["-v -x"].}
-      {- ["-vxfopt"] will be parsed as ["-v -x -f=opt"].}
-      {- ["-vxf opt"] will be parsed as ["-v -x -f=opt"].}
+      {- ["-vxfopt"] will be parsed as ["-v -x -fopt"].}
+      {- ["-vxf opt"] will be parsed as ["-v -x -fopt"].}
       {- ["-fvx"] will be parsed as ["-f=vx"].}}
 
     {2:posargs Positional arguments}
