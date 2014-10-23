@@ -9,7 +9,7 @@
     [Cmdliner] provides a simple and compositional mechanism
     to convert command line arguments to OCaml values and pass them to
     your functions. The module automatically handles syntax errors,
-    help messages and UNIX man page generation. It supports programs 
+    help messages and UNIX man page generation. It supports programs
     with single or multiple commands
     (like [darcs] or [git]) and respect most of the
     {{:http://www.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html}
@@ -26,7 +26,7 @@
 
 (** {1:top Interface} *)
 
-(** Man page specification. 
+(** Man page specification.
 
     Man page generation is automatically handled by [Cmdliner]. The
     {!block} type is used to define a man page's content.
@@ -39,13 +39,13 @@ module Manpage : sig
 
   type block = [
     | `S of string | `P of string | `I of string * string | `Noblank ]
-  (** The type for a block of man page text. 
+  (** The type for a block of man page text.
 
-      {ul 
-      {- [`S s] introduces a new section [s].} 
-      {- [`P t] is a new paragraph with text [t].} 
+      {ul
+      {- [`S s] introduces a new section [s].}
+      {- [`P t] is a new paragraph with text [t].}
       {- [`I (l,t)] is an indented paragraph with label
-      [l] and text [t].}  
+      [l] and text [t].}
       {- [`Noblank] suppresses the blank line introduced between two blocks.}}
 
       In text strings [t], whitespace and newlines are not significant
@@ -57,28 +57,28 @@ module Manpage : sig
   type title = string * int * string * string * string
   (** The type for man page titles. Describes the man page
       [title], [section], [center_footer], [left_footer], [center_header]. *)
-      
+
   type t = title * block list
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
-  val print : ?subst:(string -> string) -> 
+  val print : ?subst:(string -> string) ->
     [`Pager | `Plain | `Groff ] -> Format.formatter -> t -> unit
   (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format [fmt].
       If [fmt] is [`Pager] the function tries to write the formatted
-      result in a pager, if that fails the format [`Plain] is written 
-      on [ppf]. [subst] can be used to perform variable substitution, 
+      result in a pager, if that fails the format [`Plain] is written
+      on [ppf]. [subst] can be used to perform variable substitution,
       see {!Buffer.add_substitute} (defaults to the identity). *)
 end
 
-(** Terms. 
+(** Terms.
 
     A term is evaluated by a program to produce a {{!result}result}.
     A term made of terms referring to {{!Arg}command line arguments}
-    implicitly defines a command line syntax. *) 
+    implicitly defines a command line syntax. *)
 module Term : sig
   (** {1 Terms} *)
 
-  type +'a t 
+  type +'a t
   (** The type for terms evaluating to values of type 'a. *)
 
   val pure : 'a -> 'a t
@@ -88,11 +88,11 @@ module Term : sig
   (** [f $ v] is a term that evaluates to the result of applying
       the evaluation of [v] to the one of [f]. *)
 
-  val app : ('a -> 'b) t -> 'a t -> 'b t 
+  val app : ('a -> 'b) t -> 'a t -> 'b t
   (** [app] is {!($)}. *)
 
-  val ret : [`Help of [`Pager | `Plain | `Groff] * string option | 
-  `Error of (bool * string) | 
+  val ret : [`Help of [`Pager | `Plain | `Groff] * string option |
+  `Error of (bool * string) |
   `Ok of 'a ] t -> 'a t
   (** [ret v] is a term whose evaluation depends on the case
       to which [v] evaluates. With :
@@ -101,7 +101,7 @@ module Term : sig
       {- [`Error (usage,e)], the evaluation fails and [Cmdliner] prints
          the error [e] and the term's usage if [usage] is [true].}
       {- [`Help (format, name)], the evaluation fails and [Cmdliner] prints the
-         term's man page in the given [format] (or the man page for a 
+         term's man page in the given [format] (or the man page for a
          specific [name] term in case of multiple term evaluation).}}   *)
 
   val main_name : string t
@@ -111,21 +111,21 @@ module Term : sig
   (** [choice_names] is a term that evaluates to the names of the terms
       to choose from. *)
 
-  val man_format : [`Pager | `Plain | `Groff] t 
-  (** [man_format] is a term that defines a [--man-format] option and 
+  val man_format : [`Pager | `Plain | `Groff] t
+  (** [man_format] is a term that defines a [--man-format] option and
       evaluates to a value that can be used with {!Manpage.print}. *)
 
-  (** {1:tinfo Term information} 
-      
+  (** {1:tinfo Term information}
+
       Term information defines the name and man page of a term.
       For simple evaluation this is the name of the program and its
-      man page. For multiple term evaluation, this is 
+      man page. For multiple term evaluation, this is
       the name of a command and its man page. *)
 
   type info
   (** The type for term information. *)
 
-  val info : ?sdocs:string -> ?man:Manpage.block list -> 
+  val info : ?sdocs:string -> ?man:Manpage.block list ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
@@ -133,14 +133,14 @@ module Term : sig
       {- [name] is the name of the program or the command.}
       {- [version] is the version string of the program, ignored
          for commands.}
-      {- [doc] is a one line description of the program or command used 
+      {- [doc] is a one line description of the program or command used
          for the [NAME] section of the term's man page. For commands this
          description is also used in the list of commands of the main
          term's man page.}
-      {- [docs], only for commands, the title of the section of the main 
+      {- [docs], only for commands, the title of the section of the main
          term's man page where it should be listed (defaults to ["COMMANDS"]).}
       {- [man] is the text of the man page for the term. In the text,
-         the variables ["$(tname)"] and ["$(mname)"] can respectively be 
+         the variables ["$(tname)"] and ["$(mname)"] can respectively be
          used to refer to the value of [name] and the main term's name.
       }
       {- [sdocs] defines the title of the section in which the
@@ -158,34 +158,34 @@ module Term : sig
       {- [`Ok v], the term evaluated successfully and [v] is the result.}
       {- [`Version], the version string of the main term was printed
        on the help formatter.}
-      {- [`Help], man page about the term was printed on the help formatter.} 
-      {- [`Error `Parse], a command line parse error occured and was 
+      {- [`Help], man page about the term was printed on the help formatter.}
+      {- [`Error `Parse], a command line parse error occured and was
          reported on the error formatter.}
       {- [`Error `Term], a term evaluation error occured and was reported
          on the error formatter (see {!Term.ret}).}
       {- [`Error `Exn], an exception [e] was caught and reported
          on the error formatter (see the [~catch] parameter of {!eval}).}} *)
 
-  val eval : ?help:Format.formatter -> ?err:Format.formatter -> 
+  val eval : ?help:Format.formatter -> ?err:Format.formatter ->
     ?catch:bool -> ?argv:string array -> ('a t * info) -> 'a result
 (** [eval help err catch argv (t,i)]  is the evaluation result
     of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
 
     If [catch] is [true] (default) uncaught exeptions
     are intercepted and their stack trace is written to the [err]
-    formatter. 
-    
+    formatter.
+
     [help] is the formatter used to print help or version messages
     (defaults to {!Format.std_formatter}). [err] is the formatter
     used to print error messages (defaults to {!Format.err_formatter}). *)
 
 
-  val eval_choice : ?help:Format.formatter -> ?err:Format.formatter -> 
-    ?catch:bool -> ?argv:string array -> 'a t * info -> ('a t * info) list -> 
+  val eval_choice : ?help:Format.formatter -> ?err:Format.formatter ->
+    ?catch:bool -> ?argv:string array -> 'a t * info -> ('a t * info) list ->
     'a result
-  (** [eval_choice help err catch argv default (t,i) choices] is like {!eval} 
-      except that if the first argument on the command line is not an option 
-      name it will look in [choices] for a term whose information has this 
+  (** [eval_choice help err catch argv default (t,i) choices] is like {!eval}
+      except that if the first argument on the command line is not an option
+      name it will look in [choices] for a term whose information has this
       name and evaluate it.
 
       If the command name is unknown an error is reported. If the name
@@ -195,15 +195,15 @@ end
 
 (** Terms for command line arguments.
 
-    This module provides functions to define terms that evaluate 
-    to the arguments provided on the command line. 
+    This module provides functions to define terms that evaluate
+    to the arguments provided on the command line.
 
     Basic constraints, like the argument type or repeatability, are
     specified by defining a value of type {!t}. Further contraints can
     be specified during the {{!argterms}conversion} to a term. *)
 module Arg : sig
 
-(** {1:argconv Argument converters}  
+(** {1:argconv Argument converters}
 
     An argument converter transforms a string argument of the command
     line to an OCaml value. {{!converters}Predefined converters}
@@ -220,13 +220,13 @@ module Arg : sig
 
   val some : ?none:string -> 'a converter -> 'a option converter
   (** [some none c] is like the converter [c] except it returns
-      [Some] value. It is used for command line arguments 
+      [Some] value. It is used for command line arguments
       that default to [None] when absent. [none] is what to print to
       document the absence (defaults to [""]). *)
 
-(** {1:arginfo Arguments and their information} 
+(** {1:arginfo Arguments and their information}
 
-    Argument information defines the man page information of an argument and, 
+    Argument information defines the man page information of an argument and,
     for optional arguments, its names. *)
 
   type 'a t
@@ -235,82 +235,82 @@ module Arg : sig
   type info
   (** The type for information about command line arguments. *)
 
-  val info : ?docs:string -> ?docv:string -> ?doc:string -> 
+  val info : ?docs:string -> ?docv:string -> ?doc:string ->
   string list -> info
-  (** [info docs docv doc names] defines information for 
-      an argument. 
+  (** [info docs docv doc names] defines information for
+      an argument.
 
       [names] defines the names under which an optional argument
-      can be referred to. Strings of length [1] (["c"]) define short 
+      can be referred to. Strings of length [1] (["c"]) define short
       option names (["-c"]), longer strings (["count"]) define long
-      option names (["--count"]). [names] must be empty for positional 
-      arguments. 
+      option names (["--count"]). [names] must be empty for positional
+      arguments.
 
       {ul
       {- [doc] is the man page information of the argument.
-         The variable ["$(docv)"] can be used to refer to the value 
+         The variable ["$(docv)"] can be used to refer to the value
          of [docv] (see below).}
       {- [docv] is for positional and non-flag optional arguments.
 	 It is a variable name used in the man page to stand for their value.}
-      {- [docs] is the title of the man page section in which the argument 
+      {- [docs] is the title of the man page section in which the argument
          will be listed. For optional arguments this defaults
          to ["OPTIONS"]. For positional arguments this defaults
          to ["ARGUMENTS"]. However a positional argument is only listed
          if it has both a [doc] and [docv] specified.}} *)
-  
+
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for
       specifying argument terms. *)
 
-(** {1:optargs Optional arguments} 
+(** {1:optargs Optional arguments}
 
     The information of an optional argument must have at least
     one name or [Invalid_argument] is raised. *)
 
   val flag : info -> bool t
-  (** [flag i] is a [bool] argument defined by an optional flag 
-      that may appear {e at most} once on the command line under one of 
-      the names specified by [i]. The argument holds [true] if the 
+  (** [flag i] is a [bool] argument defined by an optional flag
+      that may appear {e at most} once on the command line under one of
+      the names specified by [i]. The argument holds [true] if the
       flag is present on the command line and [false] otherwise. *)
 
   val flag_all : info -> bool list t
   (** [flag_all] is like {!flag} except the flag may appear more than
-      once. The argument holds a list that contains one [true] value per 
+      once. The argument holds a list that contains one [true] value per
       occurence of the flag. It holds the empty list if the flag
       is absent from the command line. *)
-      
+
   val vflag : 'a -> ('a * info) list -> 'a t
-  (** [vflag v \[v]{_0}[,i]{_0}[;...\]] is an ['a] argument defined 
-      by an optional flag that may appear {e at most} once on 
+  (** [vflag v \[v]{_0}[,i]{_0}[;...\]] is an ['a] argument defined
+      by an optional flag that may appear {e at most} once on
       the command line under one of the names specified in the [i]{_k}
-      values. The argument holds [v] if the flag is absent from the 
-      command line and the value [v]{_k} if the name under which it appears 
+      values. The argument holds [v] if the flag is absent from the
+      command line and the value [v]{_k} if the name under which it appears
       is in [i]{_k}. *)
 
   val vflag_all : 'a list -> ('a * info) list -> 'a list t
   (** [vflag_all v l] is like {!vflag} except the flag may appear more
       than once. The argument holds the list [v] if the flag is absent
-      from the command line. Otherwise it holds a list that contains one 
-      corresponding value per occurence of the flag, in the order found on 
+      from the command line. Otherwise it holds a list that contains one
+      corresponding value per occurence of the flag, in the order found on
       the command line. *)
-      
+
   val opt : ?vopt:'a -> 'a converter -> 'a -> info -> 'a t
-  (** [opt vopt c v i] is an ['a] argument defined by the value of 
+  (** [opt vopt c v i] is an ['a] argument defined by the value of
       an optional argument that may appear {e at most} once on the command
       line under one of the names specified by [i]. The argument holds
       [v] if the option is absent from the command line. Otherwise
-      it has the value of the option as converted by [c]. 
-	  
+      it has the value of the option as converted by [c].
+
       If [vopt] is provided the value of the optional argument is itself
       optional, taking the value [vopt] if unspecified on the command line. *)
 
   val opt_all : ?vopt:'a -> 'a converter -> 'a list -> info -> 'a list t
-  (** [opt_all vopt c v i] is like {!opt} except the optional argument may 
+  (** [opt_all vopt c v i] is like {!opt} except the optional argument may
       appear more than once. The argument holds a list that contains one value
-      per occurence of the flag in the order found on the command line. 
+      per occurence of the flag in the order found on the command line.
       It holds the list [v] if the flag is absent from the command line. *)
 
-  (** {1:posargs Positional arguments} 
+  (** {1:posargs Positional arguments}
 
       The information of a positional argument must have no name
       or [Invalid_argument] is raised. Positional arguments indexing
@@ -319,29 +319,29 @@ module Arg : sig
   val pos : ?rev:bool -> int -> 'a converter -> 'a -> info -> 'a t
   (** [pos rev n c v i] is an ['a] argument defined by the [n]th
       positional argument of the command line as converted by [c].
-      If the positional argument is absent from the command line 
+      If the positional argument is absent from the command line
       the argument is [v].
 
       If [rev] is [true] (defaults to [false]), the computed
-      position is [max-n] where [max] is the position of 
+      position is [max-n] where [max] is the position of
       the last positional argument present on the command line. *)
-  
+
   val pos_all : 'a converter -> 'a list -> info -> 'a list t
-  (** [pos_all c v i] is an ['a list] argument that holds 
+  (** [pos_all c v i] is an ['a list] argument that holds
       all the positional arguments of the command line as converted
       by [c] or [v] if there are none. *)
 
-  val pos_left : ?rev:bool -> int -> 'a converter -> 'a list -> info -> 
+  val pos_left : ?rev:bool -> int -> 'a converter -> 'a list -> info ->
     'a list t
   (** [pos_left rev n c v i] is an ['a list] argument that holds
       all the positional arguments as converted by [c] found on the left
       of the [n]th positional argument or [v] if there are none.
 
       If [rev] is [true] (defaults to [false]), the computed
-      position is [max-n] where [max] is the position of 
+      position is [max-n] where [max] is the position of
       the last positional argument present on the command line. *)
-  
-  val pos_right : ?rev:bool -> int -> 'a converter -> 'a list -> info -> 
+
+  val pos_right : ?rev:bool -> int -> 'a converter -> 'a list -> info ->
     'a list t
   (** [pos_right] is like {!pos_left} except it holds all the positional
       arguments found on the right of the specified positional argument. *)
@@ -354,16 +354,16 @@ module Arg : sig
 
   val required : 'a option t -> 'a Term.t
   (** [required a] is a term that fails if [a]'s value is [None] and
-      evaluates to the value of [Some] otherwise. Use this for required 
-      positional arguments (it can also be used for defining required 
-      optional arguments, but from a user interface perspective this 
+      evaluates to the value of [Some] otherwise. Use this for required
+      positional arguments (it can also be used for defining required
+      optional arguments, but from a user interface perspective this
       shouldn't be done, it is a contradiction in terms). *)
 
   val non_empty : 'a list t -> 'a list Term.t
-  (** [non_empty a] is term that fails if [a]'s list is empty and 
+  (** [non_empty a] is term that fails if [a]'s list is empty and
       evaluates to [a]'s list otherwise. Use this for non empty lists
       of positional arguments. *)
-      
+
   val last : 'a list t -> 'a Term.t
   (** [last a] is a term that fails if [a]'s list is empty and evaluates
       to the value of the last element of the list otherwise. Use this
@@ -381,7 +381,7 @@ module Arg : sig
   val int : int converter
   (** [int] converts values with {!int_of_string}. *)
 
-  val nativeint : nativeint converter 
+  val nativeint : nativeint converter
   (** [nativeint] converts values with {!Nativeint.of_string}. *)
 
   val int32 : int32 converter
@@ -397,53 +397,53 @@ module Arg : sig
   (** [string] converts values with the identity function. *)
 
   val enum : (string * 'a) list -> 'a converter
-  (** [enum l p] converts values such that unambiguous prefixes of string names 
+  (** [enum l p] converts values such that unambiguous prefixes of string names
       in [l] map to the corresponding value of type ['a]. *)
 
   val file : string converter
   (** [file] converts a value with the identity function and
       checks with {!Sys.file_exists} that a file with that name exists. *)
-      
+
   val dir : string converter
   (** [dir] converts a value with the identity function and checks
-      with {!Sys.file_exists} and {!Sys.is_directory} 
+      with {!Sys.file_exists} and {!Sys.is_directory}
       that a directory with that name exists. *)
 
   val non_dir_file : string converter
   (** [non_dir_file] converts a value with the identity function and checks
-      with {!Sys.file_exists} and {!Sys.is_directory} 
+      with {!Sys.file_exists} and {!Sys.is_directory}
       that a non directory file with that name exists. *)
 
   val list : ?sep:char -> 'a converter -> 'a list converter
-  (** [list sep c] splits the argument at each [sep] (defaults to [',']) 
+  (** [list sep c] splits the argument at each [sep] (defaults to [','])
       character and converts each substrings with [c]. *)
 
-  val array : ?sep:char -> 'a converter -> 'a array converter   
-  (** [array sep c] splits the argument at each [sep] (defaults to [',']) 
+  val array : ?sep:char -> 'a converter -> 'a array converter
+  (** [array sep c] splits the argument at each [sep] (defaults to [','])
       character and converts each substring with [c]. *)
 
-  val pair : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter 
-  (** [pair sep c0 c1] splits the argument at the {e first} [sep] character 
-      (defaults to [',']) and respectively converts the substrings with 
+  val pair : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
+  (** [pair sep c0 c1] splits the argument at the {e first} [sep] character
+      (defaults to [',']) and respectively converts the substrings with
       [c0] and [c1]. *)
 
   val t2 : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
   (** {!t2} is {!pair}. *)
 
-  val t3 : ?sep:char -> 'a converter ->'b converter -> 'c converter -> 
+  val t3 : ?sep:char -> 'a converter ->'b converter -> 'c converter ->
     ('a * 'b * 'c) converter
-  (** [t3 sep c0 c1 c2] splits the argument at the {e first} two [sep] 
-      characters (defaults to [',']) and respectively converts the 
+  (** [t3 sep c0 c1 c2] splits the argument at the {e first} two [sep]
+      characters (defaults to [',']) and respectively converts the
       substrings with [c0], [c1] and [c2]. *)
 
-  val t4 : ?sep:char -> 'a converter ->'b converter -> 'c converter -> 
+  val t4 : ?sep:char -> 'a converter ->'b converter -> 'c converter ->
     'd converter -> ('a * 'b * 'c * 'd) converter
-  (** [t4 sep c0 c1 c2 c3] splits the argument at the {e first} three [sep] 
-      characters (defaults to [',']) respectively converts the substrings 
+  (** [t4 sep c0 c1 c2 c3] splits the argument at the {e first} three [sep]
+      characters (defaults to [',']) respectively converts the substrings
       with [c0], [c1], [c2] and [c3]. *)
 end
 
-(** 
+(**
     {1:basics Basics}
 
     With [Cmdliner] your program evaluates a term. A {e term}
@@ -461,63 +461,63 @@ end
 open Cmdliner;;
 
 let revolt_t = Term.(pure revolt $ pure ())]}
-    is a term that evaluates to the result (and effect) of the [revolt] 
+    is a term that evaluates to the result (and effect) of the [revolt]
     function.
     Terms are evaluated with {!Term.eval}:
-{[let () = match Term.eval (revolt_t, Term.info "revolt") with 
+{[let () = match Term.eval (revolt_t, Term.info "revolt") with
 | `Error _ -> exit 1 | _ -> exit 0]}
-    This defines a command line program named ["revolt"], without command line 
+    This defines a command line program named ["revolt"], without command line
     arguments arguments, that just prints ["Revolt!"] on [stdout].
-{[> ./revolt 
+{[> ./revolt
 Revolt!]}
     The combinators in the {!Arg} module allow to extract command
     line argument data as terms. These terms can then be applied to
-    lifted OCaml functions to be evaluated by the program. 
+    lifted OCaml functions to be evaluated by the program.
 
     Terms corresponding to command line argument data that are part of
     a term evaluation implicitly define a command line syntax.  We
     show this on an concrete example.
 
-    Consider the [chorus] function that prints repeatedly a 
+    Consider the [chorus] function that prints repeatedly a
     given message :
-{[let chorus count msg = 
+{[let chorus count msg =
   for i = 1 to count do print_endline msg done]}
     we want to make it available from the command line
     with the synopsis:
 {[chorus [-c COUNT | --count=COUNT] [MSG]]}
-    where [COUNT] defaults to [10] and [MSG] defaults to ["Revolt!"]. 
+    where [COUNT] defaults to [10] and [MSG] defaults to ["Revolt!"].
     We first define a term corresponding to the [--count]
     option:
 {[
-let count = 
+let count =
   let doc = "Repeat the message $(docv) times." in
   Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
 ]}
-    This says that [count] is a term that evaluates to the 
-    value of an optional argument of type [int] that 
+    This says that [count] is a term that evaluates to the
+    value of an optional argument of type [int] that
     defaults to [10] if unspecified and whose option name is
-    either [-c] or [--count]. The arguments [doc] and [docv] are used to 
-    generate the option's man page information. 
+    either [-c] or [--count]. The arguments [doc] and [docv] are used to
+    generate the option's man page information.
 
     The term for the positional argument [MSG] is:
 {[
-let msg = 
+let msg =
   let doc = "The message to print." in
   Arg.(value & pos 0 string "Revolt!" & info [] ~docv:"MSG" ~doc)
 ]}
-    which says that [msg] is a term whose value is 
+    which says that [msg] is a term whose value is
     the positional argument at index [0] of type [string] and
     defaults to ["Revolt!"] if unspecified. Here again
     [doc] and [docv] are used for the man page information.
 
     The term for executing [chorus] with these command line arguments
-    is : 
+    is :
 {[
 let chorus_t = Term.(pure chorus $ count $ msg)
 ]}
     and we are now ready to define our program:
 {[
-let info = 
+let info =
   let doc = "print a customizable message repeatedly" in
   let man = [ `S "BUGS"; `P "Email bug reports to <hehey at example.org>.";] in
   Term.info "chorus" ~version:"1.6.1" ~doc ~man
@@ -560,20 +560,20 @@ BUGS
 v}
 
     If a pager is available, this output is written to a pager.
-    This help is also available in plain text or in the 
-    {{:http://www.gnu.org/software/groff/groff.html}groff} man page format by 
-    invoking the program with the option [--help=plain] or [--help=groff]. 
+    This help is also available in plain text or in the
+    {{:http://www.gnu.org/software/groff/groff.html}groff} man page format by
+    invoking the program with the option [--help=plain] or [--help=groff].
 
-    For examples of more complex command line definitions look and 
+    For examples of more complex command line definitions look and
     run the {{!examples}examples}.
 
-    {2 Multiple terms} 
+    {2 Multiple terms}
 
     [Cmdliner] also provides support for programs like [darcs] or
     [git] that have multiple commands each with their own syntax:
     {[prog COMMAND [OPTION]... ARG...]}
-    A command is defined by coupling a term with 
-    {{!Term.tinfo}term information}. The term information defines the 
+    A command is defined by coupling a term with
+    {{!Term.tinfo}term information}. The term information defines the
     command name and its man page. Given a list of commands the function
     {!Term.eval_choice} will execute the term corresponding to the
     [COMMAND] argument or or a specific "main" term if there is
@@ -591,46 +591,46 @@ v}
     If an argument information mentions a section not specified in
     {!Term.info}, an empty section is created for it. This section is
     inserted just after the ["SYNOPSIS"] section or after a section
-    named ["DESCRIPTION"] if there is one. 
+    named ["DESCRIPTION"] if there is one.
 
     The ["SYNOPSIS"] section of a man page is generated automatically
     from a term's information and its arguments. To substitute your
-    own instead, start the term's information man page with 
-    a ["SYNOPSIS"] section. 
+    own instead, start the term's information man page with
+    a ["SYNOPSIS"] section.
 
     Ideally all manual strings should be UTF-8 encoded. However at the
     moment Groff (at least [1.19.2]) doesn't seem to cope with UTF-8
     input and UTF-8 characters beyond the ASCII set will look garbled.
     Regarding UTF-8 output, generating the man page with [-Tutf8] maps
-    the hyphen-minus [U+002D] to the minus sign [U+2212] which makes it 
-    difficult to search it in the pager, so [-Tascii] is used for now. 
-    Conclusion is that it may be better to stick to the ASCII set for now. 
-    Please contact the author if something seems wrong in this reasoning 
+    the hyphen-minus [U+002D] to the minus sign [U+2212] which makes it
+    difficult to search it in the pager, so [-Tascii] is used for now.
+    Conclusion is that it may be better to stick to the ASCII set for now.
+    Please contact the author if something seems wrong in this reasoning
     or if you know a work around this.
 
     {2 Miscellaneous}
 
-    {ul 
-    {- The option name [--help], (and [--version] if you specify a 
-       version string) is reserved by the module. Using it as a term or 
+    {ul
+    {- The option name [--help], (and [--version] if you specify a
+       version string) is reserved by the module. Using it as a term or
        option name may result in undefined behaviour.}
     {- The evaluation of a term in which the same option name is defined
        by more than one argument is undefined.}}
 
     {1:cmdline Command line syntax}
 
-    For programs evaluating a single term the most general form of invocation 
+    For programs evaluating a single term the most general form of invocation
     is:
     {ul{- [prog [OPTION]... [ARG]...]}}
-    The program automatically reponds to the [--help] option by 
-    printing the help. If a version string is provided in 
+    The program automatically reponds to the [--help] option by
+    printing the help. If a version string is provided in
     the {{!Term.tinfo}term information}, it also automatically responds
     to the [--version] option by printing this string.
 
     Command line arguments are either {{!optargs}{e optional}} or
     {{!posargs}{e positional}}. Both can be freely interleaved but
     since [Cmdliner] accepts many optional forms this may result in
-    ambiguities. The special {{!posargs} token [--]} can be used to resolve 
+    ambiguities. The special {{!posargs} token [--]} can be used to resolve
     them.
 
     Programs evaluating multiple terms also add this form of invocation:
@@ -638,29 +638,29 @@ v}
     Commands automatically respond to the [--help] option
     by printing their help. The [COMMAND] string must
     be the first string following the program name and may be specified
-    by a prefix as long as it is not ambiguous. 
+    by a prefix as long as it is not ambiguous.
 
-    {2:optargs Optional arguments} 
+    {2:optargs Optional arguments}
 
     An optional argument is specified on the command line by a {e
     name} possibly followed by a {e value}.
 
     The name of an option can be short or long.
-    {ul 
-    {- A {e short} name is a dash followed by a single alphanumeric 
+    {ul
+    {- A {e short} name is a dash followed by a single alphanumeric
        character: ["-h"], ["-q"], ["-I"].}
-    {- A {e long} name is two dashes followed by alphanumeric 
+    {- A {e long} name is two dashes followed by alphanumeric
        characters and dashes: ["--help"], ["--silent"], ["--ignore-case"].}}
 
     More than one name may refer to the same optional argument.  For
     example in a given program the names ["-q"], ["--quiet"] and
     ["--silent"] may all stand for the same boolean argument
     indicating the program to be quiet.  Long names
-    can be specified by any non ambiguous prefix. 
+    can be specified by any non ambiguous prefix.
 
     The value of an option can be specified in three different ways.
     {ul
-    {- As the next token on the command line: ["-o a.out"], 
+    {- As the next token on the command line: ["-o a.out"],
        ["--output a.out"].}
     {- Glued to a short name: ["-oa.out"].}
     {- Glued to a long name after an equal character:
@@ -669,12 +669,12 @@ v}
     the value itself starts with a dash as is the case for negative numbers,
     ["--min=-10"].
 
-    An optional argument without a value is either a {e flag} 
-    (see {!Arg.flag}, {!Arg.vflag}) or an optional argument with an optional 
-    value (see the [~vopt] argument of {!Arg.opt}). 
+    An optional argument without a value is either a {e flag}
+    (see {!Arg.flag}, {!Arg.vflag}) or an optional argument with an optional
+    value (see the [~vopt] argument of {!Arg.opt}).
 
-    Short flags can be grouped together to share a single dash and the group 
-    can end with a short option. For example assuming ["-v"] and ["-x"] 
+    Short flags can be grouped together to share a single dash and the group
+    can end with a short option. For example assuming ["-v"] and ["-x"]
     are flags and ["-f"] is a short option:
     {ul
       {- ["-vx"] will be parsed as ["-v -x"].}
@@ -697,7 +697,7 @@ v}
 
     These examples are in the [test] directory of the distribution.
 
- {2:exrm A [rm] command} 
+ {2:exrm A [rm] command}
 
     We define the command line interface of a
     [rm] command with the synopsis:
@@ -708,7 +708,7 @@ rm [OPTION]... FILE...
     represented in our program by the [prompt] type. If more than one
     of these flags is present on the command line the last one takes
     precedence.
-   
+
     To implement this behaviour we map the presence of these flags
     to values of the [prompt] type by using {!Arg.vflag_all}.  This
     argument will contain all occurences of the flag on the command
@@ -719,7 +719,7 @@ rm [OPTION]... FILE...
 (* Implementation of the command, we just print the args. *)
 
 type prompt = Always | Once | Never
-let prompt_str = function 
+let prompt_str = function
 | Always -> "always" | Once -> "once" | Never -> "never"
 
 let rm prompt recurse files =
@@ -732,102 +732,102 @@ open Cmdliner;;
 
 let files = Arg.(non_empty & pos_all file [] & info [] ~docv:"FILE")
 let prompt =
-  let doc = "Prompt before every removal." in  
+  let doc = "Prompt before every removal." in
   let always = Always, Arg.info ["i"] ~doc in
   let doc = "Ignore nonexistent files and never prompt." in
   let never = Never, Arg.info ["f"; "force"] ~doc in
   let doc = "Prompt once before removing more than three files, or when
-             removing recursively. Less intrusive than $(b,-i), while 
-	     still giving protection against most mistakes." 
+             removing recursively. Less intrusive than $(b,-i), while
+	     still giving protection against most mistakes."
   in
   let once = Once, Arg.info ["I"] ~doc in
   Arg.(last & vflag_all [Always] [always; never; once])
 
-let recursive = 
+let recursive =
   let doc = "Remove directories and their contents recursively." in
   Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
 
-let cmd = 
-  let doc = "remove files or directories" in 
+let cmd =
+  let doc = "remove files or directories" in
   let man = [
     `S "DESCRIPTION";
-    `P "$(tname) removes each specified $(i,FILE). By default it does not 
+    `P "$(tname) removes each specified $(i,FILE). By default it does not
         remove directories, to also remove them and their contents, use the
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
     `P "To remove a file whose name starts with a `-', for example
         `-foo', use one of these commands:";
     `P "rm -- -foo"; `Noblank;
     `P "rm ./-foo";
-    `P "$(tname) removes symbolic links, not the files referenced by the 
+    `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
     `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
-    `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ] 
+    `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(pure rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
-    {2:excp A [cp] command} 
+    {2:excp A [cp] command}
 
     We define the command line interface of a
     [cp] command with the synopsis:
 {[cp [OPTION]... SOURCE... DEST ]}
-    The [DEST] argument must be a directory if there is more than 
+    The [DEST] argument must be a directory if there is more than
     one [SOURCE]. This constraint is too complex to be expressed by the
     combinators of {!Arg}. Hence we just give it the {!Arg.string} type
     and verify the constraint at the beginning of the [cp]
     implementation. If unsatisfied we return an [`Error] and
-    by using {!Term.ret} on the lifted result [cp_t] of [cp], 
+    by using {!Term.ret} on the lifted result [cp_t] of [cp],
     [Cmdliner] handles the error reporting.
 {[
 (* Implementation, we check the dest argument and print the args *)
 
 let cp verbose recurse force srcs dest =
-  if List.length srcs > 1 && 
-  (not (Sys.file_exists dest) || not (Sys.is_directory dest)) 
-  then 
-    `Error (false, dest ^ " is not a directory") 
-  else 
-    `Ok (Printf.printf 
-	   "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n" 
+  if List.length srcs > 1 &&
+  (not (Sys.file_exists dest) || not (Sys.is_directory dest))
+  then
+    `Error (false, dest ^ " is not a directory")
+  else
+    `Ok (Printf.printf
+	   "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n"
 	    verbose recurse force (String.concat ", " srcs) dest)
 
 (* Command line interface *)
 
 open Cmdliner;;
 
-let verbose = 
+let verbose =
   let doc = "Print file names as they are copied." in
-  Arg.(value & flag & info ["v"; "verbose"] ~doc) 
+  Arg.(value & flag & info ["v"; "verbose"] ~doc)
 
-let recurse = 
+let recurse =
   let doc = "Copy directories recursively." in
   Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
 
-let force = 
+let force =
   let doc = "If a destination file cannot be opened, remove it and try again."in
   Arg.(value & flag & info ["f"; "force"] ~doc)
 
-let srcs = 
+let srcs =
   let doc = "Source file(s) to copy." in
-  Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] ~docv:"SOURCE" ~doc) 
+  Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] ~docv:"SOURCE" ~doc)
 
-let dest = 
-  let doc = "Destination of the copy. Must be a directory if there is more 
+let dest =
+  let doc = "Destination of the copy. Must be a directory if there is more
            than one $(i,SOURCE)." in
-  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DEST" 
+  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DEST"
          ~doc)
 
-let cmd = 
+let cmd =
   let doc = "copy files" in
   let man = [
-    `S "BUGS"; 
-    `P "Email them to <hehey at example.org>."; 
+    `S "BUGS";
+    `P "Email them to <hehey at example.org>.";
     `S "SEE ALSO";
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
-  Term.(ret (pure cp $ verbose $ recurse $ force $ srcs $ dest)), 
+  Term.(ret (pure cp $ verbose $ recurse $ force $ srcs $ dest)),
   Term.info "cp" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
@@ -835,14 +835,14 @@ let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 
 {2:extail A [tail] command}
 
-We define the command line interface of a [tail] command with the 
+We define the command line interface of a [tail] command with the
 synopsis:
 {[tail [OPTION]... [FILE]...]}
 
 The [--lines] option whose value specifies the number of last lines to
 print has a special syntax where a [+] prefix indicates to start
 printing from that line number. In the program this is represented by
-the [loc] type. We define a custom [loc] {{!Arg.argconv}argument converter} 
+the [loc] type. We define a custom [loc] {{!Arg.argconv}argument converter}
 for this option.
 
 The [--follow] option has an optional enumerated value. The argument
@@ -857,66 +857,66 @@ if present but without a value and to [Some v] if present with a value
 (* Implementation of the command, we just print the args. *)
 
 type loc = bool * int
-type verb = Verbose | Quiet 
+type verb = Verbose | Quiet
 type follow = Name | Descriptor
 
-let str = Printf.sprintf 
+let str = Printf.sprintf
 let opt_str sv = function None -> "None" | Some v -> str "Some(%s)" (sv v)
 let loc_str (rev, k) = if rev then str "%d" k else str "+%d" k
 let follow_str = function Name -> "name" | Descriptor -> "descriptor"
 let verb_str = function Verbose -> "verbose" | Quiet -> "quiet"
 
-let tail lines follow verb pid files = 
+let tail lines follow verb pid files =
   Printf.printf "lines = %s\nfollow = %s\nverb = %s\npid = %s\nfiles = %s\n"
-    (loc_str lines) (opt_str follow_str follow) (verb_str verb) 
+    (loc_str lines) (opt_str follow_str follow) (verb_str verb)
     (opt_str string_of_int pid) (String.concat ", " files)
 
 (* Command line interface *)
 
 open Cmdliner;;
 
-let lines = 
+let lines =
   let loc =
     let parse s = try
       if s <> "" && s.[0] <> '+' then `Ok (true, int_of_string s) else
-      `Ok (false, int_of_string (String.sub s 1 (String.length s - 1))) 
+      `Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
     with Failure _ -> `Error "unable to parse integer"
     in
     parse, fun ppf p -> Format.fprintf ppf "%s" (loc_str p)
   in
-  Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N" 
-	 ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start 
-	       output after the $(i,N)-1th line.") 
-let follow = 
+  Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N"
+	 ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
+	       output after the $(i,N)-1th line.")
+let follow =
   let doc = "Output appended data as the file grows. $(docv) specifies how the
 	       file should be tracked, by its `name' or by its `descriptor'." in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
-  Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None & 
-       info ["f"; "follow"] ~docv:"ID" ~doc) 
+  Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None &
+       info ["f"; "follow"] ~docv:"ID" ~doc)
 
-let verb = 
-  let doc = "Never output headers giving file names." in 
-  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"] ~doc in 
+let verb =
+  let doc = "Never output headers giving file names." in
+  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"] ~doc in
   let doc = "Always output headers giving file names." in
-  let verbose = Verbose, Arg.info ["v"; "verbose"] ~doc in 
+  let verbose = Verbose, Arg.info ["v"; "verbose"] ~doc in
   Arg.(last & vflag_all [Quiet] [quiet; verbose])
 
-let pid = 
+let pid =
   let doc = "With -f, terminate after process $(docv) dies." in
   Arg.(value & opt (some int) None & info ["pid"] ~docv:"PID" ~doc)
 
 let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 
-let cmd = 
+let cmd =
   let doc = "display the last part of a file" in
   let man = [
     `S "DESCRIPTION";
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
 	lines can be  specified with the $(b,-n) option.";
-    `S "BUGS"; 
+    `S "BUGS";
     `P "Report them to <hehey at example.org>.";
-    `S "SEE ALSO"; 
+    `S "SEE ALSO";
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(pure tail $ lines $ follow $ verb $ pid $ files),
@@ -954,34 +954,34 @@ done by the [no_cmd] term.
 type verb = Normal | Quiet | Verbose
 type copts = { debug : bool; verb : verb; prehook : string option }
 
-let str = Printf.sprintf 
+let str = Printf.sprintf
 let opt_str sv = function None -> "None" | Some v -> str "Some(%s)" (sv v)
 let opt_str_str = opt_str (fun s -> s)
-let verb_str = function 
+let verb_str = function
   | Normal -> "normal" | Quiet -> "quiet" | Verbose -> "verbose"
 
-let pr_copts oc copts = Printf.fprintf oc 
-    "debug = %b\nverbosity = %s\nprehook = %s\n" 
+let pr_copts oc copts = Printf.fprintf oc
+    "debug = %b\nverbosity = %s\nprehook = %s\n"
     copts.debug (verb_str copts.verb) (opt_str_str copts.prehook)
 
 let initialize copts repodir = Printf.printf
     "%arepodir = %s\n" pr_copts copts repodir
 
 let record copts name email all ask_deps files = Printf.printf
-    "%aname = %s\nemail = %s\nall = %b\nask-deps = %b\nfiles = %s\n" 
-    pr_copts copts (opt_str_str name) (opt_str_str email) all ask_deps 
+    "%aname = %s\nemail = %s\nall = %b\nask-deps = %b\nfiles = %s\n"
+    pr_copts copts (opt_str_str name) (opt_str_str email) all ask_deps
     (String.concat ", " files)
 
 let help copts man_format cmds topic = match topic with
 | None -> `Help (`Pager, None) (* help about the program. *)
-| Some topic -> 
-    let topics = "topics" :: "patterns" :: "environment" :: cmds in 
+| Some topic ->
+    let topics = "topics" :: "patterns" :: "environment" :: cmds in
     let conv, _ = Cmdliner.Arg.enum (List.rev_map (fun s -> (s, s)) topics) in
-    match conv topic with 
+    match conv topic with
     | `Error e -> `Error (false, e)
     | `Ok t when t = "topics" -> List.iter print_endline topics; `Ok ()
     | `Ok t when List.mem t cmds -> `Help (man_format, Some t)
-    | `Ok t -> 
+    | `Ok t ->
         let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
         `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
@@ -990,8 +990,8 @@ open Cmdliner;;
 (* Help sections common to all commands *)
 
 let copts_sect = "COMMON OPTIONS"
-let help_secs = [ 
- `S copts_sect; 
+let help_secs = [
+ `S copts_sect;
  `P "These options are common to all commands.";
  `S "MORE HELP";
  `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
@@ -1002,29 +1002,29 @@ let help_secs = [
 (* Options common to all commands *)
 
 let copts debug verb prehook = { debug; verb; prehook }
-let copts_t = 
-  let docs = copts_sect in 
-  let debug = 
+let copts_t =
+  let docs = copts_sect in
+  let debug =
     let doc = "Give only debug output." in
     Arg.(value & flag & info ["debug"] ~docs ~doc)
   in
   let verb =
-    let doc = "Suppress informational output." in 
+    let doc = "Suppress informational output." in
     let quiet = Quiet, Arg.info ["q"; "quiet"] ~docs ~doc in
     let doc = "Give verbose output." in
-    let verbose = Verbose, Arg.info ["v"; "verbose"] ~docs ~doc in 
-    Arg.(last & vflag_all [Normal] [quiet; verbose]) 
-  in 
-  let prehook = 
-    let doc = "Specify command to run before this $(mname) command." in 
+    let verbose = Verbose, Arg.info ["v"; "verbose"] ~docs ~doc in
+    Arg.(last & vflag_all [Normal] [quiet; verbose])
+  in
+  let prehook =
+    let doc = "Specify command to run before this $(mname) command." in
     Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
   Term.(pure copts $ debug $ verb $ prehook)
-    
+
 (* Commands *)
 
-let initialize_cmd = 
-  let repodir = 
+let initialize_cmd =
+  let repodir =
     let doc = "Run the program in repository directory $(docv)." in
     Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
            ~docv:"DIR" ~doc)
@@ -1039,56 +1039,56 @@ let initialize_cmd =
   Term.info "initialize" ~sdocs:copts_sect ~doc ~man
 
 let record_cmd =
-  let pname = 
+  let pname =
     let doc = "Name of the patch." in
-    Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME" 
+    Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME"
 	   ~doc)
   in
-  let author = 
+  let author =
     let doc = "Specifies the author's identity." in
     Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
 	   ~doc)
   in
-  let all = 
-    let doc = "Answer yes to all patches." in  
+  let all =
+    let doc = "Answer yes to all patches." in
     Arg.(value & flag & info ["a"; "all"] ~doc)
   in
-  let ask_deps = 
-    let doc = "Ask for extra dependencies." in 
+  let ask_deps =
+    let doc = "Ask for extra dependencies." in
     Arg.(value & flag & info ["ask-deps"] ~doc)
   in
   let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
-  let doc = "create a patch from unrecorded changes" in 
-  let man = 
+  let doc = "create a patch from unrecorded changes" in
+  let man =
     [`S "DESCRIPTION";
-     `P "Creates a patch from changes in the working tree. If you specify 
+     `P "Creates a patch from changes in the working tree. If you specify
 	    a set of files ..."] @ help_secs
-  in    
+  in
   Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:copts_sect ~man
 
-let help_cmd = 
-  let topic = 
-    let doc = "The topic to get help on. `topics' lists the topics." in 
+let help_cmd =
+  let topic =
+    let doc = "The topic to get help on. `topics' lists the topics." in
     Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" ~doc)
   in
   let doc = "display help about darcs and darcs commands" in
-  let man = 
+  let man =
     [`S "DESCRIPTION";
      `P "Prints help about darcs commands and other subjects..."] @ help_secs
   in
   Term.(ret (pure help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
   Term.info "help" ~doc ~man
 
-let default_cmd = 
-  let doc = "a revision control system" in 
+let default_cmd =
+  let doc = "a revision control system" in
   let man = help_secs in
   Term.(ret (pure (fun _ -> `Help (`Pager, None)) $ copts_t)),
   Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
-       
+
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 
-let () = match Term.eval_choice default_cmd cmds with 
+let () = match Term.eval_choice default_cmd cmds with
 | `Error _ -> exit 1 | _ -> exit 0
 ]}
 *)
@@ -1100,7 +1100,7 @@ let () = match Term.eval_choice default_cmd cmds with
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 
