@@ -130,7 +130,7 @@ end
 
 type absence =        (* what happens if the argument is absent from the cl. *)
   | Error                                           (* an error is reported. *)
-  | Val of string                (* if <> "", takes the given default value. *)
+  | Val of string Lazy.t         (* if <> "", takes the given default value. *)
 
 type opt_kind =                              (* kinds of optional arguments. *)
   | Flag                                      (* just a flag, without value. *)
@@ -443,7 +443,8 @@ module Help = struct
     in
     let format a =
       let absent = match a.absent with
-      | Val "" | Error -> "" | Val v -> str "absent=%s" v
+      | Error -> ""
+      | Val v -> match Lazy.force v with "" -> "" | v -> str "absent=%s" v
       in
       let optvopt = match a.o_kind with
       | Opt_vopt v -> str "default=%s" v
@@ -760,7 +761,8 @@ module Arg = struct
     | None -> if names = [] then "ARGUMENTS" else "OPTIONS"
     | Some s -> s
     in
-    { id = arg_id (); absent = Val ""; doc = doc; docv = docv; docs = docs;
+    { id = arg_id (); absent = Val (Lazy.from_val "");
+      doc = doc; docv = docv; docs = docs;
       p_kind = All; o_kind = Flag; o_names = List.rev_map dash names;
       o_all = false; }
 
@@ -835,7 +837,7 @@ module Arg = struct
 
   let opt ?vopt (parse, print) v a =
     if is_pos a then invalid_arg err_not_opt else
-    let a = { a with absent = Val (str_of_pp print v);
+    let a = { a with absent = Val (lazy (str_of_pp print v));
                      o_kind = match vopt with
                      | None -> Opt | Some dv -> Opt_vopt (str_of_pp print dv) }
     in
@@ -853,7 +855,7 @@ module Arg = struct
 
   let opt_all ?vopt (parse, print) v a =
     if is_pos a then invalid_arg err_not_opt else
-    let a = { a with absent = Val ""; o_all = true;
+    let a = { a with absent = Val (Lazy.from_val ""); o_all = true;
                      o_kind = match vopt with
                      | None -> Opt | Some dv -> Opt_vopt (str_of_pp print dv) }
     in
@@ -877,7 +879,9 @@ module Arg = struct
 
   let pos ?(rev = false) k (parse, print) v a =
     if is_opt a then invalid_arg err_not_pos else
-    let a = { a with p_kind = Nth (rev, k); absent = Val (str_of_pp print v) }in
+    let a = { a with p_kind = Nth (rev, k);
+                     absent = Val (Lazy.from_val (str_of_pp print v)) }
+    in
     let convert _ cl = match Cmdline.pos_arg cl a with
     | [] -> v
     | [v] -> parse_pos_value parse a v

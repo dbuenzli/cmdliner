@@ -2,6 +2,11 @@
 v0.9.6 YYYY-MM-DD Location
 -------------------------------
 
+- Optional arguments. Invoke the printer on the default (absent) only
+  if needed (i.e. if help is shown). Strictly speaking an interface
+  breaking change (e.g. if the absent value was lazy it would be
+  forced on each run. This is no longer the case).
+  
 - Parsed command line syntax: allow short flags to be specified
   together under a single dash, possibly ending with a short option.
   This allows to specify e.g. `tar -xvzf archive.tgz` or `tar
