@@ -44,25 +44,20 @@ let pr_to_temp_file pr v = try
   Some file
 with Sys_error _ -> None
 
-let minimum a b c = min a (min b c)
+(* Levenshtein distance, for making spelling suggestions in case of error. *)
 
 let levenshtein_distance s t =
-  let m = String.length s
-  and n = String.length t in
+  (* As found here http://rosettacode.org/wiki/Levenshtein_distance#OCaml *)
+  let minimum a b c = min a (min b c) in
+  let m = String.length s in
+  let n = String.length t in
   (* for all i and j, d.(i).(j) will hold the Levenshtein distance between
      the first i characters of s and the first j characters of t *)
   let d = Array.make_matrix (m+1) (n+1) 0 in
-
-  for i = 0 to m do
-    d.(i).(0) <- i  (* the distance of any first string to an empty second string *)
-  done;
-  for j = 0 to n do
-    d.(0).(j) <- j  (* the distance of any second string to an empty first string *)
-  done;
-
+  for i = 0 to m do d.(i).(0) <- i done;
+  for j = 0 to n do d.(0).(j) <- j done;
   for j = 1 to n do
     for i = 1 to m do
-
       if s.[i-1] = t.[j-1] then
         d.(i).(j) <- d.(i-1).(j-1)  (* no operation required *)
       else
@@ -72,21 +67,18 @@ let levenshtein_distance s t =
             (d.(i-1).(j-1) + 1) (* a substitution *)
     done;
   done;
-
   d.(m).(n)
 
-let suggest (s : string) (l : string list) =
-  let dist, l' = List.fold_left (fun (min,acc) name ->
-      let d = levenshtein_distance s name in
-      let d' = float_of_int d /. (float_of_int (String.length name)) in
-      if d' = min then min,(name::acc)
-      else if d' < min then d',[name]
-      else min,acc
-    ) (max_float, []) l
+let suggest s candidates =
+  let add (min, acc) name =
+    let d = levenshtein_distance s name in
+    let d' = float_of_int d /. (float_of_int (String.length name)) in
+    if d' = min then min, (name :: acc) else
+    if d' < min then d', [name] else
+    min, acc
   in
-  if dist < 0.5 (* suggest only if not too far *)
-  then Some (dist,l')
-  else None
+  let dist, suggs = List.fold_left add (max_float, []) candidates in
+  if dist < 0.5 (* suggest only if not too far *) then suggs else []
 
 (* Tries. This implementation also maps any non ambiguous prefix of a
    key to its value. *)
@@ -578,8 +570,8 @@ end
 
 module Err = struct
   let alts = function
-  | [a; b] -> str "either %s or %s" a b
-  | alts -> str "one of: %s" (String.concat ", " alts)
+  | [a; b] -> str "either %s or %s" (quote a) (quote b)
+  | alts -> str "one of: %s" (String.concat ", " (List.map quote alts))
 
   let invalid kind s exp = str "invalid %s %s, %s" kind (quote s) exp
   let invalid_val = invalid "value"
@@ -588,10 +580,15 @@ module Err = struct
   let is_dir s = str "%s is a directory" (quote s)
   let element kind s exp = str "invalid element in %s (`%s'): %s" kind s exp
   let sep_miss sep s = invalid_val s (str "missing a `%c' separator" sep)
-  let with_hint s = str "Did you mean %s ?" (quote s)
-  let unknown kind ?hint v =
-    let rem = match hint with None -> "" | Some h -> with_hint h in
-    str "unknown %s %s. %s" kind (quote v) rem
+  let unknown kind ?(hints = []) v =
+    let did_you_mean s = str ", did you mean %s ?" s in
+    let hints = match hints with
+    | [] -> "."
+    | [h] -> did_you_mean (quote h)
+    | hs -> did_you_mean (String.concat " or " (List.map quote hs))
+    in
+    str "unknown %s %s%s" kind (quote v) hints
+
   let ambiguous kind s ambs =
     str "%s %s ambiguous, could be %s" kind (quote s) (alts ambs)
 
@@ -687,10 +684,8 @@ end = struct
       | `Ok choice -> choice, args'
       | `Not_found ->
         let all = Trie.ambiguities index "" in
-        let hint = match suggest maybe all with
-          | Some (_,l) -> Some (String.concat " or " l)
-          | None -> None in
-        raise (Error (Err.unknown "command" ?hint maybe))
+        let hints = suggest maybe all in
+        raise (Error (Err.unknown "command" ~hints maybe))
       | `Ambiguous ->
           let ambs = List.sort compare (Trie.ambiguities index maybe) in
           raise (Error (Err.ambiguous "command" maybe ambs))
@@ -702,7 +697,7 @@ end = struct
     let rec aux opti posi cl = function
     | a :: l ->
         if is_pos a then aux opti (a :: posi) (Amap.add a (P []) cl) l else
-        let add t name = Trie.add t name (name,a) in
+        let add t name = Trie.add t name a in
         aux (List.fold_left add opti a.o_names) posi (Amap.add a (O []) cl) l
     | [] -> opti, posi, cl
     in
@@ -731,7 +726,7 @@ end = struct
         if not (is_opt s) then aux (k+1) opti cl (s :: pargs) args else
         let name, value = parse_opt_arg s in
         match Trie.find opti name with
-        | `Ok (_, a) ->
+        | `Ok a ->
             let value, args = match value, a.o_kind with
             | Some v, Flag when is_short_opt name -> None, ("-" ^ v) :: args
             | Some v, _ -> value, args
@@ -744,25 +739,23 @@ end = struct
             let arg = O ((k, name, value) :: opt_arg cl a) in
             aux (k+1) opti (Amap.add a arg cl) pargs args
         | `Not_found ->
-            let all = Trie.ambiguities opti "-" in
-            let hint =
-              if String.length s > 2
-              then
-                let short_opt,long_opt =
-                  if s.[1] <> '-'
-                  then s,Printf.sprintf "-%s" s
-                  else String.sub s 1 (String.length s - 1),s in
-                let short_opt, _ = parse_opt_arg short_opt in
-                let long_opt, _ = parse_opt_arg long_opt in
-                match List.mem short_opt all, suggest long_opt all with
-                | true , None -> Some short_opt
-                | false, Some (_,l) -> Some (String.concat " or " l)
-                | true , Some (_,s) ->
-                  let s = if List.mem short_opt s then s else short_opt :: s in
-                  Some (String.concat " or " s)
-                | false, None -> None
-              else None in
-            raise (Error (Err.unknown "option" ?hint name))
+            let hints =
+              if String.length s <= 2 then [] else
+              let short_opt, long_opt =
+                if s.[1] <> '-'
+                then s, Printf.sprintf "-%s" s
+                else String.sub s 1 (String.length s - 1), s
+              in
+              let short_opt, _ = parse_opt_arg short_opt in
+              let long_opt, _ = parse_opt_arg long_opt in
+              let all = Trie.ambiguities opti "-" in
+              match List.mem short_opt all, suggest long_opt all with
+              | false, [] -> []
+              | false, l -> l
+              | true, [] -> [short_opt]
+              | true, l -> if List.mem short_opt l then l else short_opt :: l
+            in
+            raise (Error (Err.unknown "option" ~hints name))
         | `Ambiguous ->
             let ambs = List.sort compare (Trie.ambiguities opti name) in
             raise (Error (Err.ambiguous "option" name ambs))
