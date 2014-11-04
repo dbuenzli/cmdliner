@@ -192,6 +192,14 @@ module Term : sig
       If the command name is unknown an error is reported. If the name
       is unspecified the "main" term [t] is evaluated. [i] defines the
       name and man page of the program. *)
+
+  val eval_opt_lookup : ?argv:string array -> 'a t -> 'a result
+  (** [eval_opt_lookup argv t] evaluates [t], a term made of optional
+      arguments only, with the command line argument [argv] (defaults
+      to {!Sys.argv}). During this evaluation unknown options,
+      positional arguments, and the [--help] option are ignored and no
+      output will be produced in case of error or help request by
+      the term. *)
 end
 
 (** Terms for command line arguments.
