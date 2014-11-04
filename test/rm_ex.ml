@@ -22,7 +22,7 @@ let prompt =
   let never = Never, Arg.info ["f"; "force"] ~doc in
   let doc = "Prompt once before removing more than three files, or when
              removing recursively. Less intrusive than $(b,-i), while
-	     still giving protection against most mistakes."
+             still giving protection against most mistakes."
   in
   let once = Once, Arg.info ["I"] ~doc in
   Arg.(last & vflag_all [Always] [always; never; once])

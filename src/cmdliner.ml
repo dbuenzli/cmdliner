@@ -247,7 +247,6 @@ module Manpage = struct
     Buffer.clear buf; Buffer.add_substitute buf subst s;
     Buffer.contents buf
 
-
   let pr_tokens ?(groff = false) ppf s =
     let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
     let len = String.length s in

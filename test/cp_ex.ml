@@ -8,9 +8,9 @@ let cp verbose recurse force srcs dest =
   then
     `Error (false, dest ^ " is not a directory")
   else
-    `Ok (Printf.printf
-	   "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n"
-	    verbose recurse force (String.concat ", " srcs) dest)
+  `Ok (Printf.printf
+           "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n"
+           verbose recurse force (String.concat ", " srcs) dest)
 
 (* Command line interface *)
 

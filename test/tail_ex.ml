@@ -31,11 +31,11 @@ let lines =
     parse, fun ppf p -> Format.fprintf ppf "%s" (loc_str p)
   in
   Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N"
-	 ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
-	       output after the $(i,N)-1th line.")
+         ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
+               output after the $(i,N)-1th line.")
 let follow =
   let doc = "Output appended data as the file grows. $(docv) specifies how the
-	       file should be tracked, by its `name' or by its `descriptor'." in
+             file should be tracked, by its `name' or by its `descriptor'." in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None &
        info ["f"; "follow"] ~docv:"ID" ~doc)
@@ -59,7 +59,7 @@ let cmd =
     `S "DESCRIPTION";
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
-	lines can be  specified with the $(b,-n) option.";
+        lines can be  specified with the $(b,-n) option.";
     `S "BUGS";
     `P "Report them to <hehey at example.org>.";
     `S "SEE ALSO";

@@ -93,12 +93,12 @@ let record_cmd =
   let pname =
     let doc = "Name of the patch." in
     Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME"
-	   ~doc)
+           ~doc)
   in
   let author =
     let doc = "Specifies the author's identity." in
     Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
-	   ~doc)
+           ~doc)
   in
   let all =
     let doc = "Answer yes to all patches." in
@@ -113,7 +113,7 @@ let record_cmd =
   let man =
     [`S "DESCRIPTION";
      `P "Creates a patch from changes in the working tree. If you specify
-	    a set of files ..."] @ help_secs
+         a set of files ..."] @ help_secs
   in
   Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:copts_sect ~man

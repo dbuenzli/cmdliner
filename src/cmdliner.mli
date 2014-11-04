@@ -153,7 +153,7 @@ module Term : sig
 
   type 'a result = [
     | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
-   (** The type for evaluation results.
+  (** The type for evaluation results.
       {ul
       {- [`Ok v], the term evaluated successfully and [v] is the result.}
       {- [`Version], the version string of the main term was printed
@@ -166,22 +166,23 @@ module Term : sig
       {- [`Error `Exn], an exception [e] was caught and reported
          on the error formatter (see the [~catch] parameter of {!eval}).}} *)
 
-  val eval : ?help:Format.formatter -> ?err:Format.formatter ->
-    ?catch:bool -> ?argv:string array -> ('a t * info) -> 'a result
-(** [eval help err catch argv (t,i)]  is the evaluation result
-    of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
+  val eval : ?help:Format.formatter ->
+    ?err:Format.formatter -> ?catch:bool ->
+    ?argv:string array -> ('a t * info) -> 'a result
+  (** [eval help err catch argv (t,i)]  is the evaluation result
+      of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
 
-    If [catch] is [true] (default) uncaught exeptions
-    are intercepted and their stack trace is written to the [err]
-    formatter.
+      If [catch] is [true] (default) uncaught exeptions
+      are intercepted and their stack trace is written to the [err]
+      formatter.
 
-    [help] is the formatter used to print help or version messages
-    (defaults to {!Format.std_formatter}). [err] is the formatter
-    used to print error messages (defaults to {!Format.err_formatter}). *)
+      [help] is the formatter used to print help or version messages
+      (defaults to {!Format.std_formatter}). [err] is the formatter
+      used to print error messages (defaults to {!Format.err_formatter}). *)
 
-
-  val eval_choice : ?help:Format.formatter -> ?err:Format.formatter ->
-    ?catch:bool -> ?argv:string array -> 'a t * info -> ('a t * info) list ->
+  val eval_choice : ?help:Format.formatter ->
+    ?err:Format.formatter -> ?catch:bool ->
+    ?argv:string array -> 'a t * info -> ('a t * info) list ->
     'a result
   (** [eval_choice help err catch argv default (t,i) choices] is like {!eval}
       except that if the first argument on the command line is not an option
@@ -251,7 +252,7 @@ module Arg : sig
          The variable ["$(docv)"] can be used to refer to the value
          of [docv] (see below).}
       {- [docv] is for positional and non-flag optional arguments.
-	 It is a variable name used in the man page to stand for their value.}
+         It is a variable name used in the man page to stand for their value.}
       {- [docs] is the title of the man page section in which the argument
          will be listed. For optional arguments this defaults
          to ["OPTIONS"]. For positional arguments this defaults
@@ -738,7 +739,7 @@ let prompt =
   let never = Never, Arg.info ["f"; "force"] ~doc in
   let doc = "Prompt once before removing more than three files, or when
              removing recursively. Less intrusive than $(b,-i), while
-	     still giving protection against most mistakes."
+             still giving protection against most mistakes."
   in
   let once = Once, Arg.info ["I"] ~doc in
   Arg.(last & vflag_all [Always] [always; never; once])
@@ -790,8 +791,8 @@ let cp verbose recurse force srcs dest =
     `Error (false, dest ^ " is not a directory")
   else
     `Ok (Printf.printf
-	   "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n"
-	    verbose recurse force (String.concat ", " srcs) dest)
+     "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n"
+      verbose recurse force (String.concat ", " srcs) dest)
 
 (* Command line interface *)
 
@@ -815,7 +816,7 @@ let srcs =
 
 let dest =
   let doc = "Destination of the copy. Must be a directory if there is more
-           than one $(i,SOURCE)." in
+             than one $(i,SOURCE)." in
   Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DEST"
          ~doc)
 
@@ -885,11 +886,11 @@ let lines =
     parse, fun ppf p -> Format.fprintf ppf "%s" (loc_str p)
   in
   Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N"
-	 ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
-	       output after the $(i,N)-1th line.")
+   ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
+         output after the $(i,N)-1th line.")
 let follow =
   let doc = "Output appended data as the file grows. $(docv) specifies how the
-	       file should be tracked, by its `name' or by its `descriptor'." in
+             file should be tracked, by its `name' or by its `descriptor'." in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None &
        info ["f"; "follow"] ~docv:"ID" ~doc)
@@ -913,7 +914,7 @@ let cmd =
     `S "DESCRIPTION";
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
-	lines can be  specified with the $(b,-n) option.";
+        lines can be  specified with the $(b,-n) option.";
     `S "BUGS";
     `P "Report them to <hehey at example.org>.";
     `S "SEE ALSO";
@@ -1042,12 +1043,12 @@ let record_cmd =
   let pname =
     let doc = "Name of the patch." in
     Arg.(value & opt (some string) None & info ["m"; "patch-name"] ~docv:"NAME"
-	   ~doc)
+         ~doc)
   in
   let author =
     let doc = "Specifies the author's identity." in
     Arg.(value & opt (some string) None & info ["A"; "author"] ~docv:"EMAIL"
-	   ~doc)
+         ~doc)
   in
   let all =
     let doc = "Answer yes to all patches." in
@@ -1062,7 +1063,7 @@ let record_cmd =
   let man =
     [`S "DESCRIPTION";
      `P "Creates a patch from changes in the working tree. If you specify
-	    a set of files ..."] @ help_secs
+      a set of files ..."] @ help_secs
   in
   Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:copts_sect ~man
