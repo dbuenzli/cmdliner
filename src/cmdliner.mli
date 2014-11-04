@@ -258,7 +258,8 @@ module Arg : sig
       {ul
       {- [doc] is the man page information of the argument.
          The variable ["$(docv)"] can be used to refer to the value
-         of [docv] (see below).}
+         of [docv] (see below). {{!doc_helpers}These functions} can help with
+         formatting argument values.}
       {- [docv] is for positional and non-flag optional arguments.
          It is a variable name used in the man page to stand for their value.}
       {- [docs] is the title of the man page section in which the argument
@@ -407,7 +408,9 @@ module Arg : sig
 
   val enum : (string * 'a) list -> 'a converter
   (** [enum l p] converts values such that unambiguous prefixes of string names
-      in [l] map to the corresponding value of type ['a]. *)
+      in [l] map to the corresponding value of type ['a].
+
+      @raise Invalid_argument if [l] is empty. *)
 
   val file : string converter
   (** [file] converts a value with the identity function and
@@ -450,6 +453,22 @@ module Arg : sig
   (** [t4 sep c0 c1 c2 c3] splits the argument at the {e first} three [sep]
       characters (defaults to [',']) respectively converts the substrings
       with [c0], [c1], [c2] and [c3]. *)
+
+  (** {1:doc_helpers Documentation formatting helpers} *)
+
+  val doc_quote : string -> string
+  (** [doc_quote s] quotes the string [s]. *)
+
+  val doc_alts : ?quoted:bool -> string list -> string
+  (** [doc_alts alts] documents the alternative tokens [alts] according
+      the number of alternatives. If [quoted] is [true] (default)
+      the tokens are quoted. The resulting string can be used in
+      sentences of the form ["$(docv) must be %s"].
+
+      @raise Invalid_argument if [alts] is the empty string.  *)
+
+  val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
+  (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
 end
 
 (**

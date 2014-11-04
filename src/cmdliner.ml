@@ -10,6 +10,7 @@ let err_argv = "argv array must have at least one element"
 let err_not_opt = "Option argument without name"
 let err_not_pos = "Positional argument with a name"
 let err_help s = "term error, help requested for unknown command " ^ s
+let err_empty_list = "empty list"
 
 (* A few useful definitions. *)
 
@@ -20,6 +21,18 @@ let pr_str = Format.pp_print_string
 let pr_char = Format.pp_print_char
 let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 let quote s = str "`%s'" s
+let alts_str ?(quoted = true) alts =
+  let quote = if quoted then quote else (fun s -> s) in
+  match alts with
+  | [] -> invalid_arg err_empty_list
+  | [a] -> (quote a)
+  | [a; b] -> str "either %s or %s" (quote a) (quote b)
+  | alts ->
+      let rev_alts = List.rev alts in
+      str "one of %s or %s"
+        (String.concat ", " (List.rev_map quote (List.tl rev_alts)))
+        (quote (List.hd rev_alts))
+
 let pr_white_str spaces ppf s =  (* spaces and new lines with Format's funs *)
   let left = ref 0 and right = ref 0 and len = String.length s in
   let flush () =
@@ -568,10 +581,6 @@ end
 (* Errors for the command line user *)
 
 module Err = struct
-  let alts = function
-  | [a; b] -> str "either %s or %s" (quote a) (quote b)
-  | alts -> str "one of: %s" (String.concat ", " (List.map quote alts))
-
   let invalid kind s exp = str "invalid %s %s, %s" kind (quote s) exp
   let invalid_val = invalid "value"
   let no kind s = str "no %s %s" (quote s) kind
@@ -581,15 +590,11 @@ module Err = struct
   let sep_miss sep s = invalid_val s (str "missing a `%c' separator" sep)
   let unknown kind ?(hints = []) v =
     let did_you_mean s = str ", did you mean %s ?" s in
-    let hints = match hints with
-    | [] -> "."
-    | [h] -> did_you_mean (quote h)
-    | hs -> did_you_mean (String.concat " or " (List.map quote hs))
-    in
+    let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
     str "unknown %s %s%s" kind (quote v) hints
 
   let ambiguous kind s ambs =
-    str "%s %s ambiguous, could be %s" kind (quote s) (alts ambs)
+    str "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
 
   let pos_excess excess =
     str "too many arguments, don't know what to do with %s"
@@ -998,7 +1003,7 @@ module Arg = struct
 
   let bool =
     (fun s -> try `Ok (bool_of_string s) with Invalid_argument _ ->
-        `Error (Err.invalid_val s (Err.alts ["true"; "false"]))),
+        `Error (Err.invalid_val s (alts_str ["true"; "false"]))),
     Format.pp_print_bool
 
   let char =
@@ -1030,6 +1035,7 @@ module Arg = struct
 
   let string = (fun s -> `Ok s), pr_str
   let enum sl =
+    if sl = [] then invalid_arg err_empty_list else
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
     let print ppf v = pr_str ppf (List.assoc v sl_inv) in
     let t = Trie.of_list sl in
@@ -1040,7 +1046,7 @@ module Arg = struct
         `Error (Err.ambiguous "enum value" s ambs)
     | `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
-        `Error (Err.invalid_val s ("expected " ^ (Err.alts alts)))
+        `Error (Err.invalid_val s ("expected " ^ (alts_str alts)))
     in
     parse, print
 
@@ -1155,6 +1161,12 @@ module Arg = struct
       pr ppf "%a%c%a%c%a%c%a" pr0 v0 sep pr1 v1 sep pr2 v2 sep pr3 v3
     in
     parse, print
+
+  (* Documentation formatting helpers *)
+
+  let doc_quote = quote
+  let doc_alts = alts_str
+  let doc_alts_enum ?quoted enum = alts_str ?quoted (List.map fst enum)
 end
 
 module Term = struct
