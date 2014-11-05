@@ -85,13 +85,12 @@ let levenshtein_distance s t =
 let suggest s candidates =
   let add (min, acc) name =
     let d = levenshtein_distance s name in
-    let d' = float_of_int d /. (float_of_int (String.length name)) in
-    if d' = min then min, (name :: acc) else
-    if d' < min then d', [name] else
+    if d = min then min, (name :: acc) else
+    if d < min then d, [name] else
     min, acc
   in
-  let dist, suggs = List.fold_left add (max_float, []) candidates in
-  if dist < 0.5 (* suggest only if not too far *) then suggs else []
+  let dist, suggs = List.fold_left add (max_int, []) candidates in
+  if dist < 3 (* suggest only if not too far *) then suggs else []
 
 (* Tries. This implementation also maps any non ambiguous prefix of a
    key to its value. *)
