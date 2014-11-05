@@ -193,13 +193,22 @@ module Term : sig
       is unspecified the "main" term [t] is evaluated. [i] defines the
       name and man page of the program. *)
 
-  val eval_opt_lookup : ?argv:string array -> 'a t -> 'a result
-  (** [eval_opt_lookup argv t] evaluates [t], a term made of optional
-      arguments only, with the command line argument [argv] (defaults
-      to {!Sys.argv}). During this evaluation unknown options,
-      positional arguments, and the [--help] option are ignored and no
-      output will be produced in case of error or help request by
-      the term. *)
+  val eval_peek_opts : ?version:bool -> ?argv:string array -> 'a t -> 'a option
+  (** [eval_peek_opts version argv t] evaluates [t], a term made of
+      optional arguments only, with the command line argument [argv]
+      (defaults to {!Sys.argv}). During this evaluation unknown
+      optional arguments and positional arguments are ignored. The
+      evaluation returns [None] if the command line is such that given
+      the {e partial} knowledge in [t] a regular evaluation would not
+      yield [`Ok] (i.e. it would [`Error], [`Help] or [`Version]). It
+      evaluates to [Some] if the options of [t] would be parsed
+      correctly. [version] indicates whether the program is supposed
+      to answer the [--version] option (defaults to [false]).
+
+      {b Note.} Positional arguments can't be peeked without the full
+      specification of the command line: we can't tell apart a
+      positional argument from the value of an unknown optional
+      argument.  *)
 end
 
 (** Terms for command line arguments.
@@ -245,7 +254,7 @@ module Arg : sig
   (** The type for information about command line arguments. *)
 
   val info : ?docs:string -> ?docv:string -> ?doc:string ->
-  string list -> info
+    string list -> info
   (** [info docs docv doc names] defines information for
       an argument.
 

@@ -664,7 +664,7 @@ module Cmdline :sig
   exception Error of string
   val choose_term : term_info -> (term_info * 'a) list -> string list ->
     term_info * string list
-  val create : ?opt_lookup:bool -> arg_info list -> string list -> cmdline
+  val create : ?peek_opts:bool -> arg_info list -> string list -> cmdline
   val opt_arg : cmdline -> arg_info -> (int * string * (string option)) list
   val pos_arg : cmdline -> arg_info -> string list
 end = struct
@@ -717,7 +717,7 @@ end = struct
       String.sub s 0 i, Some (String.sub s (i + 1) (l - i - 1))
     with Not_found -> s, None
 
-  let parse_args ~opt_lookup opti cl args =
+  let parse_args ~peek_opts opti cl args =
     (* returns an updated [cl] cmdline according to the options found in [args]
        with the trie index [opti]. Positional arguments are returned in order
        in a list. *)
@@ -742,7 +742,7 @@ end = struct
             in
             let arg = O ((k, name, value) :: opt_arg cl a) in
             aux (k+1) opti (Amap.add a arg cl) pargs args
-        | `Not_found when opt_lookup -> aux (k+1) opti cl pargs args (* skip *)
+        | `Not_found when peek_opts -> aux (k+1) opti cl pargs args (* skip *)
         | `Not_found ->
             let hints =
               if String.length s <= 2 then [] else
@@ -804,10 +804,10 @@ end = struct
     let excess = List.rev (take (last - max_spec) [] (List.rev pargs)) in
     raise (Error (Err.pos_excess excess))
 
-  let create ?(opt_lookup = false) al args =
+  let create ?(peek_opts = false) al args =
     let opti, posi, cl = arg_info_indexes al in
-    let cl, pargs = parse_args ~opt_lookup opti cl args in
-    if opt_lookup then cl (* skip positional arguments *) else
+    let cl, pargs = parse_args ~peek_opts opti cl args in
+    if peek_opts then cl (* skip positional arguments *) else
     process_pos_args posi cl pargs
 end
 
@@ -1282,14 +1282,20 @@ module Term = struct
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
-  let eval_opt_lookup ?(argv = Sys.argv) (al, f) =
-    let term = info "dummy", al in
+  let eval_peek_opts ?(version = false) ?(argv = Sys.argv) (al, f) =
+    let args = remove_exec argv in
+    let version = if version then Some "dummy" else None in
+    let term = info ?version "dummy" , al in
     let ei = { term = term; main = term; choices = [] } in
-    let cl = Cmdline.create ~opt_lookup:true al (remove_exec argv) in
-    try `Ok (f ei cl) with
-    | Cmdline.Error e -> `Error `Parse
-    | Term (`Error _) -> `Error `Term
-    | Term (`Help _) -> `Help
+    let help_arg, vers_arg, ei = add_std_opts ei in
+    try
+      let cl = Cmdline.create ~peek_opts:true (snd ei.term) args in
+      match help_arg ei cl, vers_arg with
+      | Some fmt, _ -> None
+      | None, Some v_arg when v_arg ei cl -> None
+      | _ -> Some (f ei cl)
+    with
+    | Cmdline.Error _ | Term _ -> None
 end
 
 (*---------------------------------------------------------------------------
