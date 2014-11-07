@@ -1190,6 +1190,12 @@ module Term = struct
     fun ei cl -> (f ei cl) (v ei cl)
 
   let ( $ ) = app
+
+  type 'a ret =
+    [ `Help of [`Pager | `Plain | `Groff] * string option
+    | `Error of (bool * string)
+    | `Ok of 'a ]
+
   let ret (al, v) =
     al, fun ei cl -> match v ei cl with
     | `Ok v -> v

@@ -91,9 +91,13 @@ module Term : sig
   val app : ('a -> 'b) t -> 'a t -> 'b t
   (** [app] is {!($)}. *)
 
-  val ret : [`Help of [`Pager | `Plain | `Groff] * string option |
-  `Error of (bool * string) |
-  `Ok of 'a ] t -> 'a t
+  type 'a ret =
+    [ `Help of [`Pager | `Plain | `Groff] * string option
+    | `Error of (bool * string)
+    | `Ok of 'a ]
+  (** The type for command return values. See {!ret}. *)
+
+  val ret : 'a ret t -> 'a t
   (** [ret v] is a term whose evaluation depends on the case
       to which [v] evaluates. With :
       {ul
