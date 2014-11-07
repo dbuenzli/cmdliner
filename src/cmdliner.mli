@@ -193,17 +193,19 @@ module Term : sig
       is unspecified the "main" term [t] is evaluated. [i] defines the
       name and man page of the program. *)
 
-  val eval_peek_opts : ?version:bool -> ?argv:string array -> 'a t -> 'a option
+  val eval_peek_opts : ?version_opt:bool -> ?argv:string array -> 'a t ->
+    'a option * 'a result
   (** [eval_peek_opts version argv t] evaluates [t], a term made of
-      optional arguments only, with the command line argument [argv]
-      (defaults to {!Sys.argv}). During this evaluation unknown
-      optional arguments and positional arguments are ignored. The
-      evaluation returns [None] if the command line is such that given
-      the {e partial} knowledge in [t] a regular evaluation would not
-      yield [`Ok] (i.e. it would [`Error], [`Help] or [`Version]). It
-      evaluates to [Some] if the options of [t] would be parsed
-      correctly. [version] indicates whether the program is supposed
-      to answer the [--version] option (defaults to [false]).
+      optional arguments only, with the command line [argv] (defaults
+      to {!Sys.argv}). During this evaluation unknown optional
+      arguments, and positional arguments are ignored. The evaluation
+      returns a pair. The first component has a value if the command
+      line, given the {e partial} knoweldge in [t] would be parsed
+      correctly regardless of the help request options and, if
+      [version_opt] is [true] (defaults to [false]), the version
+      option. The second component is the result of parsing the
+      command line with the {e partial} knowledge in [t] but without
+      the side effects described in the {!result} type.
 
       {b Note.} Positional arguments can't be peeked without the full
       specification of the command line: we can't tell apart a

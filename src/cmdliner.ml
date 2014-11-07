@@ -1242,7 +1242,8 @@ module Term = struct
     with
     | Cmdline.Error e -> Err.pr_usage err ei e; `Error `Parse
     | Term (`Error (usage, e)) ->
-        if usage then Err.pr_usage err ei e else Err.print err ei e;`Error `Term
+        if usage then Err.pr_usage err ei e else Err.print err ei e;
+        `Error `Term
     | Term (`Help (fmt, cmd)) ->
         let ei = match cmd with
         | Some cmd ->
@@ -1281,20 +1282,26 @@ module Term = struct
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
-  let eval_peek_opts ?(version = false) ?(argv = Sys.argv) (al, f) =
+  let eval_peek_opts ?(version_opt = false) ?(argv = Sys.argv) (al, f) =
     let args = remove_exec argv in
-    let version = if version then Some "dummy" else None in
-    let term = info ?version "dummy" , al in
+    let version = if version_opt then Some "dummy" else None in
+    let term = info ?version "dummy", al in
     let ei = { term = term; main = term; choices = [] } in
     let help_arg, vers_arg, ei = add_std_opts ei in
     try
       let cl = Cmdline.create ~peek_opts:true (snd ei.term) args in
       match help_arg ei cl, vers_arg with
-      | Some fmt, _ -> None
-      | None, Some v_arg when v_arg ei cl -> None
-      | _ -> Some (f ei cl)
+      | Some fmt, _ ->
+          (try (Some (f ei cl), `Help) with e -> None, `Help)
+      | None, Some v_arg when v_arg ei cl ->
+          (try (Some (f ei cl), `Version) with e -> None, `Version)
+      | _ ->
+          let v = f ei cl in
+          Some v, `Ok v
     with
-    | Cmdline.Error _ | Term _ -> None
+    | Cmdline.Error _ -> None, (`Error `Parse)
+    | Term _ -> None, (`Error `Term)
+    | e -> None, (`Error `Exn)
 end
 
 (*---------------------------------------------------------------------------
