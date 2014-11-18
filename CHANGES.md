@@ -1,19 +1,27 @@
+v0.9.6 2014-11-18 La Forclaz (VS)
+---------------------------------
 
-v0.9.6 YYYY-MM-DD Location
--------------------------------
-
-- Optional arguments. Invoke the printer on the default (absent) only
-  if needed (i.e. if help is shown). Strictly speaking an interface
-  breaking change (e.g. if the absent value was lazy it would be
-  forced on each run. This is no longer the case).
-  
+- Optional arguments. Invoke the printer on the default (absent) value
+  only if needed, i.e. if help is shown. Strictly speaking an
+  interface breaking change – for example if the absent value was lazy
+  it would be forced on each run. This is no longer the case.
 - Parsed command line syntax: allow short flags to be specified
   together under a single dash, possibly ending with a short option.
   This allows to specify e.g. `tar -xvzf archive.tgz` or `tar
   -xvzfarchive.tgz`. Previously this resulted in an error, all the
-  flags had to be specified separately. Backward compatible in the
-  sense that only more command lines are parsed. Thanks to Hugo
+  short flags had to be specified separately. Backward compatible in
+  the sense that only more command lines are parsed. Thanks to Hugo
   Heuzard for the patch.
+- End user error message improvements using heuristics and edit
+  distance search in the optional argument and sub command name
+  spaces. Thanks to Hugo Heuzard for the patch.
+- Adds `Arg.doc_{quote,alts,alts_enum}`, documentation string
+  helpers.
+- Adds the `Term.eval_peek_opts` function for advanced usage scenarios.
+- The function `Arg.enum` now raises `Invalid_argument` if the
+  enumeration is empty.
+- Improves help paging behaviour on Windows. Thanks to Romain Bardou
+  for the help.
 
 
 v0.9.5 2014-07-04 Cambridge (UK)
@@ -57,7 +65,7 @@ v0.9.1 2012-03-17 La Forclaz (VS)
   name.
 - Support for custom variable substitution in `Manpage.print`.
 - Adds `Term.man_format`, to facilitate the definition of help commands.
-- Rewrote the examples with a better and consistant style. 
+- Rewrote the examples with a better and consistant style.
 
 Incompatible API changes:
 
