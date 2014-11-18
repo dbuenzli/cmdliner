@@ -199,17 +199,17 @@ module Term : sig
 
   val eval_peek_opts : ?version_opt:bool -> ?argv:string array -> 'a t ->
     'a option * 'a result
-  (** [eval_peek_opts version argv t] evaluates [t], a term made of
-      optional arguments only, with the command line [argv] (defaults
-      to {!Sys.argv}). During this evaluation unknown optional
-      arguments, and positional arguments are ignored. The evaluation
-      returns a pair. The first component has a value if the command
-      line, given the {e partial} knoweldge in [t] would be parsed
-      correctly regardless of the help request options and, if
-      [version_opt] is [true] (defaults to [false]), the version
-      option. The second component is the result of parsing the
-      command line with the {e partial} knowledge in [t] but without
-      the side effects described in the {!result} type.
+  (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
+      of optional arguments only, with the command line [argv]
+      (defaults to {!Sys.argv}). During this evaluation unknown
+      optional arguments, and positional arguments are ignored. The
+      evaluation returns a pair. The first component has a value if
+      the command line, given the {e partial} knoweldge in [t] would
+      be parsed correctly regardless of both the help and version
+      request options (the latter only if [version_opt] is [true],
+      defaults to [false]). The second component is the result of
+      parsing the command line with the {e partial} knowledge in [t]
+      but without the side effects described in the {!result} type.
 
       {b Note.} Positional arguments can't be peeked without the full
       specification of the command line: we can't tell apart a
