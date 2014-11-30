@@ -945,7 +945,7 @@ module Arg = struct
     let al = List.map (fun (v, (_, print), a) ->
         if is_pos a then invalid_arg err_not_opt
         else { a with absent = Val (lazy (str_of_pp print v)); o_kind = Opt }) l in
-    let convert_one cl (v, (parse, print), _) a =
+    let convert_one cl (v, (parse, _), _) a =
       match Cmdline.opt_arg cl a with
       | [] -> v
       | [_, f, Some v] -> parse_opt_value parse f v
