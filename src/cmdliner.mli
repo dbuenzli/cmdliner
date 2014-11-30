@@ -335,6 +335,14 @@ module Arg : sig
       per occurence of the flag in the order found on the command line.
       It holds the list [v] if the flag is absent from the command line. *)
 
+  val vopt : ('a * 'a converter * info) list -> 'a list t
+  (** [vopt \[v]{_0}[,c]{_0}[,i]{_0}[;...\]] is an ['a list] argument defined by
+      a list of optional parameters that may appear {e at most} once on the
+      command line under one of the names specified in the [i]{_k} values. The
+      argument holds a list that contains one corresponding value per argument
+      ([v]{_k} if absent, otherwise the value of the argument), in the same
+      order as given to [vopt]. *)
+
   (** {1:posargs Positional arguments}
 
       The information of a positional argument must have no name
