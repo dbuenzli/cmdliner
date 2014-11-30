@@ -941,6 +941,20 @@ module Arg = struct
     in
     [a], convert
 
+  let vopt l =
+    let al = List.map (fun (v, (_, print), a) ->
+        if is_pos a then invalid_arg err_not_opt
+        else { a with absent = Val (lazy (str_of_pp print v)); o_kind = Opt }) l in
+    let convert_one cl (v, (parse, print), _) a =
+      match Cmdline.opt_arg cl a with
+      | [] -> v
+      | [_, f, Some v] -> parse_opt_value parse f v
+      | [_, f, None] -> parse_error (Err.opt_value_missing f)
+      | (_, f, _) :: (_, g, _) :: _ -> parse_error (Err.opt_repeated g f)
+    in
+    let convert _ cl = List.map2 (convert_one cl) l al in
+    al, convert
+
   (* Positional arguments *)
 
   let parse_pos_value parse a v = match parse v with
