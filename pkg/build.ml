@@ -3,7 +3,8 @@
 #use "topkg.ml";;
 
 let () = 
-  Pkg.describe "cmdliner" ~builder:`OCamlbuild [
+  let builder = `Other ("ocamlbuild -classic-display", "_build") in
+  Pkg.describe "cmdliner" ~builder [
     Pkg.lib "pkg/META";
     Pkg.lib ~exts:Exts.module_library "src/cmdliner";
     Pkg.doc "README.md";
