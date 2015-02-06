@@ -1,3 +1,10 @@
+v0.9.7 2015-02-06 La Forclaz (VS)
+---------------------------------
+
+- Build system, don't depend on `ocamlfind`. The package no longer
+  depends on ocamlfind. Thanks to Louis Gesbert for the patch. 
+
+
 v0.9.6 2014-11-18 La Forclaz (VS)
 ---------------------------------
 
