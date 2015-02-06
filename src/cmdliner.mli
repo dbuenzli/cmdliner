@@ -425,6 +425,8 @@ module Arg : sig
   (** [enum l p] converts values such that unambiguous prefixes of string names
       in [l] map to the corresponding value of type ['a].
 
+      {b Warning.} The type ['a] must be comparable with {!Pervasives.compare}.
+
       @raise Invalid_argument if [l] is empty. *)
 
   val file : string converter
