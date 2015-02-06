@@ -4,4 +4,7 @@ dist
 *~
 \.\#*
 \#*#
+*.byte
+*.native
+cmdliner.install
 CLOCK.org
