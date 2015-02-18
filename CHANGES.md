@@ -1,3 +1,7 @@
+
+- Positional arguments. Invoke the printer on the default (absent)
+value only if needed. See below, `Optional arguments` in v0.9.6. 
+
 v0.9.7 2015-02-06 La Forclaz (VS)
 ---------------------------------
 

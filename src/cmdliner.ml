@@ -949,7 +949,7 @@ module Arg = struct
   let pos ?(rev = false) k (parse, print) v a =
     if is_opt a then invalid_arg err_not_pos else
     let a = { a with p_kind = Nth (rev, k);
-                     absent = Val (Lazy.from_val (str_of_pp print v)) }
+                     absent = Val (lazy (str_of_pp print v)) }
     in
     let convert _ cl = match Cmdline.pos_arg cl a with
     | [] -> v
