@@ -1216,7 +1216,7 @@ module Term = struct
   let remove_exec argv =
     try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
-  let add_std_opts ei =
+  let add_std_opts ei def_fmt =
     let docs = (fst ei.term).sdocs in
     let args, v_lookup =
       if (fst ei.main).version = None then [], None else
@@ -1230,15 +1230,15 @@ module Term = struct
         let fmt = Arg.enum ["pager",`Pager; "groff",`Groff; "plain",`Plain] in
         let doc = "Show this help in format $(docv) (pager, plain or groff)."in
         let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
-        Arg.opt ~vopt:(Some `Pager) (Arg.some fmt) None a
+        Arg.opt ~vopt:(Some def_fmt) (Arg.some fmt) None a
       in
       List.rev_append a args, lookup
     in
     h_lookup, v_lookup,
     { ei with term = (fst ei.term), List.rev_append args (snd ei.term) }
 
-  let eval_term help err ei f args =
-    let help_arg, vers_arg, ei = add_std_opts ei in
+  let eval_term help fmt err ei f args =
+    let help_arg, vers_arg, ei = add_std_opts ei fmt in
     try
       let cl = Cmdline.create (snd ei.term) args in
       match help_arg ei cl, vers_arg with
@@ -1260,19 +1260,20 @@ module Term = struct
             {ei with term = cmd }
         | None -> { ei with term = ei.main }
         in
-        let _, _, ei = add_std_opts ei in
+        let _, _, ei = add_std_opts ei fmt in
         Help.print fmt help ei; `Help
 
   let eval ?(help = Format.std_formatter) ?(err = Format.err_formatter)
-      ?(catch = true) ?(argv = Sys.argv) ((al, f), ti)  =
+      ?(catch = true) ?(argv = Sys.argv) ?(fmt = `Pager) ((al, f), ti)  =
     let term = ti, al in
     let ei = { term = term; main = term; choices = [] } in
-    try eval_term help err ei f (remove_exec argv) with
+    try eval_term help fmt err ei f (remove_exec argv) with
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter)
-      ?(catch = true) ?(argv = Sys.argv) (((al, f) as t), ti) choices =
+      ?(catch = true) ?(argv = Sys.argv) ?(fmt = `Pager) (((al, f) as t), ti)
+      choices =
     let ei_choices = List.rev_map (fun ((al, _), ti) -> ti, al) choices in
     let main = (ti, al) in
     let ei = { term = main; main = main; choices = ei_choices } in
@@ -1281,7 +1282,7 @@ module Term = struct
       let find_chosen (_, ti) = ti = chosen in
       let (al, f), _ = List.find find_chosen ((t, ti) :: choices) in
       let ei = { ei with term = (chosen, al) } in
-      eval_term help err ei f args
+      eval_term help fmt err ei f args
     with
     | Cmdline.Error e ->                    (* may be raised by choose_term. *)
         Err.pr_usage err ei e; `Error `Parse
@@ -1293,7 +1294,7 @@ module Term = struct
     let version = if version_opt then Some "dummy" else None in
     let term = info ?version "dummy", al in
     let ei = { term = term; main = term; choices = [] } in
-    let help_arg, vers_arg, ei = add_std_opts ei in
+    let help_arg, vers_arg, ei = add_std_opts ei `Pager in
     try
       let cl = Cmdline.create ~peek_opts:true (snd ei.term) args in
       match help_arg ei cl, vers_arg with
