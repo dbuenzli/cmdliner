@@ -172,7 +172,8 @@ module Term : sig
 
   val eval : ?help:Format.formatter ->
     ?err:Format.formatter -> ?catch:bool ->
-    ?argv:string array -> ('a t * info) -> 'a result
+    ?argv:string array -> ?fmt:[`Pager | `Plain | `Groff ] -> ('a t * info) ->
+    'a result
   (** [eval help err catch argv (t,i)]  is the evaluation result
       of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
 
@@ -182,12 +183,14 @@ module Term : sig
 
       [help] is the formatter used to print help or version messages
       (defaults to {!Format.std_formatter}). [err] is the formatter
-      used to print error messages (defaults to {!Format.err_formatter}). *)
+      used to print error messages (defaults to {!Format.err_formatter}).
+
+      [fmt] specified the default argument for --help ([`Pager]). *)
 
   val eval_choice : ?help:Format.formatter ->
     ?err:Format.formatter -> ?catch:bool ->
-    ?argv:string array -> 'a t * info -> ('a t * info) list ->
-    'a result
+    ?argv:string array -> ?fmt:[`Pager | `Plain | `Groff ] -> 'a t * info ->
+    ('a t * info) list -> 'a result
   (** [eval_choice help err catch argv default (t,i) choices] is like {!eval}
       except that if the first argument on the command line is not an option
       name it will look in [choices] for a term whose information has this
