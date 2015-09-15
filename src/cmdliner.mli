@@ -201,15 +201,25 @@ module Term : sig
     'a option * 'a result
   (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
       of optional arguments only, with the command line [argv]
-      (defaults to {!Sys.argv}). During this evaluation unknown
-      optional arguments, and positional arguments are ignored. The
-      evaluation returns a pair. The first component has a value if
-      the command line, given the {e partial} knoweldge in [t] would
-      be parsed correctly regardless of both the help and version
-      request options (the latter only if [version_opt] is [true],
-      defaults to [false]). The second component is the result of
-      parsing the command line with the {e partial} knowledge in [t]
-      but without the side effects described in the {!result} type.
+      (defaults to {!Sys.argv}). In this evaluation, unknown optional
+      arguments and positional arguments are ignored.
+
+      The evaluation returns a pair. The first component is
+      the result of parsing the command line [argv] stripped from
+      any help and version option if [version_opt] is [true] (defaults
+      to [false]). It results in:
+      {ul
+      {- [Some _] if the command line would be parsed correctly given the
+         {e partial} knowledge in [t].}
+      {- [None] if a parse error would occur on the options of [t]}}
+
+      The second component is the result of parsing the command line
+      [argv] without stripping the help and version options. It
+      indicates what the evaluation would result in on [argv] given
+      the partial knowledge in [t] (for example it would return
+      [`Help] if there's a help option in [argv]). However in
+      contrasts to {!eval} and {!eval_choice} no side effects like
+      error reporting or help output occurs.
 
       {b Note.} Positional arguments can't be peeked without the full
       specification of the command line: we can't tell apart a
