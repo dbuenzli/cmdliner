@@ -587,7 +587,7 @@ module Help = struct
   let ei_subst ei = function
   | "tname" -> (fst ei.term).name
   | "mname" -> (fst ei.main).name
-  | s -> s
+  | s -> str "$(%s)" s
 
   let man ei =
     title ei, (name_section ei) @ (text ei)

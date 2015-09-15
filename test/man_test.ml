@@ -24,7 +24,7 @@ let info =
           | / | ----> Let's swim to the moon.\n\
           |/  |\n\
           +---+";
-    `P "This is another paragraph";
+    `P "This is another paragraph $(bla) $(i,$(bla)) bla";
     `Noblank;
     `Pre "This is another preformatted paragraph.\n\
           There should be no blanks before and after it.";
