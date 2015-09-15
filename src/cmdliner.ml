@@ -4,18 +4,22 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+let str = Printf.sprintf
+
 (* Invalid_arg strings *)
 
 let err_argv = "argv array must have at least one element"
 let err_not_opt = "Option argument without name"
 let err_not_pos = "Positional argument with a name"
-let err_help s = "term error, help requested for unknown command " ^ s
-let err_empty_list = "empty list"
+let err_help s = "Term error, help requested for unknown command " ^ s
+let err_empty_list = "Empty list"
+let err_incomplete_enum = "Incomplete enumeration for the type"
+let err_doc_string s =
+  str "Variable substitution failed on documentation fragment `%s'" s
 
 (* A few useful definitions. *)
 
 let rev_compare n n' = compare n' n
-let str = Printf.sprintf
 let pr = Format.fprintf
 let pr_str = Format.pp_print_string
 let pr_char = Format.pp_print_char
@@ -255,10 +259,12 @@ module Manpage = struct
       if len = 2 then "" else
       esc s.[0] (String.sub s 2 (len - 2))
     in
-    Buffer.clear buf; Buffer.add_substitute buf subst s;
-    let s = Buffer.contents buf in (* twice for $(i,$(mname)). *)
-    Buffer.clear buf; Buffer.add_substitute buf subst s;
-    Buffer.contents buf
+    try
+      Buffer.clear buf; Buffer.add_substitute buf subst s;
+      let s = Buffer.contents buf in (* twice for $(i,$(mname)). *)
+      Buffer.clear buf; Buffer.add_substitute buf subst s;
+      Buffer.contents buf
+    with Not_found -> invalid_arg (err_doc_string s)
 
   let pr_tokens ?(groff = false) ppf s =
     let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
@@ -487,7 +493,11 @@ module Help = struct
     let buf = Buffer.create 200 in
     let subst_docv docv d =
       let subst = function "docv" -> str "$(i,%s)" docv | s -> str "$(%s)" s in
-      Buffer.clear buf; Buffer.add_substitute buf subst d; Buffer.contents buf
+      try
+        Buffer.clear buf;
+        Buffer.add_substitute buf subst d;
+        Buffer.contents buf
+      with Not_found -> invalid_arg (err_doc_string d)
     in
     let rev_cmp a' a =
       let c = compare a.docs a'.docs in
@@ -1051,8 +1061,6 @@ module Arg = struct
   let string = (fun s -> `Ok s), pr_str
   let enum sl =
     if sl = [] then invalid_arg err_empty_list else
-    let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
-    let print ppf v = pr_str ppf (List.assoc v sl_inv) in
     let t = Trie.of_list sl in
     let parse s = match Trie.find t s with
     | `Ok _ as r -> r
@@ -1062,6 +1070,11 @@ module Arg = struct
     | `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
         `Error (Err.invalid_val s ("expected " ^ (alts_str alts)))
+    in
+    let print ppf v =
+      let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
+      try pr_str ppf (List.assoc v sl_inv)
+      with Not_found -> invalid_arg err_incomplete_enum
     in
     parse, print
 
