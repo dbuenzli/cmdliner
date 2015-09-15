@@ -40,8 +40,8 @@ let cmd =
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
     `P "To remove a file whose name starts with a `-', for example
         `-foo', use one of these commands:";
-    `P "rm -- -foo"; `Noblank;
-    `P "rm ./-foo";
+    `Pre "$(mname) -- -foo\n\
+          $(mname) ./-foo";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
     `S "BUGS"; `P "Report bugs to <hehey at example.org>.";

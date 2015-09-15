@@ -221,7 +221,8 @@ type arg =        (* unconverted argument data as found on the command line. *)
 type cmdline = arg Amap.t      (* command line, maps arg_infos to arg value. *)
 
 type man_block = [                                 (* block of manpage text. *)
-  | `S of string | `P of string | `I of string * string | `Noblank ]
+  | `S of string | `P of string | `Pre of string | `I of string * string
+  | `Noblank ]
 
 type term_info =
   { name : string;                                    (* name of the term. *)
@@ -293,6 +294,7 @@ module Manpage = struct
         | `Noblank -> ()
         | `P s -> pr ppf "%a@[%a@]@," pr_indent p_indent pr_tokens s
         | `S s -> pr ppf "@[%a@]" pr_tokens s
+        | `Pre s -> pr ppf "%a@[%a@]@," pr_indent p_indent pr_lines (escape s)
         | `I (label, s) ->
             let label = escape label in
             let ll = String.length label in
@@ -322,12 +324,26 @@ module Manpage = struct
   | 'p' -> "" (* plain text specific *)
   | _ -> s
 
+  let pr_groff_lines ppf s =
+    let left = ref 0 and right = ref 0 and len = String.length s in
+    let flush () =
+      Format.pp_print_string ppf (String.sub s !left (!right - !left));
+      incr right; left := !right;
+    in
+    while (!right <> len) do
+      if s.[!right] = '\n' then (flush (); Format.pp_force_newline ppf ()) else
+      if s.[!right] = '-' then (flush (); pr_str ppf "\\-") else
+      incr right;
+    done;
+    if !left <> len then flush ()
+
   let pr_groff_blocks subst ppf text =
     let buf = Buffer.create 1024 in
     let escape t = escape subst groff_esc buf t in
     let pr_tokens ppf t = pr_tokens ~groff:true ppf (escape t) in
     let pr_block = function
     | `P s -> pr ppf "@\n.P@\n%a" pr_tokens s
+    | `Pre s -> pr ppf "@\n.P@\n.nf@\n%a@\n.fi" pr_groff_lines (escape s)
     | `S s -> pr ppf "@\n.SH %a" pr_tokens s
     | `Noblank -> pr ppf "@\n.sp -1"
     | `I (l, s) -> pr ppf "@\n.TP 4@\n%a@\n%a" pr_tokens l pr_tokens s
@@ -338,7 +354,7 @@ module Manpage = struct
     pr ppf ".\\\" Pipe this output to groff -man -Tutf8 | less@\n\
             .\\\"@\n\
             .TH \"%s\" %d \"%s\" \"%s\" \"%s\"@\n\
-            .\\\" Disable hyphenantion and ragged-right@\n\
+            .\\\" Disable hyphenation and ragged-right@\n\
             .nh@\n\
       .ad l\
       %a@?"

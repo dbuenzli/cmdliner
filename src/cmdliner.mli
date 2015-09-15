@@ -37,18 +37,20 @@ module Manpage : sig
 
   (** {1 Man pages} *)
 
-  type block = [
-    | `S of string | `P of string | `I of string * string | `Noblank ]
+  type block =
+    [ `S of string | `P of string | `Pre of string | `I of string * string
+    | `Noblank ]
   (** The type for a block of man page text.
 
       {ul
       {- [`S s] introduces a new section [s].}
       {- [`P t] is a new paragraph with text [t].}
+      {- [`Pre t] is a new preformatted paragraph with text [t].}
       {- [`I (l,t)] is an indented paragraph with label
       [l] and text [t].}
       {- [`Noblank] suppresses the blank line introduced between two blocks.}}
 
-      In text strings [t], whitespace and newlines are not significant
+      Except in [`Pre], whitespace and newlines are not significant
       and are all collapsed to a single space. In labels [l] and text
       strings [t], the syntax ["$(i,italic text)"] and ["$(b,bold
       text)"] can be used to respectively produce italic and bold
