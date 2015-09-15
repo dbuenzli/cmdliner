@@ -856,7 +856,7 @@ module Arg = struct
     | None -> if names = [] then "ARGUMENTS" else "OPTIONS"
     | Some s -> s
     in
-    { id = arg_id (); absent = Val (Lazy.from_val "");
+    { id = arg_id (); absent = Val (lazy "");
       doc = doc; docv = docv; docs = docs;
       p_kind = All; o_kind = Flag; o_names = List.rev_map dash names;
       o_all = false; }
@@ -950,7 +950,7 @@ module Arg = struct
 
   let opt_all ?vopt (parse, print) v a =
     if is_pos a then invalid_arg err_not_opt else
-    let a = { a with absent = Val (Lazy.from_val ""); o_all = true;
+    let a = { a with absent = Val (lazy ""); o_all = true;
                      o_kind = match vopt with
                      | None -> Opt | Some dv -> Opt_vopt (str_of_pp print dv) }
     in
