@@ -35,7 +35,7 @@
     other man pages (e.g. to implement a help command). *)
 module Manpage : sig
 
-  (** {1 Man pages} *)
+  (** {1:man Man pages} *)
 
   type block =
     [ `S of string | `P of string | `Pre of string | `I of string * string
@@ -78,7 +78,8 @@ end
     A term made of terms referring to {{!Arg}command line arguments}
     implicitly defines a command line syntax. *)
 module Term : sig
-  (** {1 Terms} *)
+
+  (** {1:terms Terms} *)
 
   type +'a t
   (** The type for terms evaluating to values of type 'a. *)
@@ -155,7 +156,7 @@ module Term : sig
   val name : info -> string
   (** [name ti] is the name of the term information. *)
 
- (** {1 Evaluation} *)
+ (** {1:evaluation Evaluation} *)
 
   type 'a result = [
     | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
@@ -382,7 +383,6 @@ module Arg : sig
     'a list t
   (** [pos_right] is like {!pos_left} except it holds all the positional
       arguments found on the right of the specified positional argument. *)
-
 
   (** {1:argterms Arguments as terms} *)
 
@@ -624,7 +624,7 @@ v}
     For examples of more complex command line definitions look and
     run the {{!examples}examples}.
 
-    {2 Multiple terms}
+    {2:multiterms Multiple terms}
 
     [Cmdliner] also provides support for programs like [darcs] or
     [git] that have multiple commands each with their own syntax:
@@ -636,7 +636,7 @@ v}
     [COMMAND] argument or or a specific "main" term if there is
     no [COMMAND] argument.
 
-    {2 Manual}
+    {2:manual Manual}
 
     Man page sections are printed in the order specified by
     {!Term.info}. The man page information of an argument is listed in
@@ -665,7 +665,7 @@ v}
     Please contact the author if something seems wrong in this reasoning
     or if you know a work around this.
 
-    {2 Miscellaneous}
+    {2:misc Miscellaneous}
 
     {ul
     {- The option name [--help], (and [--version] if you specify a
