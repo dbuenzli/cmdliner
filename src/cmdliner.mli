@@ -509,9 +509,7 @@ end
 
     One way to create terms is by lifting regular OCaml values with
     {!Term.pure}. Terms can be applied to terms evaluating to
-    functional values with {!Term.( $ )} (the type for terms is an
-    {{:http://dx.doi.org/10.1017/S0956796807006326}applicative
-    functor}). For example for the function:
+    functional values with {!Term.( $ )}. For example for the function:
 {[let revolt () = print_endline "Revolt!"]}
     the term :
 {[
