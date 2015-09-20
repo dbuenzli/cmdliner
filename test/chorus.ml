@@ -13,8 +13,10 @@ let count =
   Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
 
 let msg =
+  let doc = "Overrides the default message to print." in
+  let env = Arg.env_var "CHORUS_MSG" ~doc in
   let doc = "The message to print." in
-  Arg.(value & pos 0 string "Revolt!" & info [] ~docv:"MSG" ~doc)
+  Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
 
 let chorus_t = Term.(pure chorus $ count $ msg)
 

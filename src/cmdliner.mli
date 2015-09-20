@@ -175,6 +175,7 @@ module Term : sig
 
   val eval : ?help:Format.formatter ->
     ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) ->
     ?argv:string array -> ('a t * info) -> 'a result
   (** [eval help err catch argv (t,i)]  is the evaluation result
       of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
@@ -185,10 +186,14 @@ module Term : sig
 
       [help] is the formatter used to print help or version messages
       (defaults to {!Format.std_formatter}). [err] is the formatter
-      used to print error messages (defaults to {!Format.err_formatter}). *)
+      used to print error messages (defaults to {!Format.err_formatter}).
+
+      [env] is used for environment variable lookup, the default
+      uses {!Sys.getenv}. *)
 
   val eval_choice : ?help:Format.formatter ->
     ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) ->
     ?argv:string array -> 'a t * info -> ('a t * info) list ->
     'a result
   (** [eval_choice help err catch argv default (t,i) choices] is like {!eval}
@@ -200,7 +205,9 @@ module Term : sig
       is unspecified the "main" term [t] is evaluated. [i] defines the
       name and man page of the program. *)
 
-  val eval_peek_opts : ?version_opt:bool -> ?argv:string array -> 'a t ->
+  val eval_peek_opts : ?version_opt:bool ->
+    ?env:(string -> string option) ->
+    ?argv:string array -> 'a t ->
     'a option * 'a result
   (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
       of optional arguments only, with the command line [argv]
@@ -263,8 +270,22 @@ module Arg : sig
 
 (** {1:arginfo Arguments and their information}
 
-    Argument information defines the man page information of an argument and,
-    for optional arguments, its names. *)
+    Argument information defines the man page information of an
+    argument and, for optional arguments, its names. An environment
+    variable can also be specified to read the argument value from
+    if the argument is absent from the command line and the variable
+    is defined. *)
+
+  type env
+  (** The type for environment variables and their documentation. *)
+
+  val env_var : ?docs:string -> ?doc:string -> string -> env
+  (** [env_var docs doc var] is an environment variables [var]. [doc]
+      is the man page information of the environment variable; the
+      variables mentioned in {!info} can be used in this documentation
+      string. [docs] is the title of the man page section in which the
+      environment variable will be listed, it defaults to
+      ["ENVIRONMENT VARIABLES"]. *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)
@@ -272,9 +293,9 @@ module Arg : sig
   type info
   (** The type for information about command line arguments. *)
 
-  val info : ?docs:string -> ?docv:string -> ?doc:string ->
+  val info : ?docs:string -> ?docv:string -> ?doc:string -> ?env:env ->
     string list -> info
-  (** [info docs docv doc names] defines information for
+  (** [info docs docv doc env names] defines information for
       an argument.
 
       [names] defines the names under which an optional argument
@@ -283,11 +304,18 @@ module Arg : sig
       option names (["--count"]). [names] must be empty for positional
       arguments.
 
+      [env] defines the name of an environment variable which is
+      looked up for defining the argument if it is absent from the
+      command line. See {{!envlookup}environment variables} for
+      details.
       {ul
-      {- [doc] is the man page information of the argument.
-         The variable ["$(docv)"] can be used to refer to the value
-         of [docv] (see below). {{!doc_helpers}These functions} can help with
-         formatting argument values.}
+      {- [doc] is the man page information of the argument. The
+         variable ["$(docv)"] can be used to refer to the value of
+         [docv] (see below). The variable ["$(opt)"] will refer to a
+         short option of [names] or a short one if there is no long
+         option. The variable ["$(env)"] will refer to the environment
+         variable specified by [env] (if any).  {{!doc_helpers}These
+         functions} can help with formatting argument values.}
       {- [docv] is for positional and non-flag optional arguments.
          It is a variable name used in the man page to stand for their value.}
       {- [docs] is the title of the man page section in which the argument
@@ -323,14 +351,20 @@ module Arg : sig
       the command line under one of the names specified in the [i]{_k}
       values. The argument holds [v] if the flag is absent from the
       command line and the value [v]{_k} if the name under which it appears
-      is in [i]{_k}. *)
+      is in [i]{_k}.
+
+      {b Note.} Environment variable lookup is unsupported for
+      for these arguments. *)
 
   val vflag_all : 'a list -> ('a * info) list -> 'a list t
   (** [vflag_all v l] is like {!vflag} except the flag may appear more
       than once. The argument holds the list [v] if the flag is absent
       from the command line. Otherwise it holds a list that contains one
       corresponding value per occurence of the flag, in the order found on
-      the command line. *)
+      the command line.
+
+      {b Note.} Environment variable lookup is unsupported for
+      for these arguments. *)
 
   val opt : ?vopt:'a -> 'a converter -> 'a -> info -> 'a t
   (** [opt vopt c v i] is an ['a] argument defined by the value of
@@ -557,13 +591,16 @@ let count =
     The term for the positional argument [MSG] is:
 {[
 let msg =
+  let doc = "Overrides the default message to print."
+  let env = Arg.env "CHORUS_MSG" ~doc in
   let doc = "The message to print." in
-  Arg.(value & pos 0 string "Revolt!" & info [] ~docv:"MSG" ~doc)
+  Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
 ]}
-    which says that [msg] is a term whose value is
-    the positional argument at index [0] of type [string] and
-    defaults to ["Revolt!"] if unspecified. Here again
-    [doc] and [docv] are used for the man page information.
+    which says that [msg] is a term whose value is the positional
+    argument at index [0] of type [string] and defaults to ["Revolt!"]
+    or the value of the environment variable [CHORUS_MSG] if the
+    argument is unspecified on the command line. Here again [doc] and
+    [docv] are used for the man page information.
 
     The term for executing [chorus] with these command line arguments
     is :
@@ -597,7 +634,7 @@ SYNOPSIS
        chorus [OPTION]... [MSG]
 
 ARGUMENTS
-       MSG (absent=Revolt!)
+       MSG (absent=Revolt! or CHORUS_MSG env)
            The message to print.
 
 OPTIONS
@@ -747,6 +784,25 @@ v}
     of an optional argument or they may need to look like option
     names, anything that follows the special token ["--"] on the command
     line is considered to be a positional argument.
+
+    {2:envlookup Environment variables}
+
+    Non-required command line arguments can be backed up by an environment
+    variable.  If the argument is absent from the command line and
+    that the environment variable is defined, its value is parsed
+    using the argument converter and defines the value of the
+    argument.
+
+    For {!Arg.flag} and {!Arg.flag_all} that do not have an argument
+    converter a boolean is parsed from the lowercased variable value
+    as follows:
+    {ul
+    {- [""], ["false"], ["no"], ["n"] or ["0"] is [false].}
+    {- ["true"], ["yes"], ["y"] or ["1"] is [true].}
+    {- Any other string is an error.}}
+
+    Note that environment variables are not supported for {!Arg.vflag}
+    and {!Arg.vflag_all}.
 
     {1:examples Examples}
 

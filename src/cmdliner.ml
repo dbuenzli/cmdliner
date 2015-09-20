@@ -180,6 +180,11 @@ end
    terms. This data is used to parse the command line, report errors
    and format man page information. *)
 
+type env_info =                (* information about an environment variable. *)
+  { env_var : string;                                       (* the variable. *)
+    env_doc : string;                                               (* help. *)
+    env_docs : string; }              (* title of help section where listed. *)
+
 type absence =        (* what happens if the argument is absent from the cl. *)
   | Error                                           (* an error is reported. *)
   | Val of string Lazy.t         (* if <> "", takes the given default value. *)
@@ -237,10 +242,11 @@ type term_info =
     sdocs : string;    (* standard options, title of section where listed. *)
     man : man_block list; }                              (* man page text. *)
 
-type eval_info =                (* information about the evaluation context. *)
-  { term : term_info * arg_info list;             (* term being evaluated. *)
-    main : term_info * arg_info list;                        (* main term. *)
-    choices : (term_info * arg_info list) list}       (* all term choices. *)
+type eval_info =                 (* informatin about the evaluation context. *)
+  { term : term_info * arg_info list;               (* term being evaluated. *)
+    main : term_info * arg_info list;                          (* main term. *)
+    choices : (term_info * arg_info list) list;         (* all term choices. *)
+    env : string -> string option }          (* environment variable lookup. *)
 
 let eval_kind ei =                       (* evaluation with multiple terms ? *)
   if ei.choices = [] then `Simple else
@@ -472,10 +478,14 @@ module Help = struct
     | `S "SYNOPSIS" as s :: rest -> extract_synopsis [s] rest (* user-defined *)
     | man -> [ `S "SYNOPSIS"; `P (synopsis ei); ], man           (* automatic *)
 
+  let or_env a = match a.env_info with
+  | None -> ""
+  | Some v -> str " or $(i,%s) env" v.env_var
+
   let make_arg_label a =
     if is_pos a then str "$(i,%s)" a.docv else
     let fmt_name var = match a.o_kind with
-    | Flag -> fun n -> str "$(b,%s)" n
+    | Flag -> fun n -> str "$(b,%s)%s" n (or_env a)
     | Opt ->
         fun n ->
           if String.length n > 2 then str "$(b,%s)=$(i,%s)" n var else
@@ -490,17 +500,27 @@ module Help = struct
     let s = String.concat ", " (List.rev_map (fmt_name var) names) in
     s
 
-  let make_arg_items ei =
+  let arg_info_substs ~buf a doc =
+    let subst = function
+    | "docv" -> str "$(i,%s)" a.docv
+    | "opt" when is_opt a ->
+        let k = String.lowercase (List.hd (List.sort compare a.o_names)) in
+        str "$(b,%s)" k
+    | "env" when a.env_info <> None ->
+        begin match a.env_info with
+        | None -> assert false
+        | Some v -> str "$(i,%s)" v.env_var
+        end
+    | s -> str "$(%s)" s in
+    try
+      Buffer.clear buf;
+      Buffer.add_substitute buf subst doc;
+      Buffer.contents buf
+    with Not_found -> invalid_arg (err_doc_string doc)
+
+  let make_arg_items_rev ei =
     let buf = Buffer.create 200 in
-    let subst_docv docv d =
-      let subst = function "docv" -> str "$(i,%s)" docv | s -> str "$(%s)" s in
-      try
-        Buffer.clear buf;
-        Buffer.add_substitute buf subst d;
-        Buffer.contents buf
-      with Not_found -> invalid_arg (err_doc_string d)
-    in
-    let rev_cmp a' a =
+    let cmp a a' =
       let c = compare a.docs a'.docs in
       if c <> 0 then c else
       match is_opt a, is_opt a' with
@@ -518,24 +538,44 @@ module Help = struct
     let format a =
       let absent = match a.absent with
       | Error -> ""
-      | Val v -> match Lazy.force v with "" -> "" | v -> str "absent=%s" v
+      | Val v -> match Lazy.force v with
+      | "" -> ""
+      | v -> str "absent=%s%s" v (or_env a)
       in
       let optvopt = match a.o_kind with
       | Opt_vopt v -> str "default=%s" v
       | _ -> ""
       in
-      let argvdoc = match absent, optvopt with
+      let argvdoc = match optvopt, absent with
       | "", "" -> ""
       | s, "" | "", s -> str " (%s)" s
-      | s, s' -> str " (%s, %s)" s s'
+      | s, s' -> str " (%s) (%s)" s s'
       in
-      (a.docs, `I (make_arg_label a ^ argvdoc, (subst_docv a.docv a.doc)))
+      (a.docs, `I (make_arg_label a ^ argvdoc, (arg_info_substs ~buf a a.doc)))
     in
     let is_arg_item a = not (is_pos a && (a.docv = "" || a.doc = "")) in
-    let l = List.sort rev_cmp (List.filter is_arg_item (snd ei.term)) in
+    let l = List.sort cmp (List.filter is_arg_item (snd ei.term)) in
     List.rev_map format l
 
-  let make_cmd_items ei = match eval_kind ei with
+  let make_env_items ei =
+    let buf = Buffer.create 200 in
+    let rev_cmp a' a =
+      let e' = match a'.env_info with None -> assert false | Some a' -> a' in
+      let e = match a.env_info with None -> assert false | Some a -> a in
+      let c = compare e.env_docs e'.env_docs in
+      if c <> 0 then c else
+      compare e.env_var e'.env_var
+    in
+    let format a =
+      let e = match a.env_info with None -> assert false | Some a -> a in
+      (e.env_docs,
+       `I (str "$(i,%s)" e.env_var, arg_info_substs ~buf a e.env_doc))
+    in
+    let is_env_item a = a.env_info <> None in
+    let l = List.sort rev_cmp (List.filter is_env_item (snd ei.term)) in
+    List.rev_map format l
+
+  let make_cmd_items_rev ei = match eval_kind ei with
   | `Simple | `M_choice -> []
   | `M_main ->
       let add_cmd acc (ti, _) =
@@ -575,14 +615,19 @@ module Help = struct
     | (#Manpage.block as e) :: ts -> merge_orphans (e :: acc) orphans ts
     | [] -> acc
     in
-    let cmds = make_cmd_items ei in
-    let args = make_arg_items ei in
-    let cmp (s, _) (s', _) = compare s s' in
-    let items = List.rev (List.stable_sort cmp (List.rev_append cmds args)) in
-    let synopsis, man = get_synopsis_section ei in
-    let rev_text, orphans =
-      merge_items [`Orphan_mark] [] false items man
+    let cmds_rev = make_cmd_items_rev ei in
+    let args_rev = make_arg_items_rev ei in
+    let envs = make_env_items ei in
+    let rest = List.rev_append args_rev envs in
+    let generated = List.rev_append cmds_rev rest in
+    let cmp (s, _) (s', _) = match s, s with
+    | "ENVIRONMENT VARIABLES", _ -> 1  (* Put env vars at the end. *)
+    | s, "ENVIRONMENT VARIABLES" -> -1
+    | s, s' -> compare s s' (* other predefined sec. names order correctly *)
     in
+    let items = List.rev (List.stable_sort cmp generated) in
+    let synopsis, man = get_synopsis_section ei in
+    let rev_text, orphans = merge_items [`Orphan_mark] [] false items man in
     synopsis @ merge_orphans [] orphans rev_text
 
   let ei_subst ei = function
@@ -632,6 +677,7 @@ module Err = struct
 
   let opt_value_missing f = str "option %s needs an argument" (quote f)
   let opt_parse_value f e = str "option %s: %s" (quote f) e
+  let env_parse_value var e = str "environment variable %s: %s" (quote var) e
   let opt_repeated f f' =
     if f = f' then str "option %s cannot be repeated" (quote f) else
     str "options %s and %s cannot be present at the same time" (quote f)
@@ -841,9 +887,13 @@ module Arg = struct
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a converter = 'a parser * 'a printer
+  type env = env_info
   type 'a arg_converter = (eval_info -> cmdline -> 'a)
   type 'a t = arg_info list * 'a arg_converter
   type info = arg_info
+
+  let env_var ?(docs = "ENVIRONMENT VARIABLES") ?(doc = "") env_var =
+    { env_var = env_var; env_doc = doc; env_docs = docs }
 
   let ( & ) f x = f x
   let parse_error e = raise (Cmdline.Error e)
@@ -851,21 +901,44 @@ module Arg = struct
     (fun s -> match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e),
     (fun ppf v -> match v with None -> pr_str ppf none| Some v -> print ppf v)
 
-  let info ?docs ?(docv = "") ?(doc = "") names =
+  let info ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let docs = match docs with
     | None -> if names = [] then "ARGUMENTS" else "OPTIONS"
     | Some s -> s
     in
     { id = arg_id (); absent = Val (lazy "");
+      env_info = env;
       doc = doc; docv = docv; docs = docs;
       p_kind = All; o_kind = Flag; o_names = List.rev_map dash names;
       o_all = false; }
 
+  let env_bool_parse s = match String.lowercase s with
+  | "" | "false" | "no" | "n" | "0" -> `Ok false
+  | "true" | "yes" | "y" | "1" -> `Ok true
+  | s ->
+      `Error (Err.invalid_val s
+                (alts_str ["true"; "yes"; "y"; "1"; "false"; "no"; "n"; "0"]))
+
+  let parse_to_list parser s = match parser s with
+  | `Ok v -> `Ok [v]
+  | `Error _ as e -> e
+
+  let try_env ei a parse ~absent = match a.env_info with
+  | None -> absent
+  | Some env ->
+      match ei.env env.env_var with
+      | None -> absent
+      | Some v ->
+          match parse v with
+          | `Ok v -> v
+          | `Error e ->
+              parse_error (Err.env_parse_value env.env_var e)
+
   let flag a =
     if is_pos a then invalid_arg err_not_opt else
-    let convert _ cl = match Cmdline.opt_arg cl a with
-    | [] -> false
+    let convert ei cl = match Cmdline.opt_arg cl a with
+    | [] -> try_env ei a env_bool_parse ~absent:false
     | [_, _, None] -> true
     | [_, f, Some v] -> parse_error (Err.flag_value f v)
     | (_, f, _) :: (_ ,g, _) :: _  -> parse_error (Err.opt_repeated f g)
@@ -875,8 +948,8 @@ module Arg = struct
   let flag_all a =
     if is_pos a then invalid_arg err_not_opt else
     let a = { a with o_all = true } in
-    let convert _ cl = match Cmdline.opt_arg cl a with
-    | [] -> []
+    let convert ei cl = match Cmdline.opt_arg cl a with
+    | [] -> try_env ei a (parse_to_list env_bool_parse) ~absent:[]
     | l ->
         let truth (_, f, v) = match v with
         | None -> true | Some v -> parse_error (Err.flag_value f v)
@@ -937,8 +1010,8 @@ module Arg = struct
                      o_kind = match vopt with
                      | None -> Opt | Some dv -> Opt_vopt (str_of_pp print dv) }
     in
-    let convert _ cl = match Cmdline.opt_arg cl a with
-    | [] -> v
+    let convert ei cl = match Cmdline.opt_arg cl a with
+    | [] -> try_env ei a parse ~absent:v
     | [_, f, Some v] -> parse_opt_value parse f v
     | [_, f, None] ->
         begin match vopt with
@@ -955,8 +1028,8 @@ module Arg = struct
                      o_kind = match vopt with
                      | None -> Opt | Some dv -> Opt_vopt (str_of_pp print dv) }
     in
-    let convert _ cl = match Cmdline.opt_arg cl a with
-    | [] -> v
+    let convert ei cl = match Cmdline.opt_arg cl a with
+    | [] -> try_env ei a (parse_to_list parse) ~absent:v
     | l ->
         let parse (k, f, v) = match v with
         | Some v -> (k, parse_opt_value parse f v)
@@ -978,8 +1051,8 @@ module Arg = struct
     let a = { a with p_kind = Nth (rev, k);
                      absent = Val (lazy (str_of_pp print v)) }
     in
-    let convert _ cl = match Cmdline.pos_arg cl a with
-    | [] -> v
+    let convert ei cl = match Cmdline.pos_arg cl a with
+    | [] -> try_env ei a parse ~absent:v
     | [v] -> parse_pos_value parse a v
     | _ -> assert false
     in
@@ -988,8 +1061,8 @@ module Arg = struct
   let pos_list kind (parse, _) v a =
     if is_opt a then invalid_arg err_not_pos else
     let a = { a with p_kind = kind } in
-    let convert _ cl = match Cmdline.pos_arg cl a with
-    | [] -> v
+    let convert ei cl = match Cmdline.pos_arg cl a with
+    | [] -> try_env ei a (parse_to_list parse) ~absent:v
     | l -> List.rev (List.rev_map (parse_pos_value parse a) l)
     in
     [a], convert
@@ -1293,19 +1366,22 @@ module Term = struct
         let _, _, ei = add_std_opts ei in
         Help.print fmt help ei; `Help
 
+  let env_default v = try Some (Sys.getenv v) with Not_found -> None
+
   let eval ?(help = Format.std_formatter) ?(err = Format.err_formatter)
-      ?(catch = true) ?(argv = Sys.argv) ((al, f), ti)  =
+      ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) ((al, f), ti) =
     let term = ti, al in
-    let ei = { term = term; main = term; choices = [] } in
+    let ei = { term = term; main = term; choices = []; env = env } in
     try eval_term help err ei f (remove_exec argv) with
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter)
-      ?(catch = true) ?(argv = Sys.argv) (((al, f) as t), ti) choices =
+      ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
+      (((al, f) as t), ti) choices =
     let ei_choices = List.rev_map (fun ((al, _), ti) -> ti, al) choices in
     let main = (ti, al) in
-    let ei = { term = main; main = main; choices = ei_choices } in
+    let ei = { term = main; main = main; choices = ei_choices; env = env } in
     try
       let chosen, args = Cmdline.choose_term ti ei_choices (remove_exec argv) in
       let find_chosen (_, ti) = ti = chosen in
@@ -1318,11 +1394,12 @@ module Term = struct
     | e when catch ->
         Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
-  let eval_peek_opts ?(version_opt = false) ?(argv = Sys.argv) (al, f) =
+  let eval_peek_opts ?(version_opt = false) ?(env = env_default)
+      ?(argv = Sys.argv) (al, f) =
     let args = remove_exec argv in
     let version = if version_opt then Some "dummy" else None in
     let term = info ?version "dummy", al in
-    let ei = { term = term; main = term; choices = [] } in
+    let ei = { term = term; main = term; choices = []; env = env } in
     let help_arg, vers_arg, ei = add_std_opts ei in
     try
       let cl = Cmdline.create ~peek_opts:true (snd ei.term) args in
