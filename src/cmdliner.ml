@@ -196,15 +196,16 @@ type pos_kind =                            (* kinds of positional arguments. *)
   | Right of bool * int              (* all args on the right of a position. *)
 
 type arg_info =                (* information about a command line argument. *)
-    { id : int;                               (* unique id for the argument. *)
-      absent : absence;                              (* behaviour if absent. *)
-      doc : string;                                                 (* help. *)
-      docv : string;              (* variable name for the argument in help. *)
-      docs : string;                  (* title of help section where listed. *)
-      p_kind : pos_kind;                             (* positional arg kind. *)
-      o_kind : opt_kind;                               (* optional arg kind. *)
-      o_names : string list;                        (* names (for opt args). *)
-      o_all : bool; }                          (* repeatable (for opt args). *)
+  { id : int;                               (* unique id for the argument. *)
+    absent : absence;                              (* behaviour if absent. *)
+    env_info : env_info option;                   (* environment variable. *)
+    doc : string;                                                 (* help. *)
+    docv : string;              (* variable name for the argument in help. *)
+    docs : string;                  (* title of help section where listed. *)
+    p_kind : pos_kind;                             (* positional arg kind. *)
+    o_kind : opt_kind;                               (* optional arg kind. *)
+    o_names : string list;                        (* names (for opt args). *)
+    o_all : bool; }                          (* repeatable (for opt args). *)
 
 let arg_id =        (* thread-safe UIDs, Oo.id (object end) was used before. *)
   let c = ref 0 in
@@ -879,8 +880,8 @@ module Arg = struct
     | l ->
         let truth (_, f, v) = match v with
         | None -> true | Some v -> parse_error (Err.flag_value f v)
-  in
-  List.rev_map truth l
+        in
+        List.rev_map truth l
     in
     [a], convert
 
