@@ -18,7 +18,7 @@ let msg =
   let doc = "The message to print." in
   Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
 
-let chorus_t = Term.(pure chorus $ count $ msg)
+let chorus_t = Term.(const chorus $ count $ msg)
 
 let info =
   let doc = "print a customizable message repeatedly" in

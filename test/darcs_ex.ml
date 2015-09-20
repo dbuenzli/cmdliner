@@ -70,7 +70,7 @@ let copts_t =
     let doc = "Specify command to run before this $(mname) command." in
     Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
-  Term.(pure copts $ debug $ verb $ prehook)
+  Term.(const copts $ debug $ verb $ prehook)
 
 (* Commands *)
 
@@ -86,7 +86,7 @@ let initialize_cmd =
     `P "Turns the current directory into a Darcs repository. Any
        existing files and subdirectories become ..."] @ help_secs
   in
-  Term.(pure initialize $ copts_t $ repodir),
+  Term.(const initialize $ copts_t $ repodir),
   Term.info "initialize" ~sdocs:copts_sect ~doc ~man
 
 let record_cmd =
@@ -115,7 +115,7 @@ let record_cmd =
      `P "Creates a patch from changes in the working tree. If you specify
          a set of files ..."] @ help_secs
   in
-  Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
+  Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:copts_sect ~man
 
 let help_cmd =
@@ -128,13 +128,14 @@ let help_cmd =
     [`S "DESCRIPTION";
      `P "Prints help about darcs commands and other subjects..."] @ help_secs
   in
-  Term.(ret (pure help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
+  Term.(ret
+          (const help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
   Term.info "help" ~doc ~man
 
 let default_cmd =
   let doc = "a revision control system" in
   let man = help_secs in
-  Term.(ret (pure (fun _ -> `Help (`Pager, None)) $ copts_t)),
+  Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
   Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]

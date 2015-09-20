@@ -33,7 +33,7 @@ let test hey repodir id miaouw =
   Format.printf "hey: %b@.repodir: %s@.id: %d@.miaouw: %s@."
     hey repodir id miaouw
 
-let man_test_t = Term.(pure test $ hey $ repodir $ id $ miaouw)
+let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)
 
 let info =
   let doc = "print a customizable message repeatedly" in

@@ -1287,7 +1287,8 @@ module Term = struct
       man = man }
 
   let name ti = ti.name
-  let pure v = [], (fun _ _ -> v)
+  let const v = [], (fun _ _ -> v)
+  let pure (* deprecated *) = const
   let app (al, f) (al', v) =
     List.rev_append al al',
     fun ei cl -> (f ei cl) (v ei cl)

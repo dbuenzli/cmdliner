@@ -84,8 +84,13 @@ module Term : sig
   type +'a t
   (** The type for terms evaluating to values of type 'a. *)
 
+  val const : 'a -> 'a t
+  (** [const v] is a term that evaluates to [v]. *)
+
+  (**/**)
   val pure : 'a -> 'a t
-  (** [pure v] is a term that evaluates to [v]. *)
+  (** @deprecated use {!const} instead. *)
+  (**/**)
 
   val ( $ ) : ('a -> 'b) t -> 'a t -> 'b t
   (** [f $ v] is a term that evaluates to the result of applying
@@ -542,14 +547,14 @@ end
     the type of the result of the evaluation.
 
     One way to create terms is by lifting regular OCaml values with
-    {!Term.pure}. Terms can be applied to terms evaluating to
+    {!Term.const}. Terms can be applied to terms evaluating to
     functional values with {!Term.( $ )}. For example for the function:
 {[let revolt () = print_endline "Revolt!"]}
     the term :
 {[
 open Cmdliner;;
 
-let revolt_t = Term.(pure revolt $ pure ())]}
+let revolt_t = Term.(const revolt $ const ())]}
     is a term that evaluates to the result (and effect) of the [revolt]
     function.
     Terms are evaluated with {!Term.eval}:
@@ -605,7 +610,7 @@ let msg =
     The term for executing [chorus] with these command line arguments
     is :
 {[
-let chorus_t = Term.(pure chorus $ count $ msg)
+let chorus_t = Term.(const chorus $ count $ msg)
 ]}
     and we are now ready to define our program:
 {[
@@ -874,7 +879,7 @@ let cmd =
     `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
     `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
-  Term.(pure rm $ prompt $ recursive $ files),
+  Term.(const rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
@@ -938,7 +943,7 @@ let cmd =
     `S "SEE ALSO";
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
-  Term.(ret (pure cp $ verbose $ recurse $ force $ srcs $ dest)),
+  Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
   Term.info "cp" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
@@ -1030,7 +1035,7 @@ let cmd =
     `S "SEE ALSO";
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
-  Term.(pure tail $ lines $ follow $ verb $ pid $ files),
+  Term.(const tail $ lines $ follow $ verb $ pid $ files),
   Term.info "tail" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
@@ -1130,7 +1135,7 @@ let copts_t =
     let doc = "Specify command to run before this $(mname) command." in
     Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
-  Term.(pure copts $ debug $ verb $ prehook)
+  Term.(const copts $ debug $ verb $ prehook)
 
 (* Commands *)
 
@@ -1146,7 +1151,7 @@ let initialize_cmd =
     `P "Turns the current directory into a Darcs repository. Any
        existing files and subdirectories become ..."] @ help_secs
   in
-  Term.(pure initialize $ copts_t $ repodir),
+  Term.(const initialize $ copts_t $ repodir),
   Term.info "initialize" ~sdocs:copts_sect ~doc ~man
 
 let record_cmd =
@@ -1175,7 +1180,7 @@ let record_cmd =
      `P "Creates a patch from changes in the working tree. If you specify
       a set of files ..."] @ help_secs
   in
-  Term.(pure record $ copts_t $ pname $ author $ all $ ask_deps $ files),
+  Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:copts_sect ~man
 
 let help_cmd =
@@ -1188,13 +1193,14 @@ let help_cmd =
     [`S "DESCRIPTION";
      `P "Prints help about darcs commands and other subjects..."] @ help_secs
   in
-  Term.(ret (pure help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
+  Term.(ret
+          (const help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
   Term.info "help" ~doc ~man
 
 let default_cmd =
   let doc = "a revision control system" in
   let man = help_secs in
-  Term.(ret (pure (fun _ -> `Help (`Pager, None)) $ copts_t)),
+  Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
   Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]

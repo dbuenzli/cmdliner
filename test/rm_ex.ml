@@ -47,7 +47,7 @@ let cmd =
     `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
     `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
-  Term.(pure rm $ prompt $ recursive $ files),
+  Term.(const rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
