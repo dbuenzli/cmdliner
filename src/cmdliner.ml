@@ -518,7 +518,7 @@ module Help = struct
       Buffer.contents buf
     with Not_found -> invalid_arg (err_doc_string doc)
 
-  let make_arg_items_rev ei =
+  let make_arg_items ei =
     let buf = Buffer.create 200 in
     let cmp a a' =
       let c = compare a.docs a'.docs in
@@ -557,9 +557,9 @@ module Help = struct
     let l = List.sort cmp (List.filter is_arg_item (snd ei.term)) in
     List.rev_map format l
 
-  let make_env_items ei =
+  let make_env_items_rev ei =
     let buf = Buffer.create 200 in
-    let rev_cmp a' a =
+    let cmp a a' =
       let e' = match a'.env_info with None -> assert false | Some a' -> a' in
       let e = match a.env_info with None -> assert false | Some a -> a in
       let c = compare e.env_docs e'.env_docs in
@@ -572,10 +572,10 @@ module Help = struct
        `I (str "$(i,%s)" e.env_var, arg_info_substs ~buf a e.env_doc))
     in
     let is_env_item a = a.env_info <> None in
-    let l = List.sort rev_cmp (List.filter is_env_item (snd ei.term)) in
+    let l = List.sort cmp (List.filter is_env_item (snd ei.term)) in
     List.rev_map format l
 
-  let make_cmd_items_rev ei = match eval_kind ei with
+  let make_cmd_items ei = match eval_kind ei with
   | `Simple | `M_choice -> []
   | `M_main ->
       let add_cmd acc (ti, _) =
@@ -615,17 +615,16 @@ module Help = struct
     | (#Manpage.block as e) :: ts -> merge_orphans (e :: acc) orphans ts
     | [] -> acc
     in
-    let cmds_rev = make_cmd_items_rev ei in
-    let args_rev = make_arg_items_rev ei in
-    let envs = make_env_items ei in
-    let rest = List.rev_append args_rev envs in
-    let generated = List.rev_append cmds_rev rest in
+    let cmds = make_cmd_items ei in
+    let args = make_arg_items ei in
+    let envs_rev = make_env_items_rev ei in
+    let items_rev = List.rev_append cmds (List.rev_append args envs_rev) in
     let cmp (s, _) (s', _) = match s, s with
     | "ENVIRONMENT VARIABLES", _ -> 1  (* Put env vars at the end. *)
     | s, "ENVIRONMENT VARIABLES" -> -1
     | s, s' -> compare s s' (* other predefined sec. names order correctly *)
     in
-    let items = List.rev (List.stable_sort cmp generated) in
+    let items = List.rev (List.stable_sort cmp items_rev) in
     let synopsis, man = get_synopsis_section ei in
     let rev_text, orphans = merge_items [`Orphan_mark] [] false items man in
     synopsis @ merge_orphans [] orphans rev_text
