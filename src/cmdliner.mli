@@ -288,9 +288,9 @@ module Arg : sig
   (** [env_var docs doc var] is an environment variables [var]. [doc]
       is the man page information of the environment variable; the
       variables mentioned in {!info} can be used in this documentation
-      string. [docs] is the title of the man page section in which the
-      environment variable will be listed, it defaults to
-      ["ENVIRONMENT VARIABLES"]. *)
+      string. [doc] defaults to ["See option $(opt)."]. [docs] is the
+      title of the man page section in which the environment variable
+      will be listed, it defaults to ["ENVIRONMENT VARIABLES"]. *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)

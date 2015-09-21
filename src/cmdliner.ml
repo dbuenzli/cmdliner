@@ -892,7 +892,9 @@ module Arg = struct
   type 'a t = arg_info list * 'a arg_converter
   type info = arg_info
 
-  let env_var ?(docs = "ENVIRONMENT VARIABLES") ?(doc = "") env_var =
+  let env_var ?(docs = "ENVIRONMENT VARIABLES") ?(doc = "See option $(opt).")
+      env_var
+    =
     { env_var = env_var; env_doc = doc; env_docs = docs }
 
   let ( & ) f x = f x
