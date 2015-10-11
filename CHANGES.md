@@ -1,13 +1,33 @@
+v0.9.8 2015-10-11 Cambridge (UK)
+--------------------------------
 
+- Bring back support for OCaml 3.12.0
+- Support for pre-formatted paragraphs in man pages. This adds a ``
+  `Pre`` case to the `Manpage.block` type which can break existing
+  programs. Thanks to Guillaume Bury for suggesting and help.
+  
+- Support for environment variables. If an argument is absent from the
+  command line, its value can be read and parsed from an environment
+  variable. This adds an `env` optional argument to the `Arg.info`
+  function which can break existing programs.
+- Support for new variables in documentation strings. `$(opt)` can be
+  used to refer name of the option being documented and `$(env)` for
+  option's the environment variable.
+- Deprecate `Term.pure` in favor of `Term.const`.
+- Man page generation. Keep undefined variables untouched. Previously
+  a `$(undef)` would be turned into `undef`.
+- Turn a few misterious and spurious `Not_found` exceptions into
+  `Invalid_arg`. These can be triggered by client programming errors
+  (e.g. an unclosed variable in a documentation string).
 - Positional arguments. Invoke the printer on the default (absent)
-value only if needed. See below, `Optional arguments` in v0.9.6. 
+  value only if needed. See Optional arguments in the release notes of
+  v0.9.6.
 
 v0.9.7 2015-02-06 La Forclaz (VS)
 ---------------------------------
 
 - Build system, don't depend on `ocamlfind`. The package no longer
   depends on ocamlfind. Thanks to Louis Gesbert for the patch. 
-
 
 v0.9.6 2014-11-18 La Forclaz (VS)
 ---------------------------------

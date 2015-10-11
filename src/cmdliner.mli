@@ -317,7 +317,7 @@ module Arg : sig
       {- [doc] is the man page information of the argument. The
          variable ["$(docv)"] can be used to refer to the value of
          [docv] (see below). The variable ["$(opt)"] will refer to a
-         short option of [names] or a short one if there is no long
+         long option of [names] or a short one if there is no long
          option. The variable ["$(env)"] will refer to the environment
          variable specified by [env] (if any).  {{!doc_helpers}These
          functions} can help with formatting argument values.}
