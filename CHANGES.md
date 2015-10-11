@@ -2,17 +2,16 @@ v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------
 
 - Bring back support for OCaml 3.12.0
-- Support for pre-formatted paragraphs in man pages. This adds a ``
-  `Pre`` case to the `Manpage.block` type which can break existing
+- Support for pre-formatted paragraphs in man pages. This adds a
+  ```Pre`` case to the `Manpage.block` type which can break existing
   programs. Thanks to Guillaume Bury for suggesting and help.
-  
 - Support for environment variables. If an argument is absent from the
   command line, its value can be read and parsed from an environment
   variable. This adds an `env` optional argument to the `Arg.info`
   function which can break existing programs.
-- Support for new variables in documentation strings. `$(opt)` can be
-  used to refer name of the option being documented and `$(env)` for
-  option's the environment variable.
+- Support for new variables in option documentation strings. `$(opt)`
+  can be used to refer to the name of the option being documented and
+  `$(env)` for the name of the option's the environment variable.
 - Deprecate `Term.pure` in favor of `Term.const`.
 - Man page generation. Keep undefined variables untouched. Previously
   a `$(undef)` would be turned into `undef`.
