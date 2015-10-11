@@ -917,9 +917,7 @@ module Arg = struct
   let env_bool_parse s = match String.lowercase s with
   | "" | "false" | "no" | "n" | "0" -> `Ok false
   | "true" | "yes" | "y" | "1" -> `Ok true
-  | s ->
-      `Error (Err.invalid_val s
-                (alts_str ["true"; "yes"; "y"; "1"; "false"; "no"; "n"; "0"]))
+  | s -> `Error (Err.invalid_val s (alts_str ["true"; "yes"; "false"; "no" ]))
 
   let parse_to_list parser s = match parser s with
   | `Ok v -> `Ok [v]
