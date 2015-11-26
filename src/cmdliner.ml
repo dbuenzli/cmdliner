@@ -393,11 +393,11 @@ module Manpage = struct
     match pager with
     | None -> print `Plain ppf v
     | Some pager ->
-        let cmd = match (find_cmd ["groff"; "nroff"]) with
+        let cmds = match (find_cmd ["groff"; "nroff"]) with
         | None ->
             begin match pr_to_temp_file (print `Plain) v with
             | None -> None
-            | Some f -> Some (str "%s < %s" pager f)
+            | Some f -> Some [str "%s < %s" pager f]
             end
         | Some c ->
             begin match pr_to_temp_file (print `Groff) v with
@@ -405,12 +405,17 @@ module Manpage = struct
             | Some f ->
                 (* TODO use -Tutf8, but annoyingly maps U+002D to U+2212. *)
                 let xroff = if c = "groff" then c ^ " -Tascii -P-c" else c in
-                Some (str "%s -man < %s | %s" xroff f pager)
+                Some ["man " ^ f; str "%s -man < %s | %s" xroff f pager]
             end
         in
-        match cmd with
+        match cmds with
         | None -> print `Plain ppf v
-        | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
+        | Some cmds ->
+            let rec try_cmd xs = match xs with
+            | [] -> print `Plain ppf v
+            | x::xs -> if (Sys.command x) <> 0 then try_cmd xs
+            in
+            try_cmd cmds
 
   let rec print ?(subst = fun x -> x) fmt ppf page = match fmt with
   | `Pager -> pr_to_pager (print ~subst) ppf page
