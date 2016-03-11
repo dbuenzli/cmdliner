@@ -596,7 +596,7 @@ let count =
     The term for the positional argument [MSG] is:
 {[
 let msg =
-  let doc = "Overrides the default message to print."
+  let doc = "Overrides the default message to print." in
   let env = Arg.env "CHORUS_MSG" ~doc in
   let doc = "The message to print." in
   Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
