@@ -8,6 +8,8 @@ bug-reports: "https://github.com/dbuenzli/cmdliner/issues"
 tags: [ "cli" "system" "declarative" "org:erratique" ]
 license: "BSD3"
 available: [ocaml-version >= "3.12.0"]
+depends:
+ [ "ocamlbuild" {build} ]
 build:
 [
   ["ocaml" "pkg/git.ml" ]
