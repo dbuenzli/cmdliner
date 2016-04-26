@@ -138,11 +138,13 @@ module Term : sig
   (** The type for term information. *)
 
   val info : ?sdocs:string -> ?man:Manpage.block list ->
-    ?docs:string -> ?doc:string -> ?version:string -> string -> info
+    ?docs:string -> ?doc:string -> ?version:string ->
+    ?fmt:[`Pager | `Plain | `Groff] -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
       {ul
       {- [name] is the name of the program or the command.}
+      {- [fmt] is the preferred man page format.}
       {- [version] is the version string of the program, ignored
          for commands.}
       {- [doc] is a one line description of the program or command used

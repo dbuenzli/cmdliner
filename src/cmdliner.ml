@@ -237,6 +237,7 @@ type man_block = [                                 (* block of manpage text. *)
 type term_info =
   { name : string;                                    (* name of the term. *)
     version : string option;                   (* version (for --version). *)
+    fmt: [`Pager | `Plain | `Groff];      (* man page format (for --help). *)
     tdoc : string;                        (* one line description of term. *)
     tdocs : string;       (* title of man section where listed (commands). *)
     sdocs : string;    (* standard options, title of section where listed. *)
@@ -1281,9 +1282,9 @@ module Term = struct
       | `Error of bool * string ]
 
   let info  ?(sdocs = "OPTIONS") ?(man = []) ?(docs = "COMMANDS") ?(doc = "")
-      ?version name =
+      ?version ?(fmt = `Pager) name =
     { name = name; version = version; tdoc = doc; tdocs = docs; sdocs = sdocs;
-      man = man }
+      man = man; fmt = fmt }
 
   let name ti = ti.name
   let const v = [], (fun _ _ -> v)
@@ -1330,10 +1331,12 @@ module Term = struct
     in
     let args, h_lookup =
       let (a, lookup) =
-        let fmt = Arg.enum ["pager",`Pager; "groff",`Groff; "plain",`Plain] in
+        let (ti, al) = ei.term in
+        let fmt = ti.fmt in
+        let fmts = Arg.enum ["pager",`Pager; "groff",`Groff; "plain",`Plain] in
         let doc = "Show this help in format $(docv) (pager, plain or groff)."in
         let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
-        Arg.opt ~vopt:(Some `Pager) (Arg.some fmt) None a
+        Arg.opt ~vopt:(Some fmt) (Arg.some fmts) None a
       in
       List.rev_append a args, lookup
     in
