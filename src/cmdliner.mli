@@ -201,7 +201,7 @@ module Term : sig
     ?env:(string -> string option) ->
     ?argv:string array -> 'a t * info -> ('a t * info) list ->
     'a result
-  (** [eval_choice help err catch argv default (t,i) choices] is like {!eval}
+  (** [eval_choice help err catch argv (t,i) choices] is like {!eval}
       except that if the first argument on the command line is not an option
       name it will look in [choices] for a term whose information has this
       name and evaluate it.
