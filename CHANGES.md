@@ -95,7 +95,7 @@ v0.9.1 2012-03-17 La Forclaz (VS)
   name.
 - Support for custom variable substitution in `Manpage.print`.
 - Adds `Term.man_format`, to facilitate the definition of help commands.
-- Rewrote the examples with a better and consistant style.
+- Rewrote the examples with a better and consistent style.
 
 Incompatible API changes:
 

@@ -726,7 +726,7 @@ end
 
 (* Command lines. A command line stores pre-parsed information about
    the command line's arguments in a more structured way. Given the
-   [arg_info] values mentionned in a term and Sys.argv (whithout exec
+   [arg_info] values mentioned in a term and Sys.argv (without exec
    name) we parse the command line into a map of [arg_info] values to
    [arg] values. This map is used by the term's closures to retrieve
    and convert command line arguments (see the Arg module). *)
@@ -839,7 +839,7 @@ end = struct
     aux 0 opti cl [] args
 
   let process_pos_args posi cl pargs =
-    (* returns an updated [cl] cmdline in which each positional arg mentionned
+    (* returns an updated [cl] cmdline in which each positional arg mentioned
        in the list index posi, is given a value according the list
        of positional arguments values [pargs]. *)
     if pargs = [] then cl else

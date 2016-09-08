@@ -215,7 +215,7 @@ module Config_default : sig
 
   val git_hook : string option
   (** [git_start_hook] is an ocaml script to invoke before a git package 
-      build, after variable substitution occured. *) 
+      build, after variable substitution occurred. *) 
 
   val distrib_remove : string list
   (** [distrib_remove] is a list of files to remove before making 
