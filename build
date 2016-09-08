@@ -1,5 +1,5 @@
 #!/bin/sh
-# This script is only used for developement. It is removed by the 
+# This script is only used for development. It is removed by the 
 # distribution process. 
 
 set -e
