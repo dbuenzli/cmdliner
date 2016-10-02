@@ -312,7 +312,7 @@ module Manpage = struct
             let label = escape label in
             let ll = String.length label in
             pr ppf "@[%a@[%a@]" pr_indent p_indent pr_tokens label;
-            if s = "" then () else
+            if s = "" then pr ppf "@]@," else
             if ll < l_indent then
               pr ppf "%a@[%a@]@]@," pr_indent (l_indent - ll) pr_tokens s
             else
