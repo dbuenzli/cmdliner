@@ -1,3 +1,7 @@
+
+- Fix plain help formatting for commands with empty
+  description. Thanks to Maciek Starzyk for the patch.
+
 v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------
 
