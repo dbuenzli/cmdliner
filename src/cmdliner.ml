@@ -253,6 +253,7 @@ let eval_kind ei =                       (* evaluation with multiple terms ? *)
   if (fst ei.term) == (fst ei.main) then `M_main else `M_choice
 
 module Manpage = struct
+  type format = [ `Auto | `Pager | `Plain | `Groff ]
   type title = string * int * string * string * string
   type block = man_block
   type t = title * block list
@@ -416,6 +417,10 @@ module Manpage = struct
   | `Pager -> pr_to_pager (print ~subst) ppf page
   | `Plain -> pr_plain_page subst ppf page
   | `Groff -> pr_groff_page subst ppf page
+  | `Auto ->
+      match try (Some (Sys.getenv "TERM")) with Not_found -> None with
+      | None | Some "dumb" -> print ~subst `Plain ppf page
+      | Some _ -> print ~subst `Pager ppf page
 end
 
 module Help = struct
@@ -1280,7 +1285,7 @@ module Term = struct
     | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
 
   exception Term of
-      [ `Help of [`Pager | `Plain | `Groff] * string option
+      [ `Help of Manpage.format * string option
       | `Error of bool * string ]
 
   let info  ?(sdocs = "OPTIONS") ?(man = []) ?(docs = "COMMANDS") ?(doc = "")
@@ -1298,7 +1303,7 @@ module Term = struct
   let ( $ ) = app
 
   type 'a ret =
-    [ `Help of [`Pager | `Plain | `Groff] * string option
+    [ `Help of Manpage.format * string option
     | `Error of (bool * string)
     | `Ok of 'a ]
 
@@ -1312,10 +1317,21 @@ module Term = struct
   let choice_names =
     [], fun ei _ -> List.rev_map (fun e -> (fst e).name) ei.choices
 
+  let man_fmts =
+    ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
+
+  let man_fmts_enum = Arg.enum man_fmts
+  let man_fmts_alts = Arg.doc_alts_enum man_fmts
+  let man_fmts_doc kind =
+    str "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
+         the format is `pager` or `plain' whenever the $(i,TERM) env var is
+         `dumb' or undefined."
+      kind man_fmts_alts
+
   let man_format =
-    let fmts = ["pager", `Pager; "groff", `Groff; "plain", `Plain] in
-    let doc = "Show output in format $(docv) (pager, plain or groff)."in
-    Arg.(value & opt (enum fmts) `Pager & info ["man-format"] ~docv:"FMT" ~doc)
+    let doc = man_fmts_doc "output" in
+    let docv = "FMT" in
+    Arg.(value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc)
 
   (* Evaluation *)
 
@@ -1333,10 +1349,9 @@ module Term = struct
     in
     let args, h_lookup =
       let (a, lookup) =
-        let fmt = Arg.enum ["pager",`Pager; "groff",`Groff; "plain",`Plain] in
-        let doc = "Show this help in format $(docv) (pager, plain or groff)."in
+        let doc = man_fmts_doc "this help" in
         let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
-        Arg.opt ~vopt:(Some `Pager) (Arg.some fmt) None a
+        Arg.opt ~vopt:(Some `Auto) (Arg.some man_fmts_enum) None a
       in
       List.rev_append a args, lookup
     in

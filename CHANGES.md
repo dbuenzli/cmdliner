@@ -1,4 +1,13 @@
 
+- Change default behaviour of `--help[=FMT]` option. `FMT` no longer
+  defaults to `pager` if unspecified.  It defaults to the new value
+  `auto` which prints the help as `pager` or `plain` whenever the
+  `TERM` environment variable is `dumb` or undefined (#43). This
+  affects the cli behaviour of all binaries using cmdliner.  At the
+  API level this changes the signature of the type `Term.ret` and
+  values `Term.ret`, `Term.man_format` and `Manpage.print` to add the
+  new ```Auto`` case to manual formats now represented by the
+  `Manpage.format` type.
 - Relicense from BSD3 to ISC.
 - Safe-string support.
 - Fix repeated environment variable printing for flags (#64). Thanks to

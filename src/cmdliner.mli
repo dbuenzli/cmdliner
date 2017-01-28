@@ -63,13 +63,24 @@ module Manpage : sig
   type t = title * block list
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
-  val print : ?subst:(string -> string) ->
-    [`Pager | `Plain | `Groff ] -> Format.formatter -> t -> unit
-  (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format [fmt].
-      If [fmt] is [`Pager] the function tries to write the formatted
-      result in a pager, if that fails the format [`Plain] is written
-      on [ppf]. [subst] can be used to perform variable substitution,
-      see {!Buffer.add_substitute} (defaults to the identity). *)
+  (** {1:output Output} *)
+
+  type format = [ `Auto | `Pager | `Plain | `Groff ]
+  (** The type for manpage output specification.
+      {ul
+      {- [`Auto], formats like [`Pager] or [`Plain] whenever the [TERM]
+         environment variable is [dumb] or unset.}
+      {- [`Pager], tries to write to a discovered pager, if that fails
+         uses the [`Plain] format.}
+      {- [`Plain], formats to plain text.}
+      {- [`Groff], formats to groff commands.}} *)
+
+  val print :
+    ?subst:(string -> string) -> format -> Format.formatter -> t -> unit
+  (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format
+      [fmt]. [subst] can be used to perform variable
+      substitution, see {!Buffer.add_substitute} (defaults to the
+      identity). *)
 end
 
 (** Terms.
@@ -100,7 +111,7 @@ module Term : sig
   (** [app] is {!($)}. *)
 
   type 'a ret =
-    [ `Help of [`Pager | `Plain | `Groff] * string option
+    [ `Help of Manpage.format * string option
     | `Error of (bool * string)
     | `Ok of 'a ]
   (** The type for command return values. See {!ret}. *)
@@ -123,7 +134,7 @@ module Term : sig
   (** [choice_names] is a term that evaluates to the names of the terms
       to choose from. *)
 
-  val man_format : [`Pager | `Plain | `Groff] t
+  val man_format : Manpage.format t
   (** [man_format] is a term that defines a [--man-format] option and
       evaluates to a value that can be used with {!Manpage.print}. *)
 
