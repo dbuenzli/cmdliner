@@ -36,7 +36,7 @@ let help copts man_format cmds topic = match topic with
         let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
         `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
-open Cmdliner;;
+open Cmdliner
 
 (* Help sections common to all commands *)
 

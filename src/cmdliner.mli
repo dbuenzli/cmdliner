@@ -563,7 +563,7 @@ end
 {[let revolt () = print_endline "Revolt!"]}
     the term :
 {[
-open Cmdliner;;
+open Cmdliner
 
 let revolt_t = Term.(const revolt $ const ())]}
     is a term that evaluates to the result (and effect) of the [revolt]
@@ -855,7 +855,7 @@ let rm prompt recurse files =
 
 (* Command line interface *)
 
-open Cmdliner;;
+open Cmdliner
 
 let files = Arg.(non_empty & pos_all file [] & info [] ~docv:"FILE")
 let prompt =
@@ -922,7 +922,7 @@ let cp verbose recurse force srcs dest =
 
 (* Command line interface *)
 
-open Cmdliner;;
+open Cmdliner
 
 let verbose =
   let doc = "Print file names as they are copied." in
@@ -1000,7 +1000,7 @@ let tail lines follow verb pid files =
 
 (* Command line interface *)
 
-open Cmdliner;;
+open Cmdliner
 
 let lines =
   let loc =
@@ -1112,7 +1112,7 @@ let help copts man_format cmds topic = match topic with
         let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
         `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
-open Cmdliner;;
+open Cmdliner
 
 (* Help sections common to all commands *)
 

@@ -14,7 +14,7 @@ let cp verbose recurse force srcs dest =
 
 (* Command line interface *)
 
-open Cmdliner;;
+open Cmdliner
 
 let verbose =
   let doc = "Print file names as they are copied." in

@@ -2,7 +2,7 @@
 
 let revolt () = print_endline "Revolt!"
 
-open Cmdliner;;
+open Cmdliner
 
 let revolt_t = Term.(const revolt $ const ())
 

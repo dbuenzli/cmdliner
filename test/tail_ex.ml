@@ -19,7 +19,7 @@ let tail lines follow verb pid files =
 
 (* Command line interface *)
 
-open Cmdliner;;
+open Cmdliner
 
 let lines =
   let loc =
