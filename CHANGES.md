@@ -1,4 +1,7 @@
 
+
+- Fix repeated environment variable printing for flags (#64). Thanks to
+  Thomas Gazagnaire for the report.
 - Fix plain help formatting for commands with empty
   description. Thanks to Maciek Starzyk for the patch.
 

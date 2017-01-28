@@ -478,14 +478,16 @@ module Help = struct
     | `S "SYNOPSIS" as s :: rest -> extract_synopsis [s] rest (* user-defined *)
     | man -> [ `S "SYNOPSIS"; `P (synopsis ei); ], man           (* automatic *)
 
-  let or_env a = match a.env_info with
+  let or_env ~value a = match a.env_info with
   | None -> ""
-  | Some v -> str " or $(i,%s) env" v.env_var
+  | Some v ->
+      let value = if value then " or" else "absent " in
+      str "%s $(i,%s) env" value v.env_var
 
   let make_arg_label a =
     if is_pos a then str "$(i,%s)" a.docv else
     let fmt_name var = match a.o_kind with
-    | Flag -> fun n -> str "$(b,%s)%s" n (or_env a)
+    | Flag -> fun n -> str "$(b,%s)" n
     | Opt ->
         fun n ->
           if String.length n > 2 then str "$(b,%s)=$(i,%s)" n var else
@@ -538,9 +540,10 @@ module Help = struct
     let format a =
       let absent = match a.absent with
       | Error -> ""
-      | Val v -> match Lazy.force v with
-      | "" -> ""
-      | v -> str "absent=%s%s" v (or_env a)
+      | Val v ->
+          match Lazy.force v with
+          | "" -> str "%s" (or_env ~value:false a)
+          | v -> str "absent=%s%s" v (or_env ~value:true a)
       in
       let optvopt = match a.o_kind with
       | Opt_vopt v -> str "default=%s" v

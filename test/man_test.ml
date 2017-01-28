@@ -5,7 +5,7 @@ let hey =
   let doc = "Equivalent to set $(opt)." in
   let env = Arg.env_var "TEST_ENV" ~doc in
   let doc = "Set hey." in
-  Arg.(value & flag & info ["hey"] ~env ~doc)
+  Arg.(value & flag & info ["hey"; "y"] ~env ~doc)
 
 let repodir =
   let doc = "See option $(opt)." in
