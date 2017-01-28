@@ -4,7 +4,9 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-let str = Printf.sprintf
+let strf = Printf.sprintf
+
+module Manpage = Cmdliner_manpage
 
 (* Invalid_arg strings *)
 
@@ -15,51 +17,30 @@ let err_help s = "Term error, help requested for unknown command " ^ s
 let err_empty_list = "Empty list"
 let err_incomplete_enum = "Incomplete enumeration for the type"
 let err_doc_string s =
-  str "Variable substitution failed on documentation fragment `%s'" s
+  strf "Variable substitution failed on documentation fragment `%s'" s
 
 (* A few useful definitions. *)
 
 let rev_compare n n' = compare n' n
 let pr = Format.fprintf
-let pr_str = Format.pp_print_string
-let pr_char = Format.pp_print_char
+let pp_str = Format.pp_print_string
+let pp_char = Format.pp_print_char
+let pp_text = Manpage.pp_text
+let pp_lines = Manpage.pp_lines
 let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
-let quote s = str "`%s'" s
+
+let quote s = strf "`%s'" s
 let alts_str ?(quoted = true) alts =
   let quote = if quoted then quote else (fun s -> s) in
   match alts with
   | [] -> invalid_arg err_empty_list
   | [a] -> (quote a)
-  | [a; b] -> str "either %s or %s" (quote a) (quote b)
+  | [a; b] -> strf "either %s or %s" (quote a) (quote b)
   | alts ->
       let rev_alts = List.rev alts in
-      str "one of %s or %s"
+      strf "one of %s or %s"
         (String.concat ", " (List.rev_map quote (List.tl rev_alts)))
         (quote (List.hd rev_alts))
-
-let pr_white_str spaces ppf s =  (* spaces and new lines with Format's funs *)
-  let left = ref 0 and right = ref 0 and len = String.length s in
-  let flush () =
-    Format.pp_print_string ppf (String.sub s !left (!right - !left));
-    incr right; left := !right;
-  in
-  while (!right <> len) do
-    if s.[!right] = '\n' then (flush (); Format.pp_force_newline ppf ()) else
-    if spaces && s.[!right] = ' ' then (flush (); Format.pp_print_space ppf ())
-    else incr right;
-  done;
-  if !left <> len then flush ()
-
-let pr_text = pr_white_str true
-let pr_lines = pr_white_str false
-let pr_to_temp_file pr v = try
-  let exec = Filename.basename Sys.argv.(0) in
-  let file, oc = Filename.open_temp_file exec "out" in
-  let ppf = Format.formatter_of_out_channel oc in
-  pr ppf v; Format.pp_print_flush ppf (); close_out oc;
-  at_exit (fun () -> try Sys.remove file with Sys_error e -> ());
-  Some file
-with Sys_error _ -> None
 
 (* Levenshtein distance, for making spelling suggestions in case of error. *)
 
@@ -160,7 +141,7 @@ type term_info =
     tdoc : string;                        (* one line description of term. *)
     tdocs : string;       (* title of man section where listed (commands). *)
     sdocs : string;    (* standard options, title of section where listed. *)
-    man : man_block list; }                              (* man page text. *)
+    man : Manpage.block list; }                          (* man page text. *)
 
 type eval_info =                 (* informatin about the evaluation context. *)
   { term : term_info * arg_info list;               (* term being evaluated. *)
@@ -172,218 +153,27 @@ let eval_kind ei =                       (* evaluation with multiple terms ? *)
   if ei.choices = [] then `Simple else
   if (fst ei.term) == (fst ei.main) then `M_main else `M_choice
 
-module Manpage = struct
-  type format = [ `Auto | `Pager | `Plain | `Groff ]
-  type title = string * int * string * string * string
-  type block = man_block
-  type t = title * block list
-
-  (* Standard sections *)
-
-  let s_name = "NAME"
-  let s_synopsis = "SYNOPSIS"
-  let s_description = "DESCRIPTION"
-  let s_commands = "COMMANDS"
-  let s_arguments = "ARGUMENTS"
-  let s_options = "OPTIONS"
-  let s_environment = "ENVIRONMENT"
-  let s_files = "FILES"
-  let s_exit_status = "EXIT STATUS"
-  let s_examples = "EXAMPLES"
-  let s_bugs = "BUGS"
-  let s_author = "AUTHOR"
-  let s_see_also = "SEE ALSO"
-
-  (* Format helpers *)
-
-  let p_indent = 7                                  (* paragraph indentation. *)
-  let l_indent = 4                                      (* label indentation. *)
-  let escape subst esc buf s =
-    let subst s =
-      let len = String.length s in
-      if not (len > 1 && s.[1] = ',') then (subst s) else
-      if len = 2 then "" else
-      esc s.[0] (String.sub s 2 (len - 2))
-    in
-    try
-      Buffer.clear buf; Buffer.add_substitute buf subst s;
-      let s = Buffer.contents buf in (* twice for $(i,$(mname)). *)
-      Buffer.clear buf; Buffer.add_substitute buf subst s;
-      Buffer.contents buf
-    with Not_found -> invalid_arg (err_doc_string s)
-
-  let pr_tokens ?(groff = false) ppf s =
-    let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
-    let len = String.length s in
-    let i = ref 0 in
-    try
-      while (true) do
-        while (!i < len && is_space s.[!i]) do incr i done;
-        let start = !i in
-        if start = len then raise Exit;
-        while (!i < len && not (is_space s.[!i]) && not (s.[!i] = '-')) do
-          incr i
-        done;
-        pr_str ppf (String.sub s start (!i - start));
-        if !i = len then raise Exit;
-        if s.[!i] = '-' then
-          (incr i; if groff then pr_str ppf "\\-" else pr_char ppf '-');
-        if (!i < len && is_space s.[!i]) then
-          (if groff then pr_char ppf ' ' else Format.pp_print_space ppf ())
-      done
-    with Exit -> ()
-
-  (* Plain text output *)
-
-  let plain_esc c s = match c with 'g' -> "" (* groff specific *) | _ ->  s
-  let pr_indent ppf c = for i = 1 to c do pr_char ppf ' ' done
-  let pr_plain_blocks subst ppf ts =
-    let buf = Buffer.create 1024 in
-    let escape t = escape subst plain_esc buf t in
-    let pr_tokens ppf t = pr_tokens ppf (escape t) in
-    let rec aux = function
-    | [] -> ()
-    | t :: ts ->
-        begin match t with
-        | `Noblank -> ()
-        | `P s -> pr ppf "%a@[%a@]@," pr_indent p_indent pr_tokens s
-        | `S s -> pr ppf "@[%a@]" pr_tokens s
-        | `Pre s -> pr ppf "%a@[%a@]@," pr_indent p_indent pr_lines (escape s)
-        | `I (label, s) ->
-            let label = escape label in
-            let ll = String.length label in
-            pr ppf "@[%a@[%a@]" pr_indent p_indent pr_tokens label;
-            if s = "" then pr ppf "@]@," else
-            if ll < l_indent then
-              pr ppf "%a@[%a@]@]@," pr_indent (l_indent - ll) pr_tokens s
-            else
-            pr ppf "@\n%a@[%a@]@]@,"
-              pr_indent (p_indent + l_indent) pr_tokens s
-        end;
-        begin match ts with
-        | `Noblank :: ts -> aux ts
-        | ts -> Format.pp_print_cut ppf (); aux ts
-        end
-    in
-    aux ts
-
-  let pr_plain_page subst ppf (_, text) =
-    pr ppf "@[<v>%a@]" (pr_plain_blocks subst) text
-
-  (* Groff output *)
-
-  let groff_esc c s = match c with
-  | 'i' -> (str "\\fI%s\\fR" s)
-  | 'b' -> (str "\\fB%s\\fR" s)
-  | 'p' -> "" (* plain text specific *)
-  | _ -> s
-
-  let pr_groff_lines ppf s =
-    let left = ref 0 and right = ref 0 and len = String.length s in
-    let flush () =
-      Format.pp_print_string ppf (String.sub s !left (!right - !left));
-      incr right; left := !right;
-    in
-    while (!right <> len) do
-      if s.[!right] = '\n' then (flush (); Format.pp_force_newline ppf ()) else
-      if s.[!right] = '-' then (flush (); pr_str ppf "\\-") else
-      incr right;
-    done;
-    if !left <> len then flush ()
-
-  let pr_groff_blocks subst ppf text =
-    let buf = Buffer.create 1024 in
-    let escape t = escape subst groff_esc buf t in
-    let pr_tokens ppf t = pr_tokens ~groff:true ppf (escape t) in
-    let pr_block = function
-    | `P s -> pr ppf "@\n.P@\n%a" pr_tokens s
-    | `Pre s -> pr ppf "@\n.P@\n.nf@\n%a@\n.fi" pr_groff_lines (escape s)
-    | `S s -> pr ppf "@\n.SH %a" pr_tokens s
-    | `Noblank -> pr ppf "@\n.sp -1"
-    | `I (l, s) -> pr ppf "@\n.TP 4@\n%a@\n%a" pr_tokens l pr_tokens s
-    in
-    List.iter pr_block text
-
-  let pr_groff_page subst ppf ((n, s, a1, a2, a3), t) =
-    pr ppf ".\\\" Pipe this output to groff -man -Tutf8 | less@\n\
-            .\\\"@\n\
-            .TH \"%s\" %d \"%s\" \"%s\" \"%s\"@\n\
-            .\\\" Disable hyphenation and ragged-right@\n\
-            .nh@\n\
-      .ad l\
-      %a@?"
-      n s a1 a2 a3 (pr_groff_blocks subst) t
-
-  (* Printing to a pager *)
-
-  let find_cmd cmds =
-    let test, null = match Sys.os_type with
-    | "Win32" -> "where", " NUL"
-    | _ -> "type", "/dev/null"
-    in
-    let cmd c = Sys.command (str "%s %s 1>%s 2>%s" test c null null) = 0 in
-    try Some (List.find cmd cmds) with Not_found -> None
-
-  let pr_to_pager print ppf v =
-    let pager =
-      let cmds = ["less"; "more"] in
-      let cmds = try (Sys.getenv "PAGER") :: cmds with Not_found -> cmds in
-      let cmds = try (Sys.getenv "MANPAGER") :: cmds with Not_found -> cmds in
-      find_cmd cmds
-    in
-    match pager with
-    | None -> print `Plain ppf v
-    | Some pager ->
-        let cmd = match (find_cmd ["groff"; "nroff"]) with
-        | None ->
-            begin match pr_to_temp_file (print `Plain) v with
-            | None -> None
-            | Some f -> Some (str "%s < %s" pager f)
-            end
-        | Some c ->
-            begin match pr_to_temp_file (print `Groff) v with
-            | None -> None
-            | Some f ->
-                (* TODO use -Tutf8, but annoyingly maps U+002D to U+2212. *)
-                let xroff = if c = "groff" then c ^ " -Tascii -P-c" else c in
-                Some (str "%s -man < %s | %s" xroff f pager)
-            end
-        in
-        match cmd with
-        | None -> print `Plain ppf v
-        | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
-
-  let rec print ?(subst = fun x -> x) fmt ppf page = match fmt with
-  | `Pager -> pr_to_pager (print ~subst) ppf page
-  | `Plain -> pr_plain_page subst ppf page
-  | `Groff -> pr_groff_page subst ppf page
-  | `Auto ->
-      match try (Some (Sys.getenv "TERM")) with Not_found -> None with
-      | None | Some "dumb" -> print ~subst `Plain ppf page
-      | Some _ -> print ~subst `Pager ppf page
-end
-
 module Help = struct
   let invocation ?(sep = ' ') ei = match eval_kind ei with
   | `Simple | `M_main -> (fst ei.main).name
-  | `M_choice -> str "%s%c%s" (fst ei.main).name sep (fst ei.term).name
+  | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
 
   let title ei =
     let prog = String.capitalize (fst ei.main).name in
     let name = String.uppercase (invocation ~sep:'-' ei) in
     let left_footer = prog ^ match (fst ei.main).version with
-      | None -> "" | Some v -> str " %s" v
+      | None -> "" | Some v -> strf " %s" v
     in
-    let center_header = str "%s Manual" prog in
+    let center_header = strf "%s Manual" prog in
     name, 1, "", left_footer, center_header
 
   let name_section ei =
-    let tdoc d = if d = "" then "" else (str " - %s" d) in
+    let tdoc d = if d = "" then "" else (strf " - %s" d) in
     [`S Manpage.s_name;
-     `P (str "%s%s" (invocation ~sep:'-' ei) (tdoc (fst ei.term).tdoc)); ]
+     `P (strf "%s%s" (invocation ~sep:'-' ei) (tdoc (fst ei.term).tdoc)); ]
 
   let synopsis ei = match eval_kind ei with
-  | `M_main -> str "$(b,%s) $(i,COMMAND) ..." (invocation ei)
+  | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." (invocation ei)
   | `Simple | `M_choice ->
       let rev_cmp (p, _) (p', _) = match p', p with        (* best effort. *)
       | p, All -> -1 | All, p -> 1
@@ -403,46 +193,39 @@ module Help = struct
       let rec format_pos acc = function
       | a :: al ->
           if is_opt a then format_pos acc al else
-          let v = if a.docv = "" then "$(i,ARG)" else str "$(i,%s)" a.docv in
-          let v = if a.absent = Error then str "%s" v else str "[%s]" v in
+          let v = if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" a.docv in
+          let v = if a.absent = Error then strf "%s" v else strf "[%s]" v in
           let v = v ^ match a.p_kind with Nth _ -> "" | _ -> "..." in
           format_pos ((a.p_kind, v) :: acc) al
       | [] -> acc
       in
       let args = List.sort rev_cmp (format_pos [] (snd ei.term)) in
       let args = String.concat " " (List.rev_map snd args) in
-      str "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) args
+      strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) args
 
   let get_synopsis_section ei =
-    let rec extract_synopsis syn = function
-    | `S _ :: _ as man -> List.rev syn, man
-    |  block :: rest -> extract_synopsis (block :: syn) rest
-    | [] -> List.rev syn, []
+    let rec split_section syn = function
+    | (`S _ :: _ | []) as man -> List.rev syn, man
+    |  b :: bs -> split_section (b :: syn) bs
     in
     match (fst ei.term).man with
     | `S syn as s :: rest when syn = Manpage.s_synopsis -> (* user-defined *)
-        extract_synopsis [s] rest
+        split_section [s] rest
     | man -> (* automatic *)
         [ `S Manpage.s_synopsis; `P (synopsis ei); ], man
 
-  let or_env ~value a = match a.env_info with
-  | None -> ""
-  | Some v ->
-      let value = if value then " or" else "absent " in
-      str "%s $(i,%s) env" value v.env_var
-
   let make_arg_label a =
-    if is_pos a then str "$(i,%s)" a.docv else
+    if is_pos a then strf "$(i,%s)" a.docv else
     let fmt_name var = match a.o_kind with
-    | Flag -> fun n -> str "$(b,%s)" n
+    | Flag -> fun n -> strf "$(b,%s)" n
     | Opt ->
         fun n ->
-          if String.length n > 2 then str "$(b,%s)=$(i,%s)" n var else
-          str "$(b,%s) $(i,%s)" n var
+          if String.length n > 2 then strf "$(b,%s)=$(i,%s)" n var else
+          strf "$(b,%s) $(i,%s)" n var
     | Opt_vopt _ ->
         fun n ->
-          if String.length n > 2 then str "$(b,%s)[=$(i,%s)]" n var else
-          str "$(b,%s) [$(i,%s)]" n var
+          if String.length n > 2 then strf "$(b,%s)[=$(i,%s)]" n var else
+          strf "$(b,%s) [$(i,%s)]" n var
     in
     let var = if a.docv = "" then "VAL" else a.docv in
     let names = List.sort compare a.o_names in
@@ -451,21 +234,27 @@ module Help = struct
 
   let arg_info_substs ~buf a doc =
     let subst = function
-    | "docv" -> str "$(i,%s)" a.docv
+    | "docv" -> strf "$(i,%s)" a.docv
     | "opt" when is_opt a ->
         let k = String.lowercase (List.hd (List.sort compare a.o_names)) in
-        str "$(b,%s)" k
+        strf "$(b,%s)" k
     | "env" when a.env_info <> None ->
         begin match a.env_info with
         | None -> assert false
-        | Some v -> str "$(i,%s)" v.env_var
+        | Some v -> strf "$(i,%s)" v.env_var
         end
-    | s -> str "$(%s)" s in
+    | s -> strf "$(%s)" s in
     try
       Buffer.clear buf;
       Buffer.add_substitute buf subst doc;
       Buffer.contents buf
     with Not_found -> invalid_arg (err_doc_string doc)
+
+  let or_env ~value a = match a.env_info with
+  | None -> ""
+  | Some v ->
+      let value = if value then " or" else "absent " in
+      strf "%s $(i,%s) env" value v.env_var
 
   let make_arg_items ei =
     let buf = Buffer.create 200 in
@@ -489,17 +278,17 @@ module Help = struct
       | Error -> ""
       | Val v ->
           match Lazy.force v with
-          | "" -> str "%s" (or_env ~value:false a)
-          | v -> str "absent=%s%s" v (or_env ~value:true a)
+          | "" -> strf "%s" (or_env ~value:false a)
+          | v -> strf "absent=%s%s" v (or_env ~value:true a)
       in
       let optvopt = match a.o_kind with
-      | Opt_vopt v -> str "default=%s" v
+      | Opt_vopt v -> strf "default=%s" v
       | _ -> ""
       in
       let argvdoc = match optvopt, absent with
       | "", "" -> ""
-      | s, "" | "", s -> str " (%s)" s
-      | s, s' -> str " (%s) (%s)" s s'
+      | s, "" | "", s -> strf " (%s)" s
+      | s, s' -> strf " (%s) (%s)" s s'
       in
       (a.docs, `I (make_arg_label a ^ argvdoc, (arg_info_substs ~buf a a.doc)))
     in
@@ -519,7 +308,7 @@ module Help = struct
     let format a =
       let e = match a.env_info with None -> assert false | Some a -> a in
       (e.env_docs,
-       `I (str "$(i,%s)" e.env_var, arg_info_substs ~buf a e.env_doc))
+       `I (strf "$(i,%s)" e.env_var, arg_info_substs ~buf a e.env_doc))
     in
     let is_env_item a = a.env_info <> None in
     let l = List.sort cmp (List.filter is_env_item (snd ei.term)) in
@@ -529,7 +318,7 @@ module Help = struct
   | `Simple | `M_choice -> []
   | `M_main ->
       let add_cmd acc (ti, _) =
-        (ti.tdocs, `I ((str "$(b,%s)" ti.name), ti.tdoc)) :: acc
+        (ti.tdocs, `I ((strf "$(b,%s)" ti.name), ti.tdoc)) :: acc
       in
       List.sort rev_compare (List.fold_left add_cmd [] ei.choices)
 
@@ -582,60 +371,60 @@ module Help = struct
   let ei_subst ei = function
   | "tname" -> (fst ei.term).name
   | "mname" -> (fst ei.main).name
-  | s -> str "$(%s)" s
+  | s -> strf "$(%s)" s
 
   let man ei =
     title ei, (name_section ei) @ (text ei)
 
   let print fmt ppf ei = Manpage.print ~subst:(ei_subst ei) fmt ppf (man ei)
-  let pr_synopsis ppf ei =
+  let pp_synopsis ppf ei =
     pr ppf "@[%s@]"
       (Manpage.escape (ei_subst ei)
          Manpage.plain_esc (Buffer.create 100) (synopsis ei))
 
-  let pr_version ppf ei = match (fst ei.main).version with
+  let pp_version ppf ei = match (fst ei.main).version with
   | None -> assert false
-  | Some v -> pr ppf "@[%a@]@." pr_text v
+  | Some v -> pr ppf "@[%a@]@." Manpage.pp_text v
 end
 
 (* Errors for the command line user *)
 
 module Err = struct
-  let invalid kind s exp = str "invalid %s %s, %s" kind (quote s) exp
+  let invalid kind s exp = strf "invalid %s %s, %s" kind (quote s) exp
   let invalid_val = invalid "value"
-  let no kind s = str "no %s %s" (quote s) kind
-  let not_dir s = str "%s is not a directory" (quote s)
-  let is_dir s = str "%s is a directory" (quote s)
-  let element kind s exp = str "invalid element in %s (`%s'): %s" kind s exp
-  let sep_miss sep s = invalid_val s (str "missing a `%c' separator" sep)
+  let no kind s = strf "no %s %s" (quote s) kind
+  let not_dir s = strf "%s is not a directory" (quote s)
+  let is_dir s = strf "%s is a directory" (quote s)
+  let element kind s exp = strf "invalid element in %s (`%s'): %s" kind s exp
+  let sep_miss sep s = invalid_val s (strf "missing a `%c' separator" sep)
   let unknown kind ?(hints = []) v =
-    let did_you_mean s = str ", did you mean %s ?" s in
+    let did_you_mean s = strf ", did you mean %s ?" s in
     let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
-    str "unknown %s %s%s" kind (quote v) hints
+    strf "unknown %s %s%s" kind (quote v) hints
 
   let ambiguous kind s ambs =
-    str "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
+    strf "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
 
   let pos_excess excess =
-    str "too many arguments, don't know what to do with %s"
+    strf "too many arguments, don't know what to do with %s"
       (String.concat ", " (List.map quote excess))
 
   let flag_value f v =
-    str "option %s is a flag, it cannot take the argument %s"
+    strf "option %s is a flag, it cannot take the argument %s"
       (quote f) (quote v)
 
-  let opt_value_missing f = str "option %s needs an argument" (quote f)
-  let opt_parse_value f e = str "option %s: %s" (quote f) e
-  let env_parse_value var e = str "environment variable %s: %s" (quote var) e
+  let opt_value_missing f = strf "option %s needs an argument" (quote f)
+  let opt_parse_value f e = strf "option %s: %s" (quote f) e
+  let env_parse_value var e = strf "environment variable %s: %s" (quote var) e
   let opt_repeated f f' =
-    if f = f' then str "option %s cannot be repeated" (quote f) else
-    str "options %s and %s cannot be present at the same time" (quote f)
+    if f = f' then strf "option %s cannot be repeated" (quote f) else
+    strf "options %s and %s cannot be present at the same time" (quote f)
       (quote f')
 
   let pos_parse_value a e =
     if a.docv = "" then e else match a.p_kind with
-    | Nth _ -> str "%s argument: %s" a.docv e
-    | _ -> str "%s... arguments: %s" a.docv e
+    | Nth _ -> strf "%s argument: %s" a.docv e
+    | _ -> strf "%s... arguments: %s" a.docv e
 
   let arg_missing a =
     if is_opt a then
@@ -643,24 +432,24 @@ module Err = struct
       | n :: l -> if (String.length n) > 2 || l = [] then n else long_name l
       | [] -> assert false
       in
-      str "required option %s is missing" (long_name a.o_names)
+      strf "required option %s is missing" (long_name a.o_names)
     else
-    if a.docv = "" then str "a required argument is missing" else
-    str "required argument %s is missing" a.docv
+    if a.docv = "" then strf "a required argument is missing" else
+    strf "required argument %s is missing" a.docv
 
   (* Error printers *)
 
-  let print ppf ei e = pr ppf "%s: @[%a@]@." (fst ei.main).name pr_text e
-  let pr_backtrace err ei e bt =
+  let print ppf ei e = pr ppf "%s: @[%a@]@." (fst ei.main).name pp_text e
+  let pp_backtrace err ei e bt =
     let bt =
       let len = String.length bt in
       if len > 0 then String.sub bt 0 (len - 1) (* remove final '\n' *) else bt
     in
     pr err
       "%s: @[internal error, uncaught exception:@\n%a@]@."
-      (fst ei.main).name pr_lines (str "%s\n%s" (Printexc.to_string e) bt)
+      (fst ei.main).name pp_lines (strf "%s\n%s" (Printexc.to_string e) bt)
 
-  let pr_try_help ppf ei =
+  let pp_try_help ppf ei =
     let exec = Help.invocation ei in
     let main = (fst ei.main).name in
     if exec = main then
@@ -669,9 +458,9 @@ module Err = struct
     pr ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
       exec main
 
-  let pr_usage ppf ei e =
+  let pp_usage ppf ei e =
     pr ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-      (fst ei.main).name pr_text e Help.pr_synopsis ei pr_try_help ei
+      (fst ei.main).name pp_text e Help.pp_synopsis ei pp_try_help ei
 end
 
 (* Command lines. A command line stores pre-parsed information about
@@ -851,7 +640,7 @@ module Arg = struct
   let parse_error e = raise (Cmdline.Error e)
   let some ?(none = "") (parse, print) =
     (fun s -> match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e),
-    (fun ppf v -> match v with None -> pr_str ppf none| Some v -> print ppf v)
+    (fun ppf v -> match v with None -> pp_str ppf none| Some v -> print ppf v)
 
   let info ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
@@ -1058,7 +847,7 @@ module Arg = struct
   let char =
     (fun s -> if String.length s = 1 then `Ok s.[0] else
       `Error (Err.invalid_val s "expected a character")),
-    pr_char
+    pp_char
 
   let parse_with t_of_str exp s =
     try `Ok (t_of_str s) with Failure _ -> `Error (Err.invalid_val s exp)
@@ -1082,7 +871,7 @@ module Arg = struct
     parse_with float_of_string "expected a floating point number",
     Format.pp_print_float
 
-  let string = (fun s -> `Ok s), pr_str
+  let string = (fun s -> `Ok s), pp_str
   let enum sl =
     if sl = [] then invalid_arg err_empty_list else
     let t = Cmdliner_trie.of_list sl in
@@ -1097,7 +886,7 @@ module Arg = struct
     in
     let print ppf v =
       let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
-      try pr_str ppf (List.assoc v sl_inv)
+      try pp_str ppf (List.assoc v sl_inv)
       with Not_found -> invalid_arg err_incomplete_enum
     in
     parse, print
@@ -1105,7 +894,7 @@ module Arg = struct
   let file =
     (fun s -> if Sys.file_exists s then `Ok s else
       `Error (Err.no "file or directory" s)),
-    pr_str
+    pp_str
 
   let dir =
     (fun s ->
@@ -1113,7 +902,7 @@ module Arg = struct
          if Sys.is_directory s then `Ok s else `Error (Err.not_dir s)
        else
        `Error (Err.no "directory" s)),
-    pr_str
+    pp_str
 
   let non_dir_file =
     (fun s ->
@@ -1121,7 +910,7 @@ module Arg = struct
          if not (Sys.is_directory s) then `Ok s else `Error (Err.is_dir s)
        else
        `Error (Err.no "file" s)),
-    pr_str
+    pp_str
 
   let split_and_parse sep parse s =
     let parse sub = match parse sub with
@@ -1138,23 +927,23 @@ module Arg = struct
     in
     split [] (String.length s - 1)
 
-  let list ?(sep = ',') (parse, pr_e) =
+  let list ?(sep = ',') (parse, pp_e) =
     let parse s = try `Ok (split_and_parse sep parse s) with
     | Failure e -> `Error (Err.element "list" s e)
     in
     let rec print ppf = function
-    | v :: l -> pr_e ppf v; if (l <> []) then (pr_char ppf sep; print ppf l)
+    | v :: l -> pp_e ppf v; if (l <> []) then (pp_char ppf sep; print ppf l)
     | [] -> ()
     in
     parse, print
 
-  let array ?(sep = ',') (parse, pr_e) =
+  let array ?(sep = ',') (parse, pp_e) =
     let parse s = try `Ok (Array.of_list (split_and_parse sep parse s)) with
     | Failure e -> `Error (Err.element "array" s e)
     in
     let print ppf v =
       let max = Array.length v - 1 in
-      for i = 0 to max do pr_e ppf v.(i); if i <> max then pr_char ppf sep done
+      for i = 0 to max do pp_e ppf v.(i); if i <> max then pp_char ppf sep done
     in
     parse, print
 
@@ -1267,9 +1056,9 @@ module Term = struct
   let man_fmts_enum = Arg.enum man_fmts
   let man_fmts_alts = Arg.doc_alts_enum man_fmts
   let man_fmts_doc kind =
-    str "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
-         the format is `pager` or `plain' whenever the $(i,TERM) env var is
-         `dumb' or undefined."
+    strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
+          the format is `pager` or `plain' whenever the $(i,TERM) env var is
+          `dumb' or undefined."
       kind man_fmts_alts
 
   let man_format =
@@ -1308,12 +1097,12 @@ module Term = struct
       let cl = Cmdline.create (snd ei.term) args in
       match help_arg ei cl, vers_arg with
       | Some fmt, _ -> Help.print fmt help ei; `Help
-      | None, Some v_arg when v_arg ei cl -> Help.pr_version help ei; `Version
+      | None, Some v_arg when v_arg ei cl -> Help.pp_version help ei; `Version
       | _ -> `Ok (f ei cl)
     with
-    | Cmdline.Error e -> Err.pr_usage err ei e; `Error `Parse
+    | Cmdline.Error e -> Err.pp_usage err ei e; `Error `Parse
     | Term (`Error (usage, e)) ->
-        if usage then Err.pr_usage err ei e else Err.print err ei e;
+        if usage then Err.pp_usage err ei e else Err.print err ei e;
         `Error `Term
     | Term (`Help (fmt, cmd)) ->
         let ei = match cmd with
@@ -1336,7 +1125,7 @@ module Term = struct
     let ei = { term = term; main = term; choices = []; env = env } in
     try eval_term help err ei f (remove_exec argv) with
     | e when catch ->
-        Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
+        Err.pp_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
@@ -1352,9 +1141,9 @@ module Term = struct
       eval_term help err ei f args
     with
     | Cmdline.Error e ->                    (* may be raised by choose_term. *)
-        Err.pr_usage err ei e; `Error `Parse
+        Err.pp_usage err ei e; `Error `Parse
     | e when catch ->
-        Err.pr_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
+        Err.pp_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
   let eval_peek_opts ?(version_opt = false) ?(env = env_default)
       ?(argv = Sys.argv) (al, f) =

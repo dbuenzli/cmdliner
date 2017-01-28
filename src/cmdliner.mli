@@ -64,25 +64,6 @@ module Manpage : sig
   type t = title * block list
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
-  (** {1:output Output} *)
-
-  type format = [ `Auto | `Pager | `Plain | `Groff ]
-  (** The type for manpage output specification.
-      {ul
-      {- [`Auto], formats like [`Pager] or [`Plain] whenever the [TERM]
-         environment variable is [dumb] or unset.}
-      {- [`Pager], tries to write to a discovered pager, if that fails
-         uses the [`Plain] format.}
-      {- [`Plain], formats to plain text.}
-      {- [`Groff], formats to groff commands.}} *)
-
-  val print :
-    ?subst:(string -> string) -> format -> Format.formatter -> t -> unit
-  (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format
-      [fmt]. [subst] can be used to perform variable
-      substitution, see {!Buffer.add_substitute} (defaults to the
-      identity). *)
-
   (** {1:standard_sections Standard section names}
 
       The following are standard manpage section names, roughly ordered
@@ -126,6 +107,25 @@ module Manpage : sig
 
   val s_see_also : string
   (** The [SEE ALSO] section. *)
+
+  (** {1:output Output} *)
+
+  type format = [ `Auto | `Pager | `Plain | `Groff ]
+  (** The type for manpage output specification.
+      {ul
+      {- [`Auto], formats like [`Pager] or [`Plain] whenever the [TERM]
+         environment variable is [dumb] or unset.}
+      {- [`Pager], tries to write to a discovered pager, if that fails
+         uses the [`Plain] format.}
+      {- [`Plain], formats to plain text.}
+      {- [`Groff], formats to groff commands.}} *)
+
+  val print :
+    ?subst:(string -> string) -> format -> Format.formatter -> t -> unit
+  (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format
+      [fmt]. [subst] can be used to perform variable
+      substitution, see {!Buffer.add_substitute} (defaults to the
+      identity). *)
 end
 
 (** Terms.
