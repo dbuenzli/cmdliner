@@ -35,15 +35,15 @@ let srcs =
 let dest =
   let doc = "Destination of the copy. Must be a directory if there is more
            than one $(i,SOURCE)." in
-  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DEST"
-         ~doc)
+  let docv = "DEST" in
+  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv ~doc)
 
 let cmd =
   let doc = "copy files" in
   let man = [
-    `S "BUGS";
+    `S Manpage.s_bugs;
     `P "Email them to <hehey at example.org>.";
-    `S "SEE ALSO";
+    `S Manpage.s_see_also;
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),

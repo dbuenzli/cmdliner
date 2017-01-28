@@ -34,7 +34,7 @@ let recursive =
 let cmd =
   let doc = "remove files or directories" in
   let man = [
-    `S "DESCRIPTION";
+    `S Manpage.s_description;
     `P "$(tname) removes each specified $(i,FILE). By default it does not
         remove directories, to also remove them and their contents, use the
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
@@ -44,8 +44,8 @@ let cmd =
           $(mname) ./-foo";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
-    `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
-    `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
+    `S Manpage.s_bugs; `P "Report bugs to <hehey at example.org>.";
+    `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"1.6.1" ~doc ~man

@@ -48,7 +48,7 @@ let help_secs = [
  `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
  `P "Use `$(mname) help patterns' for help on patch matching."; `Noblank;
  `P "Use `$(mname) help environment' for help on environment variables.";
- `S "BUGS"; `P "Check bug reports at http://bugs.example.org.";]
+ `S Manpage.s_bugs; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
 
@@ -82,7 +82,7 @@ let initialize_cmd =
   in
   let doc = "make the current directory a repository" in
   let man = [
-    `S "DESCRIPTION";
+    `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
        existing files and subdirectories become ..."] @ help_secs
   in
@@ -111,7 +111,7 @@ let record_cmd =
   let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
   let doc = "create a patch from unrecorded changes" in
   let man =
-    [`S "DESCRIPTION";
+    [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
          a set of files ..."] @ help_secs
   in
@@ -125,7 +125,7 @@ let help_cmd =
   in
   let doc = "display help about darcs and darcs commands" in
   let man =
-    [`S "DESCRIPTION";
+    [`S Manpage.s_description;
      `P "Prints help about darcs commands and other subjects..."] @ help_secs
   in
   Term.(ret

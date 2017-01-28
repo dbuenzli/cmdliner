@@ -1,4 +1,5 @@
 
+
 - Change default behaviour of `--help[=FMT]` option. `FMT` no longer
   defaults to `pager` if unspecified.  It defaults to the new value
   `auto` which prints the help as `pager` or `plain` whenever the
@@ -8,6 +9,11 @@
   values `Term.ret`, `Term.man_format` and `Manpage.print` to add the
   new ```Auto`` case to manual formats now represented by the
   `Manpage.format` type.
+- Add `Manpage.s_*` constants for standard manpage section names.
+- `Arg.env_var`, change default environment variable section
+  to the standard `ENVIRONMENT` manual section rather than
+  `ENVIRONMENT VARIABLES`. If you previously manually placed that section in
+  your manpage you will have to change the name. See also next point.
 - Relicense from BSD3 to ISC.
 - Safe-string support.
 - Fix repeated environment variable printing for flags (#64). Thanks to

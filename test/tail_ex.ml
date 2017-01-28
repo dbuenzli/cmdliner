@@ -56,13 +56,13 @@ let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 let cmd =
   let doc = "display the last part of a file" in
   let man = [
-    `S "DESCRIPTION";
+    `S Manpage.s_description;
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
         lines can be  specified with the $(b,-n) option.";
-    `S "BUGS";
+    `S Manpage.s_bugs;
     `P "Report them to <hehey at example.org>.";
-    `S "SEE ALSO";
+    `S Manpage.s_see_also;
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),

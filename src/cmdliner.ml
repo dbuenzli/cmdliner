@@ -258,6 +258,24 @@ module Manpage = struct
   type block = man_block
   type t = title * block list
 
+  (* Standard sections *)
+
+  let s_name = "NAME"
+  let s_synopsis = "SYNOPSIS"
+  let s_description = "DESCRIPTION"
+  let s_commands = "COMMANDS"
+  let s_arguments = "ARGUMENTS"
+  let s_options = "OPTIONS"
+  let s_environment = "ENVIRONMENT"
+  let s_files = "FILES"
+  let s_exit_status = "EXIT STATUS"
+  let s_examples = "EXAMPLES"
+  let s_bugs = "BUGS"
+  let s_author = "AUTHOR"
+  let s_see_also = "SEE ALSO"
+
+  (* Format helpers *)
+
   let p_indent = 7                                  (* paragraph indentation. *)
   let l_indent = 4                                      (* label indentation. *)
   let escape subst esc buf s =
@@ -278,7 +296,8 @@ module Manpage = struct
     let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
     let len = String.length s in
     let i = ref 0 in
-    try while (true) do
+    try
+      while (true) do
         while (!i < len && is_space s.[!i]) do incr i done;
         let start = !i in
         if start = len then raise Exit;
@@ -291,7 +310,8 @@ module Manpage = struct
           (incr i; if groff then pr_str ppf "\\-" else pr_char ppf '-');
         if (!i < len && is_space s.[!i]) then
           (if groff then pr_char ppf ' ' else Format.pp_print_space ppf ())
-      done with Exit -> ()
+      done
+    with Exit -> ()
 
   (* Plain text output *)
 
@@ -439,8 +459,8 @@ module Help = struct
 
   let name_section ei =
     let tdoc d = if d = "" then "" else (str " - %s" d) in
-    [`S "NAME"; `P (str "%s%s" (invocation ~sep:'-' ei)
-                      (tdoc (fst ei.term).tdoc)); ]
+    [`S Manpage.s_name;
+     `P (str "%s%s" (invocation ~sep:'-' ei) (tdoc (fst ei.term).tdoc)); ]
 
   let synopsis ei = match eval_kind ei with
   | `M_main -> str "$(b,%s) $(i,COMMAND) ..." (invocation ei)
@@ -480,8 +500,10 @@ module Help = struct
     | [] -> List.rev syn, []
     in
     match (fst ei.term).man with
-    | `S "SYNOPSIS" as s :: rest -> extract_synopsis [s] rest (* user-defined *)
-    | man -> [ `S "SYNOPSIS"; `P (synopsis ei); ], man           (* automatic *)
+    | `S syn as s :: rest when syn = Manpage.s_synopsis -> (* user-defined *)
+        extract_synopsis [s] rest
+    | man -> (* automatic *)
+        [ `S Manpage.s_synopsis; `P (synopsis ei); ], man
 
   let or_env ~value a = match a.env_info with
   | None -> ""
@@ -599,7 +621,7 @@ module Help = struct
         let to_insert, il = List.partition (fun (n, _) -> n = s) il in
         let to_insert = List.rev_map (fun (_, i) -> i) to_insert in
         let to_insert = (to_insert :> [ `Orphan_mark | Manpage.block] list) in
-        merge_items acc to_insert (s = "DESCRIPTION") il ts
+        merge_items acc to_insert (s = Manpage.s_description) il ts
     | t :: ts ->
         let t = (t :> [`Orphan_mark | Manpage.block]) in
         merge_items (t :: acc) to_insert mark il ts
@@ -899,9 +921,8 @@ module Arg = struct
   type 'a t = arg_info list * 'a arg_converter
   type info = arg_info
 
-  let env_var ?(docs = "ENVIRONMENT VARIABLES") ?(doc = "See option $(opt).")
-      env_var
-    =
+  let env_var
+      ?(docs = Manpage.s_environment) ?(doc = "See option $(opt).") env_var =
     { env_var = env_var; env_doc = doc; env_docs = docs }
 
   let ( & ) f x = f x
@@ -913,7 +934,7 @@ module Arg = struct
   let info ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let docs = match docs with
-    | None -> if names = [] then "ARGUMENTS" else "OPTIONS"
+    | None -> if names = [] then Manpage.s_arguments else Manpage.s_options
     | Some s -> s
     in
     { id = arg_id (); absent = Val (lazy "");
@@ -1288,7 +1309,8 @@ module Term = struct
       [ `Help of Manpage.format * string option
       | `Error of bool * string ]
 
-  let info  ?(sdocs = "OPTIONS") ?(man = []) ?(docs = "COMMANDS") ?(doc = "")
+  let info
+      ?(sdocs = Manpage.s_options) ?(man = []) ?(docs = "COMMANDS") ?(doc = "")
       ?version name =
     { name = name; version = version; tdoc = doc; tdocs = docs; sdocs = sdocs;
       man = man }

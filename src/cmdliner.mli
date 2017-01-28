@@ -43,7 +43,8 @@ module Manpage : sig
   (** The type for a block of man page text.
 
       {ul
-      {- [`S s] introduces a new section [s].}
+      {- [`S s] introduces a new section [s], see the
+         {{!standard_sections}standard section names}.}
       {- [`P t] is a new paragraph with text [t].}
       {- [`Pre t] is a new preformatted paragraph with text [t].}
       {- [`I (l,t)] is an indented paragraph with label
@@ -81,6 +82,50 @@ module Manpage : sig
       [fmt]. [subst] can be used to perform variable
       substitution, see {!Buffer.add_substitute} (defaults to the
       identity). *)
+
+  (** {1:standard_sections Standard section names}
+
+      The following are standard manpage section names, roughly ordered
+      in the order they conventionally appear. *)
+
+  val s_name : string
+  (** The [NAME] section. *)
+
+  val s_synopsis : string
+  (** The [SYNOPSIS] section. *)
+
+  val s_description : string
+  (** The [DESCRIPTION] section. *)
+
+  val s_commands : string
+  (** The [COMMANDS] section. *)
+
+  val s_arguments : string
+  (** The [ARGUMENTS] section. *)
+
+  val s_options : string
+  (** The [OPTIONS] section. *)
+
+  val s_environment : string
+  (** The [ENVIRONMENT] section. *)
+
+  val s_files : string
+  (** The [FILES] section. *)
+
+  val s_exit_status : string
+  (** The [EXIT STATUS] section. *)
+
+  val s_examples : string
+  (** The [EXAMPLES] section. *)
+
+  val s_bugs : string
+  (** The [BUGS] section. *)
+
+  val s_author : string
+  (** The [AUTHOR] section. *)
+
+  val s_see_also : string
+  (** The [SEE ALSO] section. *)
 end
 
 (** Terms.
@@ -161,13 +206,14 @@ module Term : sig
          description is also used in the list of commands of the main
          term's man page.}
       {- [docs], only for commands, the title of the section of the main
-         term's man page where it should be listed (defaults to ["COMMANDS"]).}
+         term's man page where it should be listed (defaults to
+         {!Manpage.s_commands}).}
       {- [man] is the text of the man page for the term. In the text,
          the variables ["$(tname)"] and ["$(mname)"] can respectively be
-         used to refer to the value of [name] and the main term's name.
-      }
+         used to refer to the value of [name] and the main term's name.}
       {- [sdocs] defines the title of the section in which the
-         standard [--help] and [--version] arguments are listed.}} *)
+         standard [--help] and [--version] arguments are listed
+         (defaults to {!Manpage.s_options}).}} *)
 
   val name : info -> string
   (** [name ti] is the name of the term information. *)
@@ -301,7 +347,7 @@ module Arg : sig
       variables mentioned in {!info} can be used in this documentation
       string. [doc] defaults to ["See option $(opt)."]. [docs] is the
       title of the man page section in which the environment variable
-      will be listed, it defaults to ["ENVIRONMENT VARIABLES"]. *)
+      will be listed, it defaults to {!Manpage.s_environment}. *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)
@@ -336,9 +382,9 @@ module Arg : sig
          It is a variable name used in the man page to stand for their value.}
       {- [docs] is the title of the man page section in which the argument
          will be listed. For optional arguments this defaults
-         to ["OPTIONS"]. For positional arguments this defaults
-         to ["ARGUMENTS"]. However a positional argument is only listed
-         if it has both a [doc] and [docv] specified.}} *)
+         to {!Manpage.s_options}. For positional arguments this defaults
+         to {!Manpage.s_arguments}. However a positional argument is only
+         listed if it has both a [doc] and [docv] specified.}} *)
 
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for
@@ -627,7 +673,10 @@ let chorus_t = Term.(const chorus $ count $ msg)
 {[
 let info =
   let doc = "print a customizable message repeatedly" in
-  let man = [ `S "BUGS"; `P "Email bug reports to <hehey at example.org>.";] in
+  let man = [
+    `S Manpage.s_bugs;
+    `P "Email bug reports to <hehey at example.org>." ]
+  in
   Term.info "chorus" ~version:"1.6.1" ~doc ~man
 
 let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
@@ -877,7 +926,7 @@ let recursive =
 let cmd =
   let doc = "remove files or directories" in
   let man = [
-    `S "DESCRIPTION";
+    `S Manpage.s_description;
     `P "$(tname) removes each specified $(i,FILE). By default it does not
         remove directories, to also remove them and their contents, use the
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
@@ -887,8 +936,8 @@ let cmd =
     `P "rm ./-foo";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
-    `S "BUGS"; `P "Report bugs to <hehey at example.org>.";
-    `S "SEE ALSO"; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
+    `S Manpage.s_bugs; `P "Report bugs to <hehey at example.org>.";
+    `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"1.6.1" ~doc ~man
@@ -949,9 +998,9 @@ let dest =
 let cmd =
   let doc = "copy files" in
   let man = [
-    `S "BUGS";
+    `S Manpage.s_bugs;
     `P "Email them to <hehey at example.org>.";
-    `S "SEE ALSO";
+    `S Manpage.s_see_also;
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
@@ -1037,13 +1086,13 @@ let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 let cmd =
   let doc = "display the last part of a file" in
   let man = [
-    `S "DESCRIPTION";
+    `S Manpage.s_description;
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
         lines can be  specified with the $(b,-n) option.";
-    `S "BUGS";
+    `S Manpage.s_bugs;
     `P "Report them to <hehey at example.org>.";
-    `S "SEE ALSO";
+    `S Manpage.s_see_also;
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
@@ -1124,7 +1173,7 @@ let help_secs = [
  `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
  `P "Use `$(mname) help patterns' for help on patch matching."; `Noblank;
  `P "Use `$(mname) help environment' for help on environment variables.";
- `S "BUGS"; `P "Check bug reports at http://bugs.example.org.";]
+ `S Manpage.s_bugs; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
 
@@ -1158,7 +1207,7 @@ let initialize_cmd =
   in
   let doc = "make the current directory a repository" in
   let man = [
-    `S "DESCRIPTION";
+    `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
        existing files and subdirectories become ..."] @ help_secs
   in
@@ -1187,7 +1236,7 @@ let record_cmd =
   let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
   let doc = "create a patch from unrecorded changes" in
   let man =
-    [`S "DESCRIPTION";
+    [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
       a set of files ..."] @ help_secs
   in
@@ -1201,7 +1250,7 @@ let help_cmd =
   in
   let doc = "display help about darcs and darcs commands" in
   let man =
-    [`S "DESCRIPTION";
+    [`S Manpage.s_description;
      `P "Prints help about darcs commands and other subjects..."] @ help_secs
   in
   Term.(ret

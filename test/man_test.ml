@@ -38,7 +38,7 @@ let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)
 let info =
   let doc = "print a customizable message repeatedly" in
   let man = [
-    `S "THIS IS A SECTION  FOR $(mname)";
+    `S "THIS IS A SECTION FOR $(mname)";
     `P "This is a paragraph";
     `Pre "This is a preformatted paragraph for $(mname) no filling will \
           occur do the $(i,ASCII) art $(b,here) this will overflow on 80 \
@@ -62,8 +62,8 @@ let info =
           There should be no blanks before and after it.";
     `Noblank;
     `P "Hey ho";
-    `S "ENVIRONMENT VARIABLES"; (* specify where env need to be *)
-    `S "BUGS";
+    `S Manpage.s_environment; (* specify where env need to be *)
+    `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>.";]
   in
   Term.info "man_test" ~version:"1.6.1" ~doc ~man
