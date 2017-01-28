@@ -22,7 +22,7 @@
     use. Open the module to use it, it defines only three modules in
     your scope.
 
-    {e Release %%VERSION%% - %%MAINTAINER%% } *)
+    {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1:top Interface} *)
 
