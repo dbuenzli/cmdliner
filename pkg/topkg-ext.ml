@@ -39,14 +39,18 @@ end = struct
   let read file = try
     let ic = open_in file in 
     let len = in_channel_length ic in 
-    let s = String.create len in 
-    really_input ic s 0 len; close_in ic; `Ok s
+    let buf = Buffer.create len in
+    Buffer.add_channel buf ic len; close_in ic; `Ok (Buffer.contents buf)
   with Sys_error e -> `Error e
 
   let write f s = try 
     let oc = open_out f in 
     output_string oc s; close_out oc; `Ok ()
   with Sys_error e -> `Error e
+
+  let output oc s pos len =
+    let subst = String.sub s pos len in
+    output_string oc subst
 
   let write_subst f vars s = try 
     let oc = open_out f in
