@@ -1,3 +1,6 @@
 true : bin_annot, safe_string
 <src> : include
 <test> : include
+
+# Remove once we require >= 4.03
+true : warn(-3)
