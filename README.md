@@ -12,7 +12,7 @@ page generation. It supports programs with single or multiple commands
 and respects most of the [POSIX][1] and [GNU][2] conventions.
 
 Cmdliner is made of a single independent module and distributed under
-the BSD3 license.
+the ISC license.
 
 [1]: http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html
 [2]: http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html

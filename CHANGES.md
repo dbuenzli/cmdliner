@@ -1,4 +1,5 @@
 
+- Relicense from BSD3 to ISC.
 - Safe-string support.
 - Fix repeated environment variable printing for flags (#64). Thanks to
   Thomas Gazagnaire for the report.
