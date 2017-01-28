@@ -96,86 +96,6 @@ let suggest s candidates =
   let dist, suggs = List.fold_left add (max_int, []) candidates in
   if dist < 3 (* suggest only if not too far *) then suggs else []
 
-(* Tries. This implementation also maps any non ambiguous prefix of a
-   key to its value. *)
-
-module Trie : sig
-  type 'a t
-  val empty : 'a t
-  val is_empty : 'a t -> bool
-  val add : 'a t -> string -> 'a -> 'a t
-  val find : 'a t -> string -> [ `Ok of 'a | `Ambiguous | `Not_found ]
-  val ambiguities : 'a t -> string -> string list
-  val of_list : (string * 'a) list -> 'a t
-end = struct
-  module Cmap = Map.Make (Char)                           (* character maps. *)
-  type 'a value =                         (* type for holding a bound value. *)
-    | Pre of 'a                    (* value is bound by the prefix of a key. *)
-    | Key of 'a                          (* value is bound by an entire key. *)
-    | Amb                     (* no value bound because of ambiguous prefix. *)
-    | Nil                            (* not bound (only for the empty trie). *)
-
-  type 'a t = { v : 'a value; succs : 'a t Cmap.t }
-  let empty = { v = Nil; succs = Cmap.empty }
-  let is_empty t = t = empty
-
-  (* N.B. If we replace a non-ambiguous key, it becomes ambiguous but it's
-     not important for our use. Also the following is not tail recursive but
-     the stack is bounded by key length. *)
-  let add t k d =
-    let rec aux t k len i d pre_d =
-      if i = len then { v = Key d; succs = t.succs } else
-      let v = match t.v with
-      | Amb | Pre _ -> Amb | Key _ as v -> v | Nil -> pre_d
-      in
-      let succs =
-        let t' = try Cmap.find k.[i] t.succs with Not_found -> empty in
-        Cmap.add k.[i] (aux t' k len (i + 1) d pre_d) t.succs
-      in
-      { v; succs }
-    in
-    aux t k (String.length k) 0 d (Pre d (* allocate less *))
-
-  let find_node t k =
-    let rec aux t k len i =
-      if i = len then t else
-      aux (Cmap.find k.[i] t.succs) k len (i + 1)
-    in
-    aux t k (String.length k) 0
-
-  let find t k =
-    try match (find_node t k).v with
-    | Key v | Pre v -> `Ok v | Amb -> `Ambiguous | Nil -> `Not_found
-    with Not_found -> `Not_found
-
-  let ambiguities t p =                        (* ambiguities of [p] in [t]. *)
-    try
-      let t = find_node t p in
-      match t.v with
-      | Key _ | Pre _ | Nil -> []
-      | Amb ->
-          let add_char s c = s ^ (String.make 1 c) in
-          let rem_char s = String.sub s 0 ((String.length s) - 1) in
-          let to_list m = Cmap.fold (fun k t acc -> (k,t) :: acc) m [] in
-          let rec aux acc p = function
-          | ((c, t) :: succs) :: rest ->
-              let p' = add_char p c in
-              let acc' = match t.v with
-              | Pre _ | Amb -> acc
-              | Key _ -> (p' :: acc)
-              | Nil -> assert false
-              in
-              aux acc' p' ((to_list t.succs) :: succs :: rest)
-          | [] :: [] -> acc
-          | [] :: rest -> aux acc (rem_char p) rest
-          | [] -> assert false
-          in
-          aux [] p (to_list t.succs :: [])
-    with Not_found -> []
-
-  let of_list l = List.fold_left (fun t (s, v) -> add t s v) empty l
-end
-
 (* The following types keep untyped information about arguments and
    terms. This data is used to parse the command line, report errors
    and format man page information. *)
@@ -782,17 +702,18 @@ end = struct
   | maybe :: args' as args ->
       if String.length maybe > 1 && maybe.[0] = '-' then ti, args else
       let index =
-        let add acc (choice, _) = Trie.add acc choice.name choice in
-        List.fold_left add Trie.empty choices
+        let add acc (choice, _) = Cmdliner_trie.add acc choice.name choice in
+        List.fold_left add Cmdliner_trie.empty choices
       in
-      match Trie.find index maybe with
+      match Cmdliner_trie.find index maybe with
       | `Ok choice -> choice, args'
       | `Not_found ->
-        let all = Trie.ambiguities index "" in
+        let all = Cmdliner_trie.ambiguities index "" in
         let hints = suggest maybe all in
         raise (Error (Err.unknown "command" ~hints maybe))
       | `Ambiguous ->
-          let ambs = List.sort compare (Trie.ambiguities index maybe) in
+          let ambs = Cmdliner_trie.ambiguities index maybe in
+          let ambs = List.sort compare ambs in
           raise (Error (Err.ambiguous "command" maybe ambs))
 
   let arg_info_indexes al =
@@ -802,11 +723,11 @@ end = struct
     let rec aux opti posi cl = function
     | a :: l ->
         if is_pos a then aux opti (a :: posi) (Amap.add a (P []) cl) l else
-        let add t name = Trie.add t name a in
+        let add t name = Cmdliner_trie.add t name a in
         aux (List.fold_left add opti a.o_names) posi (Amap.add a (O []) cl) l
     | [] -> opti, posi, cl
     in
-    aux Trie.empty [] Amap.empty al
+    aux Cmdliner_trie.empty [] Amap.empty al
 
   let parse_opt_arg s =          (* (name,value) of opt arg, assert len > 1. *)
     let l = String.length s in
@@ -830,7 +751,7 @@ end = struct
         let is_short_opt s = String.length s = 2 && s.[0] = '-' in
         if not (is_opt s) then aux (k+1) opti cl (s :: pargs) args else
         let name, value = parse_opt_arg s in
-        match Trie.find opti name with
+        match Cmdliner_trie.find opti name with
         | `Ok a ->
             let value, args = match value, a.o_kind with
             | Some v, Flag when is_short_opt name -> None, ("-" ^ v) :: args
@@ -854,7 +775,7 @@ end = struct
               in
               let short_opt, _ = parse_opt_arg short_opt in
               let long_opt, _ = parse_opt_arg long_opt in
-              let all = Trie.ambiguities opti "-" in
+              let all = Cmdliner_trie.ambiguities opti "-" in
               match List.mem short_opt all, suggest long_opt all with
               | false, [] -> []
               | false, l -> l
@@ -863,7 +784,8 @@ end = struct
             in
             raise (Error (Err.unknown "option" ~hints name))
         | `Ambiguous ->
-            let ambs = List.sort compare (Trie.ambiguities opti name) in
+            let ambs = Cmdliner_trie.ambiguities opti name in
+            let ambs = List.sort compare ambs in
             raise (Error (Err.ambiguous "option" name ambs))
     in
     aux 0 opti cl [] args
@@ -1163,11 +1085,11 @@ module Arg = struct
   let string = (fun s -> `Ok s), pr_str
   let enum sl =
     if sl = [] then invalid_arg err_empty_list else
-    let t = Trie.of_list sl in
-    let parse s = match Trie.find t s with
+    let t = Cmdliner_trie.of_list sl in
+    let parse s = match Cmdliner_trie.find t s with
     | `Ok _ as r -> r
     | `Ambiguous ->
-        let ambs = List.sort compare (Trie.ambiguities t s) in
+        let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
         `Error (Err.ambiguous "enum value" s ambs)
     | `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
