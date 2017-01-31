@@ -757,13 +757,17 @@ v}
     Block and doc strings support the following markup language.
 
     {ul
-    {- Anywhere in text [$] characters have to be escaped to [$$].}
     {- Markup directives [$(i,text)] and [$(b,text)], where [text] is
-       raw text respectively rendered in italics and bold. In [text], [)]
-       characters have to be escaped to [))] and [$] to [$$].}
+       raw text respectively rendered in italics and bold.}
     {- Outside markup directives, context dependent variables of the
        form [$(var)] are substituted by marked up data. For example in a
        term's manpage [$(tname)] is substituted by the term name in bold.}
+    {- Characters $, (, ) and \ can respectively be escaped by \$,
+       \(, \) and \\ (in OCaml strings this will be ["\\$"], ["\\("], ["\\)"],
+       ["\\\\"]). Escaping $ and \ is mandatory everywhere. Escaping ) is
+       mandatory only in markup directives. Escaping ( is only here for your
+       symmetric pleasure. Any other sequence of characters starting with
+       a \ is an illegal character sequence.}
     {- Refering to unknown markup directives or variables is a hard failure;
        [Invalid_argument] is raised.}}
 

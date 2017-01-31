@@ -73,20 +73,24 @@ let pp_lines = pp_white_str ~spaces:false
 
 (* Cmdliner markup handling *)
 
-let err_unescaped s = invalid_arg (strf "Unescaped $ in %S" s)
+let err_unescaped c s = invalid_arg (strf "Unescaped %C in %S" c s)
 let err_malformed s = invalid_arg (strf "Malformed $(...) in %S" s)
+let err_unclosed s = invalid_arg (strf "Unclosed $(...) in %S" s)
 let err_undef id s = invalid_arg (strf "Undefined variable $(%s) in %S" id s)
-let err_markup c s =
-  invalid_arg (strf "Unknown cmdliner markup $(%c,...) in %S" c s)
+let err_illegal_esc c s = invalid_arg (strf "Illegal escape char %C in %S" c s)
+let err_markup dir s =
+  invalid_arg (strf "Unknown cmdliner markup $(%c,...) in %S" dir s)
 
-let is_markup_char = function 'i' | 'b' -> true | _ -> false
-let is_markup_need_esc = function ')' | '$' -> true | _ -> false
+let is_markup_dir = function 'i' | 'b' -> true | _ -> false
+let is_markup_esc = function '$' | '\\' | '(' | ')' -> true | _ -> false
+let markup_need_esc = function '\\' | '$' -> true | _ -> false
+let markup_text_need_esc = function '\\' | '$' | ')' -> true | _ -> false
 
 let markup_text_escape s =
   let max_i = String.length s - 1 in
   let rec escaped_len i l =
     if i > max_i then l else
-    if is_markup_need_esc s.[i] then escaped_len (i + 1) (l + 2) else
+    if markup_text_need_esc s.[i] then escaped_len (i + 1) (l + 2) else
     escaped_len (i + 1) (l + 1)
   in
   let escaped_len = escaped_len 0 0 in
@@ -95,73 +99,87 @@ let markup_text_escape s =
   let rec loop i k =
     if i > max_i then Bytes.unsafe_to_string b else
     let c = String.unsafe_get s i in
-    if not (is_markup_need_esc c)
+    if not (markup_text_need_esc c)
     then (Bytes.unsafe_set b k c; loop (i + 1) (k + 1))
-    else (Bytes.unsafe_set b k c; Bytes.unsafe_set b (k + 1) c;
+    else (Bytes.unsafe_set b k '\\'; Bytes.unsafe_set b (k + 1) c;
           loop (i + 1) (k + 2))
   in
   loop 0 0
 
 let subst_vars b ~subst s =
   let max_i = String.length s - 1 in
-  let flush start stop = Buffer.add_substring b s start (stop - start + 1) in
-  let rec skip_markup i =
-    if i > max_i then err_malformed s else
-    if s.[i] <> ')' then skip_markup (i + 1) else
-    let next = i + 1 in
-    if next > max_i then i else
-    if s.[next] <> ')' then next else (* paren escape *)
-    skip_markup (next + 1)
-  and add_subst start i =
-    if i > max_i then err_malformed s else
+  let flush start stop = match start > max_i with
+  | true -> ()
+  | false -> Buffer.add_substring b s start (stop - start + 1)
+  in
+  let skip_escape k start i =
+    if i > max_i then err_unescaped '\\' s else k start (i + 1)
+  in
+  let rec skip_markup k start i =
+    if i > max_i then err_unclosed s else
+    match s.[i] with
+    | '\\' -> skip_escape (skip_markup k) start (i + 1)
+    | ')' -> k start (i + 1)
+    | c -> skip_markup k start (i + 1)
+  in
+  let rec add_subst start i =
+    if i > max_i then err_unclosed s else
     if s.[i] <> ')' then add_subst start (i + 1) else
     let id = String.sub s start (i - start) in
+    let next = i + 1 in
     match subst id with
     | None -> err_undef id s
-    | Some v ->
-        let next = i + 1 in
-        (Buffer.add_string b v; loop next next)
+    | Some v -> Buffer.add_string b v; loop next next
   and loop start i =
     if i > max_i then flush start max_i else
-    if s.[i] <> '$' then loop start (i + 1) else
-    if i = max_i then err_unescaped s else
     let next = i + 1 in
-    match s.[next] with
-    | '(' ->
-        let min = next + 2 in
-        if min > max_i then err_malformed s else
-        begin match s.[min] with
-        | ',' (* markup directive, skip *) -> loop start (skip_markup (min + 1))
-        | _ ->
-            let start_id = next + 1 in
-            flush start (i - 1); add_subst start_id start_id
-        end
-    | '$' -> (* $ escape, don't unescape them yet *) loop start (next + 1)
-    | _ -> err_unescaped s
+    match s.[i] with
+    | '\\' -> skip_escape loop start next
+    | '$' ->
+        if next > max_i then err_unescaped '$' s else
+        begin match s.[next] with
+        | '(' ->
+            let min = next + 2 in
+            if min > max_i then err_unclosed s else
+            begin match s.[min] with
+            | ',' -> skip_markup loop start (min + 1)
+            | _ ->
+                let start_id = next + 1 in
+                flush start (i - 1); add_subst start_id start_id
+            end
+        | _ -> err_unescaped '$' s
+        end;
+    | c -> loop start next
   in
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 
-let add_markup_text b s start need_escape escape k =
+let add_markup_esc k b s start next target_need_escape target_escape =
+  let max_i = String.length s - 1 in
+  if next > max_i then err_unescaped '\\' s else
+  match s.[next] with
+  | c when not (is_markup_esc s.[next]) -> err_illegal_esc c s
+  | c ->
+      (if target_need_escape c then target_escape b c else Buffer.add_char b c);
+      k (next + 1) (next + 1)
+
+let add_markup_text k b s start target_need_escape target_escape =
   let max_i = String.length s - 1 in
   let flush start stop = match start > max_i with
   | true -> ()
   | false -> Buffer.add_substring b s start (stop - start + 1)
   in
   let rec loop start i =
-    if i > max_i then err_malformed s else
-    if need_escape s.[i] then escape start i loop else
-    if not (is_markup_need_esc s.[i]) then loop start (i + 1) else
+    if i > max_i then err_unclosed s else
     let next = i + 1 in
     match s.[i] with
-    | '$' ->
-        if next > max_i then err_malformed s else
-        if s.[next] <> '$' then err_unescaped s else
-        (flush start i; loop (next + 1) (next + 1))
-    | ')' ->
-        if next > max_i || s.[next] <> ')'
-        then (flush start (i - 1); k next next)
-        else (flush start i; loop (next + 1) (next + 1))
-    | _ -> assert false
+    | '\\' -> (* unescape *)
+        flush start (i - 1);
+        add_markup_esc loop b s start next target_need_escape target_escape
+    | ')' -> flush start (i - 1); k next next
+    | c when markup_text_need_esc c -> err_unescaped c s
+    | c when target_need_escape c ->
+        flush start (i - 1); target_escape b c; loop next next
+    | c -> loop start next
   in
   loop start start
 
@@ -174,29 +192,33 @@ let markup_to_plain b s =
   | false -> Buffer.add_substring b s start (stop - start + 1)
   in
   let need_escape _ = false in
-  let escape _ _ _ = assert false in
+  let escape _ _ = assert false in
   let rec loop start i =
     if i > max_i then flush start max_i else
-    if s.[i] <> '$' then loop start (i + 1) else
     let next = i + 1 in
-    if next > max_i then err_unescaped s else
-    match s.[next] with
-    | '(' ->
-        let min = next + 2 in
-        if min > max_i then err_malformed s else
-        begin match s.[min] with
-        | ',' ->
-            let markup = s.[min - 1] in
-            if not (is_markup_char markup) then err_markup markup s else
-            let start_data = min + 1 in
-            (flush start (i - 1);
-             add_markup_text b s start_data need_escape escape loop)
-        | _ -> err_malformed s
+    match s.[i] with
+    | '\\' ->
+        flush start (i - 1);
+        add_markup_esc loop b s start next need_escape escape
+    | '$' ->
+        if next > max_i then err_unescaped '$' s else
+        begin match s.[next] with
+        | '(' ->
+            let min = next + 2 in
+            if min > max_i then err_unclosed s else
+            begin match s.[min] with
+            | ',' ->
+                let markup = s.[min - 1] in
+                if not (is_markup_dir markup) then err_markup markup s else
+                let start_data = min + 1 in
+                (flush start (i - 1);
+                 add_markup_text loop b s start_data need_escape escape)
+            | _ -> err_malformed s
+            end
+        | _ -> err_unescaped '$' s
         end
-    | '$' -> (* $ escape *)
-        let next = next + 1 in
-        (flush start i; if next > max_i then () else loop next next)
-    | _ -> err_unescaped s
+    | c when markup_need_esc c -> err_unescaped c s
+    | c -> loop start next
   in
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 
@@ -248,41 +270,40 @@ let markup_to_groff b s =
   | true -> ()
   | false -> Buffer.add_substring b s start (stop - start + 1)
   in
-  let need_escape = function
-  | '.' | '\'' | '-' | '\\' -> true | _ -> false
-  in
-  let escape start i k =
-    let next = i + 1 in
-    if i > 0 then flush start (i - 1);
-    Printf.bprintf b "\\N'%d'" (Char.code s.[i]); k next next
-  in
+  let need_escape = function '.' | '\'' | '-' | '\\' -> true | _ -> false in
+  let escape b c = Printf.bprintf b "\\N'%d'" (Char.code c) in
   let rec end_text start i = Buffer.add_string b "\\fR"; loop start i
   and loop start i =
     if i > max_i then flush start max_i else
-    if need_escape s.[i] then escape start i loop else
-    if s.[i] <> '$' then loop start (i + 1) else
-    if i = max_i then err_unescaped s else
     let next = i + 1 in
-    match s.[next] with
-    | '(' ->
-        let min = next + 2 in
-        if min > max_i then err_malformed s else
-        begin match s.[min] with
-        | ','  ->
-            let start_data = min + 1 in
-            flush start (i - 1);
-            begin match s.[min - 1] with
-            | 'i' -> Buffer.add_string b "\\fI"
-            | 'b' -> Buffer.add_string b "\\fB"
-            | markup -> err_markup markup s
-            end;
-            add_markup_text b s start_data need_escape escape end_text
-        | _ -> err_malformed s
+    match s.[i] with
+    | '\\' ->
+        flush start (i - 1);
+        add_markup_esc loop b s start next need_escape escape
+    | '$' ->
+        if next > max_i then err_unescaped '$' s else
+        begin match s.[next] with
+        | '(' ->
+            let min = next + 2 in
+            if min > max_i then err_unclosed s else
+            begin match s.[min] with
+            | ','  ->
+                let start_data = min + 1 in
+                flush start (i - 1);
+                begin match s.[min - 1] with
+                | 'i' -> Buffer.add_string b "\\fI"
+                | 'b' -> Buffer.add_string b "\\fB"
+                | markup -> err_markup markup s
+                end;
+                add_markup_text end_text b s start_data need_escape escape
+            | _ -> err_malformed s
+            end
+        | _ -> err_unescaped '$' s
         end
-    | '$' -> (* $ escape *)
-        let next = next + 1 in
-        (flush start i; if next > max_i then () else loop next next)
-    | _ -> err_unescaped s
+    | c when markup_need_esc c -> err_unescaped c s
+    | c when need_escape c ->
+        flush start (i - 1); escape b c; loop next next
+    | c -> loop start next
   in
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 

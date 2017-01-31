@@ -26,8 +26,8 @@ let miaouw =
   let env = Arg.env_var "TEST_MIAOUW" ~doc ~docs in
   let doc = "Whatever this is the doc var $(docv) this is the env var $(env) \
              this is the opt $(opt) and this is $(i,italic) and this is
-             $(b,bold) and this $(b,$$(opt))) is $$(opt) in bold and this
-             $$ is a dollar."
+             $(b,bold) and this $(b,\\$(opt\\)) is \\$(opt) in bold and this
+             \\$ is a dollar."
   in
   Arg.(value & opt string "miaouw" & info ["m";] ~env ~docv:"MIAOUW" ~doc)
 
@@ -43,13 +43,13 @@ let info =
     `S "THIS IS A SECTION FOR $(mname)";
     `P "$(mname) subst at begin and end $(mname)";
     `P "$(i,italic) and $(b,bold)";
-    `P "$$ escaped $$$$ escaped $$";
-    `P "This does not fail $$(a)";
+    `P "\\$ escaped \\$\\$ escaped \\$";
+    `P "This does not fail \\$(a)";
     `P ". this is a paragraph starting with a dot.";
     `P "' this is a paragraph starting with a quote.";
-    `P "This: \\(rs is a backslash for groff and you should not see a \\";
-    `P "This: \\N'46' is a quote for groff and you should not see a '";
-    `P "This: \\\"  is a groff comment and it should not be one.";
+    `P "This: \\\\(rs is a backslash for groff and you should not see a \\\\";
+    `P "This: \\\\N'46' is a quote for groff and you should not see a '";
+    `P "This: \\\\\"  is a groff comment and it should not be one.";
     `P "This is a non preformatted paragraph, filling will occur. This will
         be properly layout on 80 columns.";
     `Pre "This is a preformatted paragraph for $(mname) no filling will \
@@ -70,8 +70,10 @@ let info =
           | / | ----> Let's swim to the moon.\n\
           |/  |\n\
           +---+";
-    `P "This dollar needs escape $$(var) this one aswell $(b,$$(bla)))";
-    `P "This is another paragraph $$(bla) $(i,$$(bla))) $(b,$$(bla)))";
+    `P "These are escapes escaped \\$ \\( \\) \\\\";
+    `P "() does not need to be escaped outside directives.";
+    `P "This dollar needs escape \\$(var) this one aswell $(b,\\$(bla\\))";
+    `P "This is another paragraph \\$(bla) $(i,\\$(bla\\)) $(b,\\$\\(bla\\))";
     `Noblank;
     `Pre "This is another preformatted paragraph.\n\
           There should be no blanks before and after it.";

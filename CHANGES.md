@@ -27,22 +27,28 @@
 ### Doc language sanitization
 
 This release tries to bring sanity to the doc language. This may break
-the rendering of some of your man pages.
+the rendering of some of your man pages. The rules are now for doc
+strings and man pages:
 
-The rules are now for doc strings and man pages:
-
-- Dollars have to be escaped everywhere by `$$` (fixes #49).
 - It is only allowed to use the variables `$(var)` that are mentioned in
-  the docs (`$(docv)`, `$(opt)`, etc.) and tne markup directives
+  the docs (`$(docv)`, `$(opt)`, etc.) and the markup directives
   `$({i,b},text)`. Any other unknown `$(var)` fails the man page
   with `Invalid_argument`.
-- Markup directives `$({i,b},text)` treat `text` as is except for
-  `)` characters that must be escaped to `))` and `$` to `$$`.
+- Markup directives `$({i,b},text)` treat `text` as is, modulo escapes;
+  see next point.
+- Characters `$`, `(`, `)` and `\` can respectively be escaped by `\$`,
+  `\(`, `\)` and `\\`. Escaping `$` and `\` is mandatory everywhere.
+  Escaping `)` is mandatory only in markup directives. Escaping `(`
+  is only here for your symmetric pleasure. Any other sequence of
+  character starting with a `\` is an illegal sequence.
 - Variables `$(mname)` and `$(tname)` are now marked up with bold when
   substituted. If you used to write `$(b,$(tname))` this will throw
-  `Invalid_argument`, as it will result in an unclosed markup
-  directive. Simply replace these by `$(tname)`.
+  `Invalid_argument`, since `$` is not escaped. Simply replace these by
+  `$(tname)`.
 - Fix (implement really) groff manpage escaping (#48).
+
+Thanks to Gabriel Scherer, Ivan Gotovchits and Nicolás Ojeda Bär for
+the feedback.
 
 v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------
