@@ -21,13 +21,14 @@ let id =
   Arg.(value & opt int ~vopt:10 0 & info ["id"; "i"] ~env ~docv:"ID)" ~doc)
 
 let miaouw =
-  let doc = "See option $(opt)." in
+  let doc = "See option $(opt). These are term names $(mname) $(tname)" in
   let docs = "MIAOUW SECTION" in
   let env = Arg.env_var "TEST_MIAOUW" ~doc ~docs in
   let doc = "Whatever this is the doc var $(docv) this is the env var $(env) \
              this is the opt $(opt) and this is $(i,italic) and this is
              $(b,bold) and this $(b,\\$(opt\\)) is \\$(opt) in bold and this
-             \\$ is a dollar."
+             \\$ is a dollar. $(mname) is the main term name, $(tname) is the
+             term name."
   in
   Arg.(value & opt string "miaouw" & info ["m";] ~env ~docv:"MIAOUW" ~doc)
 

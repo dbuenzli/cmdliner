@@ -155,6 +155,11 @@ module Help = struct
 
   let esc = Cmdliner_manpage.markup_text_escape
 
+  let ei_subst ei = function
+  | "tname" -> Some (strf "$(b,%s)" @@ esc (fst ei.term).name)
+  | "mname" -> Some (strf "$(b,%s)" @@ esc (fst ei.main).name)
+  | _ -> None
+
   let invocation ?(sep = ' ') ei = match eval_kind ei with
   | `Simple | `M_main -> (fst ei.main).name
   | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
@@ -237,7 +242,7 @@ module Help = struct
     let s = String.concat ", " (List.rev_map (fmt_name var) names) in
     s
 
-  let arg_info_substs ~buf a doc =
+  let arg_info_substs ~subst ~buf a doc =
     let subst = function
     | "docv" -> Some (strf "$(i,%s)" @@ esc a.docv)
     | "opt" when is_opt a ->
@@ -248,7 +253,7 @@ module Help = struct
         | None -> assert false
         | Some v -> Some (strf "$(i,%s)" @@ esc v.env_var)
         end
-    | _ -> None
+    | id -> subst id
     in
     Manpage.subst_vars buf ~subst doc
 
@@ -259,6 +264,7 @@ module Help = struct
       strf "%s $(i,%s) env" value (esc v.env_var)
 
   let make_arg_items ei =
+    let subst = ei_subst ei in
     let buf = Buffer.create 200 in
     let cmp a a' =
       let c = compare a.docs a'.docs in
@@ -292,13 +298,15 @@ module Help = struct
       | s, "" | "", s -> strf " (%s)" s
       | s, s' -> strf " (%s) (%s)" s s'
       in
-      (a.docs, `I (make_arg_label a ^ argvdoc, (arg_info_substs ~buf a a.doc)))
+      (a.docs, `I (make_arg_label a ^ argvdoc,
+                   (arg_info_substs ~subst ~buf a a.doc)))
     in
     let is_arg_item a = not (is_pos a && (a.docv = "" || a.doc = "")) in
     let l = List.sort cmp (List.filter is_arg_item (snd ei.term)) in
     List.rev_map format l
 
   let make_env_items_rev ei =
+    let subst = ei_subst ei in
     let buf = Buffer.create 200 in
     let cmp a a' =
       let e' = match a'.env_info with None -> assert false | Some a' -> a' in
@@ -310,7 +318,7 @@ module Help = struct
     let format a =
       let e = match a.env_info with None -> assert false | Some a -> a in
       (e.env_docs,
-       `I (strf "$(i,%s)" e.env_var, arg_info_substs ~buf a e.env_doc))
+       `I (strf "$(i,%s)" e.env_var, arg_info_substs ~subst ~buf a e.env_doc))
     in
     let is_env_item a = a.env_info <> None in
     let l = List.sort cmp (List.filter is_env_item (snd ei.term)) in
@@ -370,13 +378,7 @@ module Help = struct
     let rev_text, orphans = merge_items [`Orphan_mark] [] false items man in
     synopsis @ merge_orphans [] orphans rev_text
 
-  let ei_subst ei = function
-  | "tname" -> Some (strf "$(b,%s)" @@ esc (fst ei.term).name)
-  | "mname" -> Some (strf "$(b,%s)" @@ esc (fst ei.main).name)
-  | _ -> None
-
-  let man ei =
-    title ei, (name_section ei) @ (text ei)
+  let man ei = title ei, (name_section ei) @ (text ei)
 
   let print fmt ppf ei = Manpage.print ~subst:(ei_subst ei) fmt ppf (man ei)
   let pp_synopsis ppf ei =
