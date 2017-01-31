@@ -16,8 +16,6 @@ let err_not_pos = "Positional argument with a name"
 let err_help s = "Term error, help requested for unknown command " ^ s
 let err_empty_list = "Empty list"
 let err_incomplete_enum = "Incomplete enumeration for the type"
-let err_doc_string s =
-  strf "Variable substitution failed on documentation fragment `%s'" s
 
 (* A few useful definitions. *)
 
@@ -154,6 +152,9 @@ let eval_kind ei =                       (* evaluation with multiple terms ? *)
   if (fst ei.term) == (fst ei.main) then `M_main else `M_choice
 
 module Help = struct
+
+  let esc = Cmdliner_manpage.markup_text_escape
+
   let invocation ?(sep = ' ') ei = match eval_kind ei with
   | `Simple | `M_main -> (fst ei.main).name
   | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
@@ -173,7 +174,7 @@ module Help = struct
      `P (strf "%s%s" (invocation ~sep:'-' ei) (tdoc (fst ei.term).tdoc)); ]
 
   let synopsis ei = match eval_kind ei with
-  | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." (invocation ei)
+  | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ esc (invocation ei)
   | `Simple | `M_choice ->
       let rev_cmp (p, _) (p', _) = match p', p with        (* best effort. *)
       | p, All -> -1 | All, p -> 1
@@ -193,7 +194,9 @@ module Help = struct
       let rec format_pos acc = function
       | a :: al ->
           if is_opt a then format_pos acc al else
-          let v = if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" a.docv in
+          let v =
+            if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" (esc a.docv)
+          in
           let v = if a.absent = Error then strf "%s" v else strf "[%s]" v in
           let v = v ^ match a.p_kind with Nth _ -> "" | _ -> "..." in
           format_pos ((a.p_kind, v) :: acc) al
@@ -201,7 +204,7 @@ module Help = struct
       in
       let args = List.sort rev_cmp (format_pos [] (snd ei.term)) in
       let args = String.concat " " (List.rev_map snd args) in
-      strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) args
+      strf "$(b,%s) [$(i,OPTION)]... %s" (esc @@ invocation ei) args
 
   let get_synopsis_section ei =
     let rec split_section syn = function
@@ -215,17 +218,19 @@ module Help = struct
         [ `S Manpage.s_synopsis; `P (synopsis ei); ], man
 
   let make_arg_label a =
-    if is_pos a then strf "$(i,%s)" a.docv else
+    if is_pos a then strf "$(i,%s)" (esc a.docv) else
     let fmt_name var = match a.o_kind with
-    | Flag -> fun n -> strf "$(b,%s)" n
+    | Flag -> fun n -> strf "$(b,%s)" (esc n)
     | Opt ->
         fun n ->
-          if String.length n > 2 then strf "$(b,%s)=$(i,%s)" n var else
-          strf "$(b,%s) $(i,%s)" n var
+          if String.length n > 2
+          then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
+          else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
     | Opt_vopt _ ->
         fun n ->
-          if String.length n > 2 then strf "$(b,%s)[=$(i,%s)]" n var else
-          strf "$(b,%s) [$(i,%s)]" n var
+          if String.length n > 2
+          then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
+          else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
     in
     let var = if a.docv = "" then "VAL" else a.docv in
     let names = List.sort compare a.o_names in
@@ -234,27 +239,24 @@ module Help = struct
 
   let arg_info_substs ~buf a doc =
     let subst = function
-    | "docv" -> strf "$(i,%s)" a.docv
+    | "docv" -> Some (strf "$(i,%s)" @@ esc a.docv)
     | "opt" when is_opt a ->
         let k = String.lowercase (List.hd (List.sort compare a.o_names)) in
-        strf "$(b,%s)" k
+        Some (strf "$(b,%s)" @@ esc k)
     | "env" when a.env_info <> None ->
         begin match a.env_info with
         | None -> assert false
-        | Some v -> strf "$(i,%s)" v.env_var
+        | Some v -> Some (strf "$(i,%s)" @@ esc v.env_var)
         end
-    | s -> strf "$(%s)" s in
-    try
-      Buffer.clear buf;
-      Buffer.add_substitute buf subst doc;
-      Buffer.contents buf
-    with Not_found -> invalid_arg (err_doc_string doc)
+    | _ -> None
+    in
+    Manpage.subst_vars buf ~subst doc
 
   let or_env ~value a = match a.env_info with
   | None -> ""
   | Some v ->
       let value = if value then " or" else "absent " in
-      strf "%s $(i,%s) env" value v.env_var
+      strf "%s $(i,%s) env" value (esc v.env_var)
 
   let make_arg_items ei =
     let buf = Buffer.create 200 in
@@ -318,7 +320,7 @@ module Help = struct
   | `Simple | `M_choice -> []
   | `M_main ->
       let add_cmd acc (ti, _) =
-        (ti.tdocs, `I ((strf "$(b,%s)" ti.name), ti.tdoc)) :: acc
+        (ti.tdocs, `I ((strf "$(b,%s)" @@ esc ti.name), ti.tdoc)) :: acc
       in
       List.sort rev_compare (List.fold_left add_cmd [] ei.choices)
 
@@ -369,18 +371,18 @@ module Help = struct
     synopsis @ merge_orphans [] orphans rev_text
 
   let ei_subst ei = function
-  | "tname" -> (fst ei.term).name
-  | "mname" -> (fst ei.main).name
-  | s -> strf "$(%s)" s
+  | "tname" -> Some (strf "$(b,%s)" @@ esc (fst ei.term).name)
+  | "mname" -> Some (strf "$(b,%s)" @@ esc (fst ei.main).name)
+  | _ -> None
 
   let man ei =
     title ei, (name_section ei) @ (text ei)
 
   let print fmt ppf ei = Manpage.print ~subst:(ei_subst ei) fmt ppf (man ei)
   let pp_synopsis ppf ei =
-    pr ppf "@[%s@]"
-      (Manpage.escape (ei_subst ei)
-         Manpage.plain_esc (Buffer.create 100) (synopsis ei))
+    let buf = Buffer.create 100 in
+    let syn = Manpage.doc_to_plain ~subst:(ei_subst ei) buf (synopsis ei) in
+    pr ppf "@[%s@]" syn
 
   let pp_version ppf ei = match (fst ei.main).version with
   | None -> assert false

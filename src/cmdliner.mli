@@ -29,7 +29,9 @@
 (** Man page specification.
 
     Man page generation is automatically handled by [Cmdliner]. The
-    {!block} type is used to define a man page's content.
+    {!block} type is used to define a man page's content. It's
+    a good idea to follow the {{!standard_sections}standard} manual
+    page structure.
 
     The {!print} function can be useful if the client wants to define
     other man pages (e.g. to implement a help command). *)
@@ -52,10 +54,8 @@ module Manpage : sig
       {- [`Noblank] suppresses the blank line introduced between two blocks.}}
 
       Except in [`Pre], whitespace and newlines are not significant
-      and are all collapsed to a single space. In labels [l] and text
-      strings [t], the syntax ["$(i,italic text)"] and ["$(b,bold
-      text)"] can be used to respectively produce italic and bold
-      text. *)
+      and are all collapsed to a single space. All block strings
+      support the {{!doclang}documentation markup language}.*)
 
   type title = string * int * string * string * string
   (** The type for man page titles. Describes the man page
@@ -70,31 +70,40 @@ module Manpage : sig
       in the order they conventionally appear. *)
 
   val s_name : string
-  (** The [NAME] section. *)
+  (** The [NAME] section. This section is automatically created by
+      [Cmdliner] for your. *)
 
   val s_synopsis : string
-  (** The [SYNOPSIS] section. *)
+  (** The [SYNOPSIS] section. By default this section is automatically
+      created by [Cmdliner] for you, unless it is the first section of
+      your term's manpage, in which case it will replace it with yours. *)
 
   val s_description : string
-  (** The [DESCRIPTION] section. *)
+  (** The [DESCRIPTION] section. This should be a description of what
+      the tool does and provide a little bit of usage and
+      documentation guidance. *)
 
   val s_commands : string
-  (** The [COMMANDS] section. *)
+  (** The [COMMANDS] section. By default subcommands get listed here. *)
 
   val s_arguments : string
-  (** The [ARGUMENTS] section. *)
+  (** The [ARGUMENTS] section. By default positional arguments get
+      listed here. *)
 
   val s_options : string
-  (** The [OPTIONS] section. *)
+  (** The [OPTIONS] section. By default options and flag arguments get
+      listed here. *)
 
   val s_environment : string
-  (** The [ENVIRONMENT] section. *)
+  (** The [ENVIRONMENT] section. By default environment variables get
+      listed here. *)
 
   val s_files : string
   (** The [FILES] section. *)
 
   val s_exit_status : string
-  (** The [EXIT STATUS] section. *)
+  (** The [EXIT STATUS] section. By default term status exit codes
+      get listed here. *)
 
   val s_examples : string
   (** The [EXAMPLES] section. *)
@@ -121,7 +130,7 @@ module Manpage : sig
       {- [`Groff], formats to groff commands.}} *)
 
   val print :
-    ?subst:(string -> string) -> format -> Format.formatter -> t -> unit
+    ?subst:(string -> string option) -> format -> Format.formatter -> t -> unit
   (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format
       [fmt]. [subst] can be used to perform variable
       substitution, see {!Buffer.add_substitute} (defaults to the
@@ -208,12 +217,16 @@ module Term : sig
       {- [docs], only for commands, the title of the section of the main
          term's man page where it should be listed (defaults to
          {!Manpage.s_commands}).}
-      {- [man] is the text of the man page for the term. In the text,
-         the variables ["$(tname)"] and ["$(mname)"] can respectively be
-         used to refer to the value of [name] and the main term's name.}
+      {- [man] is the text of the man page for the term.}
       {- [sdocs] defines the title of the section in which the
          standard [--help] and [--version] arguments are listed
-         (defaults to {!Manpage.s_options}).}} *)
+         (defaults to {!Manpage.s_options}).}}
+
+      [doc] and [man] support the {{!doclang}documentation markup language}
+      in which the following variables are recognized:
+      {ul
+      {- [$(tname)] the term's name.}
+      {- [$(mname)] the main term's name.}} *)
 
   val name : info -> string
   (** [name ti] is the name of the term information. *)
@@ -344,10 +357,10 @@ module Arg : sig
   val env_var : ?docs:string -> ?doc:string -> string -> env
   (** [env_var docs doc var] is an environment variables [var]. [doc]
       is the man page information of the environment variable; the
-      variables mentioned in {!info} can be used in this documentation
-      string. [doc] defaults to ["See option $(opt)."]. [docs] is the
-      title of the man page section in which the environment variable
-      will be listed, it defaults to {!Manpage.s_environment}. *)
+      the {{!doclang}documentation markup language} with the variables
+      mentioned in {!info}; it defaults to ["See option $(opt)."].
+      [docs] is the title of the man page section in which the environment
+      variable will be listed, it defaults to {!Manpage.s_environment}. *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)
@@ -371,12 +384,15 @@ module Arg : sig
       command line. See {{!envlookup}environment variables} for
       details.
       {ul
-      {- [doc] is the man page information of the argument. The
-         variable ["$(docv)"] can be used to refer to the value of
-         [docv] (see below). The variable ["$(opt)"] will refer to a
-         long option of [names] or a short one if there is no long
-         option. The variable ["$(env)"] will refer to the environment
-         variable specified by [env] (if any).  {{!doc_helpers}These
+      {- [doc] is the man page information of the argument.
+         The {{!doclang}documentation language} can be used and
+         the following variables are recognized:
+         {ul
+         {- ["$(docv)"] the value of [docv] (see below)}
+         {- ["$(opt)"], one of the options of [names], preference
+            is given to a long one.}
+         {- ["$(env)", the environment var specified by [env] (if any)]}}
+         {{!doc_helpers}These
          functions} can help with formatting argument values.}
       {- [docv] is for positional and non-flag optional arguments.
          It is a variable name used in the man page to stand for their value.}
@@ -735,6 +751,21 @@ v}
     {!Term.eval_choice} will execute the term corresponding to the
     [COMMAND] argument or or a specific "main" term if there is
     no [COMMAND] argument.
+
+    {2:doclang Documentation markup language}
+
+    Block and doc strings support the following markup language.
+
+    {ul
+    {- Anywhere in text [$] characters have to be escaped to [$$].}
+    {- Markup directives [$(i,text)] and [$(b,text)], where [text] is
+       raw text respectively rendered in italics and bold. In [text], [)]
+       characters have to be escaped to [))] and [$] to [$$].}
+    {- Outside markup directives, context dependent variables of the
+       form [$(var)] are substituted by marked up data. For example in a
+       term's manpage [$(tname)] is substituted by the term name in bold.}
+    {- Refering to unknown markup directives or variables is a hard failure;
+       [Invalid_argument] is raised.}}
 
     {2:manual Manual}
 

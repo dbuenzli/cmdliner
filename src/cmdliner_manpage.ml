@@ -4,14 +4,8 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-let strf = Printf.sprintf
-
-let err_doc_string s =
-  strf "Variable substitution failed on documentation fragment `%s'" s
-
 (* Manpages *)
 
-type format = [ `Auto | `Pager | `Plain | `Groff ]
 type title = string * int * string * string * string
 type block =
   [ `S of string | `P of string | `Pre of string | `I of string * string
@@ -37,12 +31,31 @@ let s_see_also = "SEE ALSO"
 
 (* Formatting tools *)
 
+let strf = Printf.sprintf
 let pf = Format.fprintf
+let pp_sp = Format.pp_print_space
 let pp_str = Format.pp_print_string
 let pp_char = Format.pp_print_char
 let pp_indent ppf c = for i = 1 to c do pp_char ppf ' ' done
 
-let pp_white_str spaces ppf s =  (* spaces and new lines with Format's funs *)
+let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
+  let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
+  let i_max = String.length s - 1 in
+  let flush start stop = pp_str ppf (String.sub s start (stop - start + 1)) in
+  let rec skip_white i =
+    if i > i_max then i else
+    if is_space s.[i] then skip_white (i + 1) else i
+  in
+  let rec loop start i =
+    if i > i_max then flush start i_max else
+    if not (is_space s.[i]) then loop start (i + 1) else
+    let next_start = skip_white i in
+    (flush start (i - 1); if spaces then pp_sp ppf () else pp_char ppf ' ';
+     if next_start > i_max then () else loop next_start next_start)
+  in
+  loop 0 0
+
+let pp_white_str ~spaces ppf s =  (* hint spaces (maybe) and new lines. *)
   let left = ref 0 and right = ref 0 and len = String.length s in
   let flush () =
     Format.pp_print_string ppf (String.sub s !left (!right - !left));
@@ -55,125 +68,237 @@ let pp_white_str spaces ppf s =  (* spaces and new lines with Format's funs *)
   done;
   if !left <> len then flush ()
 
-let pp_text = pp_white_str true
-let pp_lines = pp_white_str false
+let pp_text = pp_white_str ~spaces:true
+let pp_lines = pp_white_str ~spaces:false
 
-let pp_tokens ?(groff = false) ppf s =
-  let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
-  let len = String.length s in
-  let i = ref 0 in
-  try
-    while (true) do
-      while (!i < len && is_space s.[!i]) do incr i done;
-      let start = !i in
-      if start = len then raise Exit;
-      while (!i < len && not (is_space s.[!i]) && not (s.[!i] = '-')) do
-        incr i
-        done;
-      pp_str ppf (String.sub s start (!i - start));
-      if !i = len then raise Exit;
-      if s.[!i] = '-' then
-        (incr i; if groff then pp_str ppf "\\-" else pp_char ppf '-');
-      if (!i < len && is_space s.[!i]) then
-        (if groff then pp_char ppf ' ' else Format.pp_print_space ppf ())
-    done
-  with Exit -> ()
+(* Cmdliner markup handling *)
 
-let plain_esc c s = match c with 'g' -> "" (* groff specific *) | _ ->  s
+let err_unescaped s = invalid_arg (strf "Unescaped $ in %S" s)
+let err_malformed s = invalid_arg (strf "Malformed $(...) in %S" s)
+let err_undef id s = invalid_arg (strf "Undefined variable $(%s) in %S" id s)
+let err_markup c s =
+  invalid_arg (strf "Unknown cmdliner markup $(%c,...) in %S" c s)
 
-let escape subst esc buf s =
-  let subst s =
-    let len = String.length s in
-    if not (len > 1 && s.[1] = ',') then (subst s) else
-    if len = 2 then "" else
-    esc s.[0] (String.sub s 2 (len - 2))
+let is_markup_char = function 'i' | 'b' -> true | _ -> false
+let is_markup_need_esc = function ')' | '$' -> true | _ -> false
+
+let markup_text_escape s =
+  let max_i = String.length s - 1 in
+  let rec escaped_len i l =
+    if i > max_i then l else
+    if is_markup_need_esc s.[i] then escaped_len (i + 1) (l + 2) else
+    escaped_len (i + 1) (l + 1)
   in
-  try
-    Buffer.clear buf; Buffer.add_substitute buf subst s;
-    let s = Buffer.contents buf in (* twice for $(i,$(mname)). *)
-    Buffer.clear buf; Buffer.add_substitute buf subst s;
-    Buffer.contents buf
-  with Not_found -> invalid_arg (err_doc_string s)
+  let escaped_len = escaped_len 0 0 in
+  if escaped_len = String.length s then s else
+  let b = Bytes.create escaped_len in
+  let rec loop i k =
+    if i > max_i then Bytes.unsafe_to_string b else
+    let c = String.unsafe_get s i in
+    if not (is_markup_need_esc c)
+    then (Bytes.unsafe_set b k c; loop (i + 1) (k + 1))
+    else (Bytes.unsafe_set b k c; Bytes.unsafe_set b (k + 1) c;
+          loop (i + 1) (k + 2))
+  in
+  loop 0 0
 
+let subst_vars b ~subst s =
+  let max_i = String.length s - 1 in
+  let flush start stop = Buffer.add_substring b s start (stop - start + 1) in
+  let rec skip_markup i =
+    if i > max_i then err_malformed s else
+    if s.[i] <> ')' then skip_markup (i + 1) else
+    let next = i + 1 in
+    if next > max_i then i else
+    if s.[next] <> ')' then next else (* paren escape *)
+    skip_markup (next + 1)
+  and add_subst start i =
+    if i > max_i then err_malformed s else
+    if s.[i] <> ')' then add_subst start (i + 1) else
+    let id = String.sub s start (i - start) in
+    match subst id with
+    | None -> err_undef id s
+    | Some v ->
+        let next = i + 1 in
+        (Buffer.add_string b v; loop next next)
+  and loop start i =
+    if i > max_i then flush start max_i else
+    if s.[i] <> '$' then loop start (i + 1) else
+    if i = max_i then err_unescaped s else
+    let next = i + 1 in
+    match s.[next] with
+    | '(' ->
+        let min = next + 2 in
+        if min > max_i then err_malformed s else
+        begin match s.[min] with
+        | ',' (* markup directive, skip *) -> loop start (skip_markup (min + 1))
+        | _ ->
+            let start_id = next + 1 in
+            flush start (i - 1); add_subst start_id start_id
+        end
+    | '$' -> (* $ escape, don't unescape them yet *) loop start (next + 1)
+    | _ -> err_unescaped s
+  in
+  (Buffer.clear b; loop 0 0; Buffer.contents b)
 
-let pp_to_temp_file pp_v v =
-  try
-    let exec = Filename.basename Sys.argv.(0) in
-    let file, oc = Filename.open_temp_file exec "out" in
-    let ppf = Format.formatter_of_out_channel oc in
-    pp_v ppf v; Format.pp_print_flush ppf (); close_out oc;
-    at_exit (fun () -> try Sys.remove file with Sys_error e -> ());
-    Some file
-  with Sys_error _ -> None
+let add_markup_text b s start need_escape escape k =
+  let max_i = String.length s - 1 in
+  let flush start stop = match start > max_i with
+  | true -> ()
+  | false -> Buffer.add_substring b s start (stop - start + 1)
+  in
+  let rec loop start i =
+    if i > max_i then err_malformed s else
+    if need_escape s.[i] then escape start i loop else
+    if not (is_markup_need_esc s.[i]) then loop start (i + 1) else
+    let next = i + 1 in
+    match s.[i] with
+    | '$' ->
+        if next > max_i then err_malformed s else
+        if s.[next] <> '$' then err_unescaped s else
+        (flush start i; loop (next + 1) (next + 1))
+    | ')' ->
+        if next > max_i || s.[next] <> ')'
+        then (flush start (i - 1); k next next)
+        else (flush start i; loop (next + 1) (next + 1))
+    | _ -> assert false
+  in
+  loop start start
 
 (* Plain text output *)
+
+let markup_to_plain b s =
+  let max_i = String.length s - 1 in
+  let flush start stop = match start > max_i with
+  | true -> ()
+  | false -> Buffer.add_substring b s start (stop - start + 1)
+  in
+  let need_escape _ = false in
+  let escape _ _ _ = assert false in
+  let rec loop start i =
+    if i > max_i then flush start max_i else
+    if s.[i] <> '$' then loop start (i + 1) else
+    let next = i + 1 in
+    if next > max_i then err_unescaped s else
+    match s.[next] with
+    | '(' ->
+        let min = next + 2 in
+        if min > max_i then err_malformed s else
+        begin match s.[min] with
+        | ',' ->
+            let markup = s.[min - 1] in
+            if not (is_markup_char markup) then err_markup markup s else
+            let start_data = min + 1 in
+            (flush start (i - 1);
+             add_markup_text b s start_data need_escape escape loop)
+        | _ -> err_malformed s
+        end
+    | '$' -> (* $ escape *)
+        let next = next + 1 in
+        (flush start i; if next > max_i then () else loop next next)
+    | _ -> err_unescaped s
+  in
+  (Buffer.clear b; loop 0 0; Buffer.contents b)
+
+let doc_to_plain b ~subst s = markup_to_plain b (subst_vars b ~subst s)
 
 let p_indent = 7                                  (* paragraph indentation. *)
 let l_indent = 4                                      (* label indentation. *)
 
 let pp_plain_blocks subst ppf ts =
-  let buf = Buffer.create 1024 in
-  let escape t = escape subst plain_esc buf t in
-  let pp_tokens ppf t = pp_tokens ppf (escape t) in
-  let rec aux = function
+  let b = Buffer.create 1024 in
+  let markup t = doc_to_plain b ~subst t in
+  let pp_tokens ppf t = pp_tokens ~spaces:true ppf t in
+  let rec loop = function
   | [] -> ()
   | t :: ts ->
       begin match t with
       | `Noblank -> ()
-      | `P s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_tokens s
-      | `S s -> pf ppf "@[%a@]" pp_tokens s
-      | `Pre s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_lines (escape s)
+      | `P s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_tokens (markup s)
+      | `S s -> pf ppf "@[%a@]" pp_tokens (markup s)
+      | `Pre s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_lines (markup s)
       | `I (label, s) ->
-          let label = escape label in
-          let ll = String.length label in
+          let label = markup label in
+          let s = markup s in
           pf ppf "@[%a@[%a@]" pp_indent p_indent pp_tokens label;
           if s = "" then pf ppf "@]@," else
-          if ll < l_indent
-          then pf ppf "%a@[%a@]@]@," pp_indent (l_indent - ll) pp_tokens s
-          else
-          pf ppf "@\n%a@[%a@]@]@," pp_indent (p_indent + l_indent) pp_tokens s
+          let ll = String.length label in
+          match ll < l_indent with
+          | true ->
+              pf ppf "%a@[%a@]@]@," pp_indent (l_indent - ll) pp_tokens s
+          | false ->
+              pf ppf "@\n%a@[%a@]@]@,"
+                pp_indent (p_indent + l_indent) pp_tokens s
       end;
       begin match ts with
-      | `Noblank :: ts -> aux ts
-      | ts -> Format.pp_print_cut ppf (); aux ts
+      | `Noblank :: ts -> loop ts
+      | ts -> Format.pp_print_cut ppf (); loop ts
       end
   in
-  aux ts
+  loop ts
 
 let pp_plain_page subst ppf (_, text) =
   pf ppf "@[<v>%a@]" (pp_plain_blocks subst) text
 
 (* Groff output *)
 
-let groff_esc c s = match c with
-| 'i' -> (strf "\\fI%s\\fR" s)
-| 'b' -> (strf "\\fB%s\\fR" s)
-| 'p' -> "" (* plain text specific *)
-| _ -> s
-
-let pp_groff_lines ppf s =
-  let left = ref 0 and right = ref 0 and len = String.length s in
-  let flush () =
-    Format.pp_print_string ppf (String.sub s !left (!right - !left));
-    incr right; left := !right;
+let markup_to_groff b s =
+  let max_i = String.length s - 1 in
+  let flush start stop = match start > max_i with
+  | true -> ()
+  | false -> Buffer.add_substring b s start (stop - start + 1)
   in
-  while (!right <> len) do
-    if s.[!right] = '\n' then (flush (); Format.pp_force_newline ppf ()) else
-    if s.[!right] = '-' then (flush (); pp_str ppf "\\-") else
-    incr right;
-  done;
-  if !left <> len then flush ()
+  let need_escape = function
+  | '.' | '\'' | '-' | '\\' -> true | _ -> false
+  in
+  let escape start i k =
+    let next = i + 1 in
+    if i > 0 then flush start (i - 1);
+    Printf.bprintf b "\\N'%d'" (Char.code s.[i]); k next next
+  in
+  let rec end_text start i = Buffer.add_string b "\\fR"; loop start i
+  and loop start i =
+    if i > max_i then flush start max_i else
+    if need_escape s.[i] then escape start i loop else
+    if s.[i] <> '$' then loop start (i + 1) else
+    if i = max_i then err_unescaped s else
+    let next = i + 1 in
+    match s.[next] with
+    | '(' ->
+        let min = next + 2 in
+        if min > max_i then err_malformed s else
+        begin match s.[min] with
+        | ','  ->
+            let start_data = min + 1 in
+            flush start (i - 1);
+            begin match s.[min - 1] with
+            | 'i' -> Buffer.add_string b "\\fI"
+            | 'b' -> Buffer.add_string b "\\fB"
+            | markup -> err_markup markup s
+            end;
+            add_markup_text b s start_data need_escape escape end_text
+        | _ -> err_malformed s
+        end
+    | '$' -> (* $ escape *)
+        let next = next + 1 in
+        (flush start i; if next > max_i then () else loop next next)
+    | _ -> err_unescaped s
+  in
+  (Buffer.clear b; loop 0 0; Buffer.contents b)
+
+let doc_to_groff b ~subst s = markup_to_groff b (subst_vars b subst s)
 
 let pp_groff_blocks subst ppf text =
   let buf = Buffer.create 1024 in
-  let escape t = escape subst groff_esc buf t in
-  let pp_tokens ppf t = pp_tokens ~groff:true ppf (escape t) in
+  let markup t = doc_to_groff ~subst buf t in
+  let pp_tokens ppf t = pp_tokens ~spaces:false ppf t in
   let pp_block = function
-  | `P s -> pf ppf "@\n.P@\n%a" pp_tokens s
-  | `Pre s -> pf ppf "@\n.P@\n.nf@\n%a@\n.fi" pp_groff_lines (escape s)
-  | `S s -> pf ppf "@\n.SH %a" pp_tokens s
+  | `P s -> pf ppf "@\n.P@\n%a" pp_tokens (markup s)
+  | `Pre s -> pf ppf "@\n.P@\n.nf@\n%a@\n.fi" pp_lines (markup s)
+  | `S s -> pf ppf "@\n.SH %a" pp_tokens (markup s)
   | `Noblank -> pf ppf "@\n.sp -1"
-  | `I (l, s) -> pf ppf "@\n.TP 4@\n%a@\n%a" pp_tokens l pp_tokens s
+  | `I (l, s) ->
+      pf ppf "@\n.TP 4@\n%a@\n%a" pp_tokens (markup l) pp_tokens (markup s)
   in
   List.iter pp_block text
 
@@ -188,6 +313,16 @@ let pp_groff_page subst ppf ((n, s, a1, a2, a3), t) =
     n s a1 a2 a3 (pp_groff_blocks subst) t
 
 (* Printing to a pager *)
+
+let pp_to_temp_file pp_v v =
+  try
+    let exec = Filename.basename Sys.argv.(0) in
+    let file, oc = Filename.open_temp_file exec "out" in
+    let ppf = Format.formatter_of_out_channel oc in
+    pp_v ppf v; Format.pp_print_flush ppf (); close_out oc;
+    at_exit (fun () -> try Sys.remove file with Sys_error e -> ());
+    Some file
+  with Sys_error _ -> None
 
 let find_cmd cmds =
   let test, null = match Sys.os_type with
@@ -226,7 +361,11 @@ let pp_to_pager print ppf v =
       | None -> print `Plain ppf v
       | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
 
-let rec print ?(subst = fun x -> x) fmt ppf page = match fmt with
+(* Output *)
+
+type format = [ `Auto | `Pager | `Plain | `Groff ]
+
+let rec print ?(subst = fun x -> None) fmt ppf page = match fmt with
 | `Pager -> pp_to_pager (print ~subst) ppf page
 | `Plain -> pp_plain_page subst ppf page
 | `Groff -> pp_groff_page subst ppf page

@@ -1,5 +1,5 @@
 
-
+- Doc language sanitization (see below for details).
 - Change default behaviour of `--help[=FMT]` option. `FMT` no longer
   defaults to `pager` if unspecified.  It defaults to the new value
   `auto` which prints the help as `pager` or `plain` whenever the
@@ -7,19 +7,42 @@
   affects the cli behaviour of all binaries using cmdliner.  At the
   API level this changes the signature of the type `Term.ret` and
   values `Term.ret`, `Term.man_format` and `Manpage.print` to add the
-  new ```Auto`` case to manual formats now represented by the
-  `Manpage.format` type.
+  new ```Auto`` case to manual formats. now represented by the
+  `Manpage.format` type rather than inlined polyvars.
 - Add `Manpage.s_*` constants for standard manpage section names.
 - `Arg.env_var`, change default environment variable section
   to the standard `ENVIRONMENT` manual section rather than
-  `ENVIRONMENT VARIABLES`. If you previously manually placed that section in
+  `ENVIRONMENT VARIABLES`. If you previously manually positioned that section in
   your manpage you will have to change the name. See also next point.
-- Relicense from BSD3 to ISC.
-- Safe-string support.
+- Fix automatic placement of default environment variable section (#44)
+  whenever unspecified in the manpage.
 - Fix repeated environment variable printing for flags (#64). Thanks to
   Thomas Gazagnaire for the report.
 - Fix plain help formatting for commands with empty
   description. Thanks to Maciek Starzyk for the patch.
+- Relicense from BSD3 to ISC.
+- Safe-string support.
+- Build depend on topkg.
+
+### Doc language sanitization
+
+This release tries to bring sanity to the doc language. This may break
+the rendering of some of your man pages.
+
+The rules are now for doc strings and man pages:
+
+- Dollars have to be escaped everywhere by `$$` (fixes #49).
+- It is only allowed to use the variables `$(var)` that are mentioned in
+  the docs (`$(docv)`, `$(opt)`, etc.) and tne markup directives
+  `$({i,b},text)`. Any other unknown `$(var)` fails the man page
+  with `Invalid_argument`.
+- Markup directives `$({i,b},text)` treat `text` as is except for
+  `)` characters that must be escaped to `))` and `$` to `$$`.
+- Variables `$(mname)` and `$(tname)` are now marked up with bold when
+  substituted. If you used to write `$(b,$(tname))` this will throw
+  `Invalid_argument`, as it will result in an unclosed markup
+  directive. Simply replace these by `$(tname)`.
+- Fix (implement really) groff manpage escaping (#48).
 
 v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------

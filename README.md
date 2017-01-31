@@ -11,8 +11,7 @@ module automatically handles syntax errors, help messages and UNIX man
 page generation. It supports programs with single or multiple commands
 and respects most of the [POSIX][1] and [GNU][2] conventions.
 
-Cmdliner has no dependencies and distributed under
-the ISC license.
+Cmdliner has no dependencies and is distributed under the ISC license.
 
 [1]: http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html
 [2]: http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html

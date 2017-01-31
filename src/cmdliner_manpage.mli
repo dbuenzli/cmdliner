@@ -15,7 +15,7 @@ type block =
 type title = string * int * string * string * string
 type t = title * block list
 
-(* Standard section names *)
+(** {1 Standard section names} *)
 
 val s_name : string
 val s_synopsis : string
@@ -31,20 +31,35 @@ val s_bugs : string
 val s_author : string
 val s_see_also : string
 
-(* Output *)
+(** {1 Output} *)
 
 type format = [ `Auto | `Pager | `Plain | `Groff ]
-val print : ?subst:(string -> string) -> format -> Format.formatter -> t -> unit
+val print :
+  ?subst:(string -> string option) -> format -> Format.formatter -> t -> unit
 
-(* Printers and escapes *)
+(** {1 Printers and escapes used by Cmdliner module} *)
 
 val pp_text : Format.formatter -> string -> unit
 val pp_lines : Format.formatter -> string -> unit
 
-val plain_esc : char -> string -> string
-val escape :
-  (string -> string) -> (char -> string -> string) -> Buffer.t -> string ->
-  string
+val markup_text_escape : string -> string
+(** [markup_text_escape t] escapes [t] to be used as marked up text
+    argument (i.e. doubles ')' or '$'). *)
+
+val subst_vars : Buffer.t -> subst:(string -> string option) -> string -> string
+(** [subst b ~subst s], using [b], substitutes in [s] variables of the form
+    "$(doc)" by their [subst] definition. This leaves $$ escapes and markup
+    directives $(markup,...) intact.
+
+    @raise Invalid_argument in case of illegal syntax. *)
+
+val doc_to_plain :
+  Buffer.t -> subst:(string -> string option) -> string -> string
+(** [doc_to_plain b ~subst s] using [b], subsitutes in [s] variables by
+    their [subst] definition and renders cmdliner directives to plain
+    text.
+
+    @raise Invalid_argument in case of illegal syntax. *)
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
