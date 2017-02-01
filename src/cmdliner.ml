@@ -141,7 +141,7 @@ type term_info =
     sdocs : string;    (* standard options, title of section where listed. *)
     man : Manpage.block list; }                          (* man page text. *)
 
-type eval_info =                 (* informatin about the evaluation context. *)
+type eval_info =                (* information about the evaluation context. *)
   { term : term_info * arg_info list;               (* term being evaluated. *)
     main : term_info * arg_info list;                          (* main term. *)
     choices : (term_info * arg_info list) list;         (* all term choices. *)

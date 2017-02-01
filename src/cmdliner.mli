@@ -612,61 +612,81 @@ module Arg : sig
   (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
 end
 
-(**
-    {1:basics Basics}
+(** {1:basics Basics}
 
-    With [Cmdliner] your program evaluates a term. A {e term}
-    is a value of type {!Term.t}. The type parameter indicates
-    the type of the result of the evaluation.
+ With [Cmdliner] your program evaluates a term. A {e term} is a value
+ of type {!Term.t}. The type parameter indicates the type of the
+ result of the evaluation.
 
-    One way to create terms is by lifting regular OCaml values with
-    {!Term.const}. Terms can be applied to terms evaluating to
-    functional values with {!Term.( $ )}. For example for the function:
-{[let revolt () = print_endline "Revolt!"]}
-    the term :
+One way to create terms is by lifting regular OCaml values with
+{!Term.const}. Terms can be applied to terms evaluating to functional
+values with {!Term.( $ )}. For example for the function:
+
+{[
+let revolt () = print_endline "Revolt!"
+]}
+
+the term :
+
 {[
 open Cmdliner
 
-let revolt_t = Term.(const revolt $ const ())]}
-    is a term that evaluates to the result (and effect) of the [revolt]
-    function.
-    Terms are evaluated with {!Term.eval}:
-{[let () = match Term.eval (revolt_t, Term.info "revolt") with
-| `Error _ -> exit 1 | _ -> exit 0]}
-    This defines a command line program named ["revolt"], without command line
-    arguments arguments, that just prints ["Revolt!"] on [stdout].
-{[> ./revolt
-Revolt!]}
-    The combinators in the {!Arg} module allow to extract command
-    line argument data as terms. These terms can then be applied to
-    lifted OCaml functions to be evaluated by the program.
+let revolt_t = Term.(const revolt $ const ())
+]}
 
-    Terms corresponding to command line argument data that are part of
-    a term evaluation implicitly define a command line syntax.  We
-    show this on an concrete example.
+is a term that evaluates to the result (and effect) of the [revolt]
+function. Terms are evaluated with {!Term.eval}:
 
-    Consider the [chorus] function that prints repeatedly a
-    given message :
-{[let chorus count msg =
-  for i = 1 to count do print_endline msg done]}
-    we want to make it available from the command line
-    with the synopsis:
-{[chorus [-c COUNT | --count=COUNT] [MSG]]}
-    where [COUNT] defaults to [10] and [MSG] defaults to ["Revolt!"].
-    We first define a term corresponding to the [--count]
-    option:
+{[
+let () = match Term.eval (revolt_t, Term.info "revolt") with
+| `Error _ -> exit 1 | _ -> exit 0
+]}
+
+This defines a command line program named ["revolt"], without command
+line arguments arguments, that just prints ["Revolt!"] on [stdout].
+
+{[
+> ./revolt
+Revolt!
+]}
+
+The combinators in the {!Arg} module allow to extract command line
+argument data as terms. These terms can then be applied to lifted
+OCaml functions to be evaluated by the program.
+
+Terms corresponding to command line argument data that are part of a
+term evaluation implicitly define a command line syntax.  We show this
+on an concrete example.
+
+Consider the [chorus] function that prints repeatedly a given message :
+
+{[
+let chorus count msg =
+  for i = 1 to count do print_endline msg done
+]}
+
+we want to make it available from the command line with the synopsis:
+
+{[
+chorus [-c COUNT | --count=COUNT] [MSG]
+]}
+
+where [COUNT] defaults to [10] and [MSG] defaults to ["Revolt!"]. We
+first define a term corresponding to the [--count] option:
+
 {[
 let count =
   let doc = "Repeat the message $(docv) times." in
   Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
 ]}
-    This says that [count] is a term that evaluates to the
-    value of an optional argument of type [int] that
-    defaults to [10] if unspecified and whose option name is
-    either [-c] or [--count]. The arguments [doc] and [docv] are used to
-    generate the option's man page information.
 
-    The term for the positional argument [MSG] is:
+This says that [count] is a term that evaluates to the value of an
+optional argument of type [int] that defaults to [10] if unspecified
+and whose option name is either [-c] or [--count]. The arguments [doc]
+and [docv] are used to generate the option's man page information.
+
+The term for the positional argument [MSG] is:
+
 {[
 let msg =
   let doc = "Overrides the default message to print." in
@@ -674,18 +694,21 @@ let msg =
   let doc = "The message to print." in
   Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
 ]}
-    which says that [msg] is a term whose value is the positional
-    argument at index [0] of type [string] and defaults to ["Revolt!"]
-    or the value of the environment variable [CHORUS_MSG] if the
-    argument is unspecified on the command line. Here again [doc] and
-    [docv] are used for the man page information.
 
-    The term for executing [chorus] with these command line arguments
-    is :
+which says that [msg] is a term whose value is the positional argument
+at index [0] of type [string] and defaults to ["Revolt!"]  or the
+value of the environment variable [CHORUS_MSG] if the argument is
+unspecified on the command line. Here again [doc] and [docv] are used
+for the man page information.
+
+The term for executing [chorus] with these command line arguments is :
+
 {[
 let chorus_t = Term.(const chorus $ count $ msg)
 ]}
-    and we are now ready to define our program:
+
+and we are now ready to define our program:
+
 {[
 let info =
   let doc = "print a customizable message repeatedly" in
@@ -697,17 +720,20 @@ let info =
 
 let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
-    The [info] value created with {!Term.info} gives more information
-    about the term we execute and is used to generate the program's
-    man page. Since we provided a [~version] string, the program will
-    automatically respond to the [--version] option by printing this
-    string.
 
-    A program using {!Term.eval} always responds to the
-    [--help] option by showing the man page about the program generated
-    using the information you provided with {!Term.info} and {!Arg.info}.
-    Here is the output generated by our example :
-{v > ./chorus --help
+The [info] value created with {!Term.info} gives more information
+about the term we execute and is used to generate the program's man
+page. Since we provided a [~version] string, the program will
+automatically respond to the [--version] option by printing this
+string.
+
+A program using {!Term.eval} always responds to the [--help] option by
+showing the man page about the program generated using the information
+you provided with {!Term.info} and {!Arg.info}.  Here is the output
+generated by our example :
+
+{v
+> ./chorus --help
 NAME
        chorus - print a customizable message repeatedly
 
@@ -722,210 +748,228 @@ OPTIONS
        -c COUNT, --count=COUNT (absent=10)
            Repeat the message COUNT times.
 
-       --help[=FMT] (default=pager)
-           Show this help in format FMT (pager, plain or groff).
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of `auto',
+           `pager', `groff' or `plain'. With `auto', the format is `pager` or
+           `plain' whenever the TERM env var is `dumb' or undefined.
 
        --version
            Show version information.
+
+ENVIRONMENT
+       CHORUS_MSG
+           Overrides the default message to print.
 
 BUGS
        Email bug reports to <hehey at example.org>.
 v}
 
-    If a pager is available, this output is written to a pager.
-    This help is also available in plain text or in the
-    {{:http://www.gnu.org/software/groff/groff.html}groff} man page format by
-    invoking the program with the option [--help=plain] or [--help=groff].
+If a pager is available, this output is written to a pager. This help
+is also available in plain text or in the
+{{:http://www.gnu.org/software/groff/groff.html}groff} man page format
+by invoking the program with the option [--help=plain] or
+[--help=groff].
 
-    For examples of more complex command line definitions look and
-    run the {{!examples}examples}.
+For examples of more complex command line definitions look and run
+the {{!examples}examples}.
 
-    {2:multiterms Multiple terms}
+{2:multiterms Multiple terms}
 
-    [Cmdliner] also provides support for programs like [darcs] or
-    [git] that have multiple commands each with their own syntax:
-    {[prog COMMAND [OPTION]... ARG...]}
-    A command is defined by coupling a term with
-    {{!Term.tinfo}term information}. The term information defines the
-    command name and its man page. Given a list of commands the function
-    {!Term.eval_choice} will execute the term corresponding to the
-    [COMMAND] argument or or a specific "main" term if there is
-    no [COMMAND] argument.
+[Cmdliner] also provides support for programs like [darcs] or [git]
+that have multiple commands each with their own syntax:
 
-    {2:doclang Documentation markup language}
+{[prog COMMAND [OPTION]... ARG...]}
 
-    Block and doc strings support the following markup language.
+A command is defined by coupling a term with {{!Term.tinfo}term
+information}. The term information defines the command name and its
+man page. Given a list of commands the function {!Term.eval_choice}
+will execute the term corresponding to the [COMMAND] argument or or a
+specific "main" term if there is no [COMMAND] argument.
 
-    {ul
-    {- Markup directives [$(i,text)] and [$(b,text)], where [text] is
-       raw text respectively rendered in italics and bold.}
-    {- Outside markup directives, context dependent variables of the
-       form [$(var)] are substituted by marked up data. For example in a
-       term's manpage [$(tname)] is substituted by the term name in bold.}
-    {- Characters $, (, ) and \ can respectively be escaped by \$,
-       \(, \) and \\ (in OCaml strings this will be ["\\$"], ["\\("], ["\\)"],
-       ["\\\\"]). Escaping $ and \ is mandatory everywhere. Escaping ) is
-       mandatory only in markup directives. Escaping ( is only here for your
-       symmetric pleasure. Any other sequence of characters starting with
-       a \ is an illegal character sequence.}
-    {- Refering to unknown markup directives or variables is a hard failure;
-       [Invalid_argument] is raised.}}
+{2:doclang Documentation markup language}
 
-    {2:manual Manual}
+Block and doc strings support the following markup language.
 
-    Man page sections are printed in the order specified by
-    {!Term.info}. The man page information of an argument is listed in
-    alphabetical order at the end of the text of the section specified
-    by its {{!Arg.info}argument information}. Positional arguments are
-    also listed iff both the [docv] and [doc] string is specified in
-    their argument information.
+{ul
+{- Markup directives [$(i,text)] and [$(b,text)], where [text] is raw
+   text respectively rendered in italics and bold.}
+{- Outside markup directives, context dependent variables of the form
+   [$(var)] are substituted by marked up data. For example in a term's
+   manpage [$(tname)] is substituted by the term name in bold.}
+{- Characters $, (, ) and \ can respectively be escaped by \$, \(, \)
+   and \\ (in OCaml strings this will be ["\\$"], ["\\("], ["\\)"],
+   ["\\\\"]). Escaping $ and \ is mandatory everywhere. Escaping ) is
+   mandatory only in markup directives. Escaping ( is only here for
+   your symmetric pleasure. Any other sequence of characters starting
+   with a \ is an illegal character sequence.}
+{- Refering to unknown markup directives or variables is a hard
+   failure; [Invalid_argument] is raised.}}
 
-    If an argument information mentions a section not specified in
-    {!Term.info}, an empty section is created for it. This section is
-    inserted just after the ["SYNOPSIS"] section or after a section
-    named ["DESCRIPTION"] if there is one.
+{2:manual Manual}
 
-    The ["SYNOPSIS"] section of a man page is generated automatically
-    from a term's information and its arguments. To substitute your
-    own instead, start the term's information man page with
-    a ["SYNOPSIS"] section.
+Man page sections are printed in the order specified by
+{!Term.info}. The man page information of an argument is listed in
+alphabetical order at the end of the text of the section specified by
+its {{!Arg.info}argument information}. Positional arguments are also
+listed iff both the [docv] and [doc] string is specified in their
+argument information.
 
-    Ideally all manual strings should be UTF-8 encoded. However at the
-    moment Groff (at least [1.19.2]) doesn't seem to cope with UTF-8
-    input and UTF-8 characters beyond the ASCII set will look garbled.
-    Regarding UTF-8 output, generating the man page with [-Tutf8] maps
-    the hyphen-minus [U+002D] to the minus sign [U+2212] which makes it
-    difficult to search it in the pager, so [-Tascii] is used for now.
-    Conclusion is that it may be better to stick to the ASCII set for now.
-    Please contact the author if something seems wrong in this reasoning
-    or if you know a work around this.
+If an argument information mentions a section not specified in
+{!Term.info}, an empty section is created for it. This section is
+inserted just after the ["SYNOPSIS"] section or after a section named
+["DESCRIPTION"] if there is one.
 
-    {2:misc Miscellaneous}
+The ["SYNOPSIS"] section of a man page is generated automatically from
+a term's information and its arguments. To substitute your own
+instead, start the term's information man page with a ["SYNOPSIS"]
+section.
 
-    {ul
-    {- The option name [--help], (and [--version] if you specify a
-       version string) is reserved by the module. Using it as a term or
-       option name may result in undefined behaviour.}
-    {- The evaluation of a term in which the same option name is defined
-       by more than one argument is undefined.}}
+Ideally all manual strings should be UTF-8 encoded. However at the
+moment Groff (at least [1.19.2]) doesn't seem to cope with UTF-8 input
+and UTF-8 characters beyond the ASCII set will look garbled.
+Regarding UTF-8 output, generating the man page with [-Tutf8] maps the
+hyphen-minus [U+002D] to the minus sign [U+2212] which makes it
+difficult to search it in the pager, so [-Tascii] is used for now.
+Conclusion is that it may be better to stick to the ASCII set for now.
+Please contact the author if something seems wrong in this reasoning
+or if you know a work around this.
 
-    {1:cmdline Command line syntax}
+{2:misc Miscellaneous}
 
-    For programs evaluating a single term the most general form of invocation
-    is:
-    {ul{- [prog [OPTION]... [ARG]...]}}
-    The program automatically reponds to the [--help] option by
-    printing the help. If a version string is provided in
-    the {{!Term.tinfo}term information}, it also automatically responds
-    to the [--version] option by printing this string.
+{ul
+{- The option name [--help], (and [--version] if you specify a version
+   string) is reserved by the module. Using it as a term or option
+   name may result in undefined behaviour.}
+{- The evaluation of a term in which the same option name is defined
+   by more than one argument is undefined.}}
 
-    Command line arguments are either {{!optargs}{e optional}} or
-    {{!posargs}{e positional}}. Both can be freely interleaved but
-    since [Cmdliner] accepts many optional forms this may result in
-    ambiguities. The special {{!posargs} token [--]} can be used to resolve
-    them.
+{1:cmdline Command line syntax}
 
-    Programs evaluating multiple terms also add this form of invocation:
-    {ul{- [prog COMMAND [OPTION]... [ARG]...]}}
-    Commands automatically respond to the [--help] option
-    by printing their help. The [COMMAND] string must
-    be the first string following the program name and may be specified
-    by a prefix as long as it is not ambiguous.
+For programs evaluating a single term the most general form of invocation is:
 
-    {2:optargs Optional arguments}
+{[
+prog [OPTION]... [ARG]...
+]}
 
-    An optional argument is specified on the command line by a {e
-    name} possibly followed by a {e value}.
+The program automatically reponds to the [--help] option by printing
+the help. If a version string is provided in the {{!Term.tinfo}term
+information}, it also automatically responds to the [--version] option
+by printing this string.
 
-    The name of an option can be short or long.
-    {ul
-    {- A {e short} name is a dash followed by a single alphanumeric
-       character: ["-h"], ["-q"], ["-I"].}
-    {- A {e long} name is two dashes followed by alphanumeric
-       characters and dashes: ["--help"], ["--silent"], ["--ignore-case"].}}
+Command line arguments are either {{!optargs}{e optional}} or
+{{!posargs}{e positional}}. Both can be freely interleaved but since
+[Cmdliner] accepts many optional forms this may result in
+ambiguities. The special {{!posargs} token [--]} can be used to
+resolve them.
 
-    More than one name may refer to the same optional argument.  For
-    example in a given program the names ["-q"], ["--quiet"] and
-    ["--silent"] may all stand for the same boolean argument
-    indicating the program to be quiet.  Long names
-    can be specified by any non ambiguous prefix.
+Programs evaluating multiple terms also add this form of invocation:
 
-    The value of an option can be specified in three different ways.
-    {ul
-    {- As the next token on the command line: ["-o a.out"],
-       ["--output a.out"].}
-    {- Glued to a short name: ["-oa.out"].}
-    {- Glued to a long name after an equal character:
-    ["--output=a.out"].}}
-    Glued forms are especially useful if
-    the value itself starts with a dash as is the case for negative numbers,
-    ["--min=-10"].
+{[
+prog COMMAND [OPTION]... [ARG]...
+]}
 
-    An optional argument without a value is either a {e flag}
-    (see {!Arg.flag}, {!Arg.vflag}) or an optional argument with an optional
-    value (see the [~vopt] argument of {!Arg.opt}).
+Commands automatically respond to the [--help] option by printing
+their help. The [COMMAND] string must be the first string following
+the program name and may be specified by a prefix as long as it is not
+ambiguous.
 
-    Short flags can be grouped together to share a single dash and the group
-    can end with a short option. For example assuming ["-v"] and ["-x"]
-    are flags and ["-f"] is a short option:
-    {ul
-      {- ["-vx"] will be parsed as ["-v -x"].}
-      {- ["-vxfopt"] will be parsed as ["-v -x -fopt"].}
-      {- ["-vxf opt"] will be parsed as ["-v -x -fopt"].}
-      {- ["-fvx"] will be parsed as ["-f=vx"].}}
+{2:optargs Optional arguments}
 
-    {2:posargs Positional arguments}
+An optional argument is specified on the command line by a {e name}
+possibly followed by a {e value}.
 
-    Positional arguments are tokens on the command line that are not
-    option names and are not the value of an optional argument. They
-    are numbered from left to right starting with zero.
+The name of an option can be short or long.
 
-    Since positional arguments may be mistaken as the optional value
-    of an optional argument or they may need to look like option
-    names, anything that follows the special token ["--"] on the command
-    line is considered to be a positional argument.
+{ul
+{- A {e short} name is a dash followed by a single alphanumeric
+   character: ["-h"], ["-q"], ["-I"].}
+{- A {e long} name is two dashes followed by alphanumeric
+   characters and dashes: ["--help"], ["--silent"], ["--ignore-case"].}}
 
-    {2:envlookup Environment variables}
+More than one name may refer to the same optional argument.  For
+example in a given program the names ["-q"], ["--quiet"] and
+["--silent"] may all stand for the same boolean argument indicating
+the program to be quiet.  Long names can be specified by any non
+ambiguous prefix.
 
-    Non-required command line arguments can be backed up by an environment
-    variable.  If the argument is absent from the command line and
-    that the environment variable is defined, its value is parsed
-    using the argument converter and defines the value of the
-    argument.
+The value of an option can be specified in three different ways.
 
-    For {!Arg.flag} and {!Arg.flag_all} that do not have an argument
-    converter a boolean is parsed from the lowercased variable value
-    as follows:
-    {ul
-    {- [""], ["false"], ["no"], ["n"] or ["0"] is [false].}
-    {- ["true"], ["yes"], ["y"] or ["1"] is [true].}
-    {- Any other string is an error.}}
+{ul
+{- As the next token on the command line: ["-o a.out"], ["--output a.out"].}
+{- Glued to a short name: ["-oa.out"].}
+{- Glued to a long name after an equal character: ["--output=a.out"].}}
 
-    Note that environment variables are not supported for {!Arg.vflag}
-    and {!Arg.vflag_all}.
+Glued forms are especially useful if the value itself starts with a
+dash as is the case for negative numbers, ["--min=-10"].
 
-    {1:examples Examples}
+An optional argument without a value is either a {e flag} (see
+{!Arg.flag}, {!Arg.vflag}) or an optional argument with an optional
+value (see the [~vopt] argument of {!Arg.opt}).
 
-    These examples are in the [test] directory of the distribution.
+Short flags can be grouped together to share a single dash and the
+group can end with a short option. For example assuming ["-v"] and
+["-x"] are flags and ["-f"] is a short option:
 
- {2:exrm A [rm] command}
+{ul
+{- ["-vx"] will be parsed as ["-v -x"].}
+{- ["-vxfopt"] will be parsed as ["-v -x -fopt"].}
+{- ["-vxf opt"] will be parsed as ["-v -x -fopt"].}
+{- ["-fvx"] will be parsed as ["-f=vx"].}}
 
-    We define the command line interface of a
-    [rm] command with the synopsis:
+{2:posargs Positional arguments}
+
+Positional arguments are tokens on the command line that are not
+option names and are not the value of an optional argument. They are
+numbered from left to right starting with zero.
+
+Since positional arguments may be mistaken as the optional value of an
+optional argument or they may need to look like option names, anything
+that follows the special token ["--"] on the command line is
+considered to be a positional argument.
+
+{2:envlookup Environment variables}
+
+Non-required command line arguments can be backed up by an environment
+variable.  If the argument is absent from the command line and that
+the environment variable is defined, its value is parsed using the
+argument converter and defines the value of the argument.
+
+For {!Arg.flag} and {!Arg.flag_all} that do not have an argument converter a
+boolean is parsed from the lowercased variable value as follows:
+
+
+{ul
+{- [""], ["false"], ["no"], ["n"] or ["0"] is [false].}
+{- ["true"], ["yes"], ["y"] or ["1"] is [true].}
+{- Any other string is an error.}}
+
+Note that environment variables are not supported for {!Arg.vflag} and
+{!Arg.vflag_all}.
+
+{1:examples Examples}
+
+These examples are in the [test] directory of the distribution.
+
+{2:exrm A [rm] command}
+
+We define the command line interface of a [rm] command with the synopsis:
+
 {[
 rm [OPTION]... FILE...
 ]}
-    The [-f], [-i] and [-I] flags define the prompt behaviour of [rm],
-    represented in our program by the [prompt] type. If more than one
-    of these flags is present on the command line the last one takes
-    precedence.
 
-    To implement this behaviour we map the presence of these flags
-    to values of the [prompt] type by using {!Arg.vflag_all}.  This
-    argument will contain all occurrences of the flag on the command
-    line and we just take the {!Arg.last} one to define our term value
-    (if there's no occurrence the last value of the default list [[Always]] is
-    taken, i.e. the default is [Always]).
+The [-f], [-i] and [-I] flags define the prompt behaviour of [rm],
+represented in our program by the [prompt] type. If more than one of
+these flags is present on the command line the last one takes
+precedence.
+
+To implement this behaviour we map the presence of these flags to
+values of the [prompt] type by using {!Arg.vflag_all}.  This argument
+will contain all occurrences of the flag on the command line and we
+just take the {!Arg.last} one to define our term value (if there's no
+occurrence the last value of the default list [[Always]] is taken,
+i.e. the default is [Always]).
+
 {[
 (* Implementation of the command, we just print the args. *)
 
@@ -979,18 +1023,22 @@ let cmd =
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
-    {2:excp A [cp] command}
 
-    We define the command line interface of a
-    [cp] command with the synopsis:
-{[cp [OPTION]... SOURCE... DEST ]}
-    The [DEST] argument must be a directory if there is more than
-    one [SOURCE]. This constraint is too complex to be expressed by the
-    combinators of {!Arg}. Hence we just give it the {!Arg.string} type
-    and verify the constraint at the beginning of the [cp]
-    implementation. If unsatisfied we return an [`Error] and
-    by using {!Term.ret} on the lifted result [cp_t] of [cp],
-    [Cmdliner] handles the error reporting.
+{2:excp A [cp] command}
+
+We define the command line interface of a [cp] command with the synopsis:
+{[
+cp [OPTION]... SOURCE... DEST
+]}
+
+The [DEST] argument must be a directory if there is more than one
+[SOURCE]. This constraint is too complex to be expressed by the
+combinators of {!Arg}. Hence we just give it the {!Arg.string} type
+and verify the constraint at the beginning of the [cp]
+implementation. If unsatisfied we return an [`Error] and by using
+{!Term.ret} on the lifted result [cp_t] of [cp], [Cmdliner] handles
+the error reporting.
+
 {[
 (* Implementation, we check the dest argument and print the args *)
 
@@ -1048,21 +1096,24 @@ let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 
 We define the command line interface of a [tail] command with the
 synopsis:
-{[tail [OPTION]... [FILE]...]}
+
+{[
+tail [OPTION]... [FILE]...
+]}
 
 The [--lines] option whose value specifies the number of last lines to
 print has a special syntax where a [+] prefix indicates to start
 printing from that line number. In the program this is represented by
-the [loc] type. We define a custom [loc] {{!Arg.argconv}argument converter}
-for this option.
+the [loc] type. We define a custom [loc] {{!Arg.argconv}argument
+converter} for this option.
 
 The [--follow] option has an optional enumerated value. The argument
 converter [follow], created with {!Arg.enum} parses the option value
 into the enumeration. By using {!Arg.some} and the [~vopt] argument of
-{!Arg.opt}, the term corresponding to the option [--follow] evaluates to
-[None] if [--follow] is absent from the command line, to [Some Descriptor]
-if present but without a value and to [Some v] if present with a value
-[v] specified.
+{!Arg.opt}, the term corresponding to the option [--follow] evaluates
+to [None] if [--follow] is absent from the command line, to [Some
+Descriptor] if present but without a value and to [Some v] if present
+with a value [v] specified.
 
 {[
 (* Implementation of the command, we just print the args. *)
@@ -1138,8 +1189,12 @@ let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 
 {2:exdarcs A [darcs] command}
 
-We define the command line interface of a [darcs] command with the synopsis:
-{[darcs [COMMAND] ...]}
+We define the command line interface of a [darcs] command with the
+synopsis:
+
+{[
+darcs [COMMAND] ...
+]}
 
 The [--debug], [-q], [-v] and [--prehook] options are available in
 each command.  To avoid having to pass them individually to each
