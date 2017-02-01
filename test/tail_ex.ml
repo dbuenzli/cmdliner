@@ -66,6 +66,6 @@ let cmd =
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"1.6.1" ~doc ~man
+  Term.info "tail" ~version:"%%VERSION%%" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0

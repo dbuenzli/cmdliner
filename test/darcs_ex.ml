@@ -136,7 +136,7 @@ let default_cmd =
   let doc = "a revision control system" in
   let man = help_secs in
   Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
-  Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
+  Term.info "darcs" ~version:"%%VERSION%%" ~sdocs:copts_sect ~doc ~man
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 

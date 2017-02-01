@@ -84,7 +84,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>.";]
   in
-  Term.info "man_test" ~version:"1.6.1" ~doc ~man
+  Term.info "man_test" ~version:"%%VERSION%%" ~doc ~man
 
 let () = match Term.eval (man_test_t, info) with
 | `Error _ -> exit 1

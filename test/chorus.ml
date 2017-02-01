@@ -24,8 +24,8 @@ let info =
   let doc = "print a customizable message repeatedly" in
   let man = [
     `S Manpage.s_bugs;
-    `P "Email bug reports to <hehey at example.org>."]
+    `P "Email bug reports to <hehey at example.org>." ]
   in
-  Term.info "chorus" ~version:"1.6.1" ~doc ~man
+  Term.info "chorus" ~version:"%%VERSION%%" ~doc ~man
 
 let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0

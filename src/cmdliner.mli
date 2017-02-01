@@ -55,7 +55,7 @@ module Manpage : sig
       {- [`P t] is a new paragraph with text [t].}
       {- [`Pre t] is a new preformatted paragraph with text [t].}
       {- [`I (l,t)] is an indented paragraph with label
-      [l] and text [t].}
+         [l] and text [t].}
       {- [`Noblank] suppresses the blank line introduced between two blocks.}
       {- [`Blocks bs] splices the blocks [bs].}}
 
@@ -728,7 +728,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>." ]
   in
-  Term.info "chorus" ~version:"1.6.1" ~doc ~man
+  Term.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man
 
 let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
 ]}
@@ -1031,7 +1031,7 @@ let cmd =
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"1.6.1" ~doc ~man
+  Term.info "rm" ~version:"%%VERSION%%" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
@@ -1099,7 +1099,7 @@ let cmd =
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
-  Term.info "cp" ~version:"1.6.1" ~doc ~man
+  Term.info "cp" ~version:"%‌%VERSION%%" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
@@ -1194,7 +1194,7 @@ let cmd =
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"1.6.1" ~doc ~man
+  Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~man
 
 let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
 ]}
@@ -1363,7 +1363,7 @@ let default_cmd =
   let doc = "a revision control system" in
   let man = help_secs in
   Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
-  Term.info "darcs" ~version:"1.6.1" ~sdocs:copts_sect ~doc ~man
+  Term.info "darcs" ~version:"%‌%VERSION%%" ~sdocs:copts_sect ~doc ~man
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 
