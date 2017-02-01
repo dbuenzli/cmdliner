@@ -73,8 +73,11 @@ let info =
           +---+";
     `P "These are escapes escaped \\$ \\( \\) \\\\";
     `P "() does not need to be escaped outside directives.";
-    `P "This dollar needs escape \\$(var) this one aswell $(b,\\$(bla\\))";
-    `P "This is another paragraph \\$(bla) $(i,\\$(bla\\)) $(b,\\$\\(bla\\))";
+    `Blocks [
+      `P "The following to paragraphs are spliced in.";
+      `P "This dollar needs escape \\$(var) this one aswell $(b,\\$(bla\\))";
+      `P "This is another paragraph \\$(bla) $(i,\\$(bla\\)) $(b,\\$\\(bla\\))";
+    ];
     `Noblank;
     `Pre "This is another preformatted paragraph.\n\
           There should be no blanks before and after it.";
