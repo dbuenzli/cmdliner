@@ -251,7 +251,7 @@ module Help = struct
     | "env" when a.env_info <> None ->
         begin match a.env_info with
         | None -> assert false
-        | Some v -> Some (strf "$(i,%s)" @@ esc v.env_var)
+        | Some v -> Some (strf "$(b,%s)" @@ esc v.env_var)
         end
     | id -> subst id
     in
@@ -261,7 +261,7 @@ module Help = struct
   | None -> ""
   | Some v ->
       let value = if value then " or" else "absent " in
-      strf "%s $(i,%s) env" value (esc v.env_var)
+      strf "%s $(b,%s) env" value (esc v.env_var)
 
   let make_arg_items ei =
     let subst = ei_subst ei in
@@ -318,7 +318,7 @@ module Help = struct
     let format a =
       let e = match a.env_info with None -> assert false | Some a -> a in
       (e.env_docs,
-       `I (strf "$(i,%s)" e.env_var, arg_info_substs ~subst ~buf a e.env_doc))
+       `I (strf "$(b,%s)" e.env_var, arg_info_substs ~subst ~buf a e.env_doc))
     in
     let is_env_item a = a.env_info <> None in
     let l = List.sort cmp (List.filter is_env_item (snd ei.term)) in
@@ -1061,7 +1061,7 @@ module Term = struct
   let man_fmts_alts = Arg.doc_alts_enum man_fmts
   let man_fmts_doc kind =
     strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
-          the format is `pager` or `plain' whenever the $(i,TERM) env var is
+          the format is `pager` or `plain' whenever the $(b,TERM) env var is
           `dumb' or undefined."
       kind man_fmts_alts
 
