@@ -23,12 +23,13 @@ val s_description : string
 val s_commands : string
 val s_arguments : string
 val s_options : string
+val s_common_options : string
+val s_exit_status : string
 val s_environment : string
 val s_files : string
-val s_exit_status : string
-val s_examples : string
 val s_bugs : string
-val s_author : string
+val s_examples : string
+val s_authors : string
 val s_see_also : string
 
 (** {1 Output} *)

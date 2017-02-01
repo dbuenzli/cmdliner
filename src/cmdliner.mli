@@ -34,7 +34,12 @@
     page structure.
 
     The {!print} function can be useful if the client wants to define
-    other man pages (e.g. to implement a help command). *)
+    other man pages (e.g. to implement a help command).
+
+   {b References.}
+   {ul
+   {- [man-pages(7)], {{:http://man7.org/linux/man-pages/man7/man-pages.7.html}
+      {e Conventions for writing Linux man pages}}.}} *)
 module Manpage : sig
 
   (** {1:man Man pages} *)
@@ -67,7 +72,9 @@ module Manpage : sig
   (** {1:standard_sections Standard section names}
 
       The following are standard manpage section names, roughly ordered
-      in the order they conventionally appear. *)
+      in the order they conventionally appear. See also
+      {{:http://man7.org/linux/man-pages/man7/man-pages.7.html}[man man-pages]}
+      for more elaborations about what sections should contain. *)
 
   val s_name : string
   (** The [NAME] section. This section is automatically created by
@@ -94,6 +101,14 @@ module Manpage : sig
   (** The [OPTIONS] section. By default options and flag arguments get
       listed here. *)
 
+  val s_common_options : string
+  (** The [COMMON OPTIONS] section. For programs with multiple commands
+      a section that can be used to gather options common to all commands. *)
+
+  val s_exit_status : string
+  (** The [EXIT STATUS] section. By default term status exit codes
+      get listed here. *)
+
   val s_environment : string
   (** The [ENVIRONMENT] section. By default environment variables get
       listed here. *)
@@ -101,18 +116,14 @@ module Manpage : sig
   val s_files : string
   (** The [FILES] section. *)
 
-  val s_exit_status : string
-  (** The [EXIT STATUS] section. By default term status exit codes
-      get listed here. *)
+  val s_bugs : string
+  (** The [BUGS] section. *)
 
   val s_examples : string
   (** The [EXAMPLES] section. *)
 
-  val s_bugs : string
-  (** The [BUGS] section. *)
-
-  val s_author : string
-  (** The [AUTHOR] section. *)
+  val s_authors : string
+  (** The [AUTHORS] section. *)
 
   val s_see_also : string
   (** The [SEE ALSO] section. *)
