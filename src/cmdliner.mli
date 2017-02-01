@@ -46,7 +46,7 @@ module Manpage : sig
 
   type block =
     [ `S of string | `P of string | `Pre of string | `I of string * string
-    | `Noblank ]
+    | `Noblank | `Blocks of block list ]
   (** The type for a block of man page text.
 
       {ul
@@ -56,7 +56,8 @@ module Manpage : sig
       {- [`Pre t] is a new preformatted paragraph with text [t].}
       {- [`I (l,t)] is an indented paragraph with label
       [l] and text [t].}
-      {- [`Noblank] suppresses the blank line introduced between two blocks.}}
+      {- [`Noblank] suppresses the blank line introduced between two blocks.}
+      {- [`Blocks bs] splices the blocks [bs].}}
 
       Except in [`Pre], whitespace and newlines are not significant
       and are all collapsed to a single space. All block strings

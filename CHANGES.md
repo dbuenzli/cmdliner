@@ -1,5 +1,6 @@
 
-- Doc language sanitization (see below for details).
+- Doc language sanitization and doc specification improvements and
+  fixes (see below for details).
 - Change default behaviour of `--help[=FMT]` option. `FMT` no longer
   defaults to `pager` if unspecified.  It defaults to the new value
   `auto` which prints the help as `pager` or `plain` whenever the
@@ -7,28 +8,34 @@
   affects the cli behaviour of all binaries using cmdliner.  At the
   API level this changes the signature of the type `Term.ret` and
   values `Term.ret`, `Term.man_format` and `Manpage.print` to add the
-  new ```Auto`` case to manual formats. now represented by the
+  new `` `Auto`` case to manual formats. now represented by the
   `Manpage.format` type rather than inlined polyvars.
+- Relicense from BSD3 to ISC.
+- Safe-string support.
+- Build depend on topkg.
+
+### Doc specification improvements and fixes
+
 - Add `Manpage.s_*` constants for standard manpage section names.
+- Add a `` `Blocks`` case to `Manpage.blocks` to allow block splicing.
+  This avoids having to concatenate block lists at the toplevel of your
+  program.
 - `Arg.env_var`, change default environment variable section
-  to the standard `ENVIRONMENT` manual section rather than
-  `ENVIRONMENT VARIABLES`. If you previously manually positioned that section in
-  your manpage you will have to change the name. See also next point.
+   to the standard `ENVIRONMENT` manual section rather than `ENVIRONMENT VARIABLES`.
+   If you previously manually positioned that section in your manpage you will have to
+   change the name. See also next point.
 - Fix automatic placement of default environment variable section (#44)
   whenever unspecified in the manpage.
 - Fix repeated environment variable printing for flags (#64). Thanks to
   Thomas Gazagnaire for the report.
 - Fix plain help formatting for commands with empty
   description. Thanks to Maciek Starzyk for the patch.
-- Relicense from BSD3 to ISC.
-- Safe-string support.
-- Build depend on topkg.
 
 ### Doc language sanitization
 
 This release tries to bring sanity to the doc language. This may break
-the rendering of some of your man pages. The rules are now for doc
-strings and man pages:
+the rendering of some of your man pages. Thanks to Gabriel Scherer,
+Ivan Gotovchits and Nicolás Ojeda Bär for the feedback.
 
 - It is only allowed to use the variables `$(var)` that are mentioned in
   the docs (`$(docv)`, `$(opt)`, etc.) and the markup directives
@@ -46,9 +53,6 @@ strings and man pages:
   `Invalid_argument`, since `$` is not escaped. Simply replace these by
   `$(tname)`.
 - Fix (implement really) groff manpage escaping (#48).
-
-Thanks to Gabriel Scherer, Ivan Gotovchits and Nicolás Ojeda Bär for
-the feedback.
 
 v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------

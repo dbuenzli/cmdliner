@@ -9,7 +9,7 @@
 type title = string * int * string * string * string
 type block =
   [ `S of string | `P of string | `Pre of string | `I of string * string
-  | `Noblank ]
+  | `Noblank | `Blocks of block list ]
 
 type t = title * block list
 
@@ -237,6 +237,7 @@ let pp_plain_blocks subst ppf ts =
   | t :: ts ->
       begin match t with
       | `Noblank -> ()
+      | `Blocks bs -> loop bs (* not T.R. *)
       | `P s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_tokens (markup s)
       | `S s -> pf ppf "@[%a@]" pp_tokens (markup s)
       | `Pre s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_lines (markup s)
@@ -314,7 +315,8 @@ let pp_groff_blocks subst ppf text =
   let buf = Buffer.create 1024 in
   let markup t = doc_to_groff ~subst buf t in
   let pp_tokens ppf t = pp_tokens ~spaces:false ppf t in
-  let pp_block = function
+  let rec pp_block = function
+  | `Blocks bs -> List.iter pp_block bs (* not T.R. *)
   | `P s -> pf ppf "@\n.P@\n%a" pp_tokens (markup s)
   | `Pre s -> pf ppf "@\n.P@\n.nf@\n%a@\n.fi" pp_lines (markup s)
   | `S s -> pf ppf "@\n.SH %a" pp_tokens (markup s)

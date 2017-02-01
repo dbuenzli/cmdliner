@@ -10,7 +10,7 @@
 
 type block =
   [ `S of string | `P of string | `Pre of string | `I of string * string
-  | `Noblank ]
+  | `Noblank | `Blocks of block list ]
 
 type title = string * int * string * string * string
 type t = title * block list

@@ -129,10 +129,6 @@ type arg =        (* unconverted argument data as found on the command line. *)
 
 type cmdline = arg Amap.t      (* command line, maps arg_infos to arg value. *)
 
-type man_block = [                                 (* block of manpage text. *)
-  | `S of string | `P of string | `Pre of string | `I of string * string
-  | `Noblank ]
-
 type term_info =
   { name : string;                                    (* name of the term. *)
     version : string option;                   (* version (for --version). *)
