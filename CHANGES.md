@@ -1,6 +1,7 @@
 
 - Doc specification improvements and fixes and doc language
   sanitization (see below for details).
+- Change semantics of `Arg.pos_left` (see #76 for details).
 - Change default behaviour of `--help[=FMT]` option. `FMT` no longer
   defaults to `pager` if unspecified.  It defaults to the new value
   `auto` which prints the help as `pager` or `plain` whenever the

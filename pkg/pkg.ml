@@ -16,4 +16,5 @@ let () =
        Pkg.test ~run:false "test/test_man";
        Pkg.test ~run:false "test/test_err";
        Pkg.test ~run:false "test/test_pos";
-       Pkg.test ~run:false "test/test_pos_all"; ]
+       Pkg.test ~run:false "test/test_pos_all";
+       Pkg.test ~run:false "test/test_pos_left"; ]

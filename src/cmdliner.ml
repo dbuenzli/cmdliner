@@ -587,12 +587,12 @@ end = struct
     in
     aux 0 opti cl [] args
 
-  let take n l =
-    let rec loop n acc l = match n = 0 with
-    | true -> List.rev acc
-    | false -> loop (n - 1) (List.hd l :: acc) (List.tl l)
+  let take ~count l = (* Takes at most [count] elements of [l]. *)
+    let rec loop count acc l =
+      if count <= 0 || l = [] then List.rev acc else
+      loop (count - 1) (List.hd l :: acc) (List.tl l)
     in
-    loop n [] l
+    loop count [] l
 
   let process_pos_args posi cl pargs =
     (* returns an updated [cl] cmdline in which each positional arg mentioned
@@ -611,8 +611,7 @@ end = struct
             max pos max_spec
         | Left (rev, k) ->
             let pos = pos rev k in
-            (if pos <= 0 || pos > last then P [] else P (take pos pargs)),
-            max pos max_spec
+            P (take ~count:pos pargs), max (pos - 1) max_spec
         | Right (rev, k) ->
             let pos = pos rev k in
             (if pos < 0 || pos >= last then P [] else
