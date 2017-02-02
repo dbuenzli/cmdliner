@@ -119,6 +119,15 @@ let arg_id =        (* thread-safe UIDs, Oo.id (object end) was used before. *)
 let is_opt a = a.o_names <> []
 let is_pos a = a.o_names = []
 
+let pos_arg_cli_order a0 a1 =              (* best-effort order on the cli. *)
+  let c = compare a0.p_kind.pos_rev a1.p_kind.pos_rev in
+  if c <> 0 then c else
+  if a0.p_kind.pos_rev
+  then compare a1.p_kind.pos_start a0.p_kind.pos_start
+  else compare a0.p_kind.pos_start a1.p_kind.pos_start
+
+let rev_pos_arg_cli_order a0 a1 = pos_arg_cli_order a1 a0
+
 module Amap = Map.Make                                     (* arg info maps. *)
     (struct type t = arg_info let compare a a' = compare a.id a'.id end)
 
@@ -203,22 +212,15 @@ module Help = struct
         let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
         String.concat " " (loop n [])
 
-  let rev_pos_arg_cli_order (p0, _) (p1, _) =
-    (* best-effort reverse order on the cli *)
-    let c = compare p0.pos_rev p1.pos_rev in
-    if c <> 0 then c else
-    if p0.pos_rev
-    then compare p0.pos_start p1.pos_start
-    else compare p1.pos_start p0.pos_start
-
   let synopsis ei = match eval_kind ei with
   | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ esc (invocation ei)
   | `Simple | `M_choice ->
-      let add_pos_arg acc arg =
-        if is_opt arg then acc else (arg.p_kind, synopsis_pos_arg arg) :: acc
+      let rev_cli_order (a0, _) (a1, _) = rev_pos_arg_cli_order a0 a1 in
+      let add_pos_arg acc a =
+        if is_opt a then acc else (a, synopsis_pos_arg a) :: acc
       in
       let pargs = List.fold_left add_pos_arg [] (snd ei.term) in
-      let pargs = List.sort rev_pos_arg_cli_order pargs in
+      let pargs = List.sort rev_cli_order pargs in
       let pargs = String.concat " " (List.rev_map snd pargs) in
       strf "$(b,%s) [$(i,OPTION)]... %s" (esc @@ invocation ei) pargs
 
