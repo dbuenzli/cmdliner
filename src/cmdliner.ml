@@ -372,54 +372,6 @@ module Help = struct
     let sm = insert_term_man_docs ei sm in
     Manpage.smap_to_blocks sm
 
-(*
-    let rec merge_items acc to_insert mark il = function
-    | `S s as sec :: ts ->
-        let acc = List.rev_append to_insert acc in
-        let acc = if mark then sec :: `Orphan_mark :: acc else sec :: acc in
-        let to_insert, il = List.partition (fun (n, _) -> n = s) il in
-        let to_insert = List.rev_map (fun (_, i) -> i) to_insert in
-        let to_insert = (to_insert :> [ `Orphan_mark | Manpage.block] list) in
-        merge_items acc to_insert (s = Manpage.s_description) il ts
-    | t :: ts ->
-        let t = (t :> [`Orphan_mark | Manpage.block]) in
-        merge_items (t :: acc) to_insert mark il ts
-    | [] ->
-        let acc = List.rev_append to_insert acc in
-        (if mark then `Orphan_mark :: acc else acc), il
-    in
-    let rec merge_orphans acc orphans = function
-    | `Orphan_mark :: ts ->
-        let rec merge acc s = function
-        | [] -> (`S s) :: acc
-        | (s', i) :: ss ->
-            let i = (i :> Manpage.block) in
-            if s = s' then merge (i :: acc) s ss else
-            merge (i :: (`S s) :: acc) s' ss
-        in
-        let acc = match orphans with
-        | [] -> acc | (s, _) :: _ -> merge acc s orphans
-        in
-        merge_orphans acc [] ts
-    | (#Manpage.block as e) :: ts -> merge_orphans (e :: acc) orphans ts
-    | [] -> acc
-    in
-    let buf = Buffer.create 200 in
-    let cmds = make_cmd_items ei in
-    let args = make_arg_items ~buf ei in
-    let envs_rev = make_env_items_rev ~buf ei in
-    let items_rev = List.rev_append cmds (List.rev_append args envs_rev) in
-    let cmp (s, _) (s', _) = match s, s with
-    | "ENVIRONMENT VARIABLES", _ -> 1  (* Put env vars at the end. *)
-    | s, "ENVIRONMENT VARIABLES" -> -1
-    | s, s' -> compare s s' (* other predefined sec. names order correctly *)
-    in
-    let items = List.rev (List.stable_sort cmp items_rev) in
-    let synopsis, man = get_synopsis_section ei in
-    let rev_text, orphans = merge_items [`Orphan_mark] [] false items man in
-    synopsis @ merge_orphans [] orphans rev_text
-*)
-
   let title ei =
     let prog = String.capitalize (fst ei.main).name in
     let name = String.uppercase (invocation ~sep:'-' ei) in
