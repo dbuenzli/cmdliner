@@ -482,7 +482,14 @@ module Arg : sig
 
       The information of a positional argument must have no name
       or [Invalid_argument] is raised. Positional arguments indexing
-      is zero-based. *)
+      is zero-based.
+
+      {b Warning.} The following combinators allow to specify and
+      extract a given positional argument with more than one term.
+      This should not be done as it will likely confuse end users and
+      documentation generation. These over-specifications may be
+      prevented by raising [Invalid_argument] in the future. But for now
+      it is the client's duty to make sure this doesn't happen. *)
 
   val pos : ?rev:bool -> int -> 'a converter -> 'a -> info -> 'a t
   (** [pos rev n c v i] is an ['a] argument defined by the [n]th
