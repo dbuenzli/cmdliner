@@ -1,7 +1,7 @@
 open Cmdliner
 
 let pos l t r =
-  print_endline (String.concat "\n" (l @ [t] @ r))
+  print_endline (String.concat "\n" (l @ ["--"; t; "--"] @ r))
 
 let test_pos =
   let l = Arg.(value & pos_left 2 string [] & info [] ~docv:"LEFT") in

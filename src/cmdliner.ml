@@ -93,11 +93,10 @@ type opt_kind =                              (* kinds of optional arguments. *)
   | Opt                                                (* value is required. *)
   | Opt_vopt of string     (* option value is optional, takes given default. *)
 
-type pos_kind =                            (* kinds of positional arguments. *)
-  | All                                         (* all positional arguments. *)
-  | Nth of bool * int                                  (* specific position. *)
-  | Left of bool * int                (* all args on the left of a position. *)
-  | Right of bool * int              (* all args on the right of a position. *)
+type pos_kind =                  (* type for ranges of positional arguments. *)
+  { pos_rev : bool;         (* if [true] positions are counted from the end. *)
+    pos_start : int;                           (* start positional argument. *)
+    pos_len : int option }    (* number of arguments or [None] if unbounded. *)
 
 type arg_info =                (* information about a command line argument. *)
   { id : int;                               (* unique id for the argument. *)
@@ -194,38 +193,34 @@ module Help = struct
   | `Simple | `M_main -> (fst ei.main).name
   | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
 
+  let synopsis_pos_arg a =
+    let v = if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" (esc a.docv) in
+    let v = if a.absent = Error then strf "%s" v else strf "[%s]" v in
+    match a.p_kind.pos_len with
+    | None -> v ^ "..."
+    | Some 1 -> v
+    | Some n ->
+        let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
+        String.concat " " (loop n [])
+
+  let rev_pos_arg_cli_order (p0, _) (p1, _) =
+    (* best-effort reverse order on the cli *)
+    let c = compare p0.pos_rev p1.pos_rev in
+    if c <> 0 then c else
+    if p0.pos_rev
+    then compare p0.pos_start p1.pos_start
+    else compare p1.pos_start p0.pos_start
+
   let synopsis ei = match eval_kind ei with
   | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ esc (invocation ei)
   | `Simple | `M_choice ->
-      let rev_cmp (p, _) (p', _) = match p', p with        (* best effort. *)
-      | p, All -> -1 | All, p -> 1
-      | Left _, Right _ -> -1 | Right _, Left _ -> 1
-      | Left (false, k), Nth (false, k')
-      | Nth (false, k), Nth (false, k')
-      | Nth (false, k), Right (false, k') -> if k <= k' then -1 else 1
-      | Nth (false, k), Left (false, k')
-      | Right (false, k), Nth (false, k') -> if k >= k' then 1 else -1
-      | Left (true, k), Nth (true, k')
-      | Nth (true, k), Nth (true, k')
-      | Nth (true, k), Right (true, k') -> if k >= k' then -1 else 1
-      | Nth (true, k), Left (true, k')
-      | Right (true, k), Nth (true, k') -> if k <= k' then 1 else -1
-      | p, p' -> compare p p'
+      let add_pos_arg acc arg =
+        if is_opt arg then acc else (arg.p_kind, synopsis_pos_arg arg) :: acc
       in
-      let rec format_pos acc = function
-      | a :: al ->
-          if is_opt a then format_pos acc al else
-          let v =
-            if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" (esc a.docv)
-          in
-          let v = if a.absent = Error then strf "%s" v else strf "[%s]" v in
-          let v = v ^ match a.p_kind with Nth _ -> "" | _ -> "..." in
-          format_pos ((a.p_kind, v) :: acc) al
-      | [] -> acc
-      in
-      let args = List.sort rev_cmp (format_pos [] (snd ei.term)) in
-      let args = String.concat " " (List.rev_map snd args) in
-      strf "$(b,%s) [$(i,OPTION)]... %s" (esc @@ invocation ei) args
+      let pargs = List.fold_left add_pos_arg [] (snd ei.term) in
+      let pargs = List.sort rev_pos_arg_cli_order pargs in
+      let pargs = String.concat " " (List.rev_map snd pargs) in
+      strf "$(b,%s) [$(i,OPTION)]... %s" (esc @@ invocation ei) pargs
 
   let cmd_man_docs ei = match eval_kind ei with
   | `Simple | `M_choice -> []
@@ -432,9 +427,9 @@ module Err = struct
       (quote f')
 
   let pos_parse_value a e =
-    if a.docv = "" then e else match a.p_kind with
-    | Nth _ -> strf "%s argument: %s" a.docv e
-    | _ -> strf "%s... arguments: %s" a.docv e
+    if a.docv = "" then e else match a.p_kind.pos_len with
+    | None -> strf "%s argument: %s" a.docv e
+    | Some _ -> strf "%s... arguments: %s" a.docv e
 
   let arg_missing a =
     if is_opt a then
@@ -587,12 +582,15 @@ end = struct
     in
     aux 0 opti cl [] args
 
-  let take ~count l = (* Takes at most [count] elements of [l]. *)
-    let rec loop count acc l =
-      if count <= 0 || l = [] then List.rev acc else
-      loop (count - 1) (List.hd l :: acc) (List.tl l)
+  let take_range start stop l =
+    let rec loop i acc = function
+    | [] -> List.rev acc
+    | v :: vs ->
+        if i < start then loop (i + 1) acc vs else
+        if i <= stop then loop (i + 1) (v :: acc) vs else
+        List.rev acc
     in
-    loop count [] l
+    loop 0 [] l
 
   let process_pos_args posi cl pargs =
     (* returns an updated [cl] cmdline in which each positional arg mentioned
@@ -601,30 +599,24 @@ end = struct
     if pargs = [] then cl else
     let last = List.length pargs - 1 in
     let pos rev k = if rev then last - k else k in
-    let rec aux pargs cl max_spec = function
-    | a :: al ->
-        let arg, max_spec = match a.p_kind with
-        | All -> P pargs, last
-        | Nth (rev, k) ->
-            let pos = pos rev k in
-            P (if pos < 0 || pos > last then [] else [List.nth pargs pos]),
-            max pos max_spec
-        | Left (rev, k) ->
-            let pos = pos rev k in
-            P (take ~count:pos pargs),
-            max (pos - 1) max_spec
-        | Right (rev, k) ->
-            let pos = pos rev k in
-            P (if pos < 0 || pos >= last then [] else
-               List.rev (take (last - pos) (List.rev pargs))),
-            last
-        in
-        aux pargs (Amap.add a arg cl) max_spec al
+    let rec loop cl max_spec = function
     | [] -> cl, max_spec
+    | a :: al ->
+        let rev = a.p_kind.pos_rev in
+        let start = pos rev a.p_kind.pos_start in
+        let stop = match a.p_kind.pos_len with
+        | None -> pos rev last
+        | Some n -> pos rev (a.p_kind.pos_start + n - 1)
+        in
+        let start, stop = if rev then stop, start else start, stop in
+        let arg = P (take_range start stop pargs) in
+        let max_spec = max stop max_spec in
+        let cl = Amap.add a arg cl in
+        loop cl max_spec al
     in
-    let cl, max_spec = aux pargs cl (-1) posi in
+    let cl, max_spec = loop cl (-1) posi in
     if last <= max_spec then cl else
-    let excess = List.rev (take (last - max_spec) (List.rev pargs)) in
+    let excess = take_range (max_spec + 1) last pargs in
     raise (Error (Err.pos_excess excess))
 
   let create ?(peek_opts = false) al args =
@@ -653,6 +645,9 @@ module Arg = struct
     (fun s -> match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e),
     (fun ppf v -> match v with None -> pp_str ppf none| Some v -> print ppf v)
 
+
+  let dumb_p_kind = { pos_rev = false; pos_start = -1; pos_len = None }
+
   let info ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let docs = match docs with
@@ -662,7 +657,7 @@ module Arg = struct
     { id = arg_id (); absent = Val (lazy "");
       env_info = env;
       doc = doc; docv = docv; docs = docs;
-      p_kind = All; o_kind = Flag; o_names = List.rev_map dash names;
+      p_kind = dumb_p_kind; o_kind = Flag; o_names = List.rev_map dash names;
       o_all = false; }
 
   let env_bool_parse s = match String.lowercase s with
@@ -798,9 +793,9 @@ module Arg = struct
 
   let pos ?(rev = false) k (parse, print) v a =
     if is_opt a then invalid_arg err_not_pos else
-    let a = { a with p_kind = Nth (rev, k);
-                     absent = Val (lazy (str_of_pp print v)) }
-    in
+    let p_kind = { pos_rev = rev; pos_start = k; pos_len = Some 1 } in
+    let absent = Val (lazy (str_of_pp print v)) in
+    let a = { a with p_kind; absent } in
     let convert ei cl = match Cmdline.pos_arg cl a with
     | [] -> try_env ei a parse ~absent:v
     | [v] -> parse_pos_value parse a v
@@ -817,9 +812,19 @@ module Arg = struct
     in
     [a], convert
 
-  let pos_all c v a = pos_list All c v a
-  let pos_left ?(rev = false) k = pos_list (Left (rev, k))
-  let pos_right ?(rev = false) k = pos_list (Right (rev, k))
+  let pos_all =
+    let all = { pos_rev = false; pos_start = 0; pos_len = None } in
+    fun c v a -> pos_list all c v a
+
+  let pos_left ?(rev = false) k =
+    let pos_start = if rev then k + 1 else 0 in
+    let pos_len = if rev then None else Some k in
+    pos_list { pos_rev = rev; pos_start; pos_len }
+
+  let pos_right ?(rev = false) k =
+    let pos_start = if rev then 0 else k + 1 in
+    let pos_len = if rev then Some k else None in
+    pos_list { pos_rev = rev; pos_start; pos_len }
 
   (* Arguments as terms *)
 
