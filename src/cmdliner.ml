@@ -607,15 +607,16 @@ end = struct
         | All -> P pargs, last
         | Nth (rev, k) ->
             let pos = pos rev k in
-            (if pos < 0 || pos > last then P [] else P [List.nth pargs pos]),
+            P (if pos < 0 || pos > last then [] else [List.nth pargs pos]),
             max pos max_spec
         | Left (rev, k) ->
             let pos = pos rev k in
-            P (take ~count:pos pargs), max (pos - 1) max_spec
+            P (take ~count:pos pargs),
+            max (pos - 1) max_spec
         | Right (rev, k) ->
             let pos = pos rev k in
-            (if pos < 0 || pos >= last then P [] else
-             P (List.rev (take (last - pos) (List.rev pargs)))),
+            P (if pos < 0 || pos >= last then [] else
+               List.rev (take (last - pos) (List.rev pargs))),
             last
         in
         aux pargs (Amap.add a arg cl) max_spec al
