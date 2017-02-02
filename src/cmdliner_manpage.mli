@@ -32,6 +32,23 @@ val s_examples : string
 val s_authors : string
 val s_see_also : string
 
+(** {1 Section maps}
+
+    Used for handling the merging of metadata doc strings. *)
+
+type smap
+val smap_of_blocks : block list -> smap
+val smap_to_blocks : smap -> block list
+val smap_has_section : smap -> sec:string -> bool
+val smap_append_block : smap -> sec:string -> block -> smap
+(** [smap_append_block smap sec b] appends [b] at the end of section
+    [sec] creating it at the right place if needed. *)
+
+(** {1 Content boilerplate} *)
+
+val s_environment_intro : block
+
+
 (** {1 Output} *)
 
 type format = [ `Auto | `Pager | `Plain | `Groff ]

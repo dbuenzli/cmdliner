@@ -23,12 +23,105 @@ let s_arguments = "ARGUMENTS"
 let s_options = "OPTIONS"
 let s_common_options = "COMMON OPTIONS"
 let s_environment = "ENVIRONMENT"
+let s_environment_intro =
+  `P "These environment variables affect the execution of $(tname):"
+
 let s_files = "FILES"
 let s_exit_status = "EXIT STATUS"
 let s_examples = "EXAMPLES"
 let s_bugs = "BUGS"
 let s_authors = "AUTHORS"
 let s_see_also = "SEE ALSO"
+
+(* Section order *)
+
+let s_created = ""
+let order =
+  [| s_name; s_synopsis; s_description; s_created; s_commands;
+     s_arguments; s_options; s_common_options; s_environment;
+     s_files; s_exit_status; s_examples; s_bugs; s_authors; s_see_also; |]
+
+let order_synopsis = 1
+let order_created = 3
+
+let section_of_order i = order.(i)
+let section_to_order ~on_unknown s =
+  let max = Array.length order - 1 in
+  let rec loop i = match i > max with
+  | true -> on_unknown
+  | false -> if order.(i) = s then i else loop (i + 1)
+  in
+  loop 0
+
+(* Section maps
+
+   Section maps, maps section names to their section order and reversed
+   content blocks (content is not reversed in `Block blocks). The sections
+   are listed in reversed order. Unknown sections get the order of the last
+   known section. *)
+
+type smap = (string * (int * block list)) list
+
+let smap_of_blocks bs = (* N.B. this flattens `Blocks, not t.r. *)
+  let rec loop s s_o rbs smap = function
+  | [] -> s, s_o, rbs, smap
+  | `S new_sec :: bs ->
+      let new_o = section_to_order ~on_unknown:s_o new_sec in
+      loop new_sec new_o [] ((s, (s_o, rbs)):: smap) bs
+  | `Blocks blist :: bs ->
+      let s, s_o, rbs, rmap = loop s s_o rbs smap blist (* not t.r. *) in
+      loop s s_o rbs rmap bs
+  | (`P _ | `Pre _ | `I _ | `Noblank as c) :: bs ->
+      loop s s_o (c :: rbs) smap bs
+  in
+  let first, (bs : block list) = match bs with
+  | `S s :: bs -> s, bs
+  | `Blocks (`S s :: blist) :: bs -> s, (`Blocks blist) :: bs
+  | _ -> "", bs
+  in
+  let first_o = section_to_order ~on_unknown:order_synopsis first in
+  let s, s_o, rc, smap = loop first first_o [] [] bs in
+  (s, (s_o, rc)) :: smap
+
+let smap_to_blocks smap = (* N.B. this leaves `Blocks content untouched. *)
+  let rec loop acc smap s = function
+  | b :: rbs -> loop (b :: acc) smap s rbs
+  | [] ->
+      let acc = `S s :: acc in
+      match smap with
+      | (s, (_, rbs)) :: smap -> loop acc smap s rbs
+      | [] -> acc
+  in
+  match smap with
+  | [] -> []
+  | (s, (_, rbs)) :: smap -> loop [] smap s rbs
+
+let smap_has_section smap ~sec = List.exists (fun (s, _) -> sec = s) smap
+let smap_append_block smap ~sec b =
+  let o = section_to_order ~on_unknown:order_created sec in
+  let try_insert =
+    let rec loop max_lt_o left = function
+    | (s', (o, rbs)) :: right when s' = sec ->
+        Ok (List.rev_append ((sec, (o, b :: rbs)) :: left) right)
+    | (_, (o', _) as s) :: right ->
+        let max_lt_o = if o' < o then max o' max_lt_o else max_lt_o in
+        loop max_lt_o (s :: left) right
+    | [] ->
+        if max_lt_o <> -1 then Error max_lt_o else
+        Ok (List.rev ((sec, (o, [b])) :: left))
+    in
+    loop (-1) [] smap
+  in
+  match try_insert with
+  | Ok smap -> smap
+  | Error insert_before ->
+      let rec loop left = function
+      | (s', (o', _)) :: _ as right when o' = insert_before ->
+          List.rev_append ((sec, (o, [b])) :: left) right
+      | s :: ss -> loop (s :: left) ss
+      | [] -> assert false
+      in
+      loop [] smap
 
 (* Formatting tools *)
 

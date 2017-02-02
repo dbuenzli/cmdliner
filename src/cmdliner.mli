@@ -28,13 +28,12 @@
 
 (** Man page specification.
 
-    Man page generation is automatically handled by [Cmdliner]. The
-    {!block} type is used to define a man page's content. It's
-    a good idea to follow the {{!standard_sections}standard} manual
-    page structure.
+    Man page generation is automatically handled by [Cmdliner],
+    consult the {{!manual}details}.
 
-    The {!print} function can be useful if the client wants to define
-    other man pages (e.g. to implement a help command).
+    The {!block} type is used to define a man page's content. It's a
+    good idea to follow the {{!standard_sections}standard} manual page
+    structure.
 
    {b References.}
    {ul
@@ -70,7 +69,7 @@ module Manpage : sig
   type t = title * block list
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
-  (** {1:standard_sections Standard section names}
+  (** {1:standard_sections Standard section names and content}
 
       The following are standard manpage section names, roughly ordered
       in the order they conventionally appear. See also
@@ -114,6 +113,10 @@ module Manpage : sig
   (** The [ENVIRONMENT] section. By default environment variables get
       listed here. *)
 
+  val s_environment_intro : block
+  (** [s_environment_intro] is the introduction content used by cmdliner
+      when it creates the {!s_environment} section. *)
+
   val s_files : string
   (** The [FILES] section. *)
 
@@ -129,7 +132,10 @@ module Manpage : sig
   val s_see_also : string
   (** The [SEE ALSO] section. *)
 
-  (** {1:output Output} *)
+  (** {1:output Output}
+
+    The {!print} function can be useful if the client wants to define
+    other man pages (e.g. to implement a help command). *)
 
   type format = [ `Auto | `Pager | `Plain | `Groff ]
   (** The type for manpage output specification.
@@ -800,7 +806,8 @@ specific "main" term if there is no [COMMAND] argument.
 
 {2:doclang Documentation markup language}
 
-Block and doc strings support the following markup language.
+Manpage {{!Manpage.block}blocks} and doc strings support the following
+markup language.
 
 {ul
 {- Markup directives [$(i,text)] and [$(b,text)], where [text] is raw
@@ -819,22 +826,45 @@ Block and doc strings support the following markup language.
 
 {2:manual Manual}
 
-Man page sections are printed in the order specified by
-{!Term.info}. The man page information of an argument is listed in
-alphabetical order at the end of the text of the section specified by
-its {{!Arg.info}argument information}. Positional arguments are also
-listed iff both the [docv] and [doc] string is specified in their
-argument information.
+Man page sections for a term are printed in the order specified by the
+term manual as given to {!Term.info}. Unless specified explicitely in
+the term's manual the following sections are automaticaly created and
+populated for you:
 
-If an argument information mentions a section not specified in
-{!Term.info}, an empty section is created for it. This section is
-inserted just after the ["SYNOPSIS"] section or after a section named
-["DESCRIPTION"] if there is one.
+{ul
+{- {{!Manpage.s_name}[NAME]} section.}
+{- {{!Manpage.s_synopsis}[SYNOPSIS]} section.}}
 
-The ["SYNOPSIS"] section of a man page is generated automatically from
-a term's information and its arguments. To substitute your own
-instead, start the term's information man page with a ["SYNOPSIS"]
-section.
+The various [doc] documentation strings specified by the term's
+subterms and additional metadata get integrated at the end of the
+documentation section name [docs] they respecively mention, in the
+following order:
+
+{ol
+{- Commands, see {!Term.info}.}
+{- Positional arguments, see {!Arg.info}. Those are listed iff
+   both the [docv] and [doc] string is specified by {!Arg.info}.}
+{- Optional arguments, see {!Arg.info}.}
+{- Environment variables, see {!Arg.env_var}.}}
+
+If a [docs] section name is mentioned and does not exist in the term's
+manual, an empty section is created for it, to which the [doc] strings
+are intergrated, possibly prefixed by boilerplate text (e.g. for
+{!Manpage.s_environment} and {!Manpage.s_exit_status}).
+
+If the created section is:
+{ul
+{- {{!Manpage.standard_sections}standard}, it
+    is inserted at the right place in the order specified
+    {{!Manpage.standard_sections}here}, but after possible non-standard
+    section explicitely specified by the term as the latter get the order number
+    of the last previously specified standard section or the order of
+    {!Manpage.s_synopsis} if there is no such section.}
+{-  non-standard, it is inserted before the {!Manpage.s_commands}
+    section or the first subsequent existing standard section if it
+    doesn't exist. Taking advantage of this behaviour is discouraged,
+    you should declare manually your non standard section in the term's
+    manual.}}
 
 Ideally all manual strings should be UTF-8 encoded. However at the
 moment Groff (at least [1.19.2]) doesn't seem to cope with UTF-8 input

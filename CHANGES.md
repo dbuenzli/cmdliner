@@ -1,6 +1,6 @@
 
-- Doc language sanitization and doc specification improvements and
-  fixes (see below for details).
+- Doc specification improvements and fixes and doc language
+  sanitization (see below for details).
 - Change default behaviour of `--help[=FMT]` option. `FMT` no longer
   defaults to `pager` if unspecified.  It defaults to the new value
   `auto` which prints the help as `pager` or `plain` whenever the
@@ -17,19 +17,24 @@
 ### Doc specification improvements and fixes
 
 - Add `Manpage.s_*` constants for standard manpage section names.
-- Add a `` `Blocks`` case to `Manpage.blocks` to allow block splicing.
-  This avoids having to concatenate block lists at the toplevel of your
-  program.
-- `Arg.env_var`, change default environment variable section
-   to the standard `ENVIRONMENT` manual section rather than `ENVIRONMENT VARIABLES`.
-   If you previously manually positioned that section in your manpage you will have to
-   change the name. See also next point.
+- Add a `` `Blocks`` case to `Manpage.blocks` to allow block splicing
+  (#69).  This avoids having to concatenate block lists at the
+  toplevel of your program.
+- `Arg.env_var`, change default environment variable section to the
+   standard `ENVIRONMENT` manual section rather than `ENVIRONMENT
+   VARIABLES`.  If you previously manually positioned that section in
+   your manpage you will have to change the name. See also next point.
 - Fix automatic placement of default environment variable section (#44)
   whenever unspecified in the manpage.
+- Better automatic insertions of manpage sections (#73). See the API
+  docs about manual specification. As a side effect the `NAME` section
+  can now also be overriden manually.
 - Fix repeated environment variable printing for flags (#64). Thanks to
   Thomas Gazagnaire for the report.
+- Fix rendering of env vars in manpages, bold is standard (#71).
 - Fix plain help formatting for commands with empty
   description. Thanks to Maciek Starzyk for the patch.
+- Fix (implement really) groff manpage escaping (#48).
 
 ### Doc language sanitization
 
@@ -52,7 +57,6 @@ Ivan Gotovchits and Nicolás Ojeda Bär for the feedback.
   substituted. If you used to write `$(b,$(tname))` this will throw
   `Invalid_argument`, since `$` is not escaped. Simply replace these by
   `$(tname)`.
-- Fix (implement really) groff manpage escaping (#48).
 
 v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------

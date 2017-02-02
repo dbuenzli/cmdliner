@@ -22,7 +22,7 @@ let id =
 
 let miaouw =
   let doc = "See option $(opt). These are term names $(mname) $(tname)" in
-  let docs = "MIAOUW SECTION" in
+  let docs = "MIAOUW SECTION (non-standard unpositioned do not do this)" in
   let env = Arg.env_var "TEST_MIAOUW" ~doc ~docs in
   let doc = "Whatever this is the doc var $(docv) this is the env var $(env) \
              this is the opt $(opt) and this is $(i,italic) and this is
@@ -83,7 +83,6 @@ let info =
           There should be no blanks before and after it.";
     `Noblank;
     `P "Hey ho";
-    `S Manpage.s_environment; (* specify where env need to be *)
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>.";]
   in

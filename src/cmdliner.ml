@@ -149,30 +149,50 @@ let eval_kind ei =                       (* evaluation with multiple terms ? *)
 
 module Help = struct
 
-  let esc = Cmdliner_manpage.markup_text_escape
+  let esc = Manpage.markup_text_escape
 
-  let ei_subst ei = function
+  let sorted_items_to_blocks ~boilerplate:b items =
+    (* Items are sorted by section and then rev. sorted by appearance.
+       We gather them by section in correct order in a `Block and prefix
+       them with optional boilerplate *)
+    let boilerplate = match b with None -> (fun _ -> None) | Some b -> b in
+    let mk_block sec acc = match boilerplate sec with
+    | None -> (sec, `Blocks acc)
+    | Some b -> (sec, `Blocks (b :: acc))
+    in
+    let rec loop secs sec acc = function
+    | (sec', it) :: its when sec' = sec -> loop secs sec (it :: acc) its
+    | (sec', it) :: its -> loop (mk_block sec acc :: secs) sec' [it] its
+    | [] -> (mk_block sec acc) :: secs
+    in
+    match items with
+    | [] -> []
+    | (sec, it) :: its -> loop [] sec [it] its
+
+  (* Doc string variables substitutions. *)
+
+  let term_info_subst ei = function
   | "tname" -> Some (strf "$(b,%s)" @@ esc (fst ei.term).name)
   | "mname" -> Some (strf "$(b,%s)" @@ esc (fst ei.main).name)
   | _ -> None
 
+  let arg_info_subst ~subst a = function
+  | "docv" -> Some (strf "$(i,%s)" @@ esc a.docv)
+  | "opt" when is_opt a ->
+      let k = String.lowercase (List.hd (List.sort compare a.o_names)) in
+      Some (strf "$(b,%s)" @@ esc k)
+  | "env" when a.env_info <> None ->
+      begin match a.env_info with
+      | None -> assert false
+      | Some v -> Some (strf "$(b,%s)" @@ esc v.env_var)
+      end
+  | id -> subst id
+
+  (* Command docs *)
+
   let invocation ?(sep = ' ') ei = match eval_kind ei with
   | `Simple | `M_main -> (fst ei.main).name
   | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
-
-  let title ei =
-    let prog = String.capitalize (fst ei.main).name in
-    let name = String.uppercase (invocation ~sep:'-' ei) in
-    let left_footer = prog ^ match (fst ei.main).version with
-      | None -> "" | Some v -> strf " %s" v
-    in
-    let center_header = strf "%s Manual" prog in
-    name, 1, "", left_footer, center_header
-
-  let name_section ei =
-    let tdoc d = if d = "" then "" else (strf " - %s" d) in
-    [`S Manpage.s_name;
-     `P (strf "%s%s" (invocation ~sep:'-' ei) (tdoc (fst ei.term).tdoc)); ]
 
   let synopsis ei = match eval_kind ei with
   | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ esc (invocation ei)
@@ -207,18 +227,25 @@ module Help = struct
       let args = String.concat " " (List.rev_map snd args) in
       strf "$(b,%s) [$(i,OPTION)]... %s" (esc @@ invocation ei) args
 
-  let get_synopsis_section ei =
-    let rec split_section syn = function
-    | (`S _ :: _ | []) as man -> List.rev syn, man
-    |  b :: bs -> split_section (b :: syn) bs
-    in
-    match (fst ei.term).man with
-    | `S syn as s :: rest when syn = Manpage.s_synopsis -> (* user-defined *)
-        split_section [s] rest
-    | man -> (* automatic *)
-        [ `S Manpage.s_synopsis; `P (synopsis ei); ], man
+  let cmd_man_docs ei = match eval_kind ei with
+  | `Simple | `M_choice -> []
+  | `M_main ->
+      let add_cmd acc (ti, _) =
+        let cmd = strf "$(b,%s)" @@ esc ti.name in
+        (ti.tdocs, `I (cmd, ti.tdoc)) :: acc
+      in
+      let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
+        let c = compare s0 s1 in
+        if c <> 0 then c else compare c1 c0 (* N.B. reverse *)
+      in
+      let cmds = List.fold_left add_cmd [] ei.choices in
+      let cmds = List.sort by_sec_by_rev_name cmds in
+      let cmds = (cmds :> (string * Manpage.block) list) in
+      sorted_items_to_blocks ~boilerplate:None cmds
 
-  let make_arg_label a =
+  (* Argument docs *)
+
+  let arg_man_item_label a =
     if is_pos a then strf "$(i,%s)" (esc a.docv) else
     let fmt_name var = match a.o_kind with
     | Flag -> fun n -> strf "$(b,%s)" (esc n)
@@ -238,97 +265,114 @@ module Help = struct
     let s = String.concat ", " (List.rev_map (fmt_name var) names) in
     s
 
-  let arg_info_substs ~subst ~buf a doc =
-    let subst = function
-    | "docv" -> Some (strf "$(i,%s)" @@ esc a.docv)
-    | "opt" when is_opt a ->
-        let k = String.lowercase (List.hd (List.sort compare a.o_names)) in
-        Some (strf "$(b,%s)" @@ esc k)
-    | "env" when a.env_info <> None ->
-        begin match a.env_info with
-        | None -> assert false
-        | Some v -> Some (strf "$(b,%s)" @@ esc v.env_var)
-        end
-    | id -> subst id
+  let arg_to_man_item ~buf ~subst a =
+    let or_env ~value a = match a.env_info with
+    | None -> ""
+    | Some v ->
+        let value = if value then " or" else "absent " in
+        strf "%s $(b,%s) env" value (esc v.env_var)
     in
-    Manpage.subst_vars buf ~subst doc
+    let absent = match a.absent with
+    | Error -> ""
+    | Val v ->
+        match Lazy.force v with
+        | "" -> strf "%s" (or_env ~value:false a)
+        | v -> strf "absent=%s%s" v (or_env ~value:true a)
+    in
+    let optvopt = match a.o_kind with
+    | Opt_vopt v -> strf "default=%s" v
+    | _ -> ""
+    in
+    let argvdoc = match optvopt, absent with
+    | "", "" -> ""
+    | s, "" | "", s -> strf " (%s)" s
+    | s, s' -> strf " (%s) (%s)" s s'
+    in
+    let subst = arg_info_subst ~subst a in
+    let doc = Manpage.subst_vars buf ~subst a.doc in
+    (a.docs, `I (arg_man_item_label a ^ argvdoc, doc))
 
-  let or_env ~value a = match a.env_info with
-  | None -> ""
-  | Some v ->
-      let value = if value then " or" else "absent " in
-      strf "%s $(b,%s) env" value (esc v.env_var)
-
-  let make_arg_items ei =
-    let subst = ei_subst ei in
-    let buf = Buffer.create 200 in
-    let cmp a a' =
+  let arg_man_docs ~buf ~subst ei =
+    let by_sec_by_arg a a' =
       let c = compare a.docs a'.docs in
       if c <> 0 then c else
       match is_opt a, is_opt a' with
-      | true, true ->
+      | true, true -> (* optional by name *)
           let key names =
             let k = String.lowercase (List.hd (List.sort rev_compare names)) in
             if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
           in
           compare (key a.o_names) (key a'.o_names)
-      | false, false ->
+      | false, false -> (* positional by variable *)
           compare (String.lowercase a.docv) (String.lowercase a'.docv)
-      | true, false -> -1
-      | false, true -> 1
+      | true, false -> -1 (* positional first *)
+      | false, true -> 1  (* optional after *)
     in
-    let format a =
-      let absent = match a.absent with
-      | Error -> ""
-      | Val v ->
-          match Lazy.force v with
-          | "" -> strf "%s" (or_env ~value:false a)
-          | v -> strf "absent=%s%s" v (or_env ~value:true a)
-      in
-      let optvopt = match a.o_kind with
-      | Opt_vopt v -> strf "default=%s" v
-      | _ -> ""
-      in
-      let argvdoc = match optvopt, absent with
-      | "", "" -> ""
-      | s, "" | "", s -> strf " (%s)" s
-      | s, s' -> strf " (%s) (%s)" s s'
-      in
-      (a.docs, `I (make_arg_label a ^ argvdoc,
-                   (arg_info_substs ~subst ~buf a a.doc)))
-    in
-    let is_arg_item a = not (is_pos a && (a.docv = "" || a.doc = "")) in
-    let l = List.sort cmp (List.filter is_arg_item (snd ei.term)) in
-    List.rev_map format l
+    let keep_arg a = not (is_pos a && (a.docv = "" || a.doc = "")) in
+    let args = List.filter keep_arg (snd ei.term) in
+    let args = List.sort by_sec_by_arg args in
+    let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
+    sorted_items_to_blocks ~boilerplate:None args
 
-  let make_env_items_rev ei =
-    let subst = ei_subst ei in
+  (* Environment doc *)
+
+  let env_boilerplate sec = match sec = Manpage.s_environment with
+  | false -> None
+  | true -> Some (Manpage.s_environment_intro)
+
+  let env_man_docs ~buf ~subst ~has_senv ei =
+    let add_env_man_item ~subst acc e =
+      let var = strf "$(b,%s)" @@ esc e.env_var in
+      let doc = Manpage.subst_vars buf ~subst e.env_doc in
+      (e.env_docs, `I (var, doc)) :: acc
+    in
+    let add_arg_env acc a = match a.env_info with
+    | None -> acc
+    | Some e -> add_env_man_item ~subst:(arg_info_subst ~subst a) acc e
+    in
+    let by_sec_by_rev_name (s0, `I (v0, _)) (s1, `I (v1, _)) =
+      let c = compare s0 s1 in
+      if c <> 0 then c else compare v1 v0 (* N.B. reverse *)
+    in
+    let envs = List.fold_left add_arg_env [] (snd ei.term) in
+    let envs = List.sort by_sec_by_rev_name envs in
+    let envs = (envs :> (string * Manpage.block) list) in
+    let boilerplate = if has_senv then None else Some env_boilerplate in
+    sorted_items_to_blocks ~boilerplate envs
+
+  (* Man page construction *)
+
+  let ensure_s_name ei sm =
+    if Manpage.(smap_has_section sm s_name) then sm else
+    let tname = invocation ~sep:'-' ei in
+    let tdoc = (fst ei.term).tdoc in
+    let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
+    let tagline = `P (strf "%s%s" tname tagline) in
+    Manpage.(smap_append_block sm ~sec:s_name tagline)
+
+  let ensure_s_synopsis ei sm =
+    if Manpage.(smap_has_section sm ~sec:s_synopsis) then sm else
+    let synopsis = `P (synopsis ei) in
+    Manpage.(smap_append_block sm ~sec:s_synopsis synopsis)
+
+  let insert_term_man_docs ei sm =
     let buf = Buffer.create 200 in
-    let cmp a a' =
-      let e' = match a'.env_info with None -> assert false | Some a' -> a' in
-      let e = match a.env_info with None -> assert false | Some a -> a in
-      let c = compare e.env_docs e'.env_docs in
-      if c <> 0 then c else
-      compare e.env_var e'.env_var
-    in
-    let format a =
-      let e = match a.env_info with None -> assert false | Some a -> a in
-      (e.env_docs,
-       `I (strf "$(b,%s)" e.env_var, arg_info_substs ~subst ~buf a e.env_doc))
-    in
-    let is_env_item a = a.env_info <> None in
-    let l = List.sort cmp (List.filter is_env_item (snd ei.term)) in
-    List.rev_map format l
+    let subst = term_info_subst ei in
+    let ins sm (s, b) = Manpage.smap_append_block sm s b in
+    let has_senv = Manpage.(smap_has_section sm s_environment) in
+    let sm = List.fold_left ins sm (cmd_man_docs ei) in
+    let sm = List.fold_left ins sm (arg_man_docs ~buf ~subst ei) in
+    let sm = List.fold_left ins sm (env_man_docs ~buf ~subst ~has_senv ei) in
+    sm
 
-  let make_cmd_items ei = match eval_kind ei with
-  | `Simple | `M_choice -> []
-  | `M_main ->
-      let add_cmd acc (ti, _) =
-        (ti.tdocs, `I ((strf "$(b,%s)" @@ esc ti.name), ti.tdoc)) :: acc
-      in
-      List.sort rev_compare (List.fold_left add_cmd [] ei.choices)
+  let text ei =
+    let sm = Manpage.smap_of_blocks (fst ei.term).man in
+    let sm = ensure_s_name ei sm in
+    let sm = ensure_s_synopsis ei sm in
+    let sm = insert_term_man_docs ei sm in
+    Manpage.smap_to_blocks sm
 
-  let text ei =                  (* man that code is particulary unreadable. *)
+(*
     let rec merge_items acc to_insert mark il = function
     | `S s as sec :: ts ->
         let acc = List.rev_append to_insert acc in
@@ -360,9 +404,10 @@ module Help = struct
     | (#Manpage.block as e) :: ts -> merge_orphans (e :: acc) orphans ts
     | [] -> acc
     in
+    let buf = Buffer.create 200 in
     let cmds = make_cmd_items ei in
-    let args = make_arg_items ei in
-    let envs_rev = make_env_items_rev ei in
+    let args = make_arg_items ~buf ei in
+    let envs_rev = make_env_items_rev ~buf ei in
     let items_rev = List.rev_append cmds (List.rev_append args envs_rev) in
     let cmp (s, _) (s', _) = match s, s with
     | "ENVIRONMENT VARIABLES", _ -> 1  (* Put env vars at the end. *)
@@ -373,13 +418,26 @@ module Help = struct
     let synopsis, man = get_synopsis_section ei in
     let rev_text, orphans = merge_items [`Orphan_mark] [] false items man in
     synopsis @ merge_orphans [] orphans rev_text
+*)
 
-  let man ei = title ei, (name_section ei) @ (text ei)
+  let title ei =
+    let prog = String.capitalize (fst ei.main).name in
+    let name = String.uppercase (invocation ~sep:'-' ei) in
+    let left_footer = prog ^ match (fst ei.main).version with
+    | None -> "" | Some v -> strf " %s" v
+    in
+    let center_header = strf "%s Manual" prog in
+    name, 1, "", left_footer, center_header
 
-  let print fmt ppf ei = Manpage.print ~subst:(ei_subst ei) fmt ppf (man ei)
+  let man ei = title ei, text ei
+
+  let print fmt ppf ei =
+    Manpage.print ~subst:(term_info_subst ei) fmt ppf (man ei)
+
   let pp_synopsis ppf ei =
     let buf = Buffer.create 100 in
-    let syn = Manpage.doc_to_plain ~subst:(ei_subst ei) buf (synopsis ei) in
+    let subst = term_info_subst ei in
+    let syn = Manpage.doc_to_plain ~subst buf (synopsis ei) in
     pr ppf "@[%s@]" syn
 
   let pp_version ppf ei = match (fst ei.main).version with
