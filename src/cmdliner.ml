@@ -416,6 +416,20 @@ module Err = struct
     strf "too many arguments, don't know what to do with %s"
       (String.concat ", " (List.map quote excess))
 
+  let pos_miss a =
+    if a.docv = "" then strf "a required argument is missing" else
+    strf "required argument %s is missing" a.docv
+
+  let pos_misses = function
+  | [] -> assert false
+  | [a] -> pos_miss a
+  | args ->
+      let add_arg acc a = (if a.docv = "" then "ARG" else a.docv) :: acc in
+      let rev_args = List.sort rev_pos_arg_cli_order args in
+      let args = List.fold_left add_arg [] rev_args in
+      let args = String.concat ", " args in
+      strf "required arguments %s are missing" args
+
   let flag_value f v =
     strf "option %s is a flag, it cannot take the argument %s"
       (quote f) (quote v)
@@ -441,8 +455,7 @@ module Err = struct
       in
       strf "required option %s is missing" (long_name a.o_names)
     else
-    if a.docv = "" then strf "a required argument is missing" else
-    strf "required argument %s is missing" a.docv
+    pos_miss a
 
   (* Error printers *)
 
@@ -598,11 +611,15 @@ end = struct
     (* returns an updated [cl] cmdline in which each positional arg mentioned
        in the list index posi, is given a value according the list
        of positional arguments values [pargs]. *)
-    if pargs = [] then cl else
+    if pargs = [] then
+      match List.filter (fun a -> a.absent = Error) posi with
+      | [] -> cl
+      | misses -> raise (Error (Err.pos_misses misses))
+    else
     let last = List.length pargs - 1 in
     let pos rev k = if rev then last - k else k in
-    let rec loop cl max_spec = function
-    | [] -> cl, max_spec
+    let rec loop misses cl max_spec = function
+    | [] -> misses, cl, max_spec
     | a :: al ->
         let rev = a.p_kind.pos_rev in
         let start = pos rev a.p_kind.pos_start in
@@ -611,12 +628,16 @@ end = struct
         | Some n -> pos rev (a.p_kind.pos_start + n - 1)
         in
         let start, stop = if rev then stop, start else start, stop in
-        let arg = P (take_range start stop pargs) in
+        let args = take_range start stop pargs in
         let max_spec = max stop max_spec in
-        let cl = Amap.add a arg cl in
-        loop cl max_spec al
+        let cl = Amap.add a (P args) cl in
+        let misses =
+          if a.absent = Error && args = [] then (a:: misses) else misses
+        in
+        loop misses cl max_spec al
     in
-    let cl, max_spec = loop cl (-1) posi in
+    let misses, cl, max_spec = loop [] cl (-1) posi in
+    if misses <> [] then raise (Error (Err.pos_misses misses)) else
     if last <= max_spec then cl else
     let excess = take_range (max_spec + 1) last pargs in
     raise (Error (Err.pos_excess excess))
