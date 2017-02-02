@@ -490,11 +490,9 @@ module Cmdline :sig
 end = struct
   exception Error of string
 
-  let opt_arg cl a = match try Amap.find a cl with Not_found -> assert false
-  with O l -> l | _ -> assert false
-
-  let pos_arg cl a = match try Amap.find a cl with Not_found -> assert false
-  with P l -> l | _ -> assert false
+  let get_arg cl a = try Amap.find a cl with Not_found -> assert false
+  let opt_arg cl a = match get_arg cl a with O l -> l | _ -> assert false
+  let pos_arg cl a = match get_arg cl a with P l -> l | _ -> assert false
 
   let choose_term ti choices = function
   | [] -> ti, []
@@ -589,41 +587,44 @@ end = struct
     in
     aux 0 opti cl [] args
 
+  let take n l =
+    let rec loop n acc l = match n = 0 with
+    | true -> List.rev acc
+    | false -> loop (n - 1) (List.hd l :: acc) (List.tl l)
+    in
+    loop n [] l
+
   let process_pos_args posi cl pargs =
     (* returns an updated [cl] cmdline in which each positional arg mentioned
        in the list index posi, is given a value according the list
        of positional arguments values [pargs]. *)
     if pargs = [] then cl else
-    let rec take n acc l =
-      if n = 0 then List.rev acc else
-      take (n - 1) (List.hd l :: acc) (List.tl l)
-    in
-    let rec aux pargs last cl max_spec = function
+    let last = List.length pargs - 1 in
+    let pos rev k = if rev then last - k else k in
+    let rec aux pargs cl max_spec = function
     | a :: al ->
         let arg, max_spec = match a.p_kind with
         | All -> P pargs, last
         | Nth (rev, k) ->
-            let k = if rev then last - k else k in
-            let max_spec = max k max_spec in
-            if k < 0 || k > last then P [], max_spec else
-            P ([List.nth pargs k]), max_spec
+            let pos = pos rev k in
+            (if pos < 0 || pos > last then P [] else P [List.nth pargs pos]),
+            max pos max_spec
         | Left (rev, k) ->
-            let k = if rev then last - k else k in
-            let max_spec = max k max_spec in
-            if k <= 0 || k > last then P [], max_spec else
-            P (take k [] pargs), max_spec
+            let pos = pos rev k in
+            (if pos <= 0 || pos > last then P [] else P (take pos pargs)),
+            max pos max_spec
         | Right (rev, k) ->
-            let k = if rev then last - k else k in
-            if k < 0 || k >= last then P [], last else
-            P (List.rev (take (last - k) [] (List.rev pargs))), last
+            let pos = pos rev k in
+            (if pos < 0 || pos >= last then P [] else
+             P (List.rev (take (last - pos) (List.rev pargs)))),
+            last
         in
-        aux pargs last (Amap.add a arg cl) max_spec al
+        aux pargs (Amap.add a arg cl) max_spec al
     | [] -> cl, max_spec
     in
-    let last = List.length pargs - 1 in
-    let cl, max_spec = aux pargs last cl (-1) posi in
+    let cl, max_spec = aux pargs cl (-1) posi in
     if last <= max_spec then cl else
-    let excess = List.rev (take (last - max_spec) [] (List.rev pargs)) in
+    let excess = List.rev (take (last - max_spec) (List.rev pargs)) in
     raise (Error (Err.pos_excess excess))
 
   let create ?(peek_opts = false) al args =
