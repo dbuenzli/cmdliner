@@ -444,14 +444,12 @@ end
    and convert command line arguments (see the Arg module). *)
 
 module Cmdline :sig
-  exception Error of string
   type t
-  val create : ?peek_opts:bool -> arg_info list -> string list -> t
+  val create : ?peek_opts:bool -> arg_info list -> string list ->
+    (t, string * t) result
   val opt_arg : t -> arg_info -> (int * string * (string option)) list
   val pos_arg : t -> arg_info -> string list
 end = struct
-
-  exception Error of string
 
   module Arg_info = struct
     type t = arg_info
@@ -515,15 +513,15 @@ end = struct
     | true, [] -> [short_opt]
     | true, l -> if List.mem short_opt l then l else short_opt :: l
 
-  let parse_args ~peek_opts optidx cl args =
+  let parse_opt_args ~peek_opts optidx cl args =
     (* returns an updated [cl] cmdline according to the options found in [args]
        with the trie index [optidx]. Positional arguments are returned in order
        in a list. *)
-    let rec loop k cl pargs = function
-    | [] -> cl, (List.rev pargs)
-    | "--" :: args -> cl, (List.rev_append pargs args)
+    let rec loop errs k cl pargs = function
+    | [] -> List.rev errs, cl, List.rev pargs
+    | "--" :: args -> List.rev errs, cl, (List.rev_append pargs args)
     | s :: args ->
-        if not (is_opt s) then loop (k + 1) cl (s :: pargs) args else
+        if not (is_opt s) then loop errs (k + 1) cl (s :: pargs) args else
         let name, value = parse_opt_arg s in
         match Cmdliner_trie.find optidx name with
         | `Ok a ->
@@ -537,17 +535,22 @@ end = struct
                 | v :: rest -> if is_opt v then None, args else Some v, rest
             in
             let arg = O ((k, name, value) :: opt_arg cl a) in
-            loop (k + 1) (Amap.add a arg cl) pargs args
-        | `Not_found when peek_opts -> loop (k + 1) cl pargs args (* skip *)
+            loop errs (k + 1) (Amap.add a arg cl) pargs args
+        | `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
         | `Not_found ->
             let hints = hint_matching_opt optidx s in
-            raise (Error (Err.unknown "option" ~hints name))
+            let err = Err.unknown "option" ~hints name in
+            loop (err :: errs) (k + 1) cl pargs args
         | `Ambiguous ->
             let ambs = Cmdliner_trie.ambiguities optidx name in
             let ambs = List.sort compare ambs in
-            raise (Error (Cmdliner_base.err_ambiguous "option" name ambs))
+            let err = Cmdliner_base.err_ambiguous "option" name ambs in
+            loop (err :: errs) (k + 1) cl pargs args
     in
-    loop 0 cl [] args
+    let errs, cl, pargs = loop [] 0 cl [] args in
+    if errs = [] then Ok (cl, pargs) else
+    let err = String.concat "\n" errs in
+    Error (err, cl, pargs)
 
   let take_range start stop l =
     let rec loop i acc = function
@@ -559,14 +562,13 @@ end = struct
     in
     loop 0 [] l
 
-  let process_pos_args posi cl pargs =
+  let process_pos_args posidx cl pargs =
     (* returns an updated [cl] cmdline in which each positional arg mentioned
-       in the list index posi, is given a value according the list
+       in the list index posidx, is given a value according the list
        of positional arguments values [pargs]. *)
     if pargs = [] then
-      match List.filter (fun a -> a.absent = Error) posi with
-      | [] -> cl
-      | misses -> raise (Error (Err.pos_misses misses))
+      let misses = List.filter (fun a -> a.absent = Error) posidx in
+      if misses = [] then Ok cl else Error (Err.pos_misses misses, cl)
     else
     let last = List.length pargs - 1 in
     let pos rev k = if rev then last - k else k in
@@ -588,20 +590,23 @@ end = struct
         in
         loop misses cl max_spec al
     in
-    let misses, cl, max_spec = loop [] cl (-1) posi in
-    if misses <> [] then raise (Error (Err.pos_misses misses)) else
-    if last <= max_spec then cl else
+    let misses, cl, max_spec = loop [] cl (-1) posidx in
+    if misses <> [] then Error (Err.pos_misses misses, cl) else
+    if last <= max_spec then Ok cl else
     let excess = take_range (max_spec + 1) last pargs in
-    raise (Error (Err.pos_excess excess))
+    Error (Err.pos_excess excess, cl)
 
   let create ?(peek_opts = false) al args =
-    let opti, posi, cl = arg_info_indexes al in
-    let cl, pargs = parse_args ~peek_opts opti cl args in
-    if peek_opts then cl (* skip positional arguments *) else
-    process_pos_args posi cl pargs
+    let optidx, posidx, cl = arg_info_indexes al in
+    match parse_opt_args ~peek_opts optidx cl args with
+    | Ok (cl, _) when peek_opts -> Ok cl
+    | Ok (cl, pargs) -> process_pos_args posidx cl pargs
+    | Error (errs, cl, _) -> Error (errs, cl)
 end
 
 module Arg = struct
+  exception Error of string
+
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a converter = 'a parser * 'a printer
@@ -615,7 +620,7 @@ module Arg = struct
     { env_var = env_var; env_doc = doc; env_docs = docs }
 
   let ( & ) f x = f x
-  let parse_error e = raise (Cmdline.Error e)
+  let parse_error e = raise (Error e)
   let some ?(none = "") (parse, print) =
     (fun s -> match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e),
     (fun ppf v -> match v with
@@ -936,14 +941,19 @@ module Term = struct
 
   let eval_term help err ei f args =
     let help_arg, vers_arg, ei = add_std_opts ei in
-    try
-      let cl = Cmdline.create (snd ei.term) args in
-      match help_arg ei cl, vers_arg with
-      | Some fmt, _ -> Help.print fmt help ei; `Help
-      | None, Some v_arg when v_arg ei cl -> Help.pp_version help ei; `Version
-      | _ -> `Ok (f ei cl)
+    try match Cmdline.create (snd ei.term) args with
+    | Error (e, cl) ->
+        begin match help_arg ei cl with
+        | Some fmt -> Help.print fmt help ei; `Help
+        | None -> Err.pp_usage err ei e; `Error `Parse
+        end
+    | Ok cl ->
+        match help_arg ei cl, vers_arg with
+        | Some fmt, _ -> Help.print fmt help ei; `Help
+        | None, Some v_arg when v_arg ei cl -> Help.pp_version help ei; `Version
+        | _ -> `Ok (f ei cl)
     with
-    | Cmdline.Error e -> Err.pp_usage err ei e; `Error `Parse
+    | Arg.Error e -> Err.pp_usage err ei e; `Error `Parse
     | Term (`Error (usage, e)) ->
         if usage then Err.pp_usage err ei e else Err.print err ei e;
         `Error `Term
@@ -1015,17 +1025,23 @@ module Term = struct
     let ei = { term = term; main = term; choices = []; env = env } in
     let help_arg, vers_arg, ei = add_std_opts ei in
     try
-      let cl = Cmdline.create ~peek_opts:true (snd ei.term) args in
-      match help_arg ei cl, vers_arg with
-      | Some fmt, _ ->
-          (try (Some (f ei cl), `Help) with e -> None, `Help)
-      | None, Some v_arg when v_arg ei cl ->
-          (try (Some (f ei cl), `Version) with e -> None, `Version)
-      | _ ->
-          let v = f ei cl in
-          Some v, `Ok v
+      match Cmdline.create ~peek_opts:true (snd ei.term) args with
+      | Error (err, cl) ->
+          begin match help_arg ei cl with
+          | Some fmt -> None, `Help
+          | None -> None, (`Error `Parse)
+          end
+      | Ok cl ->
+          match help_arg ei cl, vers_arg with
+          | Some fmt, _ ->
+              (try (Some (f ei cl), `Help) with e -> None, `Help)
+          | None, Some v_arg when v_arg ei cl ->
+              (try (Some (f ei cl), `Version) with e -> None, `Version)
+          | _ ->
+              let v = f ei cl in
+              Some v, `Ok v
     with
-    | Cmdline.Error _ -> None, (`Error `Parse)
+    | Arg.Error _ -> None, (`Error `Parse)
     | Term _ -> None, (`Error `Term)
     | e -> None, (`Error `Exn)
 end

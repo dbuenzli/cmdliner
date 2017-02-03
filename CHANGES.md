@@ -1,8 +1,12 @@
 
 - Doc specification improvements and fixes and doc language
   sanitization (see below for details).
-- Better error reports on missing required positional arguments (#39).
-  Thanks to Dmitrii Kashin for the report.
+- Required positional arguments. All missing required position
+  arguments are now reported to the end-user, in the correct
+  order (#39). Thanks to Dmitrii Kashin for the report.
+- Optional arguments. All unknown and ambiguous optional argument
+  arguments are now reported to the end-user (instead of only
+  the first one).
 - Change semantics of `Arg.pos_left` (see #76 for details).
 - Change default behaviour of `--help[=FMT]` option. `FMT` no longer
   defaults to `pager` if unspecified.  It defaults to the new value
