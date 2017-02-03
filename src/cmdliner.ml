@@ -35,38 +35,6 @@ module Manpage = Cmdliner_manpage
    terms. This data is used to parse the command line, report errors
    and format man pages. *)
 
-type arg_info =                (* information about a command line argument. *)
-  { id : int;                                 (* unique id for the argument. *)
-    absent : Cmdliner_info.arg_absence;              (* behaviour if absent. *)
-    env_info : Cmdliner_info.env option;            (* environment variable. *)
-    doc : string;                                                   (* help. *)
-    docv : string;                (* variable name for the argument in help. *)
-    docs : string;                    (* title of help section where listed. *)
-    p_kind : Cmdliner_info.pos_kind;                 (* positional arg kind. *)
-    o_kind : Cmdliner_info.opt_kind;                   (* optional arg kind. *)
-    o_names : string list;                          (* names (for opt args). *)
-    o_all : bool; }                            (* repeatable (for opt args). *)
-
-let arg_id =        (* thread-safe UIDs, Oo.id (object end) was used before. *)
-  let c = ref 0 in
-  fun () ->
-    let id = !c in
-    incr c; if id > !c then assert false (* too many ids *) else id
-
-let is_opt a = a.o_names <> []
-let is_pos a = a.o_names = []
-
-let pos_arg_cli_order a0 a1 =              (* best-effort order on the cli. *)
-  let pos_rev = Cmdliner_info.pos_rev in
-  let pos_start = Cmdliner_info.pos_start in
-  let c = compare (pos_rev a0.p_kind) (pos_rev a1.p_kind) in
-  if c <> 0 then c else
-  if (pos_rev a0.p_kind)
-  then compare (pos_start a1.p_kind) (pos_start a0.p_kind)
-  else compare (pos_start a0.p_kind) (pos_start a1.p_kind)
-
-let rev_pos_arg_cli_order a0 a1 = pos_arg_cli_order a1 a0
-
 type term_info =
   { name : string;                                    (* name of the term. *)
     version : string option;                   (* version (for --version). *)
@@ -75,10 +43,11 @@ type term_info =
     sdocs : string;    (* standard options, title of section where listed. *)
     man : Manpage.block list; }                          (* man page text. *)
 
+type arg_infos = Cmdliner_info.arg list
 type eval_info =                (* information about the evaluation context. *)
-  { term : term_info * arg_info list;               (* term being evaluated. *)
-    main : term_info * arg_info list;                          (* main term. *)
-    choices : (term_info * arg_info list) list;         (* all term choices. *)
+  { term : term_info * arg_infos;               (* term being evaluated. *)
+    main : term_info * arg_infos;                          (* main term. *)
+    choices : (term_info * arg_infos) list;         (* all term choices. *)
     env : string -> string option }          (* environment variable lookup. *)
 
 let eval_kind ei =                       (* evaluation with multiple terms ? *)
@@ -117,14 +86,14 @@ module Help = struct
   | _ -> None
 
   let arg_info_subst ~subst a = function
-  | "docv" -> Some (strf "$(i,%s)" @@ esc a.docv)
-  | "opt" when is_opt a ->
-      let k = Cmdliner_base.lowercase (List.hd (List.sort compare a.o_names)) in
-      Some (strf "$(b,%s)" @@ esc k)
-  | "env" when a.env_info <> None ->
-      begin match a.env_info with
-      | None -> assert false
+  | "docv" ->
+      Some (strf "$(i,%s)" @@ esc (Cmdliner_info.arg_docv a))
+  | "opt" when Cmdliner_info.arg_is_opt a ->
+      Some (strf "$(b,%s)" @@ esc (Cmdliner_info.arg_opt_name_sample a))
+  | "env" as id ->
+      begin match Cmdliner_info.arg_env a with
       | Some e -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e))
+      | None -> subst id
       end
   | id -> subst id
 
@@ -135,11 +104,10 @@ module Help = struct
   | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
 
   let synopsis_pos_arg a =
-    let v = if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" (esc a.docv) in
-    let v =
-      if a.absent = Cmdliner_info.Err then strf "%s" v else strf "[%s]" v
-    in
-    match Cmdliner_info.pos_len a.p_kind with
+    let v = match Cmdliner_info.arg_docv a with "" -> "ARG" | v -> v in
+    let v = strf "$(i,%s)" (esc v) in
+    let v = (if Cmdliner_info.arg_is_req a then strf "%s" else strf "[%s]") v in
+    match Cmdliner_info.(pos_len @@ arg_pos a) with
     | None -> v ^ "..."
     | Some 1 -> v
     | Some n ->
@@ -149,9 +117,12 @@ module Help = struct
   let synopsis ei = match eval_kind ei with
   | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ esc (invocation ei)
   | `Simple | `M_choice ->
-      let rev_cli_order (a0, _) (a1, _) = rev_pos_arg_cli_order a0 a1 in
+      let rev_cli_order (a0, _) (a1, _) =
+        Cmdliner_info.rev_pos_arg_cli_order a0 a1
+      in
       let add_pos_arg acc a =
-        if is_opt a then acc else (a, synopsis_pos_arg a) :: acc
+        if Cmdliner_info.arg_is_opt a then acc else
+        (a, synopsis_pos_arg a) :: acc
       in
       let pargs = List.fold_left add_pos_arg [] (snd ei.term) in
       let pargs = List.sort rev_cli_order pargs in
@@ -177,8 +148,9 @@ module Help = struct
   (* Argument docs *)
 
   let arg_man_item_label a =
-    if is_pos a then strf "$(i,%s)" (esc a.docv) else
-    let fmt_name var = match a.o_kind with
+    if Cmdliner_info.arg_is_pos a
+    then strf "$(i,%s)" (esc @@ Cmdliner_info.arg_docv a) else
+    let fmt_name var = match Cmdliner_info.arg_opt_kind a with
     | Cmdliner_info.Flag -> fun n -> strf "$(b,%s)" (esc n)
     | Cmdliner_info.Opt ->
         fun n ->
@@ -191,26 +163,26 @@ module Help = struct
           then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
           else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
     in
-    let var = if a.docv = "" then "VAL" else a.docv in
-    let names = List.sort compare a.o_names in
+    let var = match Cmdliner_info.arg_docv a with "" -> "VAL" | v -> v in
+    let names = List.sort compare (Cmdliner_info.arg_opt_names a) in
     let s = String.concat ", " (List.rev_map (fmt_name var) names) in
     s
 
   let arg_to_man_item ~buf ~subst a =
-    let or_env ~value a = match a.env_info with
+    let or_env ~value a = match Cmdliner_info.arg_env a with
     | None -> ""
     | Some e ->
         let value = if value then " or" else "absent " in
         strf "%s $(b,%s) env" value (esc @@ Cmdliner_info.env_var e)
     in
-    let absent = match a.absent with
+    let absent = match Cmdliner_info.arg_absent a with
     | Cmdliner_info.Err -> ""
     | Cmdliner_info.Val v ->
         match Lazy.force v with
         | "" -> strf "%s" (or_env ~value:false a)
         | v -> strf "absent=%s%s" v (or_env ~value:true a)
     in
-    let optvopt = match a.o_kind with
+    let optvopt = match Cmdliner_info.arg_opt_kind a with
     | Cmdliner_info.Opt_vopt v -> strf "default=%s" v
     | _ -> ""
     in
@@ -220,29 +192,33 @@ module Help = struct
     | s, s' -> strf " (%s) (%s)" s s'
     in
     let subst = arg_info_subst ~subst a in
-    let doc = Manpage.subst_vars buf ~subst a.doc in
-    (a.docs, `I (arg_man_item_label a ^ argvdoc, doc))
+    let doc = Manpage.subst_vars buf ~subst (Cmdliner_info.arg_doc a) in
+    (Cmdliner_info.arg_docs a, `I (arg_man_item_label a ^ argvdoc, doc))
 
   let arg_man_docs ~buf ~subst ei =
-    let by_sec_by_arg a a' =
-      let c = compare a.docs a'.docs in
+    let by_sec_by_arg a0 a1 =
+      let c = compare (Cmdliner_info.arg_docs a0) (Cmdliner_info.arg_docs a1) in
       if c <> 0 then c else
-      match is_opt a, is_opt a' with
+      match Cmdliner_info.arg_is_opt a0, Cmdliner_info.arg_is_opt a1 with
       | true, true -> (* optional by name *)
           let key names =
             let k = List.hd (List.sort rev_compare names) in
             let k = Cmdliner_base.lowercase k in
             if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
           in
-          compare (key a.o_names) (key a'.o_names)
+          compare
+            (key @@ Cmdliner_info.arg_opt_names a0)
+            (key @@ Cmdliner_info.arg_opt_names a1)
       | false, false -> (* positional by variable *)
           compare
-            (Cmdliner_base.lowercase a.docv)
-            (Cmdliner_base.lowercase a'.docv)
+            (Cmdliner_base.lowercase @@ Cmdliner_info.arg_docv a0)
+            (Cmdliner_base.lowercase @@ Cmdliner_info.arg_docv a1)
       | true, false -> -1 (* positional first *)
       | false, true -> 1  (* optional after *)
     in
-    let keep_arg a = not (is_pos a && (a.docv = "" || a.doc = "")) in
+    let keep_arg a =
+      not Cmdliner_info.(arg_is_pos a && (arg_docv a = "" || arg_doc a = ""))
+    in
     let args = List.filter keep_arg (snd ei.term) in
     let args = List.sort by_sec_by_arg args in
     let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
@@ -260,7 +236,7 @@ module Help = struct
       let doc = Manpage.subst_vars buf ~subst (Cmdliner_info.env_doc e) in
       (Cmdliner_info.env_docs e, `I (var, doc)) :: acc
     in
-    let add_arg_env acc a = match a.env_info with
+    let add_arg_env acc a = match Cmdliner_info.arg_env a with
     | None -> acc
     | Some e -> add_env_man_item ~subst:(arg_info_subst ~subst a) acc e
     in
@@ -350,24 +326,29 @@ module Err = struct
     strf "too many arguments, don't know what to do with %s"
       (String.concat ", " (List.map quote excess))
 
-  let pos_miss a =
-    if a.docv = "" then strf "a required argument is missing" else
-    strf "required argument %s is missing" a.docv
+  let pos_miss a = match Cmdliner_info.arg_docv a with
+  | "" -> "a required argument is missing"
+  | v -> strf "required argument %s is missing" v
 
   let pos_misses = function
   | [] -> assert false
   | [a] -> pos_miss a
   | args ->
-      let add_arg acc a = (if a.docv = "" then "ARG" else a.docv) :: acc in
-      let rev_args = List.sort rev_pos_arg_cli_order args in
+      let add_arg acc a = match Cmdliner_info.arg_docv a with
+      | "" -> "ARG" :: acc
+      | argv -> argv :: acc
+      in
+      let rev_args = List.sort Cmdliner_info.rev_pos_arg_cli_order args in
       let args = List.fold_left add_arg [] rev_args in
       let args = String.concat ", " args in
       strf "required arguments %s are missing" args
 
-  let pos_parse_value a e =
-    if a.docv = "" then e else match Cmdliner_info.pos_len a.p_kind with
-    | None -> strf "%s argument: %s" a.docv e
-    | Some _ -> strf "%s... arguments: %s" a.docv e
+  let pos_parse_value a e = match Cmdliner_info.arg_docv a with
+  | "" -> e
+  | argv ->
+      match Cmdliner_info.(pos_len @@ arg_pos a) with
+      | Some 1 -> strf "%s argument: %s" argv e
+      | None | Some _ -> strf "%s... arguments: %s" argv e
 
   (* Optional arguments *)
 
@@ -385,14 +366,8 @@ module Err = struct
   (* Argument errors *)
 
   let arg_missing a =
-    if is_opt a then
-      let rec long_name = function
-      | n :: l -> if (String.length n) > 2 || l = [] then n else long_name l
-      | [] -> assert false
-      in
-      strf "required option %s is missing" (long_name a.o_names)
-    else
-    pos_miss a
+    if Cmdliner_info.arg_is_pos a then pos_miss a else
+    strf "required option %s is missing" (Cmdliner_info.arg_opt_name_sample a)
 
   (* Error printers *)
 
@@ -430,15 +405,18 @@ end
 
 module Cmdline :sig
   type t
-  val create : ?peek_opts:bool -> arg_info list -> string list ->
+  val create :
+    ?peek_opts:bool -> Cmdliner_info.arg list -> string list ->
     (t, string * t) result
-  val opt_arg : t -> arg_info -> (int * string * (string option)) list
-  val pos_arg : t -> arg_info -> string list
+
+  val opt_arg : t -> Cmdliner_info.arg -> (int * string * (string option)) list
+  val pos_arg : t -> Cmdliner_info.arg -> string list
 end = struct
 
   module Arg_info = struct
-    type t = arg_info
-    let compare a0 a1 = compare a0.id a1.id
+    type t = Cmdliner_info.arg
+    let compare a0 a1 =
+      compare (Cmdliner_info.arg_id a0) (Cmdliner_info.arg_id a1)
   end
   module Amap = Map.Make (Arg_info)
 
@@ -456,14 +434,18 @@ end = struct
     (* from [al] returns a trie mapping the names of optional arguments to
        their arg_info, a list with all arg_info for positional arguments and
        a cmdline mapping each arg_info to an empty [arg]. *)
-    let rec aux opti posi cl = function
+    let rec loop optidx posidx cl = function
+    | [] -> optidx, posidx, cl
     | a :: l ->
-        if is_pos a then aux opti (a :: posi) (Amap.add a (P []) cl) l else
-        let add t name = Cmdliner_trie.add t name a in
-        aux (List.fold_left add opti a.o_names) posi (Amap.add a (O []) cl) l
-    | [] -> opti, posi, cl
+        match Cmdliner_info.arg_is_pos a with
+        | true -> loop optidx (a :: posidx) (Amap.add a (P []) cl) l
+        | false ->
+            let add t name = Cmdliner_trie.add t name a in
+            let names = Cmdliner_info.arg_opt_names a in
+            let optidx = List.fold_left add optidx names in
+            loop optidx posidx (Amap.add a (O []) cl) l
     in
-    aux Cmdliner_trie.empty [] Amap.empty al
+    loop Cmdliner_trie.empty [] Amap.empty al
 
   (* Optional argument parsing *)
 
@@ -510,7 +492,7 @@ end = struct
         let name, value = parse_opt_arg s in
         match Cmdliner_trie.find optidx name with
         | `Ok a ->
-            let value, args = match value, a.o_kind with
+            let value, args = match value, Cmdliner_info.arg_opt_kind a with
             | Some v, Cmdliner_info.Flag when is_short_opt name ->
                 None, ("-" ^ v) :: args
             | Some _, _ -> value, args
@@ -553,7 +535,7 @@ end = struct
        in the list index posidx, is given a value according the list
        of positional arguments values [pargs]. *)
     if pargs = [] then
-      let misses = List.filter (fun a -> a.absent = Cmdliner_info.Err) posidx in
+      let misses = List.filter Cmdliner_info.arg_is_req posidx in
       if misses = [] then Ok cl else Error (Err.pos_misses misses, cl)
     else
     let last = List.length pargs - 1 in
@@ -561,19 +543,20 @@ end = struct
     let rec loop misses cl max_spec = function
     | [] -> misses, cl, max_spec
     | a :: al ->
-        let rev = Cmdliner_info.pos_rev a.p_kind in
-        let start = pos rev (Cmdliner_info.pos_start a.p_kind) in
-        let stop = match (Cmdliner_info.pos_len a.p_kind) with
+        let apos = Cmdliner_info.arg_pos a in
+        let rev = Cmdliner_info.pos_rev apos in
+        let start = pos rev (Cmdliner_info.pos_start apos) in
+        let stop = match Cmdliner_info.pos_len apos with
         | None -> pos rev last
-        | Some n -> pos rev ((Cmdliner_info.pos_start a.p_kind) + n - 1)
+        | Some n -> pos rev (Cmdliner_info.pos_start apos + n - 1)
         in
         let start, stop = if rev then stop, start else start, stop in
         let args = take_range start stop pargs in
         let max_spec = max stop max_spec in
         let cl = Amap.add a (P args) cl in
-        let misses =
-          if a.absent = Cmdliner_info.Err && args = [] then (a:: misses) else
-          misses
+        let misses = match Cmdliner_info.arg_is_req a && args = [] with
+        | true -> (a:: misses)
+        | false -> misses
         in
         loop misses cl max_spec al
     in
@@ -596,7 +579,7 @@ type term_escape =
   | `Help of Manpage.format * string option ]
 
 type 'a term =
-  arg_info list *
+  Cmdliner_info.arg list *
   (eval_info -> Cmdline.t -> ('a, [ `Parse of string | term_escape ]) result)
 
 module Arg = struct
@@ -607,26 +590,13 @@ module Arg = struct
   type env = Cmdliner_info.env
 
   type 'a t = 'a term
-  type info = arg_info
+  type info = Cmdliner_info.arg
 
   let env_var = Cmdliner_info.env
 
   let ( & ) f x = f x
 
-  let dumb_p_kind = Cmdliner_info.pos ~rev:false ~start:(-1) ~len:None
-
-  let info ?docs ?(docv = "") ?(doc = "") ?env names =
-    let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
-    let docs = match docs with
-    | None -> if names = [] then Manpage.s_arguments else Manpage.s_options
-    | Some s -> s
-    in
-    { id = arg_id (); absent = Cmdliner_info.Val (lazy "");
-      env_info = env;
-      doc = doc; docv = docv; docs = docs;
-      p_kind = dumb_p_kind; o_kind = Cmdliner_info.Flag;
-      o_names = List.rev_map dash names;
-      o_all = false; }
+  let info = Cmdliner_info.arg
 
   let err e = Error (`Parse e)
 
@@ -634,7 +604,7 @@ module Arg = struct
   | `Ok v -> `Ok [v]
   | `Error _ as e -> e
 
-  let try_env ei a parse ~absent = match a.env_info with
+  let try_env ei a parse ~absent = match Cmdliner_info.arg_env a with
   | None -> Ok absent
   | Some e ->
       let var = Cmdliner_info.env_var e in
@@ -646,7 +616,7 @@ module Arg = struct
           | `Error e -> err (Err.env_parse_value var e)
 
   let flag a =
-    if is_pos a then invalid_arg err_not_opt else
+    if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] -> try_env ei a Cmdliner_base.env_bool_parse ~absent:false
     | [_, _, None] -> Ok true
@@ -656,8 +626,8 @@ module Arg = struct
     [a], convert
 
   let flag_all a =
-    if is_pos a then invalid_arg err_not_opt else
-    let a = { a with o_all = true } in
+    if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
+    let a = Cmdliner_info.arg_make_all_opts a in
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] ->
         try_env ei a (parse_to_list Cmdliner_base.env_bool_parse) ~absent:[]
@@ -690,7 +660,9 @@ module Arg = struct
       in
       try Ok (aux None l) with Failure e -> err e
     in
-    let flag (_, a) = if is_pos a then invalid_arg err_not_opt else a in
+    let flag (_, a) =
+      if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else a
+    in
     List.rev_map flag l, convert
 
   let vflag_all v l =
@@ -711,7 +683,8 @@ module Arg = struct
       try Ok (aux [] l) with Failure e -> err e
     in
     let flag (_, a) =
-      if is_pos a then invalid_arg err_not_opt else { a with o_all = true }
+      if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
+      Cmdliner_info.arg_make_all_opts a
     in
     List.rev_map flag l, convert
 
@@ -720,13 +693,13 @@ module Arg = struct
   | `Error e -> failwith (Err.opt_parse_value f e)
 
   let opt ?vopt (parse, print) v a =
-    if is_pos a then invalid_arg err_not_opt else
+    if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
     let absent = Cmdliner_info.Val (lazy (str_of_pp print v)) in
-    let o_kind = match vopt with
+    let kind = match vopt with
     | None -> Cmdliner_info.Opt
     | Some dv -> Cmdliner_info.Opt_vopt (str_of_pp print dv)
     in
-    let a = { a with absent; o_kind } in
+    let a = Cmdliner_info.arg_make_opt ~absent ~kind a in
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] -> try_env ei a parse ~absent:v
     | [_, f, Some v] ->
@@ -741,13 +714,13 @@ module Arg = struct
     [a], convert
 
   let opt_all ?vopt (parse, print) v a =
-    if is_pos a then invalid_arg err_not_opt else
+    if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
     let absent = Cmdliner_info.Val (lazy "") in
-    let o_kind = match vopt with
+    let kind = match vopt with
     | None -> Cmdliner_info.Opt
     | Some dv -> Cmdliner_info.Opt_vopt (str_of_pp print dv)
     in
-    let a = { a with absent; o_all = true; o_kind } in
+    let a = Cmdliner_info.arg_make_opt_all ~absent ~kind a in
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] -> try_env ei a (parse_to_list parse) ~absent:v
     | l ->
@@ -770,10 +743,10 @@ module Arg = struct
   | `Error e -> failwith (Err.pos_parse_value a e)
 
   let pos ?(rev = false) k (parse, print) v a =
-    if is_opt a then invalid_arg err_not_pos else
-    let p_kind = Cmdliner_info.pos ~rev ~start:k ~len:(Some 1) in
+    if Cmdliner_info.arg_is_opt a then invalid_arg err_not_pos else
     let absent = Cmdliner_info.Val (lazy (str_of_pp print v)) in
-    let a = { a with p_kind; absent } in
+    let pos = Cmdliner_info.pos ~rev ~start:k ~len:(Some 1) in
+    let a = Cmdliner_info.arg_make_pos_abs ~absent ~pos a in
     let convert ei cl = match Cmdline.pos_arg cl a with
     | [] -> try_env ei a parse ~absent:v
     | [v] ->
@@ -782,9 +755,9 @@ module Arg = struct
     in
     [a], convert
 
-  let pos_list kind (parse, _) v a =
-    if is_opt a then invalid_arg err_not_pos else
-    let a = { a with p_kind = kind } in
+  let pos_list pos (parse, _) v a =
+    if Cmdliner_info.arg_is_opt a then invalid_arg err_not_pos else
+    let a = Cmdliner_info.arg_make_pos pos a in
     let convert ei cl = match Cmdline.pos_arg cl a with
     | [] -> try_env ei a (parse_to_list parse) ~absent:v
     | l ->
@@ -808,10 +781,9 @@ module Arg = struct
 
   (* Arguments as terms *)
 
-  let absent_error al =
-    List.rev_map (fun a -> { a with absent = Cmdliner_info.Err }) al
-
+  let absent_error al = List.rev_map Cmdliner_info.arg_make_req al
   let value a = a
+
   let required (al, convert) =
     let al = absent_error al in
     let convert ei cl = match convert ei cl with
