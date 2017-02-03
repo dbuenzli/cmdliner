@@ -482,68 +482,72 @@ end = struct
     in
     aux Cmdliner_trie.empty [] Amap.empty al
 
-  let parse_opt_arg s =          (* (name,value) of opt arg, assert len > 1. *)
+  (* Optional argument parsing *)
+
+  let is_opt s = String.length s > 1 && s.[0] = '-'
+  let is_short_opt s = String.length s = 2 && s.[0] = '-'
+
+  let parse_opt_arg s = (* (name, value) of opt arg, assert len > 1. *)
     let l = String.length s in
-    if s.[1] <> '-' then
+    if s.[1] <> '-' then (* short opt *)
       if l = 2 then s, None else
-      String.sub s 0 2, Some (String.sub s 2 (l - 2))
-    else try
+      String.sub s 0 2, Some (String.sub s 2 (l - 2)) (* with glued opt arg *)
+    else try (* long opt *)
       let i = String.index s '=' in
       String.sub s 0 i, Some (String.sub s (i + 1) (l - i - 1))
     with Not_found -> s, None
 
-  let parse_args ~peek_opts opti cl args =
+  let hint_matching_opt optidx s =
+    (* hint options that could match [s] in [optidx]. FIXME this is
+       a bit obscure. *)
+    if String.length s <= 2 then [] else
+    let short_opt, long_opt =
+      if s.[1] <> '-'
+      then s, Printf.sprintf "-%s" s
+      else String.sub s 1 (String.length s - 1), s
+    in
+    let short_opt, _ = parse_opt_arg short_opt in
+    let long_opt, _ = parse_opt_arg long_opt in
+    let all = Cmdliner_trie.ambiguities optidx "-" in
+    match List.mem short_opt all, Cmdliner_suggest.value long_opt all with
+    | false, [] -> []
+    | false, l -> l
+    | true, [] -> [short_opt]
+    | true, l -> if List.mem short_opt l then l else short_opt :: l
+
+  let parse_args ~peek_opts optidx cl args =
     (* returns an updated [cl] cmdline according to the options found in [args]
-       with the trie index [opti]. Positional arguments are returned in order
+       with the trie index [optidx]. Positional arguments are returned in order
        in a list. *)
-    let rec aux k opti cl pargs = function
+    let rec loop k cl pargs = function
     | [] -> cl, (List.rev pargs)
     | "--" :: args -> cl, (List.rev_append pargs args)
     | s :: args ->
-        let is_opt s = String.length s > 1 && s.[0] = '-' in
-        let is_short_opt s = String.length s = 2 && s.[0] = '-' in
-        if not (is_opt s) then aux (k+1) opti cl (s :: pargs) args else
+        if not (is_opt s) then loop (k + 1) cl (s :: pargs) args else
         let name, value = parse_opt_arg s in
-        match Cmdliner_trie.find opti name with
+        match Cmdliner_trie.find optidx name with
         | `Ok a ->
             let value, args = match value, a.o_kind with
             | Some v, Flag when is_short_opt name -> None, ("-" ^ v) :: args
-            | Some v, _ -> value, args
+            | Some _, _ -> value, args
             | None, Flag -> value, args
             | None, _ ->
                 match args with
-                | v :: rest -> if is_opt v then None, args else Some v, rest
                 | [] -> None, args
+                | v :: rest -> if is_opt v then None, args else Some v, rest
             in
             let arg = O ((k, name, value) :: opt_arg cl a) in
-            aux (k+1) opti (Amap.add a arg cl) pargs args
-        | `Not_found when peek_opts -> aux (k+1) opti cl pargs args (* skip *)
+            loop (k + 1) (Amap.add a arg cl) pargs args
+        | `Not_found when peek_opts -> loop (k + 1) cl pargs args (* skip *)
         | `Not_found ->
-            let hints =
-              if String.length s <= 2 then [] else
-              let short_opt, long_opt =
-                if s.[1] <> '-'
-                then s, Printf.sprintf "-%s" s
-                else String.sub s 1 (String.length s - 1), s
-              in
-              let short_opt, _ = parse_opt_arg short_opt in
-              let long_opt, _ = parse_opt_arg long_opt in
-              let all = Cmdliner_trie.ambiguities opti "-" in
-              match List.mem short_opt all,
-                    Cmdliner_suggest.value long_opt all
-              with
-              | false, [] -> []
-              | false, l -> l
-              | true, [] -> [short_opt]
-              | true, l -> if List.mem short_opt l then l else short_opt :: l
-            in
+            let hints = hint_matching_opt optidx s in
             raise (Error (Err.unknown "option" ~hints name))
         | `Ambiguous ->
-            let ambs = Cmdliner_trie.ambiguities opti name in
+            let ambs = Cmdliner_trie.ambiguities optidx name in
             let ambs = List.sort compare ambs in
             raise (Error (Cmdliner_base.err_ambiguous "option" name ambs))
     in
-    aux 0 opti cl [] args
+    loop 0 cl [] args
 
   let take_range start stop l =
     let rec loop i acc = function
