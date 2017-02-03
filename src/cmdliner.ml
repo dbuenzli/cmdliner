@@ -41,7 +41,7 @@ type env_info =                (* information about an environment variable. *)
     env_docs : string; }              (* title of help section where listed. *)
 
 type absence =        (* what happens if the argument is absent from the cl. *)
-| Error                                             (* an error is reported. *)
+| Err                                               (* an error is reported. *)
 | Val of string Lazy.t           (* if <> "", takes the given default value. *)
 
 type opt_kind =                              (* kinds of optional arguments. *)
@@ -153,7 +153,7 @@ module Help = struct
 
   let synopsis_pos_arg a =
     let v = if a.docv = "" then "$(i,ARG)" else strf "$(i,%s)" (esc a.docv) in
-    let v = if a.absent = Error then strf "%s" v else strf "[%s]" v in
+    let v = if a.absent = Err then strf "%s" v else strf "[%s]" v in
     match a.p_kind.pos_len with
     | None -> v ^ "..."
     | Some 1 -> v
@@ -219,7 +219,7 @@ module Help = struct
         strf "%s $(b,%s) env" value (esc v.env_var)
     in
     let absent = match a.absent with
-    | Error -> ""
+    | Err -> ""
     | Val v ->
         match Lazy.force v with
         | "" -> strf "%s" (or_env ~value:false a)
@@ -567,7 +567,7 @@ end = struct
        in the list index posidx, is given a value according the list
        of positional arguments values [pargs]. *)
     if pargs = [] then
-      let misses = List.filter (fun a -> a.absent = Error) posidx in
+      let misses = List.filter (fun a -> a.absent = Err) posidx in
       if misses = [] then Ok cl else Error (Err.pos_misses misses, cl)
     else
     let last = List.length pargs - 1 in
@@ -586,7 +586,7 @@ end = struct
         let max_spec = max stop max_spec in
         let cl = Amap.add a (P args) cl in
         let misses =
-          if a.absent = Error && args = [] then (a:: misses) else misses
+          if a.absent = Err && args = [] then (a:: misses) else misses
         in
         loop misses cl max_spec al
     in
@@ -805,7 +805,7 @@ module Arg = struct
 
   (* Arguments as terms *)
 
-  let absent_error al = List.rev_map (fun a -> { a with absent = Error }) al
+  let absent_error al = List.rev_map (fun a -> { a with absent = Err }) al
   let value a = a
   let required (al, convert) =
     let al = absent_error al in
