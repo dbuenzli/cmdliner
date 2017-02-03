@@ -876,6 +876,46 @@ module Arg = struct
   let doc_alts_enum ?quoted enum = alts_str ?quoted (List.map fst enum)
 end
 
+module Stdopts = struct
+
+  let man_fmts =
+    ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
+
+  let man_fmts_enum = Arg.enum man_fmts
+  let man_fmts_alts = Arg.doc_alts_enum man_fmts
+  let man_fmts_doc kind =
+    strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
+          the format is `pager` or `plain' whenever the $(b,TERM) env var is
+          `dumb' or undefined."
+      kind man_fmts_alts
+
+  let man_format =
+    let doc = man_fmts_doc "output" in
+    let docv = "FMT" in
+    Arg.(value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc)
+
+  let add ei =
+    let docs = (fst ei.term).sdocs in
+    let args, v_lookup =
+      if (fst ei.main).version = None then [], None else
+      let (a, lookup) =
+        Arg.flag (Arg.info ["version"] ~docs ~doc:"Show version information.")
+      in
+      a, Some lookup
+    in
+    let args, h_lookup =
+      let (a, lookup) =
+        let doc = man_fmts_doc "this help" in
+        let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
+        Arg.opt ~vopt:(Some `Auto) (Arg.some man_fmts_enum) None a
+      in
+      List.rev_append a args, lookup
+    in
+    h_lookup, v_lookup,
+    { ei with term = (fst ei.term), List.rev_append args (snd ei.term) }
+end
+
+
 module Term = struct
   type info = term_info
   type 'a ret = [ `Ok of 'a | term_escape ]
@@ -908,21 +948,7 @@ module Term = struct
   let choice_names =
     [], fun ei _ -> Ok (List.rev_map (fun e -> (fst e).name) ei.choices)
 
-  let man_fmts =
-    ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
-
-  let man_fmts_enum = Arg.enum man_fmts
-  let man_fmts_alts = Arg.doc_alts_enum man_fmts
-  let man_fmts_doc kind =
-    strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
-          the format is `pager` or `plain' whenever the $(b,TERM) env var is
-          `dumb' or undefined."
-      kind man_fmts_alts
-
-  let man_format =
-    let doc = man_fmts_doc "output" in
-    let docv = "FMT" in
-    Arg.(value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc)
+  let man_format = Stdopts.man_format
 
   (* Term information *)
 
@@ -939,26 +965,6 @@ module Term = struct
   let remove_exec argv =
     try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
-  let add_std_opts ei =
-    let docs = (fst ei.term).sdocs in
-    let args, v_lookup =
-      if (fst ei.main).version = None then [], None else
-      let (a, lookup) =
-        Arg.flag (Arg.info ["version"] ~docs ~doc:"Show version information.")
-      in
-      a, Some lookup
-    in
-    let args, h_lookup =
-      let (a, lookup) =
-        let doc = man_fmts_doc "this help" in
-        let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
-        Arg.opt ~vopt:(Some `Auto) (Arg.some man_fmts_enum) None a
-      in
-      List.rev_append a args, lookup
-    in
-    h_lookup, v_lookup,
-    { ei with term = (fst ei.term), List.rev_append args (snd ei.term) }
-
   let eval_help_cmd help ei fmt cmd =
     let ei = match cmd with
     | Some cmd ->
@@ -969,7 +975,7 @@ module Term = struct
         {ei with term = cmd }
     | None -> { ei with term = ei.main }
     in
-    let _, _, ei = add_std_opts ei in
+    let _, _, ei = Stdopts.add ei in
     Help.print fmt help ei; `Help
 
   let eval_err help_ppf err_ppf ei = function
@@ -989,7 +995,7 @@ module Term = struct
         Err.pp_backtrace err_ppf ei e bt; `Error `Exn
 
   let eval_term ~catch help_ppf err_ppf ei f args =
-    let help_arg, vers_arg, ei = add_std_opts ei in
+    let help_arg, vers_arg, ei = Stdopts.add ei in
     match Cmdline.create (snd ei.term) args with
     | Error (e, cl) ->
         begin match help_arg ei cl with
@@ -1025,7 +1031,7 @@ module Term = struct
       | Error err -> eval_err err
       with e -> `Error `Exn
     in
-    let help_arg, vers_arg, ei = add_std_opts ei in
+    let help_arg, vers_arg, ei = Stdopts.add ei in
     match Cmdline.create ~peek_opts:true (snd ei.term) args with
     | Error (e, cl) ->
         begin match help_arg ei cl with
