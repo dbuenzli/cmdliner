@@ -446,8 +446,6 @@ end
 module Cmdline :sig
   exception Error of string
   type t
-  val choose_term :
-    term_info -> (term_info * 'a) list -> string list -> term_info * string list
   val create : ?peek_opts:bool -> arg_info list -> string list -> t
   val opt_arg : t -> arg_info -> (int * string * (string option)) list
   val pos_arg : t -> arg_info -> string list
@@ -470,25 +468,6 @@ end = struct
   let get_arg cl a = try Amap.find a cl with Not_found -> assert false
   let opt_arg cl a = match get_arg cl a with O l -> l | _ -> assert false
   let pos_arg cl a = match get_arg cl a with P l -> l | _ -> assert false
-
-  let choose_term ti choices = function
-  | [] -> ti, []
-  | maybe :: args' as args ->
-      if String.length maybe > 1 && maybe.[0] = '-' then ti, args else
-      let index =
-        let add acc (choice, _) = Cmdliner_trie.add acc choice.name choice in
-        List.fold_left add Cmdliner_trie.empty choices
-      in
-      match Cmdliner_trie.find index maybe with
-      | `Ok choice -> choice, args'
-      | `Not_found ->
-        let all = Cmdliner_trie.ambiguities index "" in
-        let hints = Cmdliner_suggest.value maybe all in
-        raise (Error (Err.unknown "command" ~hints maybe))
-      | `Ambiguous ->
-          let ambs = Cmdliner_trie.ambiguities index maybe in
-          let ambs = List.sort compare ambs in
-          raise (Error (Cmdliner_base.err_ambiguous "command" maybe ambs))
 
   let arg_info_indexes al =
     (* from [al] returns a trie mapping the names of optional arguments to
@@ -987,6 +966,25 @@ module Term = struct
     | e when catch ->
         Err.pp_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
+  let choose_term ti choices = function
+  | [] -> Ok (ti, [])
+  | maybe :: args' as args ->
+      if String.length maybe > 1 && maybe.[0] = '-' then Ok (ti, args) else
+      let index =
+        let add acc (choice, _) = Cmdliner_trie.add acc choice.name choice in
+        List.fold_left add Cmdliner_trie.empty choices
+      in
+      match Cmdliner_trie.find index maybe with
+      | `Ok choice -> Ok (choice, args')
+      | `Not_found ->
+        let all = Cmdliner_trie.ambiguities index "" in
+        let hints = Cmdliner_suggest.value maybe all in
+        Error (Err.unknown "command" ~hints maybe)
+      | `Ambiguous ->
+          let ambs = Cmdliner_trie.ambiguities index maybe in
+          let ambs = List.sort compare ambs in
+          Error (Cmdliner_base.err_ambiguous "command" maybe ambs)
+
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
       (((al, f) as t), ti) choices =
@@ -994,14 +992,14 @@ module Term = struct
     let main = (ti, al) in
     let ei = { term = main; main = main; choices = ei_choices; env = env } in
     try
-      let chosen, args = Cmdline.choose_term ti ei_choices (remove_exec argv) in
-      let find_chosen (_, ti) = ti = chosen in
-      let (al, f), _ = List.find find_chosen ((t, ti) :: choices) in
-      let ei = { ei with term = (chosen, al) } in
-      eval_term help err ei f args
+      match choose_term ti ei_choices (remove_exec argv) with
+      | Error e -> Err.pp_usage err ei e; `Error `Parse
+      | Ok (chosen, args) ->
+          let find_chosen (_, ti) = ti = chosen in
+          let (al, f), _ = List.find find_chosen ((t, ti) :: choices) in
+          let ei = { ei with term = (chosen, al) } in
+          eval_term help err ei f args
     with
-    | Cmdline.Error e ->                    (* may be raised by choose_term. *)
-        Err.pp_usage err ei e; `Error `Parse
     | e when catch ->
         Err.pp_backtrace err ei e (Printexc.get_backtrace ()); `Error `Exn
 
