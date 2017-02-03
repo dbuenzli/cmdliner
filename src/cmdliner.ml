@@ -605,13 +605,12 @@ end = struct
 end
 
 module Arg = struct
-  exception Error of string
 
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a converter = 'a parser * 'a printer
   type env = env_info
-  type 'a arg_converter = (eval_info -> Cmdline.t -> 'a)
+  type 'a arg_converter = (eval_info -> Cmdline.t -> ('a, string) result)
   type 'a t = arg_info list * 'a arg_converter
   type info = arg_info
 
@@ -620,7 +619,7 @@ module Arg = struct
     { env_var = env_var; env_doc = doc; env_docs = docs }
 
   let ( & ) f x = f x
-  let parse_error e = raise (Error e)
+
   let some ?(none = "") (parse, print) =
     (fun s -> match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e),
     (fun ppf v -> match v with
@@ -646,23 +645,22 @@ module Arg = struct
   | `Error _ as e -> e
 
   let try_env ei a parse ~absent = match a.env_info with
-  | None -> absent
+  | None -> Ok absent
   | Some env ->
       match ei.env env.env_var with
-      | None -> absent
+      | None -> Ok absent
       | Some v ->
           match parse v with
-          | `Ok v -> v
-          | `Error e ->
-              parse_error (Err.env_parse_value env.env_var e)
+          | `Ok v -> Ok v
+          | `Error e -> Error (Err.env_parse_value env.env_var e)
 
   let flag a =
     if is_pos a then invalid_arg err_not_opt else
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] -> try_env ei a Cmdliner_base.env_bool_parse ~absent:false
-    | [_, _, None] -> true
-    | [_, f, Some v] -> parse_error (Err.flag_value f v)
-    | (_, f, _) :: (_ ,g, _) :: _  -> parse_error (Err.opt_repeated f g)
+    | [_, _, None] -> Ok true
+    | [_, f, Some v] -> Error (Err.flag_value f v)
+    | (_, f, _) :: (_ ,g, _) :: _  -> Error (Err.opt_repeated f g)
     in
     [a], convert
 
@@ -673,10 +671,13 @@ module Arg = struct
     | [] ->
         try_env ei a (parse_to_list Cmdliner_base.env_bool_parse) ~absent:[]
     | l ->
-        let truth (_, f, v) = match v with
-        | None -> true | Some v -> parse_error (Err.flag_value f v)
-        in
-        List.rev_map truth l
+        try
+          let truth (_, f, v) = match v with
+          | None -> true
+          | Some v -> failwith (Err.flag_value f v)
+          in
+          Ok (List.rev_map truth l)
+        with Failure e -> Error e
     in
     [a], convert
 
@@ -689,14 +690,14 @@ module Arg = struct
           | [_, f, None] ->
               begin match fv with
               | None -> aux (Some (f, v)) rest
-              | Some (g, _) -> parse_error (Err.opt_repeated g f)
+              | Some (g, _) -> failwith (Err.opt_repeated g f)
               end
-          | [_, f, Some v] -> parse_error (Err.flag_value f v)
-          | (_, f, _) :: (_, g, _) :: _ -> parse_error (Err.opt_repeated g f)
+          | [_, f, Some v] -> failwith (Err.flag_value f v)
+          | (_, f, _) :: (_, g, _) :: _ -> failwith (Err.opt_repeated g f)
           end
       | [] -> match fv with None -> v | Some (_, v) -> v
       in
-      aux None l
+      try Ok (aux None l) with Failure e -> Error e
     in
     let flag (_, a) = if is_pos a then invalid_arg err_not_opt else a in
     List.rev_map flag l, convert
@@ -709,14 +710,14 @@ module Arg = struct
           | [] -> aux acc rest
           | l ->
               let fval (k, f, v) = match v with
-              | None -> (k, fv) | Some v -> parse_error (Err.flag_value f v)
+              | None -> (k, fv) | Some v -> failwith (Err.flag_value f v)
               in
               aux (List.rev_append (List.rev_map fval l) acc) rest
           end
       | [] ->
           if acc = [] then v else List.rev_map snd (List.sort rev_compare acc)
       in
-      aux [] l
+      try Ok (aux [] l) with Failure e -> Error e
     in
     let flag (_, a) =
       if is_pos a then invalid_arg err_not_opt else { a with o_all = true }
@@ -724,7 +725,8 @@ module Arg = struct
     List.rev_map flag l, convert
 
   let parse_opt_value parse f v = match parse v with
-  | `Ok v -> v | `Error e -> parse_error (Err.opt_parse_value f e)
+  | `Ok v -> v
+  | `Error e -> failwith (Err.opt_parse_value f e)
 
   let opt ?vopt (parse, print) v a =
     if is_pos a then invalid_arg err_not_opt else
@@ -734,13 +736,14 @@ module Arg = struct
     in
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] -> try_env ei a parse ~absent:v
-    | [_, f, Some v] -> parse_opt_value parse f v
+    | [_, f, Some v] ->
+        (try Ok (parse_opt_value parse f v) with Failure e -> Error e)
     | [_, f, None] ->
         begin match vopt with
-        | None -> parse_error (Err.opt_value_missing f)
-        | Some optv -> optv
+        | None -> Error (Err.opt_value_missing f)
+        | Some optv -> Ok optv
         end
-    | (_, f, _) :: (_, g, _) :: _ -> parse_error (Err.opt_repeated g f)
+    | (_, f, _) :: (_, g, _) :: _ -> Error (Err.opt_repeated g f)
     in
     [a], convert
 
@@ -756,17 +759,20 @@ module Arg = struct
         let parse (k, f, v) = match v with
         | Some v -> (k, parse_opt_value parse f v)
         | None -> match vopt with
-        | None -> parse_error (Err.opt_value_missing f)
+        | None -> failwith (Err.opt_value_missing f)
         | Some dv -> (k, dv)
         in
-        List.rev_map snd (List.sort rev_compare (List.rev_map parse l))
+        try Ok (List.rev_map snd
+                  (List.sort rev_compare (List.rev_map parse l))) with
+        | Failure e -> Error e
     in
     [a], convert
 
   (* Positional arguments *)
 
   let parse_pos_value parse a v = match parse v with
-  | `Ok v -> v | `Error e -> parse_error (Err.pos_parse_value a e)
+  | `Ok v -> v
+  | `Error e -> failwith (Err.pos_parse_value a e)
 
   let pos ?(rev = false) k (parse, print) v a =
     if is_opt a then invalid_arg err_not_pos else
@@ -775,7 +781,8 @@ module Arg = struct
     let a = { a with p_kind; absent } in
     let convert ei cl = match Cmdline.pos_arg cl a with
     | [] -> try_env ei a parse ~absent:v
-    | [v] -> parse_pos_value parse a v
+    | [v] ->
+        (try Ok (parse_pos_value parse a v) with Failure e -> Error e)
     | _ -> assert false
     in
     [a], convert
@@ -785,7 +792,9 @@ module Arg = struct
     let a = { a with p_kind = kind } in
     let convert ei cl = match Cmdline.pos_arg cl a with
     | [] -> try_env ei a (parse_to_list parse) ~absent:v
-    | l -> List.rev (List.rev_map (parse_pos_value parse a) l)
+    | l ->
+        try Ok (List.rev (List.rev_map (parse_pos_value parse a) l)) with
+        | Failure e -> Error e
     in
     [a], convert
 
@@ -810,23 +819,26 @@ module Arg = struct
   let required (al, convert) =
     let al = absent_error al in
     let convert ei cl = match convert ei cl with
-    | Some v -> v
-    | None -> parse_error (Err.arg_missing (List.hd al))
+    | Ok (Some v) -> Ok v
+    | Ok None -> Error (Err.arg_missing (List.hd al))
+    | Error _ as e -> e
     in
     al, convert
 
   let non_empty (al, convert) =
     let al = absent_error al in
     let convert ei cl = match convert ei cl with
-    | [] -> parse_error (Err.arg_missing (List.hd al))
-    | l -> l
+    | Ok [] -> Error (Err.arg_missing (List.hd al))
+    | Ok l -> Ok l
+    | Error _ as e -> e
     in
     al, convert
 
   let last (al, convert) =
     let convert ei cl = match convert ei cl with
-    | [] -> parse_error (Err.arg_missing (List.hd al))
-    | l -> List.hd (List.rev l)
+    | Ok [] -> Error (Err.arg_missing (List.hd al))
+    | Ok l -> Ok (List.hd (List.rev l))
+    | Error _ as e -> e
     in
     al, convert
 
@@ -860,7 +872,7 @@ end
 
 module Term = struct
   type info = term_info
-  type +'a t = arg_info list * (eval_info -> Cmdline.t -> 'a)
+  type +'a t = arg_info list * (eval_info -> Cmdline.t -> ('a, string) result)
   type 'a result =
     [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
 
@@ -875,11 +887,16 @@ module Term = struct
       man = man }
 
   let name ti = ti.name
-  let const v = [], (fun _ _ -> v)
+  let const v = [], (fun _ _ -> Ok v)
   let pure (* deprecated *) = const
   let app (al, f) (al', v) =
     List.rev_append al al',
-    fun ei cl -> (f ei cl) (v ei cl)
+    fun ei cl -> match (f ei cl) with
+    | Error _ as e -> e
+    | Ok f ->
+        match v ei cl with
+        | Error _ as e -> e
+        | Ok v -> Ok (f v)
 
   let ( $ ) = app
 
@@ -890,13 +907,14 @@ module Term = struct
 
   let ret (al, v) =
     al, fun ei cl -> match v ei cl with
-    | `Ok v -> v
-    | `Error (u,e) -> raise (Term (`Error (u,e)))
-    | `Help h -> raise (Term (`Help h))
+    | Ok (`Ok v) -> Ok v
+    | Ok (`Error (u,e)) -> raise (Term (`Error (u,e)))
+    | Ok (`Help h) -> raise (Term (`Help h))
+    | Error _ as e -> e
 
-  let main_name = [], (fun ei _ -> (fst ei.main).name)
+  let main_name = [], (fun ei _ -> Ok ((fst ei.main).name))
   let choice_names =
-    [], fun ei _ -> List.rev_map (fun e -> (fst e).name) ei.choices
+    [], fun ei _ -> Ok (List.rev_map (fun e -> (fst e).name) ei.choices)
 
   let man_fmts =
     ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
@@ -944,16 +962,31 @@ module Term = struct
     try match Cmdline.create (snd ei.term) args with
     | Error (e, cl) ->
         begin match help_arg ei cl with
-        | Some fmt -> Help.print fmt help ei; `Help
-        | None -> Err.pp_usage err ei e; `Error `Parse
+        | Ok (Some fmt) -> Help.print fmt help ei; `Help
+        | Ok None -> Err.pp_usage err ei e; `Error `Parse
+        | Error e -> Err.pp_usage err ei e; `Error `Parse
         end
     | Ok cl ->
-        match help_arg ei cl, vers_arg with
-        | Some fmt, _ -> Help.print fmt help ei; `Help
-        | None, Some v_arg when v_arg ei cl -> Help.pp_version help ei; `Version
-        | _ -> `Ok (f ei cl)
+        match help_arg ei cl with
+        | Error e -> Err.pp_usage err ei e; `Error `Parse
+        | Ok (Some fmt) -> Help.print fmt help ei; `Help
+        | Ok None ->
+            match vers_arg with
+            | None ->
+                begin match f ei cl with
+                | Ok v -> `Ok v
+                | Error e -> Err.pp_usage err ei e; `Error `Parse
+                end
+            | Some v_arg ->
+                match v_arg ei cl with
+                | Error e -> Err.pp_usage err ei e; `Error `Parse
+                | Ok true -> Help.pp_version help ei; `Version
+                | Ok false ->
+                    begin match f ei cl with
+                    | Ok v -> `Ok v
+                    | Error e -> Err.pp_usage err ei e; `Error `Parse
+                    end
     with
-    | Arg.Error e -> Err.pp_usage err ei e; `Error `Parse
     | Term (`Error (usage, e)) ->
         if usage then Err.pp_usage err ei e else Err.print err ei e;
         `Error `Term
@@ -1026,22 +1059,41 @@ module Term = struct
     let help_arg, vers_arg, ei = add_std_opts ei in
     try
       match Cmdline.create ~peek_opts:true (snd ei.term) args with
-      | Error (err, cl) ->
+      | Error (_, cl) ->
           begin match help_arg ei cl with
-          | Some fmt -> None, `Help
-          | None -> None, (`Error `Parse)
+          | Ok (Some fmt) -> None, `Help
+          | Ok None -> None, (`Error `Parse)
+          | Error _ -> None, (`Error `Parse)
           end
       | Ok cl ->
-          match help_arg ei cl, vers_arg with
-          | Some fmt, _ ->
-              (try (Some (f ei cl), `Help) with e -> None, `Help)
-          | None, Some v_arg when v_arg ei cl ->
-              (try (Some (f ei cl), `Version) with e -> None, `Version)
-          | _ ->
-              let v = f ei cl in
-              Some v, `Ok v
+          match help_arg ei cl with
+          | Error _ -> None, (`Error `Parse)
+          | Ok (Some _) ->
+              (try match f ei cl with
+              | Ok v -> Some v, `Help
+              | Error _ -> None, `Version
+              with e -> None, `Help)
+          | Ok None ->
+              match vers_arg with
+              | None ->
+                  begin match f ei cl with
+                  | Ok v -> Some v, `Ok v
+                  | Error e -> None, (`Error `Parse)
+                  end
+              | Some varg ->
+                  match varg ei cl with
+                  | Error _ -> None, (`Error `Parse)
+                  | Ok true ->
+                      (try match f ei cl with
+                      | Ok v -> Some v, `Version
+                      | Error _ -> None, `Version
+                      with e -> None, `Version)
+                  | Ok false ->
+                      begin match f ei cl with
+                      | Ok v -> Some v, `Ok v
+                      | Error e -> None, (`Error `Parse)
+                      end
     with
-    | Arg.Error _ -> None, (`Error `Parse)
     | Term _ -> None, (`Error `Term)
     | e -> None, (`Error `Exn)
 end
