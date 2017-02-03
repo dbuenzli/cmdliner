@@ -57,9 +57,6 @@ val print :
 
 (** {1 Printers and escapes used by Cmdliner module} *)
 
-val pp_text : Format.formatter -> string -> unit
-val pp_lines : Format.formatter -> string -> unit
-
 val markup_text_escape : string -> string
 (** [markup_text_escape t] escapes [t] to be used as marked up text
     argument (i.e. doubles ')' or '$'). *)

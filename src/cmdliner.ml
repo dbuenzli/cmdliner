@@ -4,9 +4,7 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-let strf = Printf.sprintf
-
-module Manpage = Cmdliner_manpage
+let rev_compare n0 n1 = compare n1 n0
 
 (* Invalid_arg strings *)
 
@@ -14,70 +12,28 @@ let err_argv = "argv array must have at least one element"
 let err_not_opt = "Option argument without name"
 let err_not_pos = "Positional argument with a name"
 let err_help s = "Term error, help requested for unknown command " ^ s
-let err_empty_list = "Empty list"
-let err_incomplete_enum = "Incomplete enumeration for the type"
 
-(* A few useful definitions. *)
+(* Formatting helpers *)
 
-let rev_compare n n' = compare n' n
-let pr = Format.fprintf
-let pp_str = Format.pp_print_string
-let pp_char = Format.pp_print_char
-let pp_text = Manpage.pp_text
-let pp_lines = Manpage.pp_lines
+let strf = Printf.sprintf
 let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 
-let quote s = strf "`%s'" s
-let alts_str ?(quoted = true) alts =
-  let quote = if quoted then quote else (fun s -> s) in
-  match alts with
-  | [] -> invalid_arg err_empty_list
-  | [a] -> (quote a)
-  | [a; b] -> strf "either %s or %s" (quote a) (quote b)
-  | alts ->
-      let rev_alts = List.rev alts in
-      strf "one of %s or %s"
-        (String.concat ", " (List.rev_map quote (List.tl rev_alts)))
-        (quote (List.hd rev_alts))
+let pp = Format.fprintf
+let pp_text = Cmdliner_base.pp_text
+let pp_lines = Cmdliner_base.pp_lines
 
-(* Levenshtein distance, for making spelling suggestions in case of error. *)
+let quote = Cmdliner_base.quote
+let alts_str = Cmdliner_base.alts_str
 
-let levenshtein_distance s t =
-  (* As found here http://rosettacode.org/wiki/Levenshtein_distance#OCaml *)
-  let minimum a b c = min a (min b c) in
-  let m = String.length s in
-  let n = String.length t in
-  (* for all i and j, d.(i).(j) will hold the Levenshtein distance between
-     the first i characters of s and the first j characters of t *)
-  let d = Array.make_matrix (m+1) (n+1) 0 in
-  for i = 0 to m do d.(i).(0) <- i done;
-  for j = 0 to n do d.(0).(j) <- j done;
-  for j = 1 to n do
-    for i = 1 to m do
-      if s.[i-1] = t.[j-1] then
-        d.(i).(j) <- d.(i-1).(j-1)  (* no operation required *)
-      else
-        d.(i).(j) <- minimum
-            (d.(i-1).(j) + 1)   (* a deletion *)
-            (d.(i).(j-1) + 1)   (* an insertion *)
-            (d.(i-1).(j-1) + 1) (* a substitution *)
-    done;
-  done;
-  d.(m).(n)
+(* Manpages *)
 
-let suggest s candidates =
-  let add (min, acc) name =
-    let d = levenshtein_distance s name in
-    if d = min then min, (name :: acc) else
-    if d < min then d, [name] else
-    min, acc
-  in
-  let dist, suggs = List.fold_left add (max_int, []) candidates in
-  if dist < 3 (* suggest only if not too far *) then suggs else []
+module Manpage = Cmdliner_manpage
 
-(* The following types keep untyped information about arguments and
+(* Term and argument information
+
+   The following types keep untyped information about arguments and
    terms. This data is used to parse the command line, report errors
-   and format man page information. *)
+   and format man pages. *)
 
 type env_info =                (* information about an environment variable. *)
   { env_var : string;                                       (* the variable. *)
@@ -85,13 +41,13 @@ type env_info =                (* information about an environment variable. *)
     env_docs : string; }              (* title of help section where listed. *)
 
 type absence =        (* what happens if the argument is absent from the cl. *)
-  | Error                                           (* an error is reported. *)
-  | Val of string Lazy.t         (* if <> "", takes the given default value. *)
+| Error                                             (* an error is reported. *)
+| Val of string Lazy.t           (* if <> "", takes the given default value. *)
 
 type opt_kind =                              (* kinds of optional arguments. *)
-  | Flag                                      (* just a flag, without value. *)
-  | Opt                                                (* value is required. *)
-  | Opt_vopt of string     (* option value is optional, takes given default. *)
+| Flag                                        (* just a flag, without value. *)
+| Opt                                                  (* value is required. *)
+| Opt_vopt of string       (* option value is optional, takes given default. *)
 
 type pos_kind =                  (* type for ranges of positional arguments. *)
   { pos_rev : bool;         (* if [true] positions are counted from the end. *)
@@ -99,16 +55,16 @@ type pos_kind =                  (* type for ranges of positional arguments. *)
     pos_len : int option }    (* number of arguments or [None] if unbounded. *)
 
 type arg_info =                (* information about a command line argument. *)
-  { id : int;                               (* unique id for the argument. *)
-    absent : absence;                              (* behaviour if absent. *)
-    env_info : env_info option;                   (* environment variable. *)
-    doc : string;                                                 (* help. *)
-    docv : string;              (* variable name for the argument in help. *)
-    docs : string;                  (* title of help section where listed. *)
-    p_kind : pos_kind;                             (* positional arg kind. *)
-    o_kind : opt_kind;                               (* optional arg kind. *)
-    o_names : string list;                        (* names (for opt args). *)
-    o_all : bool; }                          (* repeatable (for opt args). *)
+  { id : int;                                 (* unique id for the argument. *)
+    absent : absence;                                (* behaviour if absent. *)
+    env_info : env_info option;                     (* environment variable. *)
+    doc : string;                                                   (* help. *)
+    docv : string;                (* variable name for the argument in help. *)
+    docs : string;                    (* title of help section where listed. *)
+    p_kind : pos_kind;                               (* positional arg kind. *)
+    o_kind : opt_kind;                                 (* optional arg kind. *)
+    o_names : string list;                          (* names (for opt args). *)
+    o_all : bool; }                            (* repeatable (for opt args). *)
 
 let arg_id =        (* thread-safe UIDs, Oo.id (object end) was used before. *)
   let c = ref 0 in
@@ -128,15 +84,6 @@ let pos_arg_cli_order a0 a1 =              (* best-effort order on the cli. *)
 
 let rev_pos_arg_cli_order a0 a1 = pos_arg_cli_order a1 a0
 
-module Amap = Map.Make                                     (* arg info maps. *)
-    (struct type t = arg_info let compare a a' = compare a.id a'.id end)
-
-type arg =        (* unconverted argument data as found on the command line. *)
-  | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
-  | P of string list
-
-type cmdline = arg Amap.t      (* command line, maps arg_infos to arg value. *)
-
 type term_info =
   { name : string;                                    (* name of the term. *)
     version : string option;                   (* version (for --version). *)
@@ -154,6 +101,8 @@ type eval_info =                (* information about the evaluation context. *)
 let eval_kind ei =                       (* evaluation with multiple terms ? *)
   if ei.choices = [] then `Simple else
   if (fst ei.term) == (fst ei.main) then `M_main else `M_choice
+
+(* Manpage generation. *)
 
 module Help = struct
 
@@ -187,7 +136,7 @@ module Help = struct
   let arg_info_subst ~subst a = function
   | "docv" -> Some (strf "$(i,%s)" @@ esc a.docv)
   | "opt" when is_opt a ->
-      let k = String.lowercase (List.hd (List.sort compare a.o_names)) in
+      let k = Cmdliner_base.lowercase (List.hd (List.sort compare a.o_names)) in
       Some (strf "$(b,%s)" @@ esc k)
   | "env" when a.env_info <> None ->
       begin match a.env_info with
@@ -296,12 +245,15 @@ module Help = struct
       match is_opt a, is_opt a' with
       | true, true -> (* optional by name *)
           let key names =
-            let k = String.lowercase (List.hd (List.sort rev_compare names)) in
+            let k = List.hd (List.sort rev_compare names) in
+            let k = Cmdliner_base.lowercase k in
             if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
           in
           compare (key a.o_names) (key a'.o_names)
       | false, false -> (* positional by variable *)
-          compare (String.lowercase a.docv) (String.lowercase a'.docv)
+          compare
+            (Cmdliner_base.lowercase a.docv)
+            (Cmdliner_base.lowercase a'.docv)
       | true, false -> -1 (* positional first *)
       | false, true -> 1  (* optional after *)
     in
@@ -370,8 +322,8 @@ module Help = struct
     Manpage.smap_to_blocks sm
 
   let title ei =
-    let prog = String.capitalize (fst ei.main).name in
-    let name = String.uppercase (invocation ~sep:'-' ei) in
+    let prog = Cmdliner_base.capitalize (fst ei.main).name in
+    let name = Cmdliner_base.uppercase (invocation ~sep:'-' ei) in
     let left_footer = prog ^ match (fst ei.main).version with
     | None -> "" | Some v -> strf " %s" v
     in
@@ -387,30 +339,27 @@ module Help = struct
     let buf = Buffer.create 100 in
     let subst = term_info_subst ei in
     let syn = Manpage.doc_to_plain ~subst buf (synopsis ei) in
-    pr ppf "@[%s@]" syn
+    pp ppf "@[%s@]" syn
 
   let pp_version ppf ei = match (fst ei.main).version with
   | None -> assert false
-  | Some v -> pr ppf "@[%a@]@." Manpage.pp_text v
+  | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 end
 
 (* Errors for the command line user *)
 
 module Err = struct
-  let invalid kind s exp = strf "invalid %s %s, %s" kind (quote s) exp
-  let invalid_val = invalid "value"
-  let no kind s = strf "no %s %s" (quote s) kind
-  let not_dir s = strf "%s is not a directory" (quote s)
-  let is_dir s = strf "%s is a directory" (quote s)
-  let element kind s exp = strf "invalid element in %s (`%s'): %s" kind s exp
-  let sep_miss sep s = invalid_val s (strf "missing a `%c' separator" sep)
+
   let unknown kind ?(hints = []) v =
     let did_you_mean s = strf ", did you mean %s ?" s in
     let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
     strf "unknown %s %s%s" kind (quote v) hints
 
-  let ambiguous kind s ambs =
-    strf "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
+  (* Environment variable *)
+
+  let env_parse_value var e = strf "environment variable %s: %s" (quote var) e
+
+  (* Positional arguments *)
 
   let pos_excess excess =
     strf "too many arguments, don't know what to do with %s"
@@ -430,22 +379,25 @@ module Err = struct
       let args = String.concat ", " args in
       strf "required arguments %s are missing" args
 
+  let pos_parse_value a e =
+    if a.docv = "" then e else match a.p_kind.pos_len with
+    | None -> strf "%s argument: %s" a.docv e
+    | Some _ -> strf "%s... arguments: %s" a.docv e
+
+  (* Optional arguments *)
+
   let flag_value f v =
     strf "option %s is a flag, it cannot take the argument %s"
       (quote f) (quote v)
 
   let opt_value_missing f = strf "option %s needs an argument" (quote f)
   let opt_parse_value f e = strf "option %s: %s" (quote f) e
-  let env_parse_value var e = strf "environment variable %s: %s" (quote var) e
   let opt_repeated f f' =
     if f = f' then strf "option %s cannot be repeated" (quote f) else
     strf "options %s and %s cannot be present at the same time" (quote f)
       (quote f')
 
-  let pos_parse_value a e =
-    if a.docv = "" then e else match a.p_kind.pos_len with
-    | None -> strf "%s argument: %s" a.docv e
-    | Some _ -> strf "%s... arguments: %s" a.docv e
+  (* Argument errors *)
 
   let arg_missing a =
     if is_opt a then
@@ -459,13 +411,14 @@ module Err = struct
 
   (* Error printers *)
 
-  let print ppf ei e = pr ppf "%s: @[%a@]@." (fst ei.main).name pp_text e
+  let print ppf ei e = pp ppf "%s: @[%a@]@." (fst ei.main).name pp_text e
+
   let pp_backtrace err ei e bt =
     let bt =
       let len = String.length bt in
       if len > 0 then String.sub bt 0 (len - 1) (* remove final '\n' *) else bt
     in
-    pr err
+    pp err
       "%s: @[internal error, uncaught exception:@\n%a@]@."
       (fst ei.main).name pp_lines (strf "%s\n%s" (Printexc.to_string e) bt)
 
@@ -473,13 +426,13 @@ module Err = struct
     let exec = Help.invocation ei in
     let main = (fst ei.main).name in
     if exec = main then
-      pr ppf "@[<2>Try `%s --help' for more information.@]" exec
+      pp ppf "@[<2>Try `%s --help' for more information.@]" exec
     else
-    pr ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
+    pp ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
       exec main
 
   let pp_usage ppf ei e =
-    pr ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
+    pp ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
       (fst ei.main).name pp_text e Help.pp_synopsis ei pp_try_help ei
 end
 
@@ -492,13 +445,27 @@ end
 
 module Cmdline :sig
   exception Error of string
-  val choose_term : term_info -> (term_info * 'a) list -> string list ->
-    term_info * string list
-  val create : ?peek_opts:bool -> arg_info list -> string list -> cmdline
-  val opt_arg : cmdline -> arg_info -> (int * string * (string option)) list
-  val pos_arg : cmdline -> arg_info -> string list
+  type t
+  val choose_term :
+    term_info -> (term_info * 'a) list -> string list -> term_info * string list
+  val create : ?peek_opts:bool -> arg_info list -> string list -> t
+  val opt_arg : t -> arg_info -> (int * string * (string option)) list
+  val pos_arg : t -> arg_info -> string list
 end = struct
+
   exception Error of string
+
+  module Arg_info = struct
+    type t = arg_info
+    let compare a0 a1 = compare a0.id a1.id
+  end
+  module Amap = Map.Make (Arg_info)
+
+  type arg =      (* unconverted argument data as found on the command line. *)
+  | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
+  | P of string list
+
+  type t = arg Amap.t  (* command line, maps arg_infos to arg value. *)
 
   let get_arg cl a = try Amap.find a cl with Not_found -> assert false
   let opt_arg cl a = match get_arg cl a with O l -> l | _ -> assert false
@@ -516,12 +483,12 @@ end = struct
       | `Ok choice -> choice, args'
       | `Not_found ->
         let all = Cmdliner_trie.ambiguities index "" in
-        let hints = suggest maybe all in
+        let hints = Cmdliner_suggest.value maybe all in
         raise (Error (Err.unknown "command" ~hints maybe))
       | `Ambiguous ->
           let ambs = Cmdliner_trie.ambiguities index maybe in
           let ambs = List.sort compare ambs in
-          raise (Error (Err.ambiguous "command" maybe ambs))
+          raise (Error (Cmdliner_base.err_ambiguous "command" maybe ambs))
 
   let arg_info_indexes al =
     (* from [al] returns a trie mapping the names of optional arguments to
@@ -583,7 +550,9 @@ end = struct
               let short_opt, _ = parse_opt_arg short_opt in
               let long_opt, _ = parse_opt_arg long_opt in
               let all = Cmdliner_trie.ambiguities opti "-" in
-              match List.mem short_opt all, suggest long_opt all with
+              match List.mem short_opt all,
+                    Cmdliner_suggest.value long_opt all
+              with
               | false, [] -> []
               | false, l -> l
               | true, [] -> [short_opt]
@@ -593,7 +562,7 @@ end = struct
         | `Ambiguous ->
             let ambs = Cmdliner_trie.ambiguities opti name in
             let ambs = List.sort compare ambs in
-            raise (Error (Err.ambiguous "option" name ambs))
+            raise (Error (Cmdliner_base.err_ambiguous "option" name ambs))
     in
     aux 0 opti cl [] args
 
@@ -654,7 +623,7 @@ module Arg = struct
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a converter = 'a parser * 'a printer
   type env = env_info
-  type 'a arg_converter = (eval_info -> cmdline -> 'a)
+  type 'a arg_converter = (eval_info -> Cmdline.t -> 'a)
   type 'a t = arg_info list * 'a arg_converter
   type info = arg_info
 
@@ -666,7 +635,8 @@ module Arg = struct
   let parse_error e = raise (Cmdline.Error e)
   let some ?(none = "") (parse, print) =
     (fun s -> match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e),
-    (fun ppf v -> match v with None -> pp_str ppf none| Some v -> print ppf v)
+    (fun ppf v -> match v with
+    | None -> Format.pp_print_string ppf none| Some v -> print ppf v)
 
 
   let dumb_p_kind = { pos_rev = false; pos_start = -1; pos_len = None }
@@ -682,11 +652,6 @@ module Arg = struct
       doc = doc; docv = docv; docs = docs;
       p_kind = dumb_p_kind; o_kind = Flag; o_names = List.rev_map dash names;
       o_all = false; }
-
-  let env_bool_parse s = match String.lowercase s with
-  | "" | "false" | "no" | "n" | "0" -> `Ok false
-  | "true" | "yes" | "y" | "1" -> `Ok true
-  | s -> `Error (Err.invalid_val s (alts_str ["true"; "yes"; "false"; "no" ]))
 
   let parse_to_list parser s = match parser s with
   | `Ok v -> `Ok [v]
@@ -706,7 +671,7 @@ module Arg = struct
   let flag a =
     if is_pos a then invalid_arg err_not_opt else
     let convert ei cl = match Cmdline.opt_arg cl a with
-    | [] -> try_env ei a env_bool_parse ~absent:false
+    | [] -> try_env ei a Cmdliner_base.env_bool_parse ~absent:false
     | [_, _, None] -> true
     | [_, f, Some v] -> parse_error (Err.flag_value f v)
     | (_, f, _) :: (_ ,g, _) :: _  -> parse_error (Err.opt_repeated f g)
@@ -717,7 +682,8 @@ module Arg = struct
     if is_pos a then invalid_arg err_not_opt else
     let a = { a with o_all = true } in
     let convert ei cl = match Cmdline.opt_arg cl a with
-    | [] -> try_env ei a (parse_to_list env_bool_parse) ~absent:[]
+    | [] ->
+        try_env ei a (parse_to_list Cmdliner_base.env_bool_parse) ~absent:[]
     | l ->
         let truth (_, f, v) = match v with
         | None -> true | Some v -> parse_error (Err.flag_value f v)
@@ -878,169 +844,24 @@ module Arg = struct
 
   (* Predefined converters. *)
 
-  let bool =
-    (fun s -> try `Ok (bool_of_string s) with Invalid_argument _ ->
-        `Error (Err.invalid_val s (alts_str ["true"; "false"]))),
-    Format.pp_print_bool
-
-  let char =
-    (fun s -> if String.length s = 1 then `Ok s.[0] else
-      `Error (Err.invalid_val s "expected a character")),
-    pp_char
-
-  let parse_with t_of_str exp s =
-    try `Ok (t_of_str s) with Failure _ -> `Error (Err.invalid_val s exp)
-
-  let int =
-    parse_with int_of_string "expected an integer", Format.pp_print_int
-
-  let int32 =
-    parse_with Int32.of_string "expected a 32-bit integer",
-    (fun ppf -> pr ppf "%ld")
-
-  let int64 =
-    parse_with Int64.of_string "expected a 64-bit integer",
-    (fun ppf -> pr ppf "%Ld")
-
-  let nativeint =
-    parse_with Nativeint.of_string "expected a processor-native integer",
-    (fun ppf -> pr ppf "%nd")
-
-  let float =
-    parse_with float_of_string "expected a floating point number",
-    Format.pp_print_float
-
-  let string = (fun s -> `Ok s), pp_str
-  let enum sl =
-    if sl = [] then invalid_arg err_empty_list else
-    let t = Cmdliner_trie.of_list sl in
-    let parse s = match Cmdliner_trie.find t s with
-    | `Ok _ as r -> r
-    | `Ambiguous ->
-        let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
-        `Error (Err.ambiguous "enum value" s ambs)
-    | `Not_found ->
-        let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
-        `Error (Err.invalid_val s ("expected " ^ (alts_str alts)))
-    in
-    let print ppf v =
-      let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
-      try pp_str ppf (List.assoc v sl_inv)
-      with Not_found -> invalid_arg err_incomplete_enum
-    in
-    parse, print
-
-  let file =
-    (fun s -> if Sys.file_exists s then `Ok s else
-      `Error (Err.no "file or directory" s)),
-    pp_str
-
-  let dir =
-    (fun s ->
-       if Sys.file_exists s then
-         if Sys.is_directory s then `Ok s else `Error (Err.not_dir s)
-       else
-       `Error (Err.no "directory" s)),
-    pp_str
-
-  let non_dir_file =
-    (fun s ->
-       if Sys.file_exists s then
-         if not (Sys.is_directory s) then `Ok s else `Error (Err.is_dir s)
-       else
-       `Error (Err.no "file" s)),
-    pp_str
-
-  let split_and_parse sep parse s =
-    let parse sub = match parse sub with
-    | `Error e -> failwith e | `Ok v -> v in
-    let rec split accum j =
-      let i = try String.rindex_from s j sep with Not_found -> -1 in
-      if (i = -1) then
-        let p = String.sub s 0 (j + 1) in
-        if p <> "" then parse p :: accum else accum
-      else
-      let p = String.sub s (i + 1) (j - i) in
-      let accum' = if p <> "" then parse p :: accum else accum in
-      split accum' (i - 1)
-    in
-    split [] (String.length s - 1)
-
-  let list ?(sep = ',') (parse, pp_e) =
-    let parse s = try `Ok (split_and_parse sep parse s) with
-    | Failure e -> `Error (Err.element "list" s e)
-    in
-    let rec print ppf = function
-    | v :: l -> pp_e ppf v; if (l <> []) then (pp_char ppf sep; print ppf l)
-    | [] -> ()
-    in
-    parse, print
-
-  let array ?(sep = ',') (parse, pp_e) =
-    let parse s = try `Ok (Array.of_list (split_and_parse sep parse s)) with
-    | Failure e -> `Error (Err.element "array" s e)
-    in
-    let print ppf v =
-      let max = Array.length v - 1 in
-      for i = 0 to max do pp_e ppf v.(i); if i <> max then pp_char ppf sep done
-    in
-    parse, print
-
-  let split_left sep s =
-    try
-      let i = String.index s sep in
-      let len = String.length s in
-      Some ((String.sub s 0 i), (String.sub s (i + 1) (len - i - 1)))
-    with Not_found -> None
-
-  let pair ?(sep = ',') (pa0, pr0) (pa1, pr1) =
-    let parser s = match split_left sep s with
-    | None -> `Error (Err.sep_miss sep s)
-    | Some (v0, v1) ->
-        match pa0 v0, pa1 v1 with
-        | `Ok v0, `Ok v1 -> `Ok (v0, v1)
-        | `Error e, _ | _, `Error e -> `Error (Err.element "pair" s e)
-    in
-    let printer ppf (v0, v1) = pr ppf "%a%c%a" pr0 v0 sep pr1 v1 in
-    parser, printer
-
-  let t2 = pair
-  let t3 ?(sep = ',') (pa0, pr0) (pa1, pr1) (pa2, pr2) =
-    let parse s = match split_left sep s with
-    | None -> `Error (Err.sep_miss sep s)
-    | Some (v0, s) ->
-        match split_left sep s with
-        | None -> `Error (Err.sep_miss sep s)
-        | Some (v1, v2) ->
-            match pa0 v0, pa1 v1, pa2 v2 with
-            | `Ok v0, `Ok v1, `Ok v2 -> `Ok (v0, v1, v2)
-            | `Error e, _, _ | _, `Error e, _ | _, _, `Error e ->
-                `Error (Err.element "triple" s e)
-    in
-    let print ppf (v0, v1, v2) =
-      pr ppf "%a%c%a%c%a" pr0 v0 sep pr1 v1 sep pr2 v2
-    in
-    parse, print
-
-  let t4 ?(sep = ',') (pa0, pr0) (pa1, pr1) (pa2, pr2) (pa3, pr3) =
-    let parse s = match split_left sep s with
-    | None -> `Error (Err.sep_miss sep s)
-    | Some(v0, s) ->
-        match split_left sep s with
-        | None -> `Error (Err.sep_miss sep s)
-        | Some (v1, s) ->
-            match split_left sep s with
-            | None -> `Error (Err.sep_miss sep s)
-            | Some (v2, v3) ->
-                match pa0 v0, pa1 v1, pa2 v2, pa3 v3 with
-                | `Ok v1, `Ok v2, `Ok v3, `Ok v4 -> `Ok (v1, v2, v3, v4)
-                | `Error e, _, _, _ | _, `Error e, _, _ | _, _, `Error e, _
-                | _, _, _, `Error e -> `Error (Err.element "quadruple" s e)
-    in
-    let print ppf (v0, v1, v2, v3) =
-      pr ppf "%a%c%a%c%a%c%a" pr0 v0 sep pr1 v1 sep pr2 v2 sep pr3 v3
-    in
-    parse, print
+  let bool = Cmdliner_base.bool
+  let char = Cmdliner_base.char
+  let int = Cmdliner_base.int
+  let nativeint = Cmdliner_base.nativeint
+  let int32 = Cmdliner_base.int32
+  let int64 = Cmdliner_base.int64
+  let float = Cmdliner_base.float
+  let string = Cmdliner_base.string
+  let enum = Cmdliner_base.enum
+  let file = Cmdliner_base.file
+  let dir = Cmdliner_base.dir
+  let non_dir_file = Cmdliner_base.non_dir_file
+  let list = Cmdliner_base.list
+  let array = Cmdliner_base.array
+  let pair = Cmdliner_base.pair
+  let t2 = Cmdliner_base.t2
+  let t3 = Cmdliner_base.t3
+  let t4 = Cmdliner_base.t4
 
   (* Documentation formatting helpers *)
 
@@ -1051,9 +872,9 @@ end
 
 module Term = struct
   type info = term_info
-  type +'a t = arg_info list * (eval_info -> cmdline -> 'a)
-  type 'a result = [
-    | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
+  type +'a t = arg_info list * (eval_info -> Cmdline.t -> 'a)
+  type 'a result =
+    [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
 
   exception Term of
       [ `Help of Manpage.format * string option

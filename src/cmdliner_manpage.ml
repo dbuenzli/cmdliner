@@ -127,43 +127,11 @@ let smap_append_block smap ~sec b =
 
 let strf = Printf.sprintf
 let pf = Format.fprintf
-let pp_sp = Format.pp_print_space
 let pp_str = Format.pp_print_string
 let pp_char = Format.pp_print_char
 let pp_indent ppf c = for i = 1 to c do pp_char ppf ' ' done
-
-let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
-  let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
-  let i_max = String.length s - 1 in
-  let flush start stop = pp_str ppf (String.sub s start (stop - start + 1)) in
-  let rec skip_white i =
-    if i > i_max then i else
-    if is_space s.[i] then skip_white (i + 1) else i
-  in
-  let rec loop start i =
-    if i > i_max then flush start i_max else
-    if not (is_space s.[i]) then loop start (i + 1) else
-    let next_start = skip_white i in
-    (flush start (i - 1); if spaces then pp_sp ppf () else pp_char ppf ' ';
-     if next_start > i_max then () else loop next_start next_start)
-  in
-  loop 0 0
-
-let pp_white_str ~spaces ppf s =  (* hint spaces (maybe) and new lines. *)
-  let left = ref 0 and right = ref 0 and len = String.length s in
-  let flush () =
-    Format.pp_print_string ppf (String.sub s !left (!right - !left));
-    incr right; left := !right;
-  in
-  while (!right <> len) do
-    if s.[!right] = '\n' then (flush (); Format.pp_force_newline ppf ()) else
-    if spaces && s.[!right] = ' ' then (flush (); Format.pp_print_space ppf ())
-    else incr right;
-  done;
-  if !left <> len then flush ()
-
-let pp_text = pp_white_str ~spaces:true
-let pp_lines = pp_white_str ~spaces:false
+let pp_lines = Cmdliner_base.pp_lines
+let pp_tokens = Cmdliner_base.pp_tokens
 
 (* Cmdliner markup handling *)
 
