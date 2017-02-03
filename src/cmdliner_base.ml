@@ -91,6 +91,17 @@ type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv = 'a parser * 'a printer
 
+let some ?(none = "") (parse, print) =
+  let parse s = match parse s with
+  | `Ok v -> `Ok (Some v)
+  | `Error _ as e -> e
+  in
+  let print ppf v = match v with
+  | None -> Format.pp_print_string ppf none
+  | Some v -> print ppf v
+  in
+  parse, print
+
 let bool =
   let parse s = try `Ok (bool_of_string s) with
   | Invalid_argument _ ->
