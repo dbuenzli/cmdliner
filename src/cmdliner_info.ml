@@ -4,6 +4,8 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+(* Environments *)
+
 type env =                     (* information about an environment variable. *)
   { env_var : string;                                       (* the variable. *)
     env_doc : string;                                               (* help. *)
@@ -17,6 +19,11 @@ let env
 let env_var e = e.env_var
 let env_doc e = e.env_doc
 let env_docs e = e.env_docs
+
+(* Arguments *)
+
+type arg_absence = Err | Val of string Lazy.t
+type opt_kind = Flag | Opt | Opt_vopt of string
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

@@ -18,6 +18,18 @@ val env_var : env -> string
 val env_doc : env -> string
 val env_docs : env -> string
 
+(** {1:arg Arguments} *)
+
+type arg_absence =
+| Err  (** an error is reported. *)
+| Val of string Lazy.t (** if <> "", takes the given default value. *)
+(** The type for what happens if the argument is absent from the cli. *)
+
+type opt_kind =
+| Flag (** without value, just a flag. *)
+| Opt  (** with required value. *)
+| Opt_vopt of string (** with optional value, takes given default. *)
+(** The type for optional argument kinds. *)
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
