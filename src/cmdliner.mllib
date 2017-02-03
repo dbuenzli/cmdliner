@@ -1,5 +1,6 @@
-Cmdliner_base
 Cmdliner_suggest
 Cmdliner_trie
+Cmdliner_base
 Cmdliner_manpage
+Cmdliner_info
 Cmdliner

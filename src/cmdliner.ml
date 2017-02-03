@@ -35,11 +35,6 @@ module Manpage = Cmdliner_manpage
    terms. This data is used to parse the command line, report errors
    and format man pages. *)
 
-type env_info =                (* information about an environment variable. *)
-  { env_var : string;                                       (* the variable. *)
-    env_doc : string;                                               (* help. *)
-    env_docs : string; }              (* title of help section where listed. *)
-
 type absence =        (* what happens if the argument is absent from the cl. *)
 | Err                                               (* an error is reported. *)
 | Val of string Lazy.t           (* if <> "", takes the given default value. *)
@@ -57,7 +52,7 @@ type pos_kind =                  (* type for ranges of positional arguments. *)
 type arg_info =                (* information about a command line argument. *)
   { id : int;                                 (* unique id for the argument. *)
     absent : absence;                                (* behaviour if absent. *)
-    env_info : env_info option;                     (* environment variable. *)
+    env_info : Cmdliner_info.env option;            (* environment variable. *)
     doc : string;                                                   (* help. *)
     docv : string;                (* variable name for the argument in help. *)
     docs : string;                    (* title of help section where listed. *)
@@ -141,7 +136,7 @@ module Help = struct
   | "env" when a.env_info <> None ->
       begin match a.env_info with
       | None -> assert false
-      | Some v -> Some (strf "$(b,%s)" @@ esc v.env_var)
+      | Some e -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e))
       end
   | id -> subst id
 
@@ -214,9 +209,9 @@ module Help = struct
   let arg_to_man_item ~buf ~subst a =
     let or_env ~value a = match a.env_info with
     | None -> ""
-    | Some v ->
+    | Some e ->
         let value = if value then " or" else "absent " in
-        strf "%s $(b,%s) env" value (esc v.env_var)
+        strf "%s $(b,%s) env" value (esc @@ Cmdliner_info.env_var e)
     in
     let absent = match a.absent with
     | Err -> ""
@@ -271,9 +266,9 @@ module Help = struct
 
   let env_man_docs ~buf ~subst ~has_senv ei =
     let add_env_man_item ~subst acc e =
-      let var = strf "$(b,%s)" @@ esc e.env_var in
-      let doc = Manpage.subst_vars buf ~subst e.env_doc in
-      (e.env_docs, `I (var, doc)) :: acc
+      let var = strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e) in
+      let doc = Manpage.subst_vars buf ~subst (Cmdliner_info.env_doc e) in
+      (Cmdliner_info.env_docs e, `I (var, doc)) :: acc
     in
     let add_arg_env acc a = match a.env_info with
     | None -> acc
@@ -617,14 +612,12 @@ module Arg = struct
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a converter = 'a parser * 'a printer
-  type env = env_info
+  type env = Cmdliner_info.env
 
   type 'a t = 'a term
   type info = arg_info
 
-  let env_var
-      ?(docs = Manpage.s_environment) ?(doc = "See option $(opt).") env_var =
-    { env_var = env_var; env_doc = doc; env_docs = docs }
+  let env_var = Cmdliner_info.env
 
   let ( & ) f x = f x
 
@@ -650,13 +643,14 @@ module Arg = struct
 
   let try_env ei a parse ~absent = match a.env_info with
   | None -> Ok absent
-  | Some env ->
-      match ei.env env.env_var with
+  | Some e ->
+      let var = Cmdliner_info.env_var e in
+      match ei.env var with
       | None -> Ok absent
       | Some v ->
           match parse v with
           | `Ok v -> Ok v
-          | `Error e -> err (Err.env_parse_value env.env_var e)
+          | `Error e -> err (Err.env_parse_value var e)
 
   let flag a =
     if is_pos a then invalid_arg err_not_opt else
