@@ -25,6 +25,19 @@ let env_docs e = e.env_docs
 type arg_absence = Err | Val of string Lazy.t
 type opt_kind = Flag | Opt | Opt_vopt of string
 
+type pos_kind =
+  { pos_rev : bool;         (* if [true] positions are counted from the end. *)
+    pos_start : int;                           (* start positional argument. *)
+    pos_len : int option }    (* number of arguments or [None] if unbounded. *)
+
+let pos ~rev:pos_rev ~start:pos_start ~len:pos_len =
+  { pos_rev; pos_start; pos_len}
+
+let pos_rev p = p.pos_rev
+let pos_start p = p.pos_start
+let pos_len p = p.pos_len
+
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
 

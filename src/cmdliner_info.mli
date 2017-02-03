@@ -31,6 +31,14 @@ type opt_kind =
 | Opt_vopt of string (** with optional value, takes given default. *)
 (** The type for optional argument kinds. *)
 
+type pos_kind
+val pos : rev:bool -> start:int -> len:int option -> pos_kind
+val pos_rev : pos_kind -> bool
+val pos_start : pos_kind -> int
+val pos_len : pos_kind -> int option
+
+
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
 

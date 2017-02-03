@@ -35,11 +35,6 @@ module Manpage = Cmdliner_manpage
    terms. This data is used to parse the command line, report errors
    and format man pages. *)
 
-type pos_kind =                  (* type for ranges of positional arguments. *)
-  { pos_rev : bool;         (* if [true] positions are counted from the end. *)
-    pos_start : int;                           (* start positional argument. *)
-    pos_len : int option }    (* number of arguments or [None] if unbounded. *)
-
 type arg_info =                (* information about a command line argument. *)
   { id : int;                                 (* unique id for the argument. *)
     absent : Cmdliner_info.arg_absence;              (* behaviour if absent. *)
@@ -47,7 +42,7 @@ type arg_info =                (* information about a command line argument. *)
     doc : string;                                                   (* help. *)
     docv : string;                (* variable name for the argument in help. *)
     docs : string;                    (* title of help section where listed. *)
-    p_kind : pos_kind;                               (* positional arg kind. *)
+    p_kind : Cmdliner_info.pos_kind;                 (* positional arg kind. *)
     o_kind : Cmdliner_info.opt_kind;                   (* optional arg kind. *)
     o_names : string list;                          (* names (for opt args). *)
     o_all : bool; }                            (* repeatable (for opt args). *)
@@ -62,11 +57,13 @@ let is_opt a = a.o_names <> []
 let is_pos a = a.o_names = []
 
 let pos_arg_cli_order a0 a1 =              (* best-effort order on the cli. *)
-  let c = compare a0.p_kind.pos_rev a1.p_kind.pos_rev in
+  let pos_rev = Cmdliner_info.pos_rev in
+  let pos_start = Cmdliner_info.pos_start in
+  let c = compare (pos_rev a0.p_kind) (pos_rev a1.p_kind) in
   if c <> 0 then c else
-  if a0.p_kind.pos_rev
-  then compare a1.p_kind.pos_start a0.p_kind.pos_start
-  else compare a0.p_kind.pos_start a1.p_kind.pos_start
+  if (pos_rev a0.p_kind)
+  then compare (pos_start a1.p_kind) (pos_start a0.p_kind)
+  else compare (pos_start a0.p_kind) (pos_start a1.p_kind)
 
 let rev_pos_arg_cli_order a0 a1 = pos_arg_cli_order a1 a0
 
@@ -142,7 +139,7 @@ module Help = struct
     let v =
       if a.absent = Cmdliner_info.Err then strf "%s" v else strf "[%s]" v
     in
-    match a.p_kind.pos_len with
+    match Cmdliner_info.pos_len a.p_kind with
     | None -> v ^ "..."
     | Some 1 -> v
     | Some n ->
@@ -368,7 +365,7 @@ module Err = struct
       strf "required arguments %s are missing" args
 
   let pos_parse_value a e =
-    if a.docv = "" then e else match a.p_kind.pos_len with
+    if a.docv = "" then e else match Cmdliner_info.pos_len a.p_kind with
     | None -> strf "%s argument: %s" a.docv e
     | Some _ -> strf "%s... arguments: %s" a.docv e
 
@@ -564,11 +561,11 @@ end = struct
     let rec loop misses cl max_spec = function
     | [] -> misses, cl, max_spec
     | a :: al ->
-        let rev = a.p_kind.pos_rev in
-        let start = pos rev a.p_kind.pos_start in
-        let stop = match a.p_kind.pos_len with
+        let rev = Cmdliner_info.pos_rev a.p_kind in
+        let start = pos rev (Cmdliner_info.pos_start a.p_kind) in
+        let stop = match (Cmdliner_info.pos_len a.p_kind) with
         | None -> pos rev last
-        | Some n -> pos rev (a.p_kind.pos_start + n - 1)
+        | Some n -> pos rev ((Cmdliner_info.pos_start a.p_kind) + n - 1)
         in
         let start, stop = if rev then stop, start else start, stop in
         let args = take_range start stop pargs in
@@ -616,7 +613,7 @@ module Arg = struct
 
   let ( & ) f x = f x
 
-  let dumb_p_kind = { pos_rev = false; pos_start = -1; pos_len = None }
+  let dumb_p_kind = Cmdliner_info.pos ~rev:false ~start:(-1) ~len:None
 
   let info ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
@@ -774,7 +771,7 @@ module Arg = struct
 
   let pos ?(rev = false) k (parse, print) v a =
     if is_opt a then invalid_arg err_not_pos else
-    let p_kind = { pos_rev = rev; pos_start = k; pos_len = Some 1 } in
+    let p_kind = Cmdliner_info.pos ~rev ~start:k ~len:(Some 1) in
     let absent = Cmdliner_info.Val (lazy (str_of_pp print v)) in
     let a = { a with p_kind; absent } in
     let convert ei cl = match Cmdline.pos_arg cl a with
@@ -796,19 +793,18 @@ module Arg = struct
     in
     [a], convert
 
-  let pos_all =
-    let all = { pos_rev = false; pos_start = 0; pos_len = None } in
-    fun c v a -> pos_list all c v a
+  let all = Cmdliner_info.pos ~rev:false ~start:0 ~len:None
+  let pos_all c v a = pos_list all c v a
 
   let pos_left ?(rev = false) k =
-    let pos_start = if rev then k + 1 else 0 in
-    let pos_len = if rev then None else Some k in
-    pos_list { pos_rev = rev; pos_start; pos_len }
+    let start = if rev then k + 1 else 0 in
+    let len = if rev then None else Some k in
+    pos_list (Cmdliner_info.pos ~rev ~start ~len)
 
   let pos_right ?(rev = false) k =
-    let pos_start = if rev then 0 else k + 1 in
-    let pos_len = if rev then Some k else None in
-    pos_list { pos_rev = rev; pos_start; pos_len }
+    let start = if rev then 0 else k + 1 in
+    let len = if rev then Some k else None in
+    pos_list (Cmdliner_info.pos ~rev ~start ~len)
 
   (* Arguments as terms *)
 
