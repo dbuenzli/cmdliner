@@ -8,15 +8,6 @@
 
 module Manpage = Cmdliner_manpage
 
-type term_escape =
-  [ `Error of bool * string
-  | `Help of Manpage.format * string option ]
-
-type 'a term =
-  Cmdliner_info.arg list *
-  (Cmdliner_info.eval -> Cmdliner_cline.t ->
-   ('a, [ `Parse of string | term_escape ]) result)
-
 module Arg = struct
 
   let err_not_opt = "Option argument without name"
@@ -30,10 +21,8 @@ module Arg = struct
   type 'a converter = 'a parser * 'a printer
   type env = Cmdliner_info.env
 
-  type 'a t = 'a term
+  type 'a t = 'a Cmdliner_term.t
   type info = Cmdliner_info.arg
-
-
 
   let env_var = Cmdliner_info.env
 
@@ -327,27 +316,14 @@ end
 
 module Term = struct
 
-  let err_help s = "Term error, help requested for unknown command " ^ s
-  let err_argv = "argv array must have at least one element"
+  (* Terms *)
+
+  include Cmdliner_term
+
+  let pure (* deprecated *) = const
+  let ( $ ) = app
 
   type 'a ret = [ `Ok of 'a | term_escape ]
-  type +'a t = 'a term
-
-  type 'a result =
-    [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
-
-  let const v = [], (fun _ _ -> Ok v)
-  let pure (* deprecated *) = const
-  let app (al, f) (al', v) =
-    List.rev_append al al',
-    fun ei cl -> match (f ei cl) with
-    | Error _ as e -> e
-    | Ok f ->
-        match v ei cl with
-        | Error _ as e -> e
-        | Ok v -> Ok (f v)
-
-  let ( $ ) = app
 
   let ret (al, v) =
     al, fun ei cl -> match v ei cl with
@@ -371,6 +347,12 @@ module Term = struct
   type info = Cmdliner_info.term
   let info = Cmdliner_info.term ~args:[]
   let name ti = Cmdliner_info.term_name ti
+
+  type 'a result =
+    [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
+
+  let err_help s = "Term error, help requested for unknown command " ^ s
+  let err_argv = "argv array must have at least one element"
 
   (* Evaluation *)
 

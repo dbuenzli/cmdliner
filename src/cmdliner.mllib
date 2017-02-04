@@ -6,4 +6,5 @@ Cmdliner_info
 Cmdliner_docgen
 Cmdliner_msg
 Cmdliner_cline
+Cmdliner_term
 Cmdliner
