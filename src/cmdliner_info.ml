@@ -135,6 +135,28 @@ let term_docs t = t.tdoc
 let term_stdopts_docs t = t.sdocs
 let term_man t = t.man
 
+(* Eval info *)
+
+type eval =                     (* information about the evaluation context. *)
+  { term : term * arg list;                         (* term being evaluated. *)
+    main : term * arg list;                                    (* main term. *)
+    choices : (term * arg list) list;                   (* all term choices. *)
+    env : string -> string option }          (* environment variable lookup. *)
+
+let eval ~term ~main ~choices ~env = { term; main; choices; env }
+let eval_term e = fst e.term
+let eval_term_args e = snd e.term
+let eval_main e = fst e.main
+let eval_main_args e = snd e.main
+let eval_choices e = e.choices
+let eval_env_var e v = e.env v
+
+let eval_kind ei =
+  if ei.choices = [] then `Simple else
+  if (fst ei.term) == (fst ei.main) then `Multiple_main else `Multiple_sub
+
+let eval_with_term ei term = { ei with term }
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
 

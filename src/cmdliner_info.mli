@@ -82,6 +82,25 @@ val term_docs : term -> string
 val term_stdopts_docs : term -> string
 val term_man : term -> Cmdliner_manpage.block list
 
+(** {1:eval Evaluation information} *)
+
+type eval
+
+val eval :
+  term:term * arg list -> main:term * arg list ->
+  choices:(term * arg list) list -> env:(string -> string option) -> eval
+
+val eval_term : eval -> term
+val eval_term_args : eval -> arg list
+val eval_main : eval -> term
+val eval_main_args : eval -> arg list
+val eval_choices : eval -> (term * arg list) list
+val eval_env_var : eval -> string -> string option
+val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
+
+val eval_with_term : eval -> term * arg list -> eval
+
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
 
