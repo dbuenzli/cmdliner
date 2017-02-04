@@ -4,122 +4,9 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-let rev_compare n0 n1 = compare n1 n0
-
-(* Invalid_arg strings *)
-
-let err_argv = "argv array must have at least one element"
-let err_not_opt = "Option argument without name"
-let err_not_pos = "Positional argument with a name"
-let err_help s = "Term error, help requested for unknown command " ^ s
-
-(* Formatting helpers *)
-
-let strf = Printf.sprintf
-let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
-
-let pp = Format.fprintf
-let pp_text = Cmdliner_base.pp_text
-let pp_lines = Cmdliner_base.pp_lines
-
-let quote = Cmdliner_base.quote
-let alts_str = Cmdliner_base.alts_str
-
 (* Manpages *)
 
 module Manpage = Cmdliner_manpage
-
-(* Manpage generation. *)
-
-(* Errors for the command line user *)
-
-module Err = struct
-
-  let unknown kind ?(hints = []) v =
-    let did_you_mean s = strf ", did you mean %s ?" s in
-    let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
-    strf "unknown %s %s%s" kind (quote v) hints
-
-  (* Environment variable *)
-
-  let env_parse_value var e = strf "environment variable %s: %s" (quote var) e
-
-  (* Positional arguments *)
-
-  let pos_excess excess =
-    strf "too many arguments, don't know what to do with %s"
-      (String.concat ", " (List.map quote excess))
-
-  let pos_miss a = match Cmdliner_info.arg_docv a with
-  | "" -> "a required argument is missing"
-  | v -> strf "required argument %s is missing" v
-
-  let pos_misses = function
-  | [] -> assert false
-  | [a] -> pos_miss a
-  | args ->
-      let add_arg acc a = match Cmdliner_info.arg_docv a with
-      | "" -> "ARG" :: acc
-      | argv -> argv :: acc
-      in
-      let rev_args = List.sort Cmdliner_info.rev_arg_pos_cli_order args in
-      let args = List.fold_left add_arg [] rev_args in
-      let args = String.concat ", " args in
-      strf "required arguments %s are missing" args
-
-  let pos_parse_value a e = match Cmdliner_info.arg_docv a with
-  | "" -> e
-  | argv ->
-      match Cmdliner_info.(pos_len @@ arg_pos a) with
-      | Some 1 -> strf "%s argument: %s" argv e
-      | None | Some _ -> strf "%s... arguments: %s" argv e
-
-  (* Optional arguments *)
-
-  let flag_value f v =
-    strf "option %s is a flag, it cannot take the argument %s"
-      (quote f) (quote v)
-
-  let opt_value_missing f = strf "option %s needs an argument" (quote f)
-  let opt_parse_value f e = strf "option %s: %s" (quote f) e
-  let opt_repeated f f' =
-    if f = f' then strf "option %s cannot be repeated" (quote f) else
-    strf "options %s and %s cannot be present at the same time" (quote f)
-      (quote f')
-
-  (* Argument errors *)
-
-  let arg_missing a =
-    if Cmdliner_info.arg_is_pos a then pos_miss a else
-    strf "required option %s is missing" (Cmdliner_info.arg_opt_name_sample a)
-
-  (* Error printers *)
-
-  let exec_name ei = Cmdliner_info.(term_name @@ eval_main ei)
-
-  let print ppf ei e = pp ppf "%s: @[%a@]@." (exec_name ei) pp_text e
-  let pp_backtrace err ei e bt =
-    let bt =
-      let len = String.length bt in
-      if len > 0 then String.sub bt 0 (len - 1) (* remove final '\n' *) else bt
-    in
-    pp err
-      "%s: @[internal error, uncaught exception:@\n%a@]@."
-      (exec_name ei) pp_lines (strf "%s\n%s" (Printexc.to_string e) bt)
-
-  let pp_try_help ppf ei = match Cmdliner_info.eval_kind ei with
-  | `Simple | `Multiple_main ->
-      pp ppf "@[<2>Try `%s --help' for more information.@]" (exec_name ei)
-  | `Multiple_sub ->
-      let exec_cmd = Cmdliner_docgen.plain_invocation ei in
-      pp ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
-        exec_cmd (exec_name ei)
-
-  let pp_usage ppf ei e =
-    pp ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-      (exec_name ei) pp_text e Cmdliner_docgen.pp_plain_synopsis ei
-      pp_try_help ei
-end
 
 (* Command lines. A command line stores pre-parsed information about
    the command line's arguments in a more structured way. Given the
@@ -232,7 +119,7 @@ end = struct
         | `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
         | `Not_found ->
             let hints = hint_matching_opt optidx s in
-            let err = Err.unknown "option" ~hints name in
+            let err = Cmdliner_base.err_unknown ~kind:"option" ~hints name in
             loop (err :: errs) (k + 1) cl pargs args
         | `Ambiguous ->
             let ambs = Cmdliner_trie.ambiguities optidx name in
@@ -261,7 +148,8 @@ end = struct
        of positional arguments values [pargs]. *)
     if pargs = [] then
       let misses = List.filter Cmdliner_info.arg_is_req posidx in
-      if misses = [] then Ok cl else Error (Err.pos_misses misses, cl)
+      if misses = [] then Ok cl else
+      Error (Cmdliner_msg.err_pos_misses misses, cl)
     else
     let last = List.length pargs - 1 in
     let pos rev k = if rev then last - k else k in
@@ -286,10 +174,10 @@ end = struct
         loop misses cl max_spec al
     in
     let misses, cl, max_spec = loop [] cl (-1) posidx in
-    if misses <> [] then Error (Err.pos_misses misses, cl) else
+    if misses <> [] then Error (Cmdliner_msg.err_pos_misses misses, cl) else
     if last <= max_spec then Ok cl else
     let excess = take_range (max_spec + 1) last pargs in
-    Error (Err.pos_excess excess, cl)
+    Error (Cmdliner_msg.err_pos_excess excess, cl)
 
   let create ?(peek_opts = false) al args =
     let optidx, posidx, cl = arg_info_indexes al in
@@ -310,6 +198,12 @@ type 'a term =
 
 module Arg = struct
 
+  let err_not_opt = "Option argument without name"
+  let err_not_pos = "Positional argument with a name"
+
+  let rev_compare n0 n1 = compare n1 n0
+  let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
+
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a converter = 'a parser * 'a printer
@@ -317,6 +211,8 @@ module Arg = struct
 
   type 'a t = 'a term
   type info = Cmdliner_info.arg
+
+
 
   let env_var = Cmdliner_info.env
 
@@ -332,22 +228,22 @@ module Arg = struct
 
   let try_env ei a parse ~absent = match Cmdliner_info.arg_env a with
   | None -> Ok absent
-  | Some e ->
-      let var = Cmdliner_info.env_var e in
-      match Cmdliner_info.eval_env_var ei var with
+  | Some env ->
+      let var = Cmdliner_info.env_var env in
+      match Cmdliner_info.(eval_env_var ei var) with
       | None -> Ok absent
       | Some v ->
           match parse v with
           | `Ok v -> Ok v
-          | `Error e -> err (Err.env_parse_value var e)
+          | `Error e -> err (Cmdliner_msg.err_env_parse env ~err:e)
 
   let flag a =
     if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
     let convert ei cl = match Cmdline.opt_arg cl a with
     | [] -> try_env ei a Cmdliner_base.env_bool_parse ~absent:false
     | [_, _, None] -> Ok true
-    | [_, f, Some v] -> err (Err.flag_value f v)
-    | (_, f, _) :: (_ ,g, _) :: _  -> err (Err.opt_repeated f g)
+    | [_, f, Some v] -> err (Cmdliner_msg.err_flag_value f v)
+    | (_, f, _) :: (_ ,g, _) :: _  -> err (Cmdliner_msg.err_opt_repeated f g)
     in
     [a], convert
 
@@ -361,7 +257,7 @@ module Arg = struct
         try
           let truth (_, f, v) = match v with
           | None -> true
-          | Some v -> failwith (Err.flag_value f v)
+          | Some v -> failwith (Cmdliner_msg.err_flag_value f v)
           in
           Ok (List.rev_map truth l)
         with Failure e -> err e
@@ -377,10 +273,11 @@ module Arg = struct
           | [_, f, None] ->
               begin match fv with
               | None -> aux (Some (f, v)) rest
-              | Some (g, _) -> failwith (Err.opt_repeated g f)
+              | Some (g, _) -> failwith (Cmdliner_msg.err_opt_repeated g f)
               end
-          | [_, f, Some v] -> failwith (Err.flag_value f v)
-          | (_, f, _) :: (_, g, _) :: _ -> failwith (Err.opt_repeated g f)
+          | [_, f, Some v] -> failwith (Cmdliner_msg.err_flag_value f v)
+          | (_, f, _) :: (_, g, _) :: _ ->
+              failwith (Cmdliner_msg.err_opt_repeated g f)
           end
       | [] -> match fv with None -> v | Some (_, v) -> v
       in
@@ -399,7 +296,8 @@ module Arg = struct
           | [] -> aux acc rest
           | l ->
               let fval (k, f, v) = match v with
-              | None -> (k, fv) | Some v -> failwith (Err.flag_value f v)
+              | None -> (k, fv)
+              | Some v -> failwith (Cmdliner_msg.err_flag_value f v)
               in
               aux (List.rev_append (List.rev_map fval l) acc) rest
           end
@@ -416,7 +314,7 @@ module Arg = struct
 
   let parse_opt_value parse f v = match parse v with
   | `Ok v -> v
-  | `Error e -> failwith (Err.opt_parse_value f e)
+  | `Error e -> failwith (Cmdliner_msg.err_opt_parse f e)
 
   let opt ?vopt (parse, print) v a =
     if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
@@ -432,10 +330,10 @@ module Arg = struct
         (try Ok (parse_opt_value parse f v) with Failure e -> err e)
     | [_, f, None] ->
         begin match vopt with
-        | None -> err (Err.opt_value_missing f)
+        | None -> err (Cmdliner_msg.err_opt_value_missing f)
         | Some optv -> Ok optv
         end
-    | (_, f, _) :: (_, g, _) :: _ -> err (Err.opt_repeated g f)
+    | (_, f, _) :: (_, g, _) :: _ -> err (Cmdliner_msg.err_opt_repeated g f)
     in
     [a], convert
 
@@ -453,7 +351,7 @@ module Arg = struct
         let parse (k, f, v) = match v with
         | Some v -> (k, parse_opt_value parse f v)
         | None -> match vopt with
-        | None -> failwith (Err.opt_value_missing f)
+        | None -> failwith (Cmdliner_msg.err_opt_value_missing f)
         | Some dv -> (k, dv)
         in
         try Ok (List.rev_map snd
@@ -466,7 +364,7 @@ module Arg = struct
 
   let parse_pos_value parse a v = match parse v with
   | `Ok v -> v
-  | `Error e -> failwith (Err.pos_parse_value a e)
+  | `Error e -> failwith (Cmdliner_msg.err_pos_parse a e)
 
   let pos ?(rev = false) k (parse, print) v a =
     if Cmdliner_info.arg_is_opt a then invalid_arg err_not_pos else
@@ -514,7 +412,7 @@ module Arg = struct
     let al = absent_error al in
     let convert ei cl = match convert ei cl with
     | Ok (Some v) -> Ok v
-    | Ok None -> err (Err.arg_missing (List.hd al))
+    | Ok None -> err (Cmdliner_msg.err_arg_missing (List.hd al))
     | Error _ as e -> e
     in
     al, convert
@@ -522,7 +420,7 @@ module Arg = struct
   let non_empty (al, convert) =
     let al = absent_error al in
     let convert ei cl = match convert ei cl with
-    | Ok [] -> err (Err.arg_missing (List.hd al))
+    | Ok [] -> err (Cmdliner_msg.err_arg_missing (List.hd al))
     | Ok l -> Ok l
     | Error _ as e -> e
     in
@@ -530,7 +428,7 @@ module Arg = struct
 
   let last (al, convert) =
     let convert ei cl = match convert ei cl with
-    | Ok [] -> err (Err.arg_missing (List.hd al))
+    | Ok [] -> err (Cmdliner_msg.err_arg_missing (List.hd al))
     | Ok l -> Ok (List.hd (List.rev l))
     | Error _ as e -> e
     in
@@ -560,12 +458,14 @@ module Arg = struct
 
   (* Documentation formatting helpers *)
 
-  let doc_quote = quote
-  let doc_alts = alts_str
-  let doc_alts_enum ?quoted enum = alts_str ?quoted (List.map fst enum)
+  let doc_quote = Cmdliner_base.quote
+  let doc_alts = Cmdliner_base.alts_str
+  let doc_alts_enum ?quoted enum = doc_alts ?quoted (List.map fst enum)
 end
 
 module Stdopts = struct
+
+  let strf = Printf.sprintf
 
   let man_fmts =
     ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
@@ -604,11 +504,11 @@ module Stdopts = struct
     h_lookup, v_lookup, Cmdliner_info.eval_with_term ei term
 end
 
-let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
-| None -> assert false
-| Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
-
 module Term = struct
+
+  let err_help s = "Term error, help requested for unknown command " ^ s
+  let err_argv = "argv array must have at least one element"
+
   type 'a ret = [ `Ok of 'a | term_escape ]
   type +'a t = 'a term
 
@@ -671,9 +571,11 @@ module Term = struct
 
   let eval_err help_ppf err_ppf ei = function
   | `Help (fmt, cmd) -> eval_help_cmd help_ppf ei fmt cmd
-  | `Parse e -> Err.pp_usage err_ppf ei e; `Error `Parse
-  | `Error (usage, e) ->
-      if usage then Err.pp_usage err_ppf ei e else Err.print err_ppf ei e;
+  | `Parse err -> Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
+  | `Error (usage, err) ->
+      (if usage
+       then Cmdliner_msg.pp_err_usage err_ppf ei ~err
+       else Cmdliner_msg.pp_err err_ppf ei ~err);
       `Error `Term
 
   let eval_fun ~catch help_ppf err_ppf ei cl f =
@@ -681,9 +583,9 @@ module Term = struct
     | Error err -> eval_err help_ppf err_ppf ei err
     | Ok v -> `Ok v
     with
-    | e when catch ->
+    | exn when catch ->
         let bt = Printexc.get_backtrace () in
-        Err.pp_backtrace err_ppf ei e bt; `Error `Exn
+        Cmdliner_msg.pp_backtrace err_ppf ei exn bt; `Error `Exn
 
   let eval_term ~catch help_ppf err_ppf ei f args =
     let help_arg, vers_arg, ei = Stdopts.add ei in
@@ -705,7 +607,7 @@ module Term = struct
             | Some v_arg ->
                 match v_arg ei cl with
                 | Error err -> eval_err help_ppf err_ppf ei err
-                | Ok true -> pp_version help_ppf ei; `Version
+                | Ok true -> Cmdliner_msg.pp_version help_ppf ei; `Version
                 | Ok false -> eval_fun ~catch help_ppf err_ppf ei cl f
 
   let term_eval_peek_opts ei f args =
@@ -749,11 +651,12 @@ module Term = struct
   let env_default v = try Some (Sys.getenv v) with Not_found -> None
 
   let eval
-      ?(help = Format.std_formatter) ?(err = Format.err_formatter)
+      ?help:(help_ppf = Format.std_formatter)
+      ?err:(err_ppf = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) ((al, f), ti) =
     let term = Cmdliner_info.term_add_args ti al in
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env in
-    eval_term catch help err ei f (remove_exec argv)
+    eval_term catch help_ppf err_ppf ei f (remove_exec argv)
 
   let choose_term main choices = function
   | [] -> Ok (main, [])
@@ -771,13 +674,15 @@ module Term = struct
       | `Not_found ->
           let all = Cmdliner_trie.ambiguities index "" in
           let hints = Cmdliner_suggest.value maybe all in
-          Error (Err.unknown "command" ~hints maybe)
+          Error (Cmdliner_base.err_unknown ~kind:"command" maybe ~hints)
       | `Ambiguous ->
           let ambs = Cmdliner_trie.ambiguities index maybe in
           let ambs = List.sort compare ambs in
-          Error (Cmdliner_base.err_ambiguous "command" maybe ambs)
+          Error (Cmdliner_base.err_ambiguous ~kind:"command" maybe ~ambs)
 
-  let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter)
+  let eval_choice
+      ?help:(help_ppf = Format.std_formatter)
+      ?err:(err_ppf = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
       main choices =
     let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
@@ -786,12 +691,12 @@ module Term = struct
     let choices = List.rev_map fst choices_f in
     let main = fst main_f in
     match choose_term main_f choices_f (remove_exec argv) with
-    | Error e ->
+    | Error err ->
         let ei = Cmdliner_info.eval ~term:main ~main ~choices ~env in
-        Err.pp_usage err ei e; `Error `Parse
+        Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
     | Ok ((chosen, f), args) ->
         let ei = Cmdliner_info.eval ~term:chosen ~main ~choices ~env in
-        eval_term catch help err ei f args
+        eval_term catch help_ppf err_ppf ei f args
 
   let eval_peek_opts
       ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv)

@@ -22,7 +22,8 @@ val pp_tokens : spaces:bool -> Format.formatter -> string -> unit
 
 val quote : string -> string
 val alts_str : ?quoted:bool -> string list -> string
-val err_ambiguous : string -> string -> string list -> string
+val err_ambiguous : kind:string -> string -> ambs:string list -> string
+val err_unknown : ?hints:string list -> kind:string -> string -> string
 
 (** {1:conv Textual OCaml value converters} *)
 

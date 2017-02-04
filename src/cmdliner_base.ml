@@ -7,6 +7,7 @@
 (* Invalid argument strings *)
 
 let err_empty_list = "empty list"
+let err_incomplete_enum = "Incomplete enumeration for the type"
 
 (* String helpers, should be migrated to ascii_ versions once >= 4.03 *)
 
@@ -70,10 +71,14 @@ let alts_str ?(quoted = true) alts =
         (String.concat ", " (List.rev_map quote (List.tl rev_alts)))
         (quote (List.hd rev_alts))
 
-let err_ambiguous kind s ambs =
+let err_ambiguous ~kind s ~ambs =
     strf "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
 
-let err_incomplete_enum = "Incomplete enumeration for the type"
+let err_unknown ?(hints = []) ~kind v =
+  let did_you_mean s = strf ", did you mean %s ?" s in
+  let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
+  strf "unknown %s %s%s" kind (quote v) hints
+
 let err_no kind s = strf "no %s %s" (quote s) kind
 let err_not_dir s = strf "%s is not a directory" (quote s)
 let err_is_dir s = strf "%s is a directory" (quote s)
