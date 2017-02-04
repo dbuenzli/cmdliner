@@ -6,6 +6,7 @@
 
 module Manpage = Cmdliner_manpage
 module Arg = Cmdliner_arg
+
 module Stdopts = struct
 
   let strf = Printf.sprintf
@@ -92,7 +93,7 @@ module Term = struct
   let remove_exec argv =
     try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
-  let eval_help_cmd help ei fmt cmd =
+  let eval_help_cmd help_ppf ei fmt cmd =
     let ei = match cmd with
     | None -> Cmdliner_info.(eval_with_term ei @@ eval_main ei)
     | Some cmd ->
@@ -103,7 +104,7 @@ module Term = struct
         with Not_found -> invalid_arg (err_help cmd)
     in
     let _, _, ei = Stdopts.add ei in
-    Cmdliner_docgen.pp_man fmt help ei; `Help
+    Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
 
   let eval_err help_ppf err_ppf ei = function
   | `Help (fmt, cmd) -> eval_help_cmd help_ppf ei fmt cmd
