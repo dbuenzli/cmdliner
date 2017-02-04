@@ -5,4 +5,5 @@ Cmdliner_manpage
 Cmdliner_info
 Cmdliner_docgen
 Cmdliner_msg
+Cmdliner_cline
 Cmdliner
