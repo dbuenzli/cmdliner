@@ -81,7 +81,8 @@ let synopsis ei = match Cmdliner_info.eval_kind ei with
     | true -> acc
     | false -> (a, synopsis_pos_arg a) :: acc
     in
-    let pargs = List.fold_left add_pos [] (Cmdliner_info.eval_term_args ei) in
+    let args = Cmdliner_info.(term_args @@ eval_term ei) in
+    let pargs = List.fold_left add_pos [] args in
     let pargs = List.sort rev_cli_order pargs in
     let pargs = String.concat " " (List.rev_map snd pargs) in
     strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
@@ -89,9 +90,9 @@ let synopsis ei = match Cmdliner_info.eval_kind ei with
 let cmd_man_docs ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_sub -> []
 | `Multiple_main ->
-    let add_cmd acc (ti, _) =
-      let cmd = strf "$(b,%s)" @@ term_name ti in
-      (Cmdliner_info.term_docs ti, `I (cmd, Cmdliner_info.term_doc ti)) :: acc
+    let add_cmd acc t =
+      let cmd = strf "$(b,%s)" @@ term_name t in
+      (Cmdliner_info.term_docs t, `I (cmd, Cmdliner_info.term_doc t)) :: acc
     in
     let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
       let c = compare s0 s1 in
@@ -176,7 +177,8 @@ let arg_man_docs ~buf ~subst ei =
   let keep_arg a =
     not Cmdliner_info.(arg_is_pos a && (arg_docv a = "" || arg_doc a = ""))
   in
-  let args = List.filter keep_arg (Cmdliner_info.eval_term_args ei) in
+  let args = Cmdliner_info.(term_args @@ eval_term ei) in
+  let args = List.filter keep_arg args in
   let args = List.sort by_sec_by_arg args in
   let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
   sorted_items_to_blocks ~boilerplate:None args
@@ -202,7 +204,8 @@ let env_man_docs ~buf ~subst ~has_senv ei =
     let c = compare s0 s1 in
     if c <> 0 then c else compare v1 v0 (* N.B. reverse *)
   in
-  let envs = List.fold_left add_arg_env [] (Cmdliner_info.eval_term_args ei)in
+  let args = Cmdliner_info.(term_args @@ eval_term ei) in
+  let envs = List.fold_left add_arg_env [] args in
   let envs = List.sort by_sec_by_rev_name envs in
   let envs = (envs :> (string * Cmdliner_manpage.block) list) in
   let boilerplate = if has_senv then None else Some env_boilerplate in

@@ -72,7 +72,7 @@ val rev_arg_pos_cli_order : arg -> arg -> int
 type term
 
 val term :
-  ?sdocs:string -> ?man:Cmdliner_manpage.block list ->
+  ?args:arg list -> ?sdocs:string -> ?man:Cmdliner_manpage.block list ->
   ?docs:string -> ?doc:string -> ?version:string -> string -> term
 
 val term_name : term -> string
@@ -81,24 +81,25 @@ val term_doc : term -> string
 val term_docs : term -> string
 val term_stdopts_docs : term -> string
 val term_man : term -> Cmdliner_manpage.block list
+val term_args : term -> arg list
+
+val term_add_args : term -> arg list -> term
 
 (** {1:eval Evaluation information} *)
 
 type eval
 
 val eval :
-  term:term * arg list -> main:term * arg list ->
-  choices:(term * arg list) list -> env:(string -> string option) -> eval
+  term:term -> main:term -> choices:term list ->
+  env:(string -> string option) -> eval
 
 val eval_term : eval -> term
-val eval_term_args : eval -> arg list
 val eval_main : eval -> term
-val eval_main_args : eval -> arg list
-val eval_choices : eval -> (term * arg list) list
+val eval_choices : eval -> term list
 val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
 
-val eval_with_term : eval -> term * arg list -> eval
+val eval_with_term : eval -> term -> eval
 
 
 (*---------------------------------------------------------------------------

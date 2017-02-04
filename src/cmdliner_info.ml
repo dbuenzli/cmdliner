@@ -114,46 +114,57 @@ let rev_arg_pos_cli_order a0 a1 = arg_pos_cli_order a1 a0
 
 (* Term info *)
 
+type term_info =
+  { term_name : string;                                 (* name of the term. *)
+    term_version : string option;                (* version (for --version). *)
+    term_doc : string;                      (* one line description of term. *)
+    term_docs : string;     (* title of man section where listed (commands). *)
+    term_sdocs : string; (* standard options, title of section where listed. *)
+    term_man : Cmdliner_manpage.block list; }              (* man page text. *)
+
 type term =
-  { name : string;                                    (* name of the term. *)
-    version : string option;                   (* version (for --version). *)
-    tdoc : string;                        (* one line description of term. *)
-    tdocs : string;       (* title of man section where listed (commands). *)
-    sdocs : string;    (* standard options, title of section where listed. *)
-    man : Cmdliner_manpage.block list; }                 (* man page text. *)
+  { term_info : term_info;
+    term_args : arg list; }
 
 let term
-    ?(sdocs = Cmdliner_manpage.s_options) ?(man = []) ?(docs = "COMMANDS")
-    ?(doc = "") ?version name =
-  { name = name; version = version; tdoc = doc; tdocs = docs; sdocs = sdocs;
-    man = man }
+    ?args:(term_args = [])
+    ?sdocs:(term_sdocs = Cmdliner_manpage.s_options) ?man:(term_man = [])
+    ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
+    term_name =
+  { term_info =
+      { term_name; term_version; term_doc; term_docs; term_sdocs; term_man };
+    term_args }
 
-let term_name t = t.name
-let term_version t = t.version
-let term_doc t = t.tdoc
-let term_docs t = t.tdoc
-let term_stdopts_docs t = t.sdocs
-let term_man t = t.man
+let term_name t = t.term_info.term_name
+let term_version t = t.term_info.term_version
+let term_doc t = t.term_info.term_doc
+let term_docs t = t.term_info.term_docs
+let term_stdopts_docs t = t.term_info.term_sdocs
+let term_man t = t.term_info.term_man
+let term_args t = t.term_args
+
+let term_add_args t args =
+  { t with term_args = List.rev_append args t.term_args }
+
 
 (* Eval info *)
 
 type eval =                     (* information about the evaluation context. *)
-  { term : term * arg list;                         (* term being evaluated. *)
-    main : term * arg list;                                    (* main term. *)
-    choices : (term * arg list) list;                   (* all term choices. *)
+  { term : term;                                    (* term being evaluated. *)
+    main : term;                                               (* main term. *)
+    choices : term list;                                (* all term choices. *)
     env : string -> string option }          (* environment variable lookup. *)
 
 let eval ~term ~main ~choices ~env = { term; main; choices; env }
-let eval_term e = fst e.term
-let eval_term_args e = snd e.term
-let eval_main e = fst e.main
-let eval_main_args e = snd e.main
+let eval_term e = e.term
+let eval_main e = e.main
 let eval_choices e = e.choices
 let eval_env_var e v = e.env v
 
 let eval_kind ei =
   if ei.choices = [] then `Simple else
-  if (fst ei.term) == (fst ei.main) then `Multiple_main else `Multiple_sub
+  if (ei.term.term_info.term_name == ei.main.term_info.term_name)
+  then `Multiple_main else `Multiple_sub
 
 let eval_with_term ei term = { ei with term }
 

@@ -600,16 +600,13 @@ module Stdopts = struct
       in
       List.rev_append a args, lookup
     in
-    let term = Cmdliner_info.eval_term ei in
-    let args = List.rev_append args (Cmdliner_info.eval_term_args ei) in
-    h_lookup, v_lookup, Cmdliner_info.eval_with_term ei (term, args)
+    let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
+    h_lookup, v_lookup, Cmdliner_info.eval_with_term ei term
 end
 
 let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
 | None -> assert false
 | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
-
-
 
 module Term = struct
   type 'a ret = [ `Ok of 'a | term_escape ]
@@ -642,7 +639,7 @@ module Term = struct
     [], (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))
 
   let choice_names =
-    let choice_name (t, _) = Cmdliner_info.term_name t in
+    let choice_name t = Cmdliner_info.term_name t in
     [],
     fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei))
 
@@ -651,7 +648,7 @@ module Term = struct
   (* Term information *)
 
   type info = Cmdliner_info.term
-  let info = Cmdliner_info.term
+  let info = Cmdliner_info.term ~args:[]
   let name ti = Cmdliner_info.term_name ti
 
   (* Evaluation *)
@@ -661,16 +658,13 @@ module Term = struct
 
   let eval_help_cmd help ei fmt cmd =
     let ei = match cmd with
-    | None ->
-        let main = Cmdliner_info.(eval_main ei, eval_main_args ei) in
-        Cmdliner_info.(eval_with_term ei main)
+    | None -> Cmdliner_info.(eval_with_term ei @@ eval_main ei)
     | Some cmd ->
-        let is_cmd (i, _) = Cmdliner_info.term_name i = cmd in
-        let cmd =
-          try List.find is_cmd (Cmdliner_info.eval_choices ei)
-          with Not_found -> invalid_arg (err_help cmd)
-        in
-        Cmdliner_info.eval_with_term ei cmd
+        try
+          let is_cmd t = Cmdliner_info.term_name t = cmd in
+          let cmd = List.find is_cmd (Cmdliner_info.eval_choices ei) in
+          Cmdliner_info.eval_with_term ei cmd
+        with Not_found -> invalid_arg (err_help cmd)
     in
     let _, _, ei = Stdopts.add ei in
     Cmdliner_docgen.pp_man fmt help ei; `Help
@@ -693,7 +687,8 @@ module Term = struct
 
   let eval_term ~catch help_ppf err_ppf ei f args =
     let help_arg, vers_arg, ei = Stdopts.add ei in
-    match Cmdline.create (Cmdliner_info.eval_term_args ei) args with
+    let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+    match Cmdline.create term_args args with
     | Error (e, cl) ->
         begin match help_arg ei cl with
         | Error err -> eval_err help_ppf err_ppf ei err
@@ -729,7 +724,7 @@ module Term = struct
       with e -> `Error `Exn
     in
     let help_arg, vers_arg, ei = Stdopts.add ei in
-    let term_args = Cmdliner_info.eval_term_args ei in
+    let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
     match Cmdline.create ~peek_opts:true term_args args with
     | Error (e, cl) ->
         begin match help_arg ei cl with
@@ -756,27 +751,27 @@ module Term = struct
   let eval
       ?(help = Format.std_formatter) ?(err = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) ((al, f), ti) =
-    let term = ti, al in
+    let term = Cmdliner_info.term_add_args ti al in
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env in
     eval_term catch help err ei f (remove_exec argv)
 
-  let choose_term ti choices = function
-  | [] -> Ok (ti, [])
+  let choose_term main choices = function
+  | [] -> Ok (main, [])
   | maybe :: args' as args ->
-      if String.length maybe > 1 && maybe.[0] = '-' then Ok (ti, args) else
+      if String.length maybe > 1 && maybe.[0] = '-' then Ok (main, args) else
       let index =
-        let add acc (choice, _) =
+        let add acc (choice, _ as c) =
           let name = Cmdliner_info.term_name choice in
-          Cmdliner_trie.add acc name choice
+          Cmdliner_trie.add acc name c
         in
         List.fold_left add Cmdliner_trie.empty choices
       in
       match Cmdliner_trie.find index maybe with
       | `Ok choice -> Ok (choice, args')
       | `Not_found ->
-        let all = Cmdliner_trie.ambiguities index "" in
-        let hints = Cmdliner_suggest.value maybe all in
-        Error (Err.unknown "command" ~hints maybe)
+          let all = Cmdliner_trie.ambiguities index "" in
+          let hints = Cmdliner_suggest.value maybe all in
+          Error (Err.unknown "command" ~hints maybe)
       | `Ambiguous ->
           let ambs = Cmdliner_trie.ambiguities index maybe in
           let ambs = List.sort compare ambs in
@@ -784,23 +779,25 @@ module Term = struct
 
   let eval_choice ?(help = Format.std_formatter) ?(err = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
-      (((al, f) as t), ti) choices =
-    let ei_choices = List.rev_map (fun ((al, _), ti) -> ti, al) choices in
-    let main = (ti, al) in
-    let ei = Cmdliner_info.eval ~term:main ~main ~choices:ei_choices ~env in
-    match choose_term ti ei_choices (remove_exec argv) with
-    | Error e -> Err.pp_usage err ei e; `Error `Parse
-    | Ok (chosen, args) ->
-        let find_chosen (_, ti) = ti = chosen in
-        let (al, f), _ = List.find find_chosen ((t, ti) :: choices) in
-        let ei = Cmdliner_info.eval_with_term ei (chosen, al) in
+      main choices =
+    let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
+    let choices_f = List.rev_map to_term_f choices in
+    let main_f = to_term_f main in
+    let choices = List.rev_map fst choices_f in
+    let main = fst main_f in
+    match choose_term main_f choices_f (remove_exec argv) with
+    | Error e ->
+        let ei = Cmdliner_info.eval ~term:main ~main ~choices ~env in
+        Err.pp_usage err ei e; `Error `Parse
+    | Ok ((chosen, f), args) ->
+        let ei = Cmdliner_info.eval ~term:chosen ~main ~choices ~env in
         eval_term catch help err ei f args
 
   let eval_peek_opts
       ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv)
-      ((al, f) : 'a t) =
+      ((args, f) : 'a t) =
     let version = if version_opt then Some "dummy" else None in
-    let term = info ?version "dummy", al in
+    let term = Cmdliner_info.term ~args ?version "dummy" in
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env  in
     (term_eval_peek_opts ei f (remove_exec argv) :> 'a option * 'a result)
 end
