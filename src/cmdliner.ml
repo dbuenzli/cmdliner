@@ -35,19 +35,12 @@ module Manpage = Cmdliner_manpage
    terms. This data is used to parse the command line, report errors
    and format man pages. *)
 
-type term_info =
-  { name : string;                                    (* name of the term. *)
-    version : string option;                   (* version (for --version). *)
-    tdoc : string;                        (* one line description of term. *)
-    tdocs : string;       (* title of man section where listed (commands). *)
-    sdocs : string;    (* standard options, title of section where listed. *)
-    man : Manpage.block list; }                          (* man page text. *)
 
 type arg_infos = Cmdliner_info.arg list
 type eval_info =                (* information about the evaluation context. *)
-  { term : term_info * arg_infos;               (* term being evaluated. *)
-    main : term_info * arg_infos;                          (* main term. *)
-    choices : (term_info * arg_infos) list;         (* all term choices. *)
+  { term : Cmdliner_info.term * arg_infos;          (* term being evaluated. *)
+    main : Cmdliner_info.term * arg_infos;                     (* main term. *)
+    choices : (Cmdliner_info.term * arg_infos) list;    (* all term choices. *)
     env : string -> string option }          (* environment variable lookup. *)
 
 let eval_kind ei =                       (* evaluation with multiple terms ? *)
@@ -59,6 +52,9 @@ let eval_kind ei =                       (* evaluation with multiple terms ? *)
 module Help = struct
 
   let esc = Manpage.markup_text_escape
+
+  let term_name t = esc @@ Cmdliner_info.term_name t
+
 
   let sorted_items_to_blocks ~boilerplate:b items =
     (* Items are sorted by section and then rev. sorted by appearance.
@@ -81,8 +77,8 @@ module Help = struct
   (* Doc string variables substitutions. *)
 
   let term_info_subst ei = function
-  | "tname" -> Some (strf "$(b,%s)" @@ esc (fst ei.term).name)
-  | "mname" -> Some (strf "$(b,%s)" @@ esc (fst ei.main).name)
+  | "tname" -> Some (strf "$(b,%s)" @@ term_name (fst ei.term))
+  | "mname" -> Some (strf "$(b,%s)" @@ term_name (fst ei.main))
   | _ -> None
 
   let arg_info_subst ~subst a = function
@@ -100,8 +96,12 @@ module Help = struct
   (* Command docs *)
 
   let invocation ?(sep = ' ') ei = match eval_kind ei with
-  | `Simple | `M_main -> (fst ei.main).name
-  | `M_choice -> strf "%s%c%s" (fst ei.main).name sep (fst ei.term).name
+  | `Simple | `M_main -> term_name (fst ei.main)
+  | `M_choice ->
+      esc @@
+      strf "%s%c%s"
+        (Cmdliner_info.term_name (fst ei.main)) sep
+        (Cmdliner_info.term_name (fst ei.term))
 
   let synopsis_pos_arg a =
     let v = match Cmdliner_info.arg_docv a with "" -> "ARG" | v -> v in
@@ -115,10 +115,10 @@ module Help = struct
         String.concat " " (loop n [])
 
   let synopsis ei = match eval_kind ei with
-  | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ esc (invocation ei)
+  | `M_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ invocation ei
   | `Simple | `M_choice ->
       let rev_cli_order (a0, _) (a1, _) =
-        Cmdliner_info.rev_pos_arg_cli_order a0 a1
+        Cmdliner_info.rev_arg_pos_cli_order a0 a1
       in
       let add_pos_arg acc a =
         if Cmdliner_info.arg_is_opt a then acc else
@@ -127,14 +127,14 @@ module Help = struct
       let pargs = List.fold_left add_pos_arg [] (snd ei.term) in
       let pargs = List.sort rev_cli_order pargs in
       let pargs = String.concat " " (List.rev_map snd pargs) in
-      strf "$(b,%s) [$(i,OPTION)]... %s" (esc @@ invocation ei) pargs
+      strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
 
   let cmd_man_docs ei = match eval_kind ei with
   | `Simple | `M_choice -> []
   | `M_main ->
       let add_cmd acc (ti, _) =
-        let cmd = strf "$(b,%s)" @@ esc ti.name in
-        (ti.tdocs, `I (cmd, ti.tdoc)) :: acc
+        let cmd = strf "$(b,%s)" @@ term_name ti in
+        (Cmdliner_info.term_docs ti, `I (cmd, Cmdliner_info.term_doc ti)) :: acc
       in
       let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
         let c = compare s0 s1 in
@@ -255,7 +255,7 @@ module Help = struct
   let ensure_s_name ei sm =
     if Manpage.(smap_has_section sm s_name) then sm else
     let tname = invocation ~sep:'-' ei in
-    let tdoc = (fst ei.term).tdoc in
+    let tdoc = Cmdliner_info.term_doc (fst ei.term) in
     let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
     let tagline = `P (strf "%s%s" tname tagline) in
     Manpage.(smap_append_block sm ~sec:s_name tagline)
@@ -276,16 +276,18 @@ module Help = struct
     sm
 
   let text ei =
-    let sm = Manpage.smap_of_blocks (fst ei.term).man in
+    let sm = Manpage.smap_of_blocks (Cmdliner_info.term_man (fst ei.term)) in
     let sm = ensure_s_name ei sm in
     let sm = ensure_s_synopsis ei sm in
     let sm = insert_term_man_docs ei sm in
     Manpage.smap_to_blocks sm
 
   let title ei =
-    let prog = Cmdliner_base.capitalize (fst ei.main).name in
+    let prog =
+      Cmdliner_base.capitalize (Cmdliner_info.term_name (fst ei.main))
+    in
     let name = Cmdliner_base.uppercase (invocation ~sep:'-' ei) in
-    let left_footer = prog ^ match (fst ei.main).version with
+    let left_footer = prog ^ match Cmdliner_info.term_version (fst ei.main) with
     | None -> "" | Some v -> strf " %s" v
     in
     let center_header = strf "%s Manual" prog in
@@ -302,7 +304,7 @@ module Help = struct
     let syn = Manpage.doc_to_plain ~subst buf (synopsis ei) in
     pp ppf "@[%s@]" syn
 
-  let pp_version ppf ei = match (fst ei.main).version with
+  let pp_version ppf ei = match Cmdliner_info.term_version (fst ei.main) with
   | None -> assert false
   | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 end
@@ -338,7 +340,7 @@ module Err = struct
       | "" -> "ARG" :: acc
       | argv -> argv :: acc
       in
-      let rev_args = List.sort Cmdliner_info.rev_pos_arg_cli_order args in
+      let rev_args = List.sort Cmdliner_info.rev_arg_pos_cli_order args in
       let args = List.fold_left add_arg [] rev_args in
       let args = String.concat ", " args in
       strf "required arguments %s are missing" args
@@ -371,7 +373,10 @@ module Err = struct
 
   (* Error printers *)
 
-  let print ppf ei e = pp ppf "%s: @[%a@]@." (fst ei.main).name pp_text e
+  let exec_name ei = Cmdliner_info.term_name (fst ei.main)
+
+  let print ppf ei e =
+    pp ppf "%s: @[%a@]@." (exec_name ei) pp_text e
 
   let pp_backtrace err ei e bt =
     let bt =
@@ -380,11 +385,11 @@ module Err = struct
     in
     pp err
       "%s: @[internal error, uncaught exception:@\n%a@]@."
-      (fst ei.main).name pp_lines (strf "%s\n%s" (Printexc.to_string e) bt)
+      (exec_name ei) pp_lines (strf "%s\n%s" (Printexc.to_string e) bt)
 
   let pp_try_help ppf ei =
     let exec = Help.invocation ei in
-    let main = (fst ei.main).name in
+    let main = Cmdliner_info.term_name (fst ei.main) in
     if exec = main then
       pp ppf "@[<2>Try `%s --help' for more information.@]" exec
     else
@@ -393,7 +398,7 @@ module Err = struct
 
   let pp_usage ppf ei e =
     pp ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-      (fst ei.main).name pp_text e Help.pp_synopsis ei pp_try_help ei
+      (exec_name ei) pp_text e Help.pp_synopsis ei pp_try_help ei
 end
 
 (* Command lines. A command line stores pre-parsed information about
@@ -858,9 +863,9 @@ module Stdopts = struct
     Arg.(value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc)
 
   let add ei =
-    let docs = (fst ei.term).sdocs in
+    let docs = Cmdliner_info.term_stdopts_docs (fst ei.term) in
     let args, v_lookup =
-      if (fst ei.main).version = None then [], None else
+      if Cmdliner_info.term_version (fst ei.main) = None then [], None else
       let (a, lookup) =
         Arg.flag (Arg.info ["version"] ~docs ~doc:"Show version information.")
       in
@@ -880,7 +885,6 @@ end
 
 
 module Term = struct
-  type info = term_info
   type 'a ret = [ `Ok of 'a | term_escape ]
   type +'a t = 'a term
 
@@ -907,21 +911,18 @@ module Term = struct
     | Ok (`Help _ as help) -> Error help
     | Error _ as e -> e
 
-  let main_name = [], (fun ei _ -> Ok ((fst ei.main).name))
+  let main_name = [], (fun ei _ -> Ok (Cmdliner_info.term_name (fst ei.main)))
   let choice_names =
-    [], fun ei _ -> Ok (List.rev_map (fun e -> (fst e).name) ei.choices)
+    [], fun ei _ ->
+      Ok (List.rev_map (fun e -> Cmdliner_info.term_name (fst e)) ei.choices)
 
   let man_format = Stdopts.man_format
 
   (* Term information *)
 
-  let info
-      ?(sdocs = Manpage.s_options) ?(man = []) ?(docs = "COMMANDS") ?(doc = "")
-      ?version name =
-    { name = name; version = version; tdoc = doc; tdocs = docs; sdocs = sdocs;
-      man = man }
-
-  let name ti = ti.name
+  type info = Cmdliner_info.term
+  let info = Cmdliner_info.term
+  let name ti = Cmdliner_info.term_name ti
 
   (* Evaluation *)
 
@@ -931,8 +932,9 @@ module Term = struct
   let eval_help_cmd help ei fmt cmd =
     let ei = match cmd with
     | Some cmd ->
+        let is_cmd (i, _) = Cmdliner_info.term_name i = cmd in
         let cmd =
-          try List.find (fun (i, _) -> i.name = cmd) ei.choices
+          try List.find is_cmd ei.choices
           with Not_found -> invalid_arg (err_help cmd)
         in
         {ei with term = cmd }
@@ -1030,7 +1032,10 @@ module Term = struct
   | maybe :: args' as args ->
       if String.length maybe > 1 && maybe.[0] = '-' then Ok (ti, args) else
       let index =
-        let add acc (choice, _) = Cmdliner_trie.add acc choice.name choice in
+        let add acc (choice, _) =
+          let name = Cmdliner_info.term_name choice in
+          Cmdliner_trie.add acc name choice
+        in
         List.fold_left add Cmdliner_trie.empty choices
       in
       match Cmdliner_trie.find index maybe with

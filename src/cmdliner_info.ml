@@ -55,7 +55,7 @@ let new_arg_id =    (* thread-safe UIDs, Oo.id (object end) was used before. *)
     let id = !c in
     incr c; if id > !c then assert false (* too many ids *) else id
 
-let dumb_p_kind = pos ~rev:false ~start:(-1) ~len:None
+let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
 let arg ?docs ?(docv = "") ?(doc = "") ?env names =
   let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
@@ -68,7 +68,7 @@ let arg ?docs ?(docv = "") ?(doc = "") ?env names =
       | _ -> Cmdliner_manpage.s_options
   in
   { id = new_arg_id (); absent = Val (lazy ""); env; doc; docv; docs;
-    pos = dumb_p_kind; opt_kind = Flag; opt_names; opt_all = false; }
+    pos = dumb_pos; opt_kind = Flag; opt_names; opt_all = false; }
 
 let arg_id a = a.id
 let arg_absent a = a.absent
@@ -76,17 +76,10 @@ let arg_env a = a.env
 let arg_doc a = a.doc
 let arg_docv a = a.docv
 let arg_docs a = a.docs
-
-let arg_make_req a = { a with absent = Err }
-let arg_make_all_opts a = { a with opt_all = true }
-let arg_make_opt ~absent ~kind:opt_kind a = { a with absent; opt_kind }
-let arg_make_opt_all ~absent ~kind:opt_kind a =
-  { a with absent; opt_kind; opt_all = true  }
-
+let arg_pos a = a.pos
 let arg_opt_kind a = a.opt_kind
 let arg_opt_names a = a.opt_names
 let arg_opt_all a = a.opt_all
-
 let arg_opt_name_sample a =
   (* First long or short name (in that order) in the list; this
      allows the client to control which name is shown *)
@@ -96,7 +89,13 @@ let arg_opt_name_sample a =
   in
   find a.opt_names
 
-let arg_pos a = a.pos
+
+let arg_make_req a = { a with absent = Err }
+let arg_make_all_opts a = { a with opt_all = true }
+let arg_make_opt ~absent ~kind:opt_kind a = { a with absent; opt_kind }
+let arg_make_opt_all ~absent ~kind:opt_kind a =
+  { a with absent; opt_kind; opt_all = true  }
+
 let arg_make_pos ~pos a = { a with pos }
 let arg_make_pos_abs ~absent ~pos a = { a with absent; pos }
 
@@ -104,14 +103,37 @@ let arg_is_opt a = a.opt_names <> []
 let arg_is_pos a = a.opt_names = []
 let arg_is_req a = a.absent = Err
 
-let pos_arg_cli_order a0 a1 =              (* best-effort order on the cli. *)
+let arg_pos_cli_order a0 a1 =              (* best-effort order on the cli. *)
   let c = compare (a0.pos.pos_rev) (a1.pos.pos_rev) in
   if c <> 0 then c else
   if a0.pos.pos_rev
   then compare a1.pos.pos_start a0.pos.pos_start
   else compare a0.pos.pos_start a1.pos.pos_start
 
-let rev_pos_arg_cli_order a0 a1 = pos_arg_cli_order a1 a0
+let rev_arg_pos_cli_order a0 a1 = arg_pos_cli_order a1 a0
+
+(* Term info *)
+
+type term =
+  { name : string;                                    (* name of the term. *)
+    version : string option;                   (* version (for --version). *)
+    tdoc : string;                        (* one line description of term. *)
+    tdocs : string;       (* title of man section where listed (commands). *)
+    sdocs : string;    (* standard options, title of section where listed. *)
+    man : Cmdliner_manpage.block list; }                 (* man page text. *)
+
+let term
+    ?(sdocs = Cmdliner_manpage.s_options) ?(man = []) ?(docs = "COMMANDS")
+    ?(doc = "") ?version name =
+  { name = name; version = version; tdoc = doc; tdocs = docs; sdocs = sdocs;
+    man = man }
+
+let term_name t = t.name
+let term_version t = t.version
+let term_doc t = t.tdoc
+let term_docs t = t.tdoc
+let term_stdopts_docs t = t.sdocs
+let term_man t = t.man
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

@@ -48,26 +48,39 @@ val arg_env : arg -> env option
 val arg_doc : arg -> string
 val arg_docv : arg -> string
 val arg_docs : arg -> string
+val arg_opt_names : arg -> string list (* has dashes *)
+val arg_opt_name_sample : arg -> string (* warning must be an opt arg *)
+val arg_opt_kind : arg -> opt_kind
+val arg_pos : arg -> pos_kind
 
 val arg_make_req : arg -> arg
-
 val arg_make_all_opts : arg -> arg
 val arg_make_opt : absent:arg_absence -> kind:opt_kind -> arg -> arg
 val arg_make_opt_all : absent:arg_absence -> kind:opt_kind -> arg -> arg
-val arg_opt_names : arg -> string list (* has dashes *)
-val arg_opt_name_sample : arg -> string (* Warning must be an opt arg *)
-val arg_opt_kind : arg -> opt_kind
-
 val arg_make_pos : pos:pos_kind -> arg -> arg
 val arg_make_pos_abs : absent:arg_absence -> pos:pos_kind -> arg -> arg
-val arg_pos : arg -> pos_kind
 
 val arg_is_opt : arg -> bool
 val arg_is_pos : arg -> bool
 val arg_is_req : arg -> bool
 
-val pos_arg_cli_order : arg -> arg -> int
-val rev_pos_arg_cli_order : arg -> arg -> int
+val arg_pos_cli_order : arg -> arg -> int
+val rev_arg_pos_cli_order : arg -> arg -> int
+
+(** {1:term Term information} *)
+
+type term
+
+val term :
+  ?sdocs:string -> ?man:Cmdliner_manpage.block list ->
+  ?docs:string -> ?doc:string -> ?version:string -> string -> term
+
+val term_name : term -> string
+val term_version : term -> string option
+val term_doc : term -> string
+val term_docs : term -> string
+val term_stdopts_docs : term -> string
+val term_man : term -> Cmdliner_manpage.block list
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
