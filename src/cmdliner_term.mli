@@ -10,17 +10,18 @@ type term_escape =
   [ `Error of bool * string
   | `Help of Cmdliner_manpage.format * string option ]
 
-type 'a t =
-  Cmdliner_info.arg list *
-  (Cmdliner_info.eval -> Cmdliner_cline.t ->
-   ('a, [ `Parse of string | term_escape ]) result)
+type 'a parser =
+  Cmdliner_info.eval -> Cmdliner_cline.t ->
+  ('a, [ `Parse of string | term_escape ]) result
+(** Type type for command line parser. given static information about
+    the command line and a command line to parse returns an OCaml value. *)
+
+type 'a t = Cmdliner_info.arg list * 'a parser
+(** The type for terms. The list of arguments it can parse and the parsing
+    function that does so. *)
 
 val const : 'a -> 'a t
 val app : ('a -> 'b) t -> 'a t -> 'b t
-
-
-
-
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

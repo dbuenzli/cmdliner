@@ -4,7 +4,6 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-
 module Cmap = Map.Make (Char)                           (* character maps. *)
 
 type 'a value =                         (* type for holding a bound value. *)

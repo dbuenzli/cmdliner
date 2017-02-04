@@ -12,7 +12,6 @@
    the term's closures to retrieve and convert command line arguments
    (see the Cmdliner_arg module). *)
 
-
 module Arg_info = struct
   type t = Cmdliner_info.arg
   let compare a0 a1 =
@@ -64,8 +63,8 @@ let parse_opt_arg s = (* (name, value) of opt arg, assert len > 1. *)
   with Not_found -> s, None
 
 let hint_matching_opt optidx s =
-  (* hint options that could match [s] in [optidx]. FIXME this is
-       a bit obscure. *)
+  (* hint options that could match [s] in [optidx]. FIXME explain this is
+     a bit obscure. *)
   if String.length s <= 2 then [] else
   let short_opt, long_opt =
     if s.[1] <> '-'
@@ -157,7 +156,7 @@ let process_pos_args posidx cl pargs =
       let max_spec = max stop max_spec in
       let cl = Amap.add a (P args) cl in
       let misses = match Cmdliner_info.arg_is_req a && args = [] with
-      | true -> (a:: misses)
+      | true -> a :: misses
       | false -> misses
       in
       loop misses cl max_spec al

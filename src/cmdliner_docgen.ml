@@ -5,7 +5,6 @@
   ---------------------------------------------------------------------------*)
 
 let rev_compare n0 n1 = compare n1 n0
-
 let strf = Printf.sprintf
 
 let esc = Cmdliner_manpage.markup_text_escape
@@ -261,6 +260,8 @@ let man ei = title ei, text ei
 
 let pp_man fmt ppf ei =
   Cmdliner_manpage.print ~subst:(term_info_subst ei) fmt ppf (man ei)
+
+(* Plain synopsis for usage *)
 
 let pp_plain_synopsis ppf ei =
   let buf = Buffer.create 100 in

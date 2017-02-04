@@ -89,7 +89,6 @@ let arg_opt_name_sample a =
   in
   find a.opt_names
 
-
 let arg_make_req a = { a with absent = Err }
 let arg_make_all_opts a = { a with opt_all = true }
 let arg_make_opt ~absent ~kind:opt_kind a = { a with absent; opt_kind }
@@ -145,7 +144,6 @@ let term_args t = t.term_args
 
 let term_add_args t args =
   { t with term_args = List.rev_append args t.term_args }
-
 
 (* Eval info *)
 

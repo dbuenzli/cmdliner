@@ -8,10 +8,11 @@ type term_escape =
   [ `Error of bool * string
   | `Help of Cmdliner_manpage.format * string option ]
 
-type 'a t =
-  Cmdliner_info.arg list *
-  (Cmdliner_info.eval -> Cmdliner_cline.t ->
-   ('a, [ `Parse of string | term_escape ]) result)
+type 'a parser =
+  Cmdliner_info.eval -> Cmdliner_cline.t ->
+  ('a, [ `Parse of string | term_escape ]) result
+
+type 'a t = Cmdliner_info.arg list * 'a parser
 
 let const v = [], (fun _ _ -> Ok v)
 let app (al, f) (al', v) =

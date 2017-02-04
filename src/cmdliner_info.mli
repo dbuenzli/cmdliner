@@ -101,7 +101,6 @@ val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
 
 val eval_with_term : eval -> term -> eval
 
-
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
 
