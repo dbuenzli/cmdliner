@@ -31,267 +31,6 @@ module Manpage = Cmdliner_manpage
 
 (* Manpage generation. *)
 
-module Help = struct
-
-  let esc = Manpage.markup_text_escape
-
-  let term_name t = esc @@ Cmdliner_info.term_name t
-
-
-  let sorted_items_to_blocks ~boilerplate:b items =
-    (* Items are sorted by section and then rev. sorted by appearance.
-       We gather them by section in correct order in a `Block and prefix
-       them with optional boilerplate *)
-    let boilerplate = match b with None -> (fun _ -> None) | Some b -> b in
-    let mk_block sec acc = match boilerplate sec with
-    | None -> (sec, `Blocks acc)
-    | Some b -> (sec, `Blocks (b :: acc))
-    in
-    let rec loop secs sec acc = function
-    | (sec', it) :: its when sec' = sec -> loop secs sec (it :: acc) its
-    | (sec', it) :: its -> loop (mk_block sec acc :: secs) sec' [it] its
-    | [] -> (mk_block sec acc) :: secs
-    in
-    match items with
-    | [] -> []
-    | (sec, it) :: its -> loop [] sec [it] its
-
-  (* Doc string variables substitutions. *)
-
-  let term_info_subst ei = function
-  | "tname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_term ei))
-  | "mname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_main ei))
-  | _ -> None
-
-  let arg_info_subst ~subst a = function
-  | "docv" ->
-      Some (strf "$(i,%s)" @@ esc (Cmdliner_info.arg_docv a))
-  | "opt" when Cmdliner_info.arg_is_opt a ->
-      Some (strf "$(b,%s)" @@ esc (Cmdliner_info.arg_opt_name_sample a))
-  | "env" as id ->
-      begin match Cmdliner_info.arg_env a with
-      | Some e -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e))
-      | None -> subst id
-      end
-  | id -> subst id
-
-  (* Command docs *)
-
-  let invocation ?(sep = ' ') ei = match Cmdliner_info.eval_kind ei with
-  | `Simple | `Multiple_main -> term_name (Cmdliner_info.eval_main ei)
-  | `Multiple_sub ->
-      esc @@
-      strf "%s%c%s"
-        Cmdliner_info.(term_name @@ eval_main ei) sep
-        Cmdliner_info.(term_name @@ eval_term ei)
-
-  let synopsis_pos_arg a =
-    let v = match Cmdliner_info.arg_docv a with "" -> "ARG" | v -> v in
-    let v = strf "$(i,%s)" (esc v) in
-    let v = (if Cmdliner_info.arg_is_req a then strf "%s" else strf "[%s]") v in
-    match Cmdliner_info.(pos_len @@ arg_pos a) with
-    | None -> v ^ "..."
-    | Some 1 -> v
-    | Some n ->
-        let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
-        String.concat " " (loop n [])
-
-  let synopsis ei = match Cmdliner_info.eval_kind ei with
-  | `Multiple_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ invocation ei
-  | `Simple | `Multiple_sub ->
-      let rev_cli_order (a0, _) (a1, _) =
-        Cmdliner_info.rev_arg_pos_cli_order a0 a1
-      in
-      let add_pos_arg acc a =
-        if Cmdliner_info.arg_is_opt a then acc else
-        (a, synopsis_pos_arg a) :: acc
-      in
-      let pargs =
-        List.fold_left add_pos_arg [] (Cmdliner_info.eval_term_args ei)
-      in
-      let pargs = List.sort rev_cli_order pargs in
-      let pargs = String.concat " " (List.rev_map snd pargs) in
-      strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
-
-  let cmd_man_docs ei = match Cmdliner_info.eval_kind ei with
-  | `Simple | `Multiple_sub -> []
-  | `Multiple_main ->
-      let add_cmd acc (ti, _) =
-        let cmd = strf "$(b,%s)" @@ term_name ti in
-        (Cmdliner_info.term_docs ti, `I (cmd, Cmdliner_info.term_doc ti)) :: acc
-      in
-      let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
-        let c = compare s0 s1 in
-        if c <> 0 then c else compare c1 c0 (* N.B. reverse *)
-      in
-      let cmds = List.fold_left add_cmd [] (Cmdliner_info.eval_choices ei) in
-      let cmds = List.sort by_sec_by_rev_name cmds in
-      let cmds = (cmds :> (string * Manpage.block) list) in
-      sorted_items_to_blocks ~boilerplate:None cmds
-
-  (* Argument docs *)
-
-  let arg_man_item_label a =
-    if Cmdliner_info.arg_is_pos a
-    then strf "$(i,%s)" (esc @@ Cmdliner_info.arg_docv a) else
-    let fmt_name var = match Cmdliner_info.arg_opt_kind a with
-    | Cmdliner_info.Flag -> fun n -> strf "$(b,%s)" (esc n)
-    | Cmdliner_info.Opt ->
-        fun n ->
-          if String.length n > 2
-          then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
-          else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
-    | Cmdliner_info.Opt_vopt _ ->
-        fun n ->
-          if String.length n > 2
-          then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
-          else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
-    in
-    let var = match Cmdliner_info.arg_docv a with "" -> "VAL" | v -> v in
-    let names = List.sort compare (Cmdliner_info.arg_opt_names a) in
-    let s = String.concat ", " (List.rev_map (fmt_name var) names) in
-    s
-
-  let arg_to_man_item ~buf ~subst a =
-    let or_env ~value a = match Cmdliner_info.arg_env a with
-    | None -> ""
-    | Some e ->
-        let value = if value then " or" else "absent " in
-        strf "%s $(b,%s) env" value (esc @@ Cmdliner_info.env_var e)
-    in
-    let absent = match Cmdliner_info.arg_absent a with
-    | Cmdliner_info.Err -> ""
-    | Cmdliner_info.Val v ->
-        match Lazy.force v with
-        | "" -> strf "%s" (or_env ~value:false a)
-        | v -> strf "absent=%s%s" v (or_env ~value:true a)
-    in
-    let optvopt = match Cmdliner_info.arg_opt_kind a with
-    | Cmdliner_info.Opt_vopt v -> strf "default=%s" v
-    | _ -> ""
-    in
-    let argvdoc = match optvopt, absent with
-    | "", "" -> ""
-    | s, "" | "", s -> strf " (%s)" s
-    | s, s' -> strf " (%s) (%s)" s s'
-    in
-    let subst = arg_info_subst ~subst a in
-    let doc = Manpage.subst_vars buf ~subst (Cmdliner_info.arg_doc a) in
-    (Cmdliner_info.arg_docs a, `I (arg_man_item_label a ^ argvdoc, doc))
-
-  let arg_man_docs ~buf ~subst ei =
-    let by_sec_by_arg a0 a1 =
-      let c = compare (Cmdliner_info.arg_docs a0) (Cmdliner_info.arg_docs a1) in
-      if c <> 0 then c else
-      match Cmdliner_info.arg_is_opt a0, Cmdliner_info.arg_is_opt a1 with
-      | true, true -> (* optional by name *)
-          let key names =
-            let k = List.hd (List.sort rev_compare names) in
-            let k = Cmdliner_base.lowercase k in
-            if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
-          in
-          compare
-            (key @@ Cmdliner_info.arg_opt_names a0)
-            (key @@ Cmdliner_info.arg_opt_names a1)
-      | false, false -> (* positional by variable *)
-          compare
-            (Cmdliner_base.lowercase @@ Cmdliner_info.arg_docv a0)
-            (Cmdliner_base.lowercase @@ Cmdliner_info.arg_docv a1)
-      | true, false -> -1 (* positional first *)
-      | false, true -> 1  (* optional after *)
-    in
-    let keep_arg a =
-      not Cmdliner_info.(arg_is_pos a && (arg_docv a = "" || arg_doc a = ""))
-    in
-    let args = List.filter keep_arg (Cmdliner_info.eval_term_args ei) in
-    let args = List.sort by_sec_by_arg args in
-    let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
-    sorted_items_to_blocks ~boilerplate:None args
-
-  (* Environment doc *)
-
-  let env_boilerplate sec = match sec = Manpage.s_environment with
-  | false -> None
-  | true -> Some (Manpage.s_environment_intro)
-
-  let env_man_docs ~buf ~subst ~has_senv ei =
-    let add_env_man_item ~subst acc e =
-      let var = strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e) in
-      let doc = Manpage.subst_vars buf ~subst (Cmdliner_info.env_doc e) in
-      (Cmdliner_info.env_docs e, `I (var, doc)) :: acc
-    in
-    let add_arg_env acc a = match Cmdliner_info.arg_env a with
-    | None -> acc
-    | Some e -> add_env_man_item ~subst:(arg_info_subst ~subst a) acc e
-    in
-    let by_sec_by_rev_name (s0, `I (v0, _)) (s1, `I (v1, _)) =
-      let c = compare s0 s1 in
-      if c <> 0 then c else compare v1 v0 (* N.B. reverse *)
-    in
-    let envs = List.fold_left add_arg_env [] (Cmdliner_info.eval_term_args ei)in
-    let envs = List.sort by_sec_by_rev_name envs in
-    let envs = (envs :> (string * Manpage.block) list) in
-    let boilerplate = if has_senv then None else Some env_boilerplate in
-    sorted_items_to_blocks ~boilerplate envs
-
-  (* Man page construction *)
-
-  let ensure_s_name ei sm =
-    if Manpage.(smap_has_section sm s_name) then sm else
-    let tname = invocation ~sep:'-' ei in
-    let tdoc = Cmdliner_info.(term_doc @@ eval_term ei) in
-    let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
-    let tagline = `P (strf "%s%s" tname tagline) in
-    Manpage.(smap_append_block sm ~sec:s_name tagline)
-
-  let ensure_s_synopsis ei sm =
-    if Manpage.(smap_has_section sm ~sec:s_synopsis) then sm else
-    let synopsis = `P (synopsis ei) in
-    Manpage.(smap_append_block sm ~sec:s_synopsis synopsis)
-
-  let insert_term_man_docs ei sm =
-    let buf = Buffer.create 200 in
-    let subst = term_info_subst ei in
-    let ins sm (s, b) = Manpage.smap_append_block sm s b in
-    let has_senv = Manpage.(smap_has_section sm s_environment) in
-    let sm = List.fold_left ins sm (cmd_man_docs ei) in
-    let sm = List.fold_left ins sm (arg_man_docs ~buf ~subst ei) in
-    let sm = List.fold_left ins sm (env_man_docs ~buf ~subst ~has_senv ei) in
-    sm
-
-  let text ei =
-    let sm = Manpage.smap_of_blocks (Cmdliner_info.(term_man @@ eval_term ei)) in
-    let sm = ensure_s_name ei sm in
-    let sm = ensure_s_synopsis ei sm in
-    let sm = insert_term_man_docs ei sm in
-    Manpage.smap_to_blocks sm
-
-  let title ei =
-    let main = Cmdliner_info.eval_main ei in
-    let prog = Cmdliner_base.capitalize (Cmdliner_info.term_name main) in
-    let name = Cmdliner_base.uppercase (invocation ~sep:'-' ei) in
-    let left_footer = prog ^ match Cmdliner_info.term_version main with
-      | None -> "" | Some v -> strf " %s" (esc v)
-    in
-    let center_header = strf "%s Manual" (esc prog) in
-    name, 1, "", left_footer, center_header
-
-  let man ei = title ei, text ei
-
-  let print fmt ppf ei =
-    Manpage.print ~subst:(term_info_subst ei) fmt ppf (man ei)
-
-  let pp_synopsis ppf ei =
-    let buf = Buffer.create 100 in
-    let subst = term_info_subst ei in
-    let syn = Manpage.doc_to_plain ~subst buf (synopsis ei) in
-    pp ppf "@[%s@]" syn
-
-  let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei)with
-  | None -> assert false
-  | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
-end
-
 (* Errors for the command line user *)
 
 module Err = struct
@@ -372,13 +111,14 @@ module Err = struct
   | `Simple | `Multiple_main ->
       pp ppf "@[<2>Try `%s --help' for more information.@]" (exec_name ei)
   | `Multiple_sub ->
-      let exec_cmd = Help.invocation ei in
+      let exec_cmd = Cmdliner_docgen.plain_invocation ei in
       pp ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
         exec_cmd (exec_name ei)
 
   let pp_usage ppf ei e =
     pp ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-      (exec_name ei) pp_text e Help.pp_synopsis ei pp_try_help ei
+      (exec_name ei) pp_text e Cmdliner_docgen.pp_plain_synopsis ei
+      pp_try_help ei
 end
 
 (* Command lines. A command line stores pre-parsed information about
@@ -865,6 +605,11 @@ module Stdopts = struct
     h_lookup, v_lookup, Cmdliner_info.eval_with_term ei (term, args)
 end
 
+let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
+| None -> assert false
+| Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
+
+
 
 module Term = struct
   type 'a ret = [ `Ok of 'a | term_escape ]
@@ -928,7 +673,7 @@ module Term = struct
         Cmdliner_info.eval_with_term ei cmd
     in
     let _, _, ei = Stdopts.add ei in
-    Help.print fmt help ei; `Help
+    Cmdliner_docgen.pp_man fmt help ei; `Help
 
   let eval_err help_ppf err_ppf ei = function
   | `Help (fmt, cmd) -> eval_help_cmd help_ppf ei fmt cmd
@@ -952,20 +697,20 @@ module Term = struct
     | Error (e, cl) ->
         begin match help_arg ei cl with
         | Error err -> eval_err help_ppf err_ppf ei err
-        | Ok (Some fmt) -> Help.print fmt help_ppf ei; `Help
+        | Ok (Some fmt) -> Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
         | Ok None -> eval_err help_ppf err_ppf ei (`Error (true, e))
         end
     | Ok cl ->
         match help_arg ei cl with
         | Error err -> eval_err help_ppf err_ppf ei err
-        | Ok (Some fmt) -> Help.print fmt help_ppf ei; `Help
+        | Ok (Some fmt) -> Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
         | Ok None ->
             match vers_arg with
             | None -> eval_fun ~catch help_ppf err_ppf ei cl f
             | Some v_arg ->
                 match v_arg ei cl with
                 | Error err -> eval_err help_ppf err_ppf ei err
-                | Ok true -> Help.pp_version help_ppf ei; `Version
+                | Ok true -> pp_version help_ppf ei; `Version
                 | Ok false -> eval_fun ~catch help_ppf err_ppf ei cl f
 
   let term_eval_peek_opts ei f args =
