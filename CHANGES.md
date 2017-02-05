@@ -7,6 +7,10 @@
 - Allow terms to be used more than once in terms without tripping out
   documentation generation (#77). Thanks to François Bobot and Gabriel
   Radanne.
+- Disallow defining the same option or command name twice via two
+  different arguments or terms. Raises Invalid_argument, used
+  to be undefined behaviour (in practice, an arbitrary one would be
+  ignored).
 - Optional arguments. All unknown and ambiguous optional argument
   arguments are now reported to the end-user (instead of only
   the first one).

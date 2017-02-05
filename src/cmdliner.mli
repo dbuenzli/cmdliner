@@ -888,7 +888,9 @@ or if you know a work around this.
 {ul
 {- The option name [--help], (and [--version] if you specify a version
    string) is reserved by the module. Using it as a term or option
-   name may result in undefined behaviour.}}
+   name may result in undefined behaviour.}
+{- Defining the same option or command name via two different
+   arguments or terms is illegal and raises [Invalid_argument].}}
 
 {1:cmdline Command line syntax}
 

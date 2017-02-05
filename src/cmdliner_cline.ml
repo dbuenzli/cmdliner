@@ -12,6 +12,10 @@
    the term's closures to retrieve and convert command line arguments
    (see the Cmdliner_arg module). *)
 
+let err_multi_opt_name_def name a a' =
+  Cmdliner_base.err_multi_def
+    ~kind:"option name" name Cmdliner_info.arg_doc a a'
+
 module Amap = Map.Make (Cmdliner_info.Arg)
 
 type arg =      (* unconverted argument data as found on the command line. *)
@@ -34,7 +38,10 @@ let arg_info_indexes args =
       match Cmdliner_info.arg_is_pos a with
       | true -> loop optidx (a :: posidx) (Amap.add a (P []) cl) l
       | false ->
-          let add t name = Cmdliner_trie.add t name a in
+          let add t name = match Cmdliner_trie.add t name a with
+          | `New t -> t
+          | `Replaced (a', _) -> invalid_arg (err_multi_opt_name_def name a a')
+          in
           let names = Cmdliner_info.arg_opt_names a in
           let optidx = List.fold_left add optidx names in
           loop optidx posidx (Amap.add a (O []) cl) l

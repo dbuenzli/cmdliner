@@ -89,6 +89,8 @@ module Term = struct
 
   let err_help s = "Term error, help requested for unknown command " ^ s
   let err_argv = "argv array must have at least one element"
+  let err_multi_cmd_def name (a, _) (a', _) =
+    Cmdliner_base.err_multi_def ~kind:"command" name Cmdliner_info.term_doc a a'
 
   (* Evaluation *)
 
@@ -204,7 +206,9 @@ module Term = struct
       let index =
         let add acc (choice, _ as c) =
           let name = Cmdliner_info.term_name choice in
-          Cmdliner_trie.add acc name c
+          match Cmdliner_trie.add acc name c with
+          | `New t -> t
+          | `Replaced (c', _) -> invalid_arg (err_multi_cmd_def name c c')
         in
         List.fold_left add Cmdliner_trie.empty choices
       in

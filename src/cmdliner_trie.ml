@@ -20,18 +20,24 @@ let is_empty t = t = empty
    not important for our use. Also the following is not tail recursive but
    the stack is bounded by key length. *)
 let add t k d =
-  let rec aux t k len i d pre_d =
-    if i = len then { v = Key d; succs = t.succs } else
-    let v = match t.v with
-    | Amb | Pre _ -> Amb | Key _ as v -> v | Nil -> pre_d
-    in
-    let succs =
+  let rec loop t k len i d pre_d = match i = len with
+  | true ->
+      let t' = { v = Key d; succs = t.succs } in
+      begin match t.v with
+      | Key old -> `Replaced (old, t')
+      | _ -> `New t'
+      end
+  | false ->
+      let v = match t.v with
+      | Amb | Pre _ -> Amb | Key _ as v -> v | Nil -> pre_d
+      in
       let t' = try Cmap.find k.[i] t.succs with Not_found -> empty in
-      Cmap.add k.[i] (aux t' k len (i + 1) d pre_d) t.succs
-    in
-    { v; succs }
+      match loop t' k len (i + 1) d pre_d with
+      | `New n -> `New { v; succs = Cmap.add k.[i] n t.succs }
+      | `Replaced (o, n) ->
+          `Replaced (o, { v; succs = Cmap.add k.[i] n t.succs })
   in
-  aux t k (String.length k) 0 d (Pre d (* allocate less *))
+  loop t k (String.length k) 0 d (Pre d (* allocate less *))
 
 let find_node t k =
   let rec aux t k len i =
@@ -70,7 +76,9 @@ let ambiguities t p =                        (* ambiguities of [p] in [t]. *)
         aux [] p (to_list t.succs :: [])
   with Not_found -> []
 
-let of_list l = List.fold_left (fun t (s, v) -> add t s v) empty l
+let of_list l =
+  let add t (s, v) = match add t s v with `New t -> t | `Replaced (_, t) -> t in
+  List.fold_left add empty l
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

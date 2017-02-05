@@ -71,6 +71,10 @@ let alts_str ?(quoted = true) alts =
         (String.concat ", " (List.rev_map quote (List.tl rev_alts)))
         (quote (List.hd rev_alts))
 
+let err_multi_def ~kind name doc v v' =
+  strf "%s %s defined twice (doc strings are '%s' and '%s')"
+    kind name (doc v) (doc v')
+
 let err_ambiguous ~kind s ~ambs =
     strf "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
 
