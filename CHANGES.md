@@ -53,6 +53,9 @@ cmdliner.
 - Fix plain help formatting for commands with empty
   description. Thanks to Maciek Starzyk for the patch.
 - Fix (implement really) groff manpage escaping (#48).
+- Request `an` macros directly in the manpage via `.mso` this
+  makes manpages self-describing and avoids having to call `groff` with
+  the `-man` option.
 
 ### Doc language sanitization
 

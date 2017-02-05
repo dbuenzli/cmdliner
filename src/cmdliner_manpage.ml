@@ -390,8 +390,9 @@ let pp_groff_blocks subst ppf text =
   List.iter pp_block text
 
 let pp_groff_page subst ppf ((n, s, a1, a2, a3), t) =
-  pf ppf ".\\\" Pipe this output to groff -man -Tutf8 | less@\n\
+  pf ppf ".\\\" Pipe this output to groff -Tutf8 | less@\n\
           .\\\"@\n\
+          .mso an.tmac@\n\
           .TH \"%s\" %d \"%s\" \"%s\" \"%s\"@\n\
           .\\\" Disable hyphenation and ragged-right@\n\
           .nh@\n\
@@ -441,7 +442,7 @@ let pp_to_pager print ppf v =
           | Some f ->
               (* TODO use -Tutf8, but annoyingly maps U+002D to U+2212. *)
               let xroff = if c = "groff" then c ^ " -Tascii -P-c" else c in
-              Some (strf "%s -man < %s | %s" xroff f pager)
+              Some (strf "%s < %s | %s" xroff f pager)
           end
       in
       match cmd with
