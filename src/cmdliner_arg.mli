@@ -42,6 +42,12 @@ val required : 'a option t -> 'a Cmdliner_term.t
 val non_empty : 'a list t -> 'a list Cmdliner_term.t
 val last : 'a list t -> 'a Cmdliner_term.t
 
+(** {1 Predefined arguments} *)
+
+val man_format : Cmdliner_manpage.format Cmdliner_term.t
+val stdopt_version : docs:string -> bool Cmdliner_term.t
+val stdopt_help : docs:string -> Cmdliner_manpage.format option Cmdliner_term.t
+
 (** {1 Converters} *)
 
 val bool : bool converter

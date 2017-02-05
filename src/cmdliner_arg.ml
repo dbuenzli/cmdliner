@@ -4,11 +4,23 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+let rev_compare n0 n1 = compare n1 n0
+
+(* Invalid_argument strings **)
+
 let err_not_opt = "Option argument without name"
 let err_not_pos = "Positional argument with a name"
 
-let rev_compare n0 n1 = compare n1 n0
+(* Documentation formatting helpers *)
+
+let strf = Printf.sprintf
+let doc_quote = Cmdliner_base.quote
+let doc_alts = Cmdliner_base.alts_str
+let doc_alts_enum ?quoted enum = doc_alts ?quoted (List.map fst enum)
+
 let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
+
+(* Arguments *)
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
@@ -252,6 +264,34 @@ let last (args, convert) =
   in
   args, convert
 
+(* Predefined arguments *)
+
+let man_fmts =
+  ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
+
+let man_fmt_docv = "FMT"
+let man_fmts_enum = Cmdliner_base.enum man_fmts
+let man_fmts_alts = doc_alts_enum man_fmts
+let man_fmts_doc kind =
+  strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
+        the format is `pager` or `plain' whenever the $(b,TERM) env var is
+        `dumb' or undefined."
+    kind man_fmts_alts
+
+let man_format =
+  let doc = man_fmts_doc "output" in
+  let docv = man_fmt_docv in
+  value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc
+
+let stdopt_version ~docs =
+  value & flag & info ["version"] ~docs ~doc:"Show version information."
+
+let stdopt_help ~docs =
+  let doc = man_fmts_doc "this help" in
+  let docv = man_fmt_docv in
+  value & opt ~vopt:(Some `Auto) (Cmdliner_base.some man_fmts_enum) None &
+  info ["help"] ~docv ~docs ~doc
+
 (* Predefined converters. *)
 
 let some = Cmdliner_base.some
@@ -273,12 +313,6 @@ let pair = Cmdliner_base.pair
 let t2 = Cmdliner_base.t2
 let t3 = Cmdliner_base.t3
 let t4 = Cmdliner_base.t4
-
-(* Documentation formatting helpers *)
-
-let doc_quote = Cmdliner_base.quote
-let doc_alts = Cmdliner_base.alts_str
-let doc_alts_enum ?quoted enum = doc_alts ?quoted (List.map fst enum)
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

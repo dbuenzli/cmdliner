@@ -7,55 +7,33 @@
 module Manpage = Cmdliner_manpage
 module Arg = Cmdliner_arg
 
-module Stdopts = struct
+let add_stdopts ei =
+  let docs = Cmdliner_info.(term_stdopts_docs @@ eval_term ei) in
+  let args, v_lookup = match Cmdliner_info.(term_version @@ eval_main ei) with
+  | None -> Cmdliner_info.Args.empty, None
+  | Some _ ->
+      let (a, lookup) = Cmdliner_arg.stdopt_version ~docs in
+      a, Some lookup
+  in
+  let args, h_lookup =
+    let (a, lookup) = Cmdliner_arg.stdopt_help ~docs in
+    Cmdliner_info.Args.union a args, lookup
+  in
+  let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
+  h_lookup, v_lookup, Cmdliner_info.eval_with_term ei term
 
-  let strf = Printf.sprintf
-
-  let man_fmts =
-    ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
-
-  let man_fmts_enum = Arg.enum man_fmts
-  let man_fmts_alts = Arg.doc_alts_enum man_fmts
-  let man_fmts_doc kind =
-    strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
-          the format is `pager` or `plain' whenever the $(b,TERM) env var is
-          `dumb' or undefined."
-      kind man_fmts_alts
-
-  let man_format =
-    let doc = man_fmts_doc "output" in
-    let docv = "FMT" in
-    Arg.(value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc)
-
-  let add ei =
-    let docs = Cmdliner_info.(term_stdopts_docs @@ eval_term ei) in
-    let args, v_lookup = match Cmdliner_info.(term_version @@ eval_main ei) with
-    | None -> Cmdliner_info.Args.empty, None
-    | Some _ ->
-        let (a, lookup) =
-          Arg.flag (Arg.info ["version"] ~docs ~doc:"Show version information.")
-        in
-        a, Some lookup
-    in
-    let args, h_lookup =
-      let (a, lookup) =
-        let doc = man_fmts_doc "this help" in
-        let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
-        Arg.opt ~vopt:(Some `Auto) (Arg.some man_fmts_enum) None a
-      in
-      Cmdliner_info.Args.union a args, lookup
-    in
-    let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
-    h_lookup, v_lookup, Cmdliner_info.eval_with_term ei term
-end
 
 module Term = struct
 
-  (* Terms *)
-
   include Cmdliner_term
 
-  let pure (* deprecated *) = const
+  (* Deprecated *)
+
+  let man_format = Cmdliner_arg.man_format
+  let pure = const
+
+  (* Terms *)
+
   let ( $ ) = app
 
   type 'a ret = [ `Ok of 'a | term_escape ]
@@ -75,8 +53,6 @@ module Term = struct
     let choice_name t = Cmdliner_info.term_name t in
     Cmdliner_info.Args.empty,
     (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei)))
-
-  let man_format = Stdopts.man_format
 
   (* Term information *)
 
@@ -107,7 +83,7 @@ module Term = struct
           Cmdliner_info.eval_with_term ei cmd
         with Not_found -> invalid_arg (err_help cmd)
     in
-    let _, _, ei = Stdopts.add ei in
+    let _, _, ei = add_stdopts ei in
     Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
 
   let eval_err help_ppf err_ppf ei = function
@@ -129,7 +105,7 @@ module Term = struct
         Cmdliner_msg.pp_backtrace err_ppf ei exn bt; `Error `Exn
 
   let eval_term ~catch help_ppf err_ppf ei f args =
-    let help_arg, vers_arg, ei = Stdopts.add ei in
+    let help_arg, vers_arg, ei = add_stdopts ei in
     let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
     match Cmdliner_cline.create term_args args with
     | Error (e, cl) ->
@@ -166,7 +142,7 @@ module Term = struct
       | Error err -> eval_err err
       with e -> `Error `Exn
     in
-    let help_arg, vers_arg, ei = Stdopts.add ei in
+    let help_arg, vers_arg, ei = add_stdopts ei in
     let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
     match Cmdliner_cline.create ~peek_opts:true term_args args with
     | Error (e, cl) ->

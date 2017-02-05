@@ -1,9 +1,4 @@
 
-- Doc specification improvements and fixes and doc language
-  sanitization (see below for details).
-- Required positional arguments. All missing required position
-  arguments are now reported to the end-user, in the correct
-  order (#39). Thanks to Dmitrii Kashin for the report.
 - Allow terms to be used more than once in terms without tripping out
   documentation generation (#77). Thanks to François Bobot and Gabriel
   Radanne.
@@ -11,22 +6,31 @@
   different arguments or terms. Raises Invalid_argument, used
   to be undefined behaviour (in practice, an arbitrary one would be
   ignored).
-- Optional arguments. All unknown and ambiguous optional argument
-  arguments are now reported to the end-user (instead of only
-  the first one).
 - Change semantics of `Arg.pos_left` (see #76 for details).
-- Change default behaviour of `--help[=FMT]` option. `FMT` no longer
-  defaults to `pager` if unspecified.  It defaults to the new value
-  `auto` which prints the help as `pager` or `plain` whenever the
-  `TERM` environment variable is `dumb` or undefined (#43). This
-  affects the cli behaviour of all binaries using cmdliner.  At the
-  API level this changes the signature of the type `Term.ret` and
-  values `Term.ret`, `Term.man_format` and `Manpage.print` to add the
-  new `` `Auto`` case to manual formats. now represented by the
-  `Manpage.format` type rather than inlined polyvars.
+- Deprecate `Term.man_format` in favor if `Arg.man_format`.
 - Relicense from BSD3 to ISC.
 - Safe-string support.
 - Build depend on topkg.
+
+### End-user visible changes
+
+The following changes affect the end-user behaviour of all binaries using
+cmdliner.
+
+- Required positional arguments. All missing required position
+  arguments are now reported to the end-user, in the correct
+  order (#39). Thanks to Dmitrii Kashin for the report.
+- Optional arguments. All unknown and ambiguous optional argument
+  arguments are now reported to the end-user (instead of only
+  the first one).
+- Change default behaviour of `--help[=FMT]` option. `FMT` no longer
+  defaults to `pager` if unspecified.  It defaults to the new value
+  `auto` which prints the help as `pager` or `plain` whenever the
+  `TERM` environment variable is `dumb` or undefined (#43). At the API
+  level this changes the signature of the type `Term.ret` and values
+  `Term.ret`, `Term.man_format` (deprecated) and `Manpage.print` to add the
+  new `` `Auto`` case to manual formats. now represented by the
+  `Manpage.format` type rather than inlined polyvars.
 
 ### Doc specification improvements and fixes
 

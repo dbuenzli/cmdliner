@@ -131,7 +131,7 @@ let help_cmd =
      `Blocks help_secs; ]
   in
   Term.(ret
-          (const help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
+          (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
   Term.info "help" ~doc ~man
 
 let default_cmd =

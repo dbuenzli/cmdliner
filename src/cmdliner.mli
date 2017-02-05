@@ -173,6 +173,9 @@ module Term : sig
   (**/**)
   val pure : 'a -> 'a t
   (** @deprecated use {!const} instead. *)
+
+  val man_format : Manpage.format t
+  (** @deprecated Use {!Arg.man_format} instead. *)
   (**/**)
 
   val ( $ ) : ('a -> 'b) t -> 'a t -> 'b t
@@ -205,10 +208,6 @@ module Term : sig
   val choice_names : string list t
   (** [choice_names] is a term that evaluates to the names of the terms
       to choose from. *)
-
-  val man_format : Manpage.format t
-  (** [man_format] is a term that defines a [--man-format] option and
-      evaluates to a value that can be used with {!Manpage.print}. *)
 
   (** {1:tinfo Term information}
 
@@ -543,6 +542,12 @@ module Arg : sig
       to the value of the last element of the list otherwise. Use this
       for lists of flags or options where the last occurrence takes precedence
       over the others. *)
+
+  (** {1:predef Predefined arguments} *)
+
+  val man_format : Manpage.format Term.t
+  (** [man_format] is a term that defines a [--man-format] option and
+      evaluates to a value that can be used with {!Manpage.print}. *)
 
   (** {1:converters Predefined converters} *)
 
@@ -1395,7 +1400,7 @@ let help_cmd =
      `Blocks help_secs; ]
   in
   Term.(ret
-          (const help $ copts_t $ Term.man_format $ Term.choice_names $topic)),
+          (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
   Term.info "help" ~doc ~man
 
 let default_cmd =
