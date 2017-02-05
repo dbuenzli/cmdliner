@@ -18,4 +18,5 @@ let () =
        Pkg.test ~run:false "test/test_pos_rev";
        Pkg.test ~run:false "test/test_pos_all";
        Pkg.test ~run:false "test/test_pos_left";
-       Pkg.test ~run:false "test/test_pos_req"; ]
+       Pkg.test ~run:false "test/test_pos_req";
+       Pkg.test ~run:false "test/test_term_dups"; ]

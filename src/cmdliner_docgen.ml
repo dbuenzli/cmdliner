@@ -76,12 +76,12 @@ let synopsis ei = match Cmdliner_info.eval_kind ei with
     let rev_cli_order (a0, _) (a1, _) =
       Cmdliner_info.rev_arg_pos_cli_order a0 a1
     in
-    let add_pos acc a = match Cmdliner_info.arg_is_opt a with
+    let add_pos a acc = match Cmdliner_info.arg_is_opt a with
     | true -> acc
     | false -> (a, synopsis_pos_arg a) :: acc
     in
     let args = Cmdliner_info.(term_args @@ eval_term ei) in
-    let pargs = List.fold_left add_pos [] args in
+    let pargs = Cmdliner_info.Args.fold add_pos args [] in
     let pargs = List.sort rev_cli_order pargs in
     let pargs = String.concat " " (List.rev_map snd pargs) in
     strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
@@ -173,11 +173,12 @@ let arg_man_docs ~buf ~subst ei =
     | true, false -> -1 (* positional first *)
     | false, true -> 1  (* optional after *)
   in
-  let keep_arg a =
-    not Cmdliner_info.(arg_is_pos a && (arg_docv a = "" || arg_doc a = ""))
+  let keep_arg a acc =
+    if not Cmdliner_info.(arg_is_pos a && (arg_docv a = "" || arg_doc a = ""))
+    then (a :: acc) else acc
   in
   let args = Cmdliner_info.(term_args @@ eval_term ei) in
-  let args = List.filter keep_arg args in
+  let args = Cmdliner_info.Args.fold keep_arg args [] in
   let args = List.sort by_sec_by_arg args in
   let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
   sorted_items_to_blocks ~boilerplate:None args
@@ -195,7 +196,7 @@ let env_man_docs ~buf ~subst ~has_senv ei =
     let doc = Cmdliner_manpage.subst_vars buf ~subst doc in
     (Cmdliner_info.env_docs e, `I (var, doc)) :: acc
   in
-  let add_arg_env acc a = match Cmdliner_info.arg_env a with
+  let add_arg_env a acc = match Cmdliner_info.arg_env a with
   | None -> acc
   | Some e -> add_env_man_item ~subst:(arg_info_subst ~subst a) acc e
   in
@@ -204,7 +205,7 @@ let env_man_docs ~buf ~subst ~has_senv ei =
     if c <> 0 then c else compare v1 v0 (* N.B. reverse *)
   in
   let args = Cmdliner_info.(term_args @@ eval_term ei) in
-  let envs = List.fold_left add_arg_env [] args in
+  let envs = Cmdliner_info.Args.fold add_arg_env args [] in
   let envs = List.sort by_sec_by_rev_name envs in
   let envs = (envs :> (string * Cmdliner_manpage.block) list) in
   let boilerplate = if has_senv then None else Some env_boilerplate in

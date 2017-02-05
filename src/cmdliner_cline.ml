@@ -12,13 +12,7 @@
    the term's closures to retrieve and convert command line arguments
    (see the Cmdliner_arg module). *)
 
-module Arg_info = struct
-  type t = Cmdliner_info.arg
-  let compare a0 a1 =
-    compare (Cmdliner_info.arg_id a0) (Cmdliner_info.arg_id a1)
-end
-
-module Amap = Map.Make (Arg_info)
+module Amap = Map.Make (Cmdliner_info.Arg)
 
 type arg =      (* unconverted argument data as found on the command line. *)
 | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
@@ -30,8 +24,8 @@ let get_arg cl a = try Amap.find a cl with Not_found -> assert false
 let opt_arg cl a = match get_arg cl a with O l -> l | _ -> assert false
 let pos_arg cl a = match get_arg cl a with P l -> l | _ -> assert false
 
-let arg_info_indexes al =
-  (* from [al] returns a trie mapping the names of optional arguments to
+let arg_info_indexes args =
+  (* from [args] returns a trie mapping the names of optional arguments to
      their arg_info, a list with all arg_info for positional arguments and
      a cmdline mapping each arg_info to an empty [arg]. *)
   let rec loop optidx posidx cl = function
@@ -45,7 +39,7 @@ let arg_info_indexes al =
           let optidx = List.fold_left add optidx names in
           loop optidx posidx (Amap.add a (O []) cl) l
   in
-  loop Cmdliner_trie.empty [] Amap.empty al
+  loop Cmdliner_trie.empty [] Amap.empty (Cmdliner_info.Args.elements args)
 
 (* Optional argument parsing *)
 

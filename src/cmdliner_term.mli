@@ -16,7 +16,7 @@ type 'a parser =
 (** Type type for command line parser. given static information about
     the command line and a command line to parse returns an OCaml value. *)
 
-type 'a t = Cmdliner_info.arg list * 'a parser
+type 'a t = Cmdliner_info.args * 'a parser
 (** The type for terms. The list of arguments it can parse and the parsing
     function that does so. *)
 

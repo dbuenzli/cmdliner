@@ -111,6 +111,14 @@ let arg_pos_cli_order a0 a1 =              (* best-effort order on the cli. *)
 
 let rev_arg_pos_cli_order a0 a1 = arg_pos_cli_order a1 a0
 
+module Arg = struct
+  type t = arg
+  let compare a0 a1 = (compare : int -> int -> int) a0.id a1.id
+end
+
+module Args = Set.Make (Arg)
+type args = Args.t
+
 (* Term info *)
 
 type term_info =
@@ -123,10 +131,10 @@ type term_info =
 
 type term =
   { term_info : term_info;
-    term_args : arg list; }
+    term_args : args; }
 
 let term
-    ?args:(term_args = [])
+    ?args:(term_args = Args.empty)
     ?sdocs:(term_sdocs = Cmdliner_manpage.s_options) ?man:(term_man = [])
     ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
     term_name =
@@ -143,7 +151,7 @@ let term_man t = t.term_info.term_man
 let term_args t = t.term_args
 
 let term_add_args t args =
-  { t with term_args = List.rev_append args t.term_args }
+  { t with term_args = Args.union args t.term_args }
 
 (* Eval info *)
 

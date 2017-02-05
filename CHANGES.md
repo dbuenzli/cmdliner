@@ -4,6 +4,9 @@
 - Required positional arguments. All missing required position
   arguments are now reported to the end-user, in the correct
   order (#39). Thanks to Dmitrii Kashin for the report.
+- Allow terms to be used more than once in terms without tripping out
+  documentation generation (#77). Thanks to François Bobot and Gabriel
+  Radanne.
 - Optional arguments. All unknown and ambiguous optional argument
   arguments are now reported to the end-user (instead of only
   the first one).

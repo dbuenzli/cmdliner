@@ -41,6 +41,11 @@ let try_env ei a parse ~absent = match Cmdliner_info.arg_env a with
         | `Ok v -> Ok v
         | `Error e -> err (Cmdliner_msg.err_env_parse env ~err:e)
 
+let arg_to_args = Cmdliner_info.Args.singleton
+let list_to_args f l =
+  let add acc v = Cmdliner_info.Args.add (f v) acc in
+  List.fold_left add Cmdliner_info.Args.empty l
+
 let flag a =
   if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
@@ -49,7 +54,7 @@ let flag a =
   | [_, f, Some v] -> err (Cmdliner_msg.err_flag_value f v)
   | (_, f, _) :: (_ ,g, _) :: _  -> err (Cmdliner_msg.err_opt_repeated f g)
   in
-  [a], convert
+  arg_to_args a, convert
 
 let flag_all a =
   if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
@@ -66,7 +71,7 @@ let flag_all a =
         Ok (List.rev_map truth l)
       with Failure e -> err e
   in
-  [a], convert
+  arg_to_args a, convert
 
 let vflag v l =
   let convert _ cl =
@@ -90,7 +95,7 @@ let vflag v l =
   let flag (_, a) =
     if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else a
   in
-  List.rev_map flag l, convert
+  list_to_args flag l, convert
 
 let vflag_all v l =
   let convert _ cl =
@@ -114,7 +119,7 @@ let vflag_all v l =
     if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
     Cmdliner_info.arg_make_all_opts a
   in
-  List.rev_map flag l, convert
+  list_to_args flag l, convert
 
 let parse_opt_value parse f v = match parse v with
 | `Ok v -> v
@@ -139,7 +144,7 @@ let opt ?vopt (parse, print) v a =
       end
   | (_, f, _) :: (_, g, _) :: _ -> err (Cmdliner_msg.err_opt_repeated g f)
   in
-  [a], convert
+  arg_to_args a, convert
 
 let opt_all ?vopt (parse, print) v a =
   if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
@@ -162,7 +167,7 @@ let opt_all ?vopt (parse, print) v a =
                 (List.sort rev_compare (List.rev_map parse l))) with
       | Failure e -> err e
   in
-  [a], convert
+  arg_to_args a, convert
 
 (* Positional arguments *)
 
@@ -181,7 +186,7 @@ let pos ?(rev = false) k (parse, print) v a =
       (try Ok (parse_pos_value parse a v) with Failure e -> err e)
   | _ -> assert false
   in
-  [a], convert
+  arg_to_args a, convert
 
 let pos_list pos (parse, _) v a =
   if Cmdliner_info.arg_is_opt a then invalid_arg err_not_pos else
@@ -192,7 +197,7 @@ let pos_list pos (parse, _) v a =
       try Ok (List.rev (List.rev_map (parse_pos_value parse a) l)) with
       | Failure e -> err e
   in
-  [a], convert
+  arg_to_args a, convert
 
 let all = Cmdliner_info.pos ~rev:false ~start:0 ~len:None
 let pos_all c v a = pos_list all c v a
@@ -209,34 +214,43 @@ let pos_right ?(rev = false) k =
 
 (* Arguments as terms *)
 
-let absent_error al = List.rev_map Cmdliner_info.arg_make_req al
+let absent_error args =
+  let make_req a acc =
+    let req_a = Cmdliner_info.arg_make_req a in
+    Cmdliner_info.Args.add req_a acc
+  in
+  Cmdliner_info.Args.fold make_req args Cmdliner_info.Args.empty
+
 let value a = a
 
-let required (al, convert) =
-  let al = absent_error al in
+let err_arg_missing args =
+  err @@ Cmdliner_msg.err_arg_missing (Cmdliner_info.Args.choose args)
+
+let required (args, convert) =
+  let args = absent_error args in
   let convert ei cl = match convert ei cl with
   | Ok (Some v) -> Ok v
-  | Ok None -> err (Cmdliner_msg.err_arg_missing (List.hd al))
+  | Ok None -> err_arg_missing args
   | Error _ as e -> e
   in
-  al, convert
+  args, convert
 
 let non_empty (al, convert) =
-  let al = absent_error al in
+  let args = absent_error al in
   let convert ei cl = match convert ei cl with
-  | Ok [] -> err (Cmdliner_msg.err_arg_missing (List.hd al))
+  | Ok [] -> err_arg_missing args
   | Ok l -> Ok l
   | Error _ as e -> e
   in
-  al, convert
+  args, convert
 
-let last (al, convert) =
+let last (args, convert) =
   let convert ei cl = match convert ei cl with
-  | Ok [] -> err (Cmdliner_msg.err_arg_missing (List.hd al))
+  | Ok [] -> err_arg_missing args
   | Ok l -> Ok (List.hd (List.rev l))
   | Error _ as e -> e
   in
-  al, convert
+  args, convert
 
 (* Predefined converters. *)
 

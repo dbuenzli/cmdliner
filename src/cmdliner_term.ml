@@ -12,11 +12,11 @@ type 'a parser =
   Cmdliner_info.eval -> Cmdliner_cline.t ->
   ('a, [ `Parse of string | term_escape ]) result
 
-type 'a t = Cmdliner_info.arg list * 'a parser
+type 'a t = Cmdliner_info.args * 'a parser
 
-let const v = [], (fun _ _ -> Ok v)
-let app (al, f) (al', v) =
-  List.rev_append al al',
+let const v = Cmdliner_info.Args.empty, (fun _ _ -> Ok v)
+let app (args_f, f) (args_v, v) =
+  Cmdliner_info.Args.union args_f args_v,
   fun ei cl -> match (f ei cl) with
   | Error _ as e -> e
   | Ok f ->

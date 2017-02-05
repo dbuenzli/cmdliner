@@ -67,12 +67,16 @@ val arg_is_req : arg -> bool
 val arg_pos_cli_order : arg -> arg -> int
 val rev_arg_pos_cli_order : arg -> arg -> int
 
+module Arg : Set.OrderedType with type t = arg
+module Args : Set.S with type elt = arg
+type args = Args.t
+
 (** {1:term Term information} *)
 
 type term
 
 val term :
-  ?args:arg list -> ?sdocs:string -> ?man:Cmdliner_manpage.block list ->
+  ?args:args -> ?sdocs:string -> ?man:Cmdliner_manpage.block list ->
   ?docs:string -> ?doc:string -> ?version:string -> string -> term
 
 val term_name : term -> string
@@ -81,9 +85,9 @@ val term_doc : term -> string
 val term_docs : term -> string
 val term_stdopts_docs : term -> string
 val term_man : term -> Cmdliner_manpage.block list
-val term_args : term -> arg list
+val term_args : term -> args
 
-val term_add_args : term -> arg list -> term
+val term_add_args : term -> args -> term
 
 (** {1:eval Evaluation information} *)
 

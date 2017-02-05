@@ -29,12 +29,13 @@ module Stdopts = struct
 
   let add ei =
     let docs = Cmdliner_info.(term_stdopts_docs @@ eval_term ei) in
-    let args, v_lookup =
-      if Cmdliner_info.(term_version @@ eval_main ei) = None then [], None else
-      let (a, lookup) =
-        Arg.flag (Arg.info ["version"] ~docs ~doc:"Show version information.")
-      in
-      a, Some lookup
+    let args, v_lookup = match Cmdliner_info.(term_version @@ eval_main ei) with
+    | None -> Cmdliner_info.Args.empty, None
+    | Some _ ->
+        let (a, lookup) =
+          Arg.flag (Arg.info ["version"] ~docs ~doc:"Show version information.")
+        in
+        a, Some lookup
     in
     let args, h_lookup =
       let (a, lookup) =
@@ -42,7 +43,7 @@ module Stdopts = struct
         let a = Arg.info ["help"] ~docv:"FMT" ~docs ~doc in
         Arg.opt ~vopt:(Some `Auto) (Arg.some man_fmts_enum) None a
       in
-      List.rev_append a args, lookup
+      Cmdliner_info.Args.union a args, lookup
     in
     let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
     h_lookup, v_lookup, Cmdliner_info.eval_with_term ei term
@@ -67,19 +68,20 @@ module Term = struct
     | Error _ as e -> e
 
   let main_name =
-    [], (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))
+    Cmdliner_info.Args.empty,
+    (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))
 
   let choice_names =
     let choice_name t = Cmdliner_info.term_name t in
-    [],
-    fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei))
+    Cmdliner_info.Args.empty,
+    (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei)))
 
   let man_format = Stdopts.man_format
 
   (* Term information *)
 
   type info = Cmdliner_info.term
-  let info = Cmdliner_info.term ~args:[]
+  let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
   let name ti = Cmdliner_info.term_name ti
 
   type 'a result =
