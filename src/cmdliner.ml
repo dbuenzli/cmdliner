@@ -4,6 +4,8 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+open Result
+
 module Manpage = Cmdliner_manpage
 module Arg = Cmdliner_arg
 
