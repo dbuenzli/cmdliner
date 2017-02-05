@@ -87,7 +87,7 @@ let smap_to_blocks smap = (* N.B. this leaves `Blocks content untouched. *)
   let rec loop acc smap s = function
   | b :: rbs -> loop (b :: acc) smap s rbs
   | [] ->
-      let acc = `S s :: acc in
+      let acc =  if s = "" then acc else `S s :: acc in
       match smap with
       | (s, (_, rbs)) :: smap -> loop acc smap s rbs
       | [] -> acc
