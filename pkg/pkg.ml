@@ -14,6 +14,7 @@ let () =
        test "test/rm_ex";
        test "test/tail_ex";
        Pkg.test ~run:false "test/test_man";
+       Pkg.test ~run:false "test/test_man_utf8";
        Pkg.test ~run:false "test/test_pos";
        Pkg.test ~run:false "test/test_pos_rev";
        Pkg.test ~run:false "test/test_pos_all";
