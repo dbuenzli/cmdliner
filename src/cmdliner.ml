@@ -8,23 +8,6 @@ open Result
 
 module Manpage = Cmdliner_manpage
 module Arg = Cmdliner_arg
-
-let add_stdopts ei =
-  let docs = Cmdliner_info.(term_stdopts_docs @@ eval_term ei) in
-  let args, v_lookup = match Cmdliner_info.(term_version @@ eval_main ei) with
-  | None -> Cmdliner_info.Args.empty, None
-  | Some _ ->
-      let (a, lookup) = Cmdliner_arg.stdopt_version ~docs in
-      a, Some lookup
-  in
-  let args, h_lookup =
-    let (a, lookup) = Cmdliner_arg.stdopt_help ~docs in
-    Cmdliner_info.Args.union a args, lookup
-  in
-  let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
-  h_lookup, v_lookup, Cmdliner_info.eval_with_term ei term
-
-
 module Term = struct
 
   include Cmdliner_term
@@ -62,20 +45,97 @@ module Term = struct
   let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
   let name ti = Cmdliner_info.term_name ti
 
-  type 'a result =
-    [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
+  (* Evaluation *)
 
   let err_help s = "Term error, help requested for unknown command " ^ s
   let err_argv = "argv array must have at least one element"
   let err_multi_cmd_def name (a, _) (a', _) =
     Cmdliner_base.err_multi_def ~kind:"command" name Cmdliner_info.term_doc a a'
 
-  (* Evaluation *)
+  type 'a result =
+    [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
 
-  let remove_exec argv =
-    try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
+  let add_stdopts ei =
+    let docs = Cmdliner_info.(term_stdopts_docs @@ eval_term ei) in
+    let vargs, vers = match Cmdliner_info.(term_version @@ eval_main ei) with
+    | None -> Cmdliner_info.Args.empty, None
+    | Some _ ->
+        let args, _ as vers = Cmdliner_arg.stdopt_version ~docs in
+        args, Some vers
+    in
+    let help = Cmdliner_arg.stdopt_help ~docs in
+    let args = Cmdliner_info.Args.union vargs (fst help) in
+    let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
+    help, vers, Cmdliner_info.eval_with_term ei term
 
-  let eval_help_cmd help_ppf ei fmt cmd =
+  type 'a eval_result =
+    ('a, [ term_escape
+         | `Exn of exn * Printexc.raw_backtrace
+         | `Parse of string
+         | `Std_help of Manpage.format | `Std_version ]) Result.result
+
+  let run ~catch ei cl f = try (f ei cl :> 'a eval_result) with
+  | exn when catch ->
+      let bt = Printexc.get_raw_backtrace () in
+      Error (`Exn (exn, bt))
+
+  let try_eval_stdopts ~catch ei cl help version =
+    match run ~catch ei cl (snd help) with
+    | Ok (Some fmt) -> Some (Error (`Std_help fmt))
+    | Error _ as err -> Some err
+    | Ok None ->
+        match version with
+        | None -> None
+        | Some version ->
+            match run ~catch ei cl (snd version) with
+            | Ok false -> None
+            | Ok true -> Some (Error (`Std_version))
+            | Error _ as err -> Some err
+
+  let term_eval ~catch ei f args =
+    let help, version, ei = add_stdopts ei in
+    let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+    let res = match Cmdliner_cline.create term_args args with
+    | Error (e, cl) ->
+        begin match try_eval_stdopts ~catch ei cl help version with
+        | Some e -> e
+        | None -> Error (`Error (true, e))
+        end
+    | Ok cl ->
+        match try_eval_stdopts ~catch ei cl help version with
+        | Some e -> e
+        | None -> run ~catch ei cl f
+    in
+    ei, res
+
+  let term_eval_peek_opts ei f args =
+    let help, version, ei = add_stdopts ei in
+    let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+    let v, ret = match Cmdliner_cline.create ~peek_opts:true term_args args with
+    | Error (e, cl) ->
+        begin match try_eval_stdopts ~catch:true ei cl help version with
+        | Some e -> None, e
+        | None -> None, Error (`Error (true, e))
+        end
+    | Ok cl ->
+        let ret = run ~catch:true ei cl f in
+        let v = match ret with Ok v -> Some v | Error _ -> None in
+        match try_eval_stdopts ~catch:true ei cl help version with
+        | Some e -> v, e
+        | None -> v, ret
+    in
+    let ret = match ret with
+    | Ok v -> `Ok v
+    | Error `Std_help _ -> `Help
+    | Error `Std_version -> `Version
+    | Error `Parse _ -> `Error `Parse
+    | Error `Help _ -> `Help
+    | Error `Exn _ -> `Error `Exn
+    | Error `Error _ -> `Error `Term
+    in
+    v, ret
+
+  let do_help help_ppf ei fmt cmd =
     let ei = match cmd with
     | None -> Cmdliner_info.(eval_with_term ei @@ eval_main ei)
     | Some cmd ->
@@ -85,89 +145,29 @@ module Term = struct
           Cmdliner_info.eval_with_term ei cmd
         with Not_found -> invalid_arg (err_help cmd)
     in
-    let _, _, ei = add_stdopts ei in
-    Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
+    let _, _, ei = add_stdopts ei (* may not be the originally eval'd term *) in
+    Cmdliner_docgen.pp_man fmt help_ppf ei
 
-  let eval_err help_ppf err_ppf ei = function
-  | `Help (fmt, cmd) -> eval_help_cmd help_ppf ei fmt cmd
-  | `Parse err -> Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
-  | `Error (usage, err) ->
-      (if usage
-       then Cmdliner_msg.pp_err_usage err_ppf ei ~err
-       else Cmdliner_msg.pp_err err_ppf ei ~err);
-      `Error `Term
+  let do_result help_ppf err_ppf ei = function
+  | Ok v -> `Ok v
+  | Error res ->
+      match res with
+      | `Std_help fmt -> Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
+      | `Std_version -> Cmdliner_msg.pp_version help_ppf ei; `Version
+      | `Parse err -> Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
+      | `Help (fmt, cmd) -> do_help help_ppf ei fmt cmd; `Help
+      | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; `Error `Exn
+      | `Error (usage, err) ->
+          (if usage
+           then Cmdliner_msg.pp_err_usage err_ppf ei ~err
+           else Cmdliner_msg.pp_err err_ppf ei ~err);
+          `Error `Term
 
-  let eval_fun ~catch help_ppf err_ppf ei cl f =
-    try match f ei cl with
-    | Error err -> eval_err help_ppf err_ppf ei err
-    | Ok v -> `Ok v
-    with
-    | exn when catch ->
-        let bt = Printexc.get_backtrace () in
-        Cmdliner_msg.pp_backtrace err_ppf ei exn bt; `Error `Exn
-
-  let eval_term ~catch help_ppf err_ppf ei f args =
-    let help_arg, vers_arg, ei = add_stdopts ei in
-    let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
-    match Cmdliner_cline.create term_args args with
-    | Error (e, cl) ->
-        begin match help_arg ei cl with
-        | Error err -> eval_err help_ppf err_ppf ei err
-        | Ok (Some fmt) -> Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
-        | Ok None -> eval_err help_ppf err_ppf ei (`Error (true, e))
-        end
-    | Ok cl ->
-        match help_arg ei cl with
-        | Error err -> eval_err help_ppf err_ppf ei err
-        | Ok (Some fmt) -> Cmdliner_docgen.pp_man fmt help_ppf ei; `Help
-        | Ok None ->
-            match vers_arg with
-            | None -> eval_fun ~catch help_ppf err_ppf ei cl f
-            | Some v_arg ->
-                match v_arg ei cl with
-                | Error err -> eval_err help_ppf err_ppf ei err
-                | Ok true -> Cmdliner_msg.pp_version help_ppf ei; `Version
-                | Ok false -> eval_fun ~catch help_ppf err_ppf ei cl f
-
-  let term_eval_peek_opts ei f args =
-    let ret_to_opt = function
-    | `Ok v -> Some v | `Error _ -> None | `Help -> None
-    in
-    let eval_err = function
-    | `Help _ -> `Help
-    | `Parse _ -> `Error `Parse
-    | `Error _ -> `Error `Term
-    in
-    let eval_fun ei cl f =
-      try match f ei cl with
-      | Ok v -> `Ok v
-      | Error err -> eval_err err
-      with e -> `Error `Exn
-    in
-    let help_arg, vers_arg, ei = add_stdopts ei in
-    let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
-    match Cmdliner_cline.create ~peek_opts:true term_args args with
-    | Error (e, cl) ->
-        begin match help_arg ei cl with
-        | Ok (Some fmt) -> None, `Help
-        | Ok None -> None, eval_err (`Parse e)
-        | Error err -> None, eval_err err
-        end
-    | Ok cl ->
-        let ret = eval_fun ei cl f in
-        match help_arg ei cl with
-        | Error err -> None, eval_err err
-        | Ok (Some _) -> (ret_to_opt @@ ret), `Help
-        | Ok None ->
-            match vers_arg with
-            | None -> (ret_to_opt @@ ret), ret
-            | Some varg ->
-                match varg ei cl with
-                | Error _ -> None, (`Error `Parse)
-                | Ok true -> (ret_to_opt @@ ret), `Version
-                | Ok false -> (ret_to_opt @@ ret), ret
+  (* API *)
 
   let env_default v = try Some (Sys.getenv v) with Not_found -> None
+  let remove_exec argv =
+    try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
   let eval
       ?help:(help_ppf = Format.std_formatter)
@@ -175,7 +175,9 @@ module Term = struct
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) ((al, f), ti) =
     let term = Cmdliner_info.term_add_args ti al in
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env in
-    eval_term catch help_ppf err_ppf ei f (remove_exec argv)
+    let args = remove_exec argv in
+    let ei, res = term_eval ~catch ei f args in
+    do_result help_ppf err_ppf ei res
 
   let choose_term main choices = function
   | [] -> Ok (main, [])
@@ -217,7 +219,8 @@ module Term = struct
         Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
     | Ok ((chosen, f), args) ->
         let ei = Cmdliner_info.eval ~term:chosen ~main ~choices ~env in
-        eval_term catch help_ppf err_ppf ei f args
+        let ei, res = term_eval ~catch ei f args in
+        do_result help_ppf err_ppf ei res
 
   let eval_peek_opts
       ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv)
@@ -226,6 +229,7 @@ module Term = struct
     let term = Cmdliner_info.term ~args ?version "dummy" in
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env  in
     (term_eval_peek_opts ei f (remove_exec argv) :> 'a option * 'a result)
+
 end
 
 (*---------------------------------------------------------------------------

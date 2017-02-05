@@ -34,7 +34,8 @@ val pp_try_help : Format.formatter -> Cmdliner_info.eval -> unit
 val pp_err : Format.formatter -> Cmdliner_info.eval -> err:string -> unit
 val pp_err_usage : Format.formatter -> Cmdliner_info.eval -> err:string -> unit
 val pp_backtrace :
-  Format.formatter -> Cmdliner_info.eval -> exn -> string -> unit
+  Format.formatter ->
+  Cmdliner_info.eval -> exn -> Printexc.raw_backtrace -> unit
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

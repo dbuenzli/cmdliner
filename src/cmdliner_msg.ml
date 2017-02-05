@@ -90,6 +90,7 @@ let pp_err_usage ppf ei ~err =
     pp_try_help ei
 
 let pp_backtrace ppf ei e bt =
+  let bt = Printexc.raw_backtrace_to_string bt in
   let bt =
     let len = String.length bt in
     if len > 0 then String.sub bt 0 (len - 1) (* remove final '\n' *) else bt
