@@ -40,6 +40,7 @@ let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)
 
 let info =
   let doc = "print a customizable message repeatedly" in
+  let envs = [ Term.env_var "TEST_IT" ~doc:"This is $(env) for $(tname)" ] in
   let man = [
     `S "THIS IS A SECTION FOR $(mname)";
     `P "$(mname) subst at begin and end $(mname)";
@@ -86,7 +87,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>.";]
   in
-  Term.info "man_test" ~version:"%%VERSION%%" ~doc ~man
+  Term.info "man_test" ~version:"%%VERSION%%" ~envs ~doc ~man
 
 let () = match Term.eval (man_test_t, info) with
 | `Error _ -> exit 1

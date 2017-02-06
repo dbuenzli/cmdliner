@@ -41,6 +41,9 @@ module Term = struct
 
   (* Term information *)
 
+  type env = Cmdliner_info.env
+  let env_var = Cmdliner_info.env
+
   type info = Cmdliner_info.term
   let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
   let name ti = Cmdliner_info.term_name ti

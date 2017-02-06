@@ -30,10 +30,9 @@ let sorted_items_to_blocks ~boilerplate:b items =
 
 (* Doc string variables substitutions. *)
 
-let term_info_subst ei = function
-| "tname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_term ei))
-| "mname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_main ei))
-| _ -> None
+let env_info_subst ~subst e = function
+| "env" -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e))
+| id -> subst id
 
 let arg_info_subst ~subst a = function
 | "docv" ->
@@ -42,10 +41,15 @@ let arg_info_subst ~subst a = function
     Some (strf "$(b,%s)" @@ esc (Cmdliner_info.arg_opt_name_sample a))
 | "env" as id ->
     begin match Cmdliner_info.arg_env a with
-    | Some e -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e))
+    | Some e -> env_info_subst ~subst e id
     | None -> subst id
     end
 | id -> subst id
+
+let term_info_subst ei = function
+| "tname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_term ei))
+| "mname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_main ei))
+| _ -> None
 
 (* Command docs *)
 
@@ -190,22 +194,31 @@ let env_boilerplate sec = match sec = Cmdliner_manpage.s_environment with
 | true -> Some (Cmdliner_manpage.s_environment_intro)
 
 let env_man_docs ~buf ~subst ~has_senv ei =
-  let add_env_man_item ~subst acc e =
+  let add_env_item ~subst (seen, envs as acc) e =
+    if Cmdliner_info.Envs.mem e seen then acc else
+    let seen = Cmdliner_info.Envs.add e seen in
     let var = strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e) in
     let doc = Cmdliner_info.env_doc e in
     let doc = Cmdliner_manpage.subst_vars buf ~subst doc in
-    (Cmdliner_info.env_docs e, `I (var, doc)) :: acc
+    let envs = (Cmdliner_info.env_docs e, `I (var, doc)) :: envs in
+    seen, envs
   in
   let add_arg_env a acc = match Cmdliner_info.arg_env a with
   | None -> acc
-  | Some e -> add_env_man_item ~subst:(arg_info_subst ~subst a) acc e
+  | Some e -> add_env_item ~subst:(arg_info_subst ~subst a) acc e
   in
+  let add_env acc e = add_env_item ~subst:(env_info_subst ~subst e) acc e in
   let by_sec_by_rev_name (s0, `I (v0, _)) (s1, `I (v1, _)) =
     let c = compare s0 s1 in
     if c <> 0 then c else compare v1 v0 (* N.B. reverse *)
   in
+  (* Arg envs before term envs is important here: if the same is mentioned
+     both in an arg and in a term the substs of the arg are allowed. *)
   let args = Cmdliner_info.(term_args @@ eval_term ei) in
-  let envs = Cmdliner_info.Args.fold add_arg_env args [] in
+  let tenvs = Cmdliner_info.(term_envs @@ eval_term ei) in
+  let init = Cmdliner_info.Envs.empty, [] in
+  let acc = Cmdliner_info.Args.fold add_arg_env args init in
+  let _, envs = List.fold_left add_env acc tenvs in
   let envs = List.sort by_sec_by_rev_name envs in
   let envs = (envs :> (string * Cmdliner_manpage.block) list) in
   let boilerplate = if has_senv then None else Some env_boilerplate in

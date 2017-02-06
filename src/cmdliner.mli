@@ -216,10 +216,27 @@ module Term : sig
       man page. For multiple term evaluation, this is
       the name of a command and its man page. *)
 
+  type env
+  (** The type for environment variable information. *)
+
+  val env_var : ?docs:string -> ?doc:string -> string -> env
+  (** [env_var ~docs ~doc var] describes an environment variable
+      [var]. [doc] is the man page information of the environment
+      variable, defaults to ["undocumented"]. [docs] is the title of
+      the man page section in which the environment variable will be
+      listed, it defaults to {!Manpage.s_environment}.
+
+      In [doc] the {{!doclang}documentation markup language} can be
+      used with following variables:
+      {ul
+      {- ["$(env)"], the value of [var].}
+      {- The variables mentioned in {!info}}} *)
+
   type info
   (** The type for term information. *)
 
-  val info : ?sdocs:string -> ?man:Manpage.block list ->
+  val info :
+    ?man:Manpage.block list -> ?envs:env list -> ?sdocs:string ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
@@ -234,13 +251,14 @@ module Term : sig
       {- [docs], only for commands, the title of the section of the main
          term's man page where it should be listed (defaults to
          {!Manpage.s_commands}).}
-      {- [man] is the text of the man page for the term.}
       {- [sdocs] defines the title of the section in which the
          standard [--help] and [--version] arguments are listed
-         (defaults to {!Manpage.s_options}).}}
-
-      [doc] and [man] support the {{!doclang}documentation markup language}
-      in which the following variables are recognized:
+         (defaults to {!Manpage.s_options}).}
+      {- [man] is the text of the man page for the term.}
+      {- [envs] is a list of environment variables that influence
+         the term's evaluation.}}
+      [doc], [man], [envs] support the {{!doclang}documentation markup
+      language} in which the following variables are recognized:
       {ul
       {- [$(tname)] the term's name.}
       {- [$(mname)] the main term's name.}} *)
@@ -366,13 +384,13 @@ module Arg : sig
     if the argument is absent from the command line and the variable
     is defined. *)
 
-  type env
+  type env = Term.env
   (** The type for environment variables and their documentation. *)
 
   val env_var : ?docs:string -> ?doc:string -> string -> env
   (** [env_var docs doc var] is an environment variables [var]. [doc]
-      is the man page information of the environment variable; the
-      {{!doclang}documentation markup language} with the variables
+      is the man page information of the environment variable, the
+      {{!doclang}documentation markup language} with the  variables
       mentioned in {!info} be used; it defaults to ["See option
       $(opt)."].  [docs] is the title of the man page section in which
       the environment variable will be listed, it defaults to
@@ -409,8 +427,8 @@ module Arg : sig
          {- ["$(opt)"], one of the options of [names], preference
             is given to a long one.}
          {- ["$(env)", the environment var specified by [env] (if any)]}}
-         {{!doc_helpers}These
-         functions} can help with formatting argument values.}
+         {{!doc_helpers}These functions} can help with formatting argument
+         values.}
       {- [docv] is for positional and non-flag optional arguments.
          It is a variable name used in the man page to stand for their value.}
       {- [docs] is the title of the man page section in which the argument

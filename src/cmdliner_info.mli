@@ -18,6 +18,10 @@ val env_var : env -> string
 val env_doc : env -> string
 val env_docs : env -> string
 
+module Env : Set.OrderedType with type t = env
+module Envs : Set.S with type elt = env
+type envs = Envs.t
+
 (** {1:arg Arguments} *)
 
 type arg_absence =
@@ -76,14 +80,16 @@ type args = Args.t
 type term
 
 val term :
-  ?args:args -> ?sdocs:string -> ?man:Cmdliner_manpage.block list ->
-  ?docs:string -> ?doc:string -> ?version:string -> string -> term
+  ?args:args -> ?man:Cmdliner_manpage.block list -> ?envs:env list ->
+  ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
+  string -> term
 
 val term_name : term -> string
 val term_version : term -> string option
 val term_doc : term -> string
 val term_docs : term -> string
 val term_stdopts_docs : term -> string
+val term_envs : term -> env list
 val term_man : term -> Cmdliner_manpage.block list
 val term_args : term -> args
 

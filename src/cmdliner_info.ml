@@ -4,21 +4,38 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+
+let new_id =       (* thread-safe UIDs, Oo.id (object end) was used before. *)
+  let c = ref 0 in
+  fun () ->
+    let id = !c in
+    incr c; if id > !c then assert false (* too many ids *) else id
+
 (* Environments *)
 
 type env =                     (* information about an environment variable. *)
-  { env_var : string;                                       (* the variable. *)
+  { env_id : int;                              (* unique id for the env var. *)
+    env_var : string;                                       (* the variable. *)
     env_doc : string;                                               (* help. *)
     env_docs : string; }              (* title of help section where listed. *)
 
 let env
-    ?(docs = Cmdliner_manpage.s_environment) ?(doc = "See option $(opt).")
-    env_var =
-  { env_var = env_var; env_doc = doc; env_docs = docs }
+    ?docs:(env_docs = Cmdliner_manpage.s_environment)
+    ?doc:(env_doc = "See option $(opt).") env_var =
+  { env_id = new_id (); env_var; env_doc; env_docs }
 
 let env_var e = e.env_var
 let env_doc e = e.env_doc
 let env_docs e = e.env_docs
+
+
+module Env = struct
+  type t = env
+  let compare a0 a1 = (compare : int -> int -> int) a0.env_id a1.env_id
+end
+
+module Envs = Set.Make (Env)
+type envs = Envs.t
 
 (* Arguments *)
 
@@ -49,12 +66,6 @@ type arg =                     (* information about a command line argument. *)
     opt_names : string list;                        (* names (for opt args). *)
     opt_all : bool; }                          (* repeatable (for opt args). *)
 
-let new_arg_id =    (* thread-safe UIDs, Oo.id (object end) was used before. *)
-  let c = ref 0 in
-  fun () ->
-    let id = !c in
-    incr c; if id > !c then assert false (* too many ids *) else id
-
 let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
 let arg ?docs ?(docv = "") ?(doc = "") ?env names =
@@ -67,7 +78,7 @@ let arg ?docs ?(docv = "") ?(doc = "") ?env names =
       | [] -> Cmdliner_manpage.s_arguments
       | _ -> Cmdliner_manpage.s_options
   in
-  { id = new_arg_id (); absent = Val (lazy ""); env; doc; docv; docs;
+  { id = new_id (); absent = Val (lazy ""); env; doc; docv; docs;
     pos = dumb_pos; opt_kind = Flag; opt_names; opt_all = false; }
 
 let arg_id a = a.id
@@ -127,6 +138,7 @@ type term_info =
     term_doc : string;                      (* one line description of term. *)
     term_docs : string;     (* title of man section where listed (commands). *)
     term_sdocs : string; (* standard options, title of section where listed. *)
+    term_envs : env list;               (* env vars that influence the term. *)
     term_man : Cmdliner_manpage.block list; }              (* man page text. *)
 
 type term =
@@ -134,13 +146,15 @@ type term =
     term_args : args; }
 
 let term
-    ?args:(term_args = Args.empty)
-    ?sdocs:(term_sdocs = Cmdliner_manpage.s_options) ?man:(term_man = [])
+    ?args:(term_args = Args.empty) ?man:(term_man = [])
+    ?envs:(term_envs = []) ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
     ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
     term_name =
-  { term_info =
-      { term_name; term_version; term_doc; term_docs; term_sdocs; term_man };
-    term_args }
+  let term_info =
+    { term_name; term_version; term_doc; term_docs; term_sdocs; term_envs;
+      term_man }
+  in
+  { term_info; term_args }
 
 let term_name t = t.term_info.term_name
 let term_version t = t.term_info.term_version
@@ -148,6 +162,7 @@ let term_doc t = t.term_info.term_doc
 let term_docs t = t.term_info.term_docs
 let term_stdopts_docs t = t.term_info.term_sdocs
 let term_man t = t.term_info.term_man
+let term_envs t = t.term_info.term_envs
 let term_args t = t.term_args
 
 let term_add_args t args =

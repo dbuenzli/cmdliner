@@ -12,7 +12,7 @@ type 'a converter = 'a parser * 'a printer
 
 val some : ?none:string -> 'a converter -> 'a option converter
 
-type env
+type env = Cmdliner_info.env
 val env_var : ?docs:string -> ?doc:string -> string -> env
 
 type 'a t = 'a Cmdliner_term.t
