@@ -250,8 +250,8 @@ module Term : sig
 
  (** {1:evaluation Evaluation} *)
 
-  type 'a result = [
-    | `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
+  type 'a result =
+    [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
   (** The type for evaluation results.
       {ul
       {- [`Ok v], the term evaluated successfully and [v] is the result.}
@@ -265,10 +265,10 @@ module Term : sig
       {- [`Error `Exn], an exception [e] was caught and reported
          on the error formatter (see the [~catch] parameter of {!eval}).}} *)
 
-  val eval : ?help:Format.formatter ->
-    ?err:Format.formatter -> ?catch:bool ->
-    ?env:(string -> string option) ->
-    ?argv:string array -> ('a t * info) -> 'a result
+  val eval :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array -> ('a t * info) ->
+    'a result
   (** [eval help err catch argv (t,i)]  is the evaluation result
       of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
 
@@ -283,11 +283,10 @@ module Term : sig
       [env] is used for environment variable lookup, the default
       uses {!Sys.getenv}. *)
 
-  val eval_choice : ?help:Format.formatter ->
-    ?err:Format.formatter -> ?catch:bool ->
-    ?env:(string -> string option) ->
-    ?argv:string array -> 'a t * info -> ('a t * info) list ->
-    'a result
+  val eval_choice :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array ->
+    'a t * info -> ('a t * info) list -> 'a result
   (** [eval_choice help err catch argv (t,i) choices] is like {!eval}
       except that if the first argument on the command line is not an option
       name it will look in [choices] for a term whose information has this
@@ -297,10 +296,9 @@ module Term : sig
       is unspecified the "main" term [t] is evaluated. [i] defines the
       name and man page of the program. *)
 
-  val eval_peek_opts : ?version_opt:bool ->
-    ?env:(string -> string option) ->
-    ?argv:string array -> 'a t ->
-    'a option * 'a result
+  val eval_peek_opts :
+    ?version_opt:bool -> ?env:(string -> string option) ->
+    ?argv:string array -> 'a t -> 'a option * 'a result
   (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
       of optional arguments only, with the command line [argv]
       (defaults to {!Sys.argv}). In this evaluation, unknown optional
@@ -374,10 +372,11 @@ module Arg : sig
   val env_var : ?docs:string -> ?doc:string -> string -> env
   (** [env_var docs doc var] is an environment variables [var]. [doc]
       is the man page information of the environment variable; the
-      the {{!doclang}documentation markup language} with the variables
-      mentioned in {!info}; it defaults to ["See option $(opt)."].
-      [docs] is the title of the man page section in which the environment
-      variable will be listed, it defaults to {!Manpage.s_environment}. *)
+      {{!doclang}documentation markup language} with the variables
+      mentioned in {!info} be used; it defaults to ["See option
+      $(opt)."].  [docs] is the title of the man page section in which
+      the environment variable will be listed, it defaults to
+      {!Manpage.s_environment}. *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)
@@ -385,8 +384,9 @@ module Arg : sig
   type info
   (** The type for information about command line arguments. *)
 
-  val info : ?docs:string -> ?docv:string -> ?doc:string -> ?env:env ->
-    string list -> info
+  val info :
+    ?docs:string -> ?docv:string -> ?doc:string -> ?env:env -> string list ->
+    info
   (** [info docs docv doc env names] defines information for
       an argument.
 
@@ -505,8 +505,8 @@ module Arg : sig
       all the positional arguments of the command line as converted
       by [c] or [v] if there are none. *)
 
-  val pos_left : ?rev:bool -> int -> 'a converter -> 'a list -> info ->
-    'a list t
+  val pos_left :
+    ?rev:bool -> int -> 'a converter -> 'a list -> info -> 'a list t
   (** [pos_left rev n c v i] is an ['a list] argument that holds
       all the positional arguments as converted by [c] found on the left
       of the [n]th positional argument or [v] if there are none.
@@ -515,8 +515,8 @@ module Arg : sig
       position is [max-n] where [max] is the position of
       the last positional argument present on the command line. *)
 
-  val pos_right : ?rev:bool -> int -> 'a converter -> 'a list -> info ->
-    'a list t
+  val pos_right :
+    ?rev:bool -> int -> 'a converter -> 'a list -> info -> 'a list t
   (** [pos_right] is like {!pos_left} except it holds all the positional
       arguments found on the right of the specified positional argument. *)
 
@@ -613,13 +613,15 @@ module Arg : sig
   val t2 : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
   (** {!t2} is {!pair}. *)
 
-  val t3 : ?sep:char -> 'a converter ->'b converter -> 'c converter ->
+  val t3 :
+    ?sep:char -> 'a converter ->'b converter -> 'c converter ->
     ('a * 'b * 'c) converter
   (** [t3 sep c0 c1 c2] splits the argument at the {e first} two [sep]
       characters (defaults to [',']) and respectively converts the
       substrings with [c0], [c1] and [c2]. *)
 
-  val t4 : ?sep:char -> 'a converter ->'b converter -> 'c converter ->
+  val t4 :
+    ?sep:char -> 'a converter -> 'b converter -> 'c converter ->
     'd converter -> ('a * 'b * 'c * 'd) converter
   (** [t4 sep c0 c1 c2 c3] splits the argument at the {e first} three [sep]
       characters (defaults to [',']) respectively converts the substrings
