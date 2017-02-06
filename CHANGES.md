@@ -37,6 +37,8 @@ cmdliner.
 - Add `?envs` optional argument to `Term.info`. Documents environment
   variables that influence a term's evaluation and automatically
   integrate them in the manual.
+- Add `Manpage.escape` to escape a string from the documentation markup
+  language.
 - Add `Manpage.s_*` constants for standard man page section names.
 - Add a `` `Blocks`` case to `Manpage.blocks` to allow block splicing
   (#69).  This avoids having to concatenate block lists at the

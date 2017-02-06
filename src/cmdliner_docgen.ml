@@ -7,7 +7,7 @@
 let rev_compare n0 n1 = compare n1 n0
 let strf = Printf.sprintf
 
-let esc = Cmdliner_manpage.markup_text_escape
+let esc = Cmdliner_manpage.escape
 let term_name t = esc @@ Cmdliner_info.term_name t
 
 let sorted_items_to_blocks ~boilerplate:b items =

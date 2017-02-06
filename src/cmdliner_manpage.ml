@@ -150,7 +150,7 @@ let is_markup_esc = function '$' | '\\' | '(' | ')' -> true | _ -> false
 let markup_need_esc = function '\\' | '$' -> true | _ -> false
 let markup_text_need_esc = function '\\' | '$' | ')' -> true | _ -> false
 
-let markup_text_escape s =
+let escape s = (* escapes [s] from doc language. *)
   let max_i = String.length s - 1 in
   let rec escaped_len i l =
     if i > max_i then l else

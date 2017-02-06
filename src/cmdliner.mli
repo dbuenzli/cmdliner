@@ -62,6 +62,10 @@ module Manpage : sig
       and are all collapsed to a single space. All block strings
       support the {{!doclang}documentation markup language}.*)
 
+  val escape : string -> string
+  (** [escape s] escapes [s] so that it doesn't get interpreted by the
+      {{!doclang}documentation markup language}. *)
+
   type title = string * int * string * string * string
   (** The type for man page titles. Describes the man page
       [title], [section], [center_footer], [left_footer], [center_header]. *)
