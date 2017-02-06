@@ -37,27 +37,27 @@ cmdliner.
 - Add `?envs` optional argument to `Term.info`. Documents environment
   variables that influence a term's evaluation and automatically
   integrate them in the manual.
-- Add `Manpage.s_*` constants for standard manpage section names.
+- Add `Manpage.s_*` constants for standard man page section names.
 - Add a `` `Blocks`` case to `Manpage.blocks` to allow block splicing
   (#69).  This avoids having to concatenate block lists at the
   toplevel of your program.
 - `Arg.env_var`, change default environment variable section to the
    standard `ENVIRONMENT` manual section rather than `ENVIRONMENT
    VARIABLES`.  If you previously manually positioned that section in
-   your manpage you will have to change the name. See also next point.
+   your man page you will have to change the name. See also next point.
 - Fix automatic placement of default environment variable section (#44)
-  whenever unspecified in the manpage.
-- Better automatic insertions of manpage sections (#73). See the API
+  whenever unspecified in the man page.
+- Better automatic insertions of man page sections (#73). See the API
   docs about manual specification. As a side effect the `NAME` section
   can now also be overriden manually.
 - Fix repeated environment variable printing for flags (#64). Thanks to
   Thomas Gazagnaire for the report.
-- Fix rendering of env vars in manpages, bold is standard (#71).
+- Fix rendering of env vars in man pages, bold is standard (#71).
 - Fix plain help formatting for commands with empty
   description. Thanks to Maciek Starzyk for the patch.
-- Fix (implement really) groff manpage escaping (#48).
-- Request `an` macros directly in the manpage via `.mso` this
-  makes manpages self-describing and avoids having to call `groff` with
+- Fix (implement really) groff man page escaping (#48).
+- Request `an` macros directly in the man page via `.mso` this
+  makes man pages self-describing and avoids having to call `groff` with
   the `-man` option.
 
 ### Doc language sanitization

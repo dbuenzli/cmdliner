@@ -71,7 +71,7 @@ module Manpage : sig
 
   (** {1:standard_sections Standard section names and content}
 
-      The following are standard manpage section names, roughly ordered
+      The following are standard man page section names, roughly ordered
       in the order they conventionally appear. See also
       {{:http://man7.org/linux/man-pages/man7/man-pages.7.html}[man man-pages]}
       for more elaborations about what sections should contain. *)
@@ -83,7 +83,7 @@ module Manpage : sig
   val s_synopsis : string
   (** The [SYNOPSIS] section. By default this section is automatically
       created by [Cmdliner] for you, unless it is the first section of
-      your term's manpage, in which case it will replace it with yours. *)
+      your term's man page, in which case it will replace it with yours. *)
 
   val s_description : string
   (** The [DESCRIPTION] section. This should be a description of what
@@ -138,7 +138,7 @@ module Manpage : sig
     other man pages (e.g. to implement a help command). *)
 
   type format = [ `Auto | `Pager | `Plain | `Groff ]
-  (** The type for manpage output specification.
+  (** The type for man page output specification.
       {ul
       {- [`Auto], formats like [`Pager] or [`Plain] whenever the [TERM]
          environment variable is [dumb] or unset.}
@@ -846,7 +846,7 @@ markup language.
    text respectively rendered in italics and bold.}
 {- Outside markup directives, context dependent variables of the form
    [$(var)] are substituted by marked up data. For example in a term's
-   manpage [$(tname)] is substituted by the term name in bold.}
+   man page [$(tname)] is substituted by the term name in bold.}
 {- Characters $, (, ) and \ can respectively be escaped by \$, \(, \)
    and \\ (in OCaml strings this will be ["\\$"], ["\\("], ["\\)"],
    ["\\\\"]). Escaping $ and \ is mandatory everywhere. Escaping ) is
