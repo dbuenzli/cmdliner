@@ -50,4 +50,4 @@ let cmd =
   Term.(const rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"%%VERSION%%" ~doc ~man
 
-let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval cmd)

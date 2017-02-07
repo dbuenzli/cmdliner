@@ -12,6 +12,4 @@ let test_pos =
   Term.(const pos $ right $ req 1 $ req 0 $ req 2),
   Term.info "test_pos_req" ~doc:"Test pos req arguments"
 
-let () = match Term.eval test_pos with
-| `Error _ -> exit 1
-| _ -> exit 0
+let () = Term.(exit @@ eval test_pos)

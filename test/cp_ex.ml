@@ -49,4 +49,4 @@ let cmd =
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
   Term.info "cp" ~version:"%%VERSION%%" ~doc ~man
 
-let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval cmd)

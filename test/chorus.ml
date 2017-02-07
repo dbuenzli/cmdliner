@@ -28,4 +28,4 @@ let info =
   in
   Term.info "chorus" ~version:"%%VERSION%%" ~doc ~man
 
-let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.exit @@ Term.eval (chorus_t, info)

@@ -71,4 +71,4 @@ let cmd =
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
   Term.info "tail" ~version:"%%VERSION%%" ~doc ~man
 
-let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval cmd)

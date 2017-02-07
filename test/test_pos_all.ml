@@ -8,6 +8,4 @@ let test_pos_all =
   Term.(const pos_all $ all),
   Term.info "test_pos_all" ~doc:"Test pos all"
 
-let () = match Term.eval test_pos_all with
-| `Error _ -> exit 1
-| _ -> exit 0
+let () = Term.(exit @@ eval test_pos_all)

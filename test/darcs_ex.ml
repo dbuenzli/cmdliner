@@ -143,5 +143,4 @@ let default_cmd =
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 
-let () = match Term.eval_choice default_cmd cmds with
-| `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval_choice default_cmd cmds)

@@ -239,6 +239,22 @@ module Term = struct
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env  in
     (term_eval_peek_opts ei f (remove_exec argv) :> 'a option * 'a result)
 
+  (* Exits *)
+
+  let exit_status_of_result ?(term_err = 1) = function
+  | `Ok _ | `Help | `Version -> 0
+  | `Error `Term -> term_err
+  | `Error `Exn -> 124
+  | `Error `Parse -> 125
+
+  let exit_status_of_status_result ?term_err = function
+  | `Ok n -> n
+  | r -> exit_status_of_result ?term_err r
+
+  let exit ?term_err r = Pervasives.exit (exit_status_of_result ?term_err r)
+  let exit_status ?term_err r =
+    Pervasives.exit (exit_status_of_status_result ?term_err r)
+
 end
 
 (*---------------------------------------------------------------------------

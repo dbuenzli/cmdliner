@@ -16,6 +16,4 @@ let test_pos =
   Term.(const dups $ p $ p $ o $ o),
   Term.info "test_term_dups" ~doc:"Test multiple term usage"
 
-let () = match Term.eval test_pos with
-| `Error _ -> exit 1
-| _ -> exit 0
+let () = Term.(exit @@ eval test_pos)

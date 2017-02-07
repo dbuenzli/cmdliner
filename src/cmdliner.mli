@@ -163,9 +163,10 @@ end
 
 (** Terms.
 
-    A term is evaluated by a program to produce a {{!result}result}.
-    A term made of terms referring to {{!Arg}command line arguments}
-    implicitly defines a command line syntax. *)
+    A term is evaluated by a program to produce a {{!result}result},
+    which can be turned into an {{!exits}exit status}. A term made of terms
+    referring to {{!Arg}command line arguments} implicitly defines a
+    command line syntax. *)
 module Term : sig
 
   (** {1:terms Terms} *)
@@ -361,6 +362,34 @@ module Term : sig
       specification of the command line: we can't tell apart a
       positional argument from the value of an unknown optional
       argument.  *)
+
+  (** {1:exits Turning evaluation results into exit codes} *)
+
+  val exit_status_of_result : ?term_err:int -> 'a result -> int
+  (** [exit_status_of_result ~term_err r] is an [exit(3)] status
+      code determined from [r] as follows:
+      {ul
+      {- [0] if [r] is one of [`Ok _], [`Version], [`Help]}
+      {- [term_err] if [r] is [`Error `Term], [term_err] defaults to [1].}
+      {- [124] if [r] is [`Error `Exn]}
+      {- [125] if [r] is [`Error `Parse]}} *)
+
+  val exit_status_of_status_result : ?term_err:int -> int result -> int
+  (** [exit_status_of_status_result] is like {!exit_status_of_result}
+      except for [`Ok n] where [n] is used as the status exit code.
+
+      {b WARNING.} You should avoid status codes stricly greater than 125
+      as those may be used by
+      {{:https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html}
+       some} shells. *)
+
+  val exit : ?term_err:int -> 'a result -> unit
+  (** [exit ~term_err r] is
+      [Pervasives.exit @@ exit_status_of_result ~term_err r] *)
+
+  val exit_status : ?term_err:int -> int result -> unit
+  (** [exit_status ~term_err r] is
+      [Pervasives.exit @@ exit_status_of_status_result ~term_err r] *)
 end
 
 (** Terms for command line arguments.
@@ -745,8 +774,7 @@ is a term that evaluates to the result (and effect) of the [revolt]
 function. Terms are evaluated with {!Term.eval}:
 
 {[
-let () = match Term.eval (revolt_t, Term.info "revolt") with
-| `Error _ -> exit 1 | _ -> exit 0
+let () = Term.exit @@ Term.eval (revolt_t, Term.info "revolt")
 ]}
 
 This defines a command line program named ["revolt"], without command
@@ -825,7 +853,7 @@ let info =
   in
   Term.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man
 
-let () = match Term.eval (chorus_t, info) with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.exit @@ Term.eval (chorus_t, info))
 ]}
 
 The [info] value created with {!Term.info} gives more information
@@ -1152,7 +1180,7 @@ let cmd =
   Term.(const rm $ prompt $ recursive $ files),
   Term.info "rm" ~version:"%%VERSION%%" ~doc ~man
 
-let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval cmd)
 ]}
 
 {2:excp A [cp] command}
@@ -1220,7 +1248,7 @@ let cmd =
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
   Term.info "cp" ~version:"%‌%VERSION%%" ~doc ~man
 
-let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval cmd)
 ]}
 
 {2:extail A [tail] command}
@@ -1319,7 +1347,7 @@ let cmd =
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
   Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~man
 
-let () = match Term.eval cmd with `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval cmd)
 ]}
 
 {2:exdarcs A [darcs] command}
@@ -1493,8 +1521,7 @@ let default_cmd =
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 
-let () = match Term.eval_choice default_cmd cmds with
-| `Error _ -> exit 1 | _ -> exit 0
+let () = Term.(exit @@ eval_choice default_cmd cmds)
 ]}
 *)
 

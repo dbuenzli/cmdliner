@@ -89,6 +89,4 @@ let info =
   in
   Term.info "man_test" ~version:"%%VERSION%%" ~envs ~doc ~man
 
-let () = match Term.eval (man_test_t, info) with
-| `Error _ -> exit 1
-| _ -> exit 0
+let () = Term.exit @@ Term.eval (man_test_t, info)
