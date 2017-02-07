@@ -22,21 +22,47 @@ let doc_alts_enum ?quoted enum = doc_alts ?quoted (List.map fst enum)
 
 let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 
-(* Arguments *)
+(* Argument converters *)
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a converter = 'a parser * 'a printer
+
+type 'a conv = 'a parser * 'a printer
+type 'a converter = 'a conv
+
+let default_docv = "VALUE"
+let conv ?docv (parse, print) =
+  let parse s = match parse s with Ok v -> `Ok v | Error (`Msg e) -> `Error e in
+  parse, print
+
+let pconv ?docv conv = conv
+
+let conv_parser (parse, _) =
+  fun s -> match parse s with `Ok v -> Ok v | `Error e -> Error (`Msg e)
+
+let conv_printer (_, print) = print
+let conv_docv _ = default_docv
+
+let err_invalid s kind = `Msg (strf "invalid value '%s', expected %s" s kind)
+let parser_of_kind_of_string ~kind k_of_string =
+  fun s -> match k_of_string s with
+  | None -> Error (err_invalid s kind)
+  | Some v -> Ok v
+
+let some = Cmdliner_base.some
+
+(* Argument information *)
+
 type env = Cmdliner_info.env
+let env_var = Cmdliner_info.env
 
 type 'a t = 'a Cmdliner_term.t
 type info = Cmdliner_info.arg
+let info = Cmdliner_info.arg
 
-let env_var = Cmdliner_info.env
+(* Arguments *)
 
 let ( & ) f x = f x
-
-let info = Cmdliner_info.arg
 
 let err e = Error (`Parse e)
 
@@ -291,12 +317,11 @@ let stdopt_version ~docs =
 let stdopt_help ~docs =
   let doc = man_fmts_doc "this help" in
   let docv = man_fmt_docv in
-  value & opt ~vopt:(Some `Auto) (Cmdliner_base.some man_fmts_enum) None &
+  value & opt ~vopt:(Some `Auto) (some man_fmts_enum) None &
   info ["help"] ~docv ~docs ~doc
 
 (* Predefined converters. *)
 
-let some = Cmdliner_base.some
 let bool = Cmdliner_base.bool
 let char = Cmdliner_base.char
 let int = Cmdliner_base.int

@@ -1,4 +1,12 @@
 
+*IMPORTANT* message for users that defined their own argument
+converters. The `Arg.converter` type is deprecated in favor of the
+`Arg.conv` type. For this release both types are equal but the next
+major release will drop the former and make the latter abstract. All
+users are kindly requested to migrate to use the new type and **only**
+by using the newly introduced `Arg.[p]conv` functions to construct
+them and `Arg.conv_{parser,printer}` to deconstruct them.
+
 - Allow terms to be used more than once in terms without tripping out
   documentation generation (#77). Thanks to François Bobot and Gabriel
   Radanne.
@@ -6,8 +14,10 @@
   different arguments or terms. Raises Invalid_argument, used
   to be undefined behaviour (in practice, an arbitrary one would be
   ignored).
+- Improve converter API (see important message above).
+- Add `Arg.parser_of_kind_of_string`.
 - Change semantics of `Arg.pos_left` (see #76 for details).
-- Deprecate `Term.man_format` in favor if `Arg.man_format`.
+- Deprecate `Term.man_format` in favor of `Arg.man_format`.
 - Relicense from BSD3 to ISC.
 - Safe-string support.
 - Build depend on topkg.

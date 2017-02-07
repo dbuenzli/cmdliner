@@ -19,16 +19,19 @@ let tail lines follow verb pid files =
 
 (* Command line interface *)
 
+open Result
 open Cmdliner
 
 let lines =
   let loc =
-    let parse s = try
-      if s <> "" && s.[0] <> '+' then `Ok (true, int_of_string s) else
-      `Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
-    with Failure _ -> `Error "unable to parse integer"
+    let parse s =
+      try
+        if s <> "" && s.[0] <> '+' then Ok (true, int_of_string s) else
+        Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
+      with Failure _ -> Error (`Msg "unable to parse integer")
     in
-    parse, fun ppf p -> Format.fprintf ppf "%s" (loc_str p)
+    let print ppf p = Format.fprintf ppf "%s" (loc_str p) in
+    Arg.conv ~docv:"N" (parse, print)
   in
   Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N"
          ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start

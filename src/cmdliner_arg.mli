@@ -8,7 +8,21 @@
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a converter = 'a parser * 'a printer
+type 'a conv = 'a parser * 'a printer
+type 'a converter = 'a conv
+
+val conv :
+  ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
+  'a conv
+
+val pconv : ?docv:string -> 'a parser * 'a printer -> 'a conv
+val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
+val conv_printer : 'a conv -> 'a printer
+val conv_docv : 'a conv -> string
+
+val parser_of_kind_of_string :
+  kind:string -> (string -> 'a option) ->
+  (string -> ('a, [`Msg of string]) result)
 
 val some : ?none:string -> 'a converter -> 'a option converter
 

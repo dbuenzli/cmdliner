@@ -4,6 +4,8 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+open Result
+
 (** Declarative definition of command line interfaces.
 
     [Cmdliner] provides a simple and compositional mechanism
@@ -366,15 +368,58 @@ module Arg : sig
     are provided for many types of the standard library. *)
 
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
-  (** The type for argument parsers. *)
+  (** The type for argument parsers.
+
+      @deprecated Use a parser with [('a, [ `Msg of string]) result] results. *)
 
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
 
-  type 'a converter = 'a parser * 'a printer
-  (** The type for argument converters. *)
+  type 'a conv = 'a parser * 'a printer
+  (** The type for argument converters.
 
-  val some : ?none:string -> 'a converter -> 'a option converter
+      {b WARNING.} This type will become abstract in the next
+      major version of cmdliner, use {!val:conv} or {!pconv}
+      to construct values of this type. *)
+
+  type 'a converter = 'a conv
+  (** @deprecated Use the {!type:conv} type via the {!val:conv} and {!pconv}
+      functions. *)
+
+  val conv :
+    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
+    'a conv
+  (** [converter ~docv (parse, print)] is an argument converter
+      parsing values with [parse] and printing them with
+      [print]. [docv] is a documentation meta-variable used in the
+      documentation to stand for the argument value, defaults to
+      ["VALUE"]. *)
+
+  val pconv :
+    ?docv:string -> 'a parser * 'a printer -> 'a conv
+  (** [pconv] is like {!converter}, but uses a deprecated {!parser}
+      signature. *)
+
+  val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
+  (** [conv_parser c] 's [c]'s parser. *)
+
+  val conv_printer : 'a conv -> 'a printer
+  (** [conv_printer c] is [c]'s printer. *)
+
+  val conv_docv : 'a conv -> string
+  (** [conv_docv c] is [c]'s documentation meta-variable.
+
+      {b WARNING.} Currently always returns ["VALUE"] in the future
+      will return the value given to {!conv} or {!pconv}. *)
+
+  val parser_of_kind_of_string :
+    kind:string -> (string -> 'a option) ->
+    (string -> ('a, [`Msg of string]) result)
+  (** [parser_of_kind_of_string ~kind kind_of_string] is an argument
+      parser using the [kind_of_string] function for parsing and [kind]
+      to report errors (e.g. could be "an integer" for an [int] parser.). *)
+
+  val some : ?none:string -> 'a conv -> 'a option conv
   (** [some none c] is like the converter [c] except it returns
       [Some] value. It is used for command line arguments
       that default to [None] when absent. [none] is what to print to
@@ -411,18 +456,16 @@ module Arg : sig
     info
   (** [info docs docv doc env names] defines information for
       an argument.
-
-      [names] defines the names under which an optional argument
-      can be referred to. Strings of length [1] (["c"]) define short
-      option names (["-c"]), longer strings (["count"]) define long
-      option names (["--count"]). [names] must be empty for positional
-      arguments.
-
-      [env] defines the name of an environment variable which is
-      looked up for defining the argument if it is absent from the
-      command line. See {{!envlookup}environment variables} for
-      details.
       {ul
+      {- [names] defines the names under which an optional argument
+         can be referred to. Strings of length [1] (["c"]) define
+         short option names (["-c"]), longer strings (["count"])
+         define long option names (["--count"]). [names] must be empty
+         for positional arguments.}
+      {- [env] defines the name of an environment variable which is
+         looked up for defining the argument if it is absent from the
+         command line. See {{!envlookup}environment variables} for
+         details.}
       {- [doc] is the man page information of the argument.
          The {{!doclang}documentation language} can be used and
          the following variables are recognized:
@@ -483,7 +526,7 @@ module Arg : sig
       {b Note.} Environment variable lookup is unsupported for
       for these arguments. *)
 
-  val opt : ?vopt:'a -> 'a converter -> 'a -> info -> 'a t
+  val opt : ?vopt:'a -> 'a conv -> 'a -> info -> 'a t
   (** [opt vopt c v i] is an ['a] argument defined by the value of
       an optional argument that may appear {e at most} once on the command
       line under one of the names specified by [i]. The argument holds
@@ -493,7 +536,7 @@ module Arg : sig
       If [vopt] is provided the value of the optional argument is itself
       optional, taking the value [vopt] if unspecified on the command line. *)
 
-  val opt_all : ?vopt:'a -> 'a converter -> 'a list -> info -> 'a list t
+  val opt_all : ?vopt:'a -> 'a conv -> 'a list -> info -> 'a list t
   (** [opt_all vopt c v i] is like {!opt} except the optional argument may
       appear more than once. The argument holds a list that contains one value
       per occurrence of the flag in the order found on the command line.
@@ -512,7 +555,7 @@ module Arg : sig
       prevented by raising [Invalid_argument] in the future. But for now
       it is the client's duty to make sure this doesn't happen. *)
 
-  val pos : ?rev:bool -> int -> 'a converter -> 'a -> info -> 'a t
+  val pos : ?rev:bool -> int -> 'a conv -> 'a -> info -> 'a t
   (** [pos rev n c v i] is an ['a] argument defined by the [n]th
       positional argument of the command line as converted by [c].
       If the positional argument is absent from the command line
@@ -522,13 +565,13 @@ module Arg : sig
       position is [max-n] where [max] is the position of
       the last positional argument present on the command line. *)
 
-  val pos_all : 'a converter -> 'a list -> info -> 'a list t
+  val pos_all : 'a conv -> 'a list -> info -> 'a list t
   (** [pos_all c v i] is an ['a list] argument that holds
       all the positional arguments of the command line as converted
       by [c] or [v] if there are none. *)
 
   val pos_left :
-    ?rev:bool -> int -> 'a converter -> 'a list -> info -> 'a list t
+    ?rev:bool -> int -> 'a conv -> 'a list -> info -> 'a list t
   (** [pos_left rev n c v i] is an ['a list] argument that holds
       all the positional arguments as converted by [c] found on the left
       of the [n]th positional argument or [v] if there are none.
@@ -538,7 +581,7 @@ module Arg : sig
       the last positional argument present on the command line. *)
 
   val pos_right :
-    ?rev:bool -> int -> 'a converter -> 'a list -> info -> 'a list t
+    ?rev:bool -> int -> 'a conv -> 'a list -> info -> 'a list t
   (** [pos_right] is like {!pos_left} except it holds all the positional
       arguments found on the right of the specified positional argument. *)
 
@@ -573,31 +616,31 @@ module Arg : sig
 
   (** {1:converters Predefined converters} *)
 
-  val bool : bool converter
+  val bool : bool conv
   (** [bool] converts values with {!bool_of_string}. *)
 
-  val char : char converter
+  val char : char conv
   (** [char] converts values by ensuring the argument has a single char. *)
 
-  val int : int converter
+  val int : int conv
   (** [int] converts values with {!int_of_string}. *)
 
-  val nativeint : nativeint converter
+  val nativeint : nativeint conv
   (** [nativeint] converts values with {!Nativeint.of_string}. *)
 
-  val int32 : int32 converter
+  val int32 : int32 conv
   (** [int32] converts values with {!Int32.of_string}. *)
 
-  val int64 : int64 converter
+  val int64 : int64 conv
   (** [int64] converts values with {!Int64.of_string}. *)
 
-  val float : float converter
+  val float : float conv
   (** [float] converts values with {!float_of_string}. *)
 
-  val string : string converter
+  val string : string conv
   (** [string] converts values with the identity function. *)
 
-  val enum : (string * 'a) list -> 'a converter
+  val enum : (string * 'a) list -> 'a conv
   (** [enum l p] converts values such that unambiguous prefixes of string names
       in [l] map to the corresponding value of type ['a].
 
@@ -605,46 +648,44 @@ module Arg : sig
 
       @raise Invalid_argument if [l] is empty. *)
 
-  val file : string converter
+  val file : string conv
   (** [file] converts a value with the identity function and
       checks with {!Sys.file_exists} that a file with that name exists. *)
 
-  val dir : string converter
+  val dir : string conv
   (** [dir] converts a value with the identity function and checks
       with {!Sys.file_exists} and {!Sys.is_directory}
       that a directory with that name exists. *)
 
-  val non_dir_file : string converter
+  val non_dir_file : string conv
   (** [non_dir_file] converts a value with the identity function and checks
       with {!Sys.file_exists} and {!Sys.is_directory}
       that a non directory file with that name exists. *)
 
-  val list : ?sep:char -> 'a converter -> 'a list converter
+  val list : ?sep:char -> 'a conv -> 'a list conv
   (** [list sep c] splits the argument at each [sep] (defaults to [','])
       character and converts each substrings with [c]. *)
 
-  val array : ?sep:char -> 'a converter -> 'a array converter
+  val array : ?sep:char -> 'a conv -> 'a array conv
   (** [array sep c] splits the argument at each [sep] (defaults to [','])
       character and converts each substring with [c]. *)
 
-  val pair : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
+  val pair : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
   (** [pair sep c0 c1] splits the argument at the {e first} [sep] character
       (defaults to [',']) and respectively converts the substrings with
       [c0] and [c1]. *)
 
-  val t2 : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
+  val t2 : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
   (** {!t2} is {!pair}. *)
 
-  val t3 :
-    ?sep:char -> 'a converter ->'b converter -> 'c converter ->
-    ('a * 'b * 'c) converter
+  val t3 : ?sep:char -> 'a conv ->'b conv -> 'c conv -> ('a * 'b * 'c) conv
   (** [t3 sep c0 c1 c2] splits the argument at the {e first} two [sep]
       characters (defaults to [',']) and respectively converts the
       substrings with [c0], [c1] and [c2]. *)
 
   val t4 :
-    ?sep:char -> 'a converter -> 'b converter -> 'c converter ->
-    'd converter -> ('a * 'b * 'c * 'd) converter
+    ?sep:char -> 'a conv -> 'b conv -> 'c conv -> 'd conv ->
+    ('a * 'b * 'c * 'd) conv
   (** [t4 sep c0 c1 c2 c3] splits the argument at the {e first} three [sep]
       characters (defaults to [',']) respectively converts the substrings
       with [c0], [c1], [c2] and [c3]. *)
@@ -1213,20 +1254,24 @@ let tail lines follow verb pid files =
 
 (* Command line interface *)
 
+open Result
 open Cmdliner
 
 let lines =
   let loc =
-    let parse s = try
-      if s <> "" && s.[0] <> '+' then `Ok (true, int_of_string s) else
-      `Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
-    with Failure _ -> `Error "unable to parse integer"
+    let parse s =
+      try
+        if s <> "" && s.[0] <> '+' then Ok (true, int_of_string s) else
+        Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
+      with Failure _ -> Error (`Msg "unable to parse integer")
     in
-    parse, fun ppf p -> Format.fprintf ppf "%s" (loc_str p)
+    let print ppf p = Format.fprintf ppf "%s" (loc_str p) in
+    Arg.conv ~docv:"N" (parse, print)
   in
   Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N"
-   ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
-         output after the $(i,N)-1th line.")
+         ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
+               output after the $(i,N)-1th line.")
+
 let follow =
   let doc = "Output appended data as the file grows. $(docv) specifies how the
              file should be tracked, by its `name' or by its `descriptor'." in
