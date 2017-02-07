@@ -191,6 +191,8 @@ module Term : sig
   val app : ('a -> 'b) t -> 'a t -> 'b t
   (** [app] is {!($)}. *)
 
+  (** {1 Interacting with Cmdliner's evaluation} *)
+
   type 'a ret =
     [ `Help of Manpage.format * string option
     | `Error of (bool * string)
@@ -201,12 +203,22 @@ module Term : sig
   (** [ret v] is a term whose evaluation depends on the case
       to which [v] evaluates. With :
       {ul
-      {- [`Ok r], it evaluates to [r].}
-      {- [`Error (usage,e)], the evaluation fails and [Cmdliner] prints
+      {- [`Ok v], it evaluates to [v].}
+      {- [`Error (usage, e)], the evaluation fails and [Cmdliner] prints
          the error [e] and the term's usage if [usage] is [true].}
       {- [`Help (format, name)], the evaluation fails and [Cmdliner] prints the
          term's man page in the given [format] (or the man page for a
          specific [name] term in case of multiple term evaluation).}}   *)
+
+  val ret_of_result : ?usage:bool -> ('a, [`Msg of string]) result -> 'a ret
+  (** [ret_of_result ~usage r] is
+      {ul
+      {- [`Ok v] if [r] is [Ok v].}
+      {- [`Error (usage, e)] if [r] is [Error (`Msg e)], [usage] defaults
+         to [false]}} *)
+
+  val ret_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a ret t
+  (** [ret_result ~usage r] is [app (const @@ ret_of_result ~usage) r]. *)
 
   val main_name : string t
   (** [main_name] is a term that evaluates to the "main" term's name. *)

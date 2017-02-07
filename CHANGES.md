@@ -15,6 +15,8 @@ them and `Arg.conv_{parser,printer}` to deconstruct them.
   to be undefined behaviour (in practice, an arbitrary one would be
   ignored).
 - Improve converter API (see important message above).
+- Improve interaction with terms evaluating to `result`s. See
+  `Term.{ret_of_result,ret_result}`.
 - Add `Arg.parser_of_kind_of_string`.
 - Change semantics of `Arg.pos_left` (see #76 for details).
 - Deprecate `Term.man_format` in favor of `Arg.man_format`.

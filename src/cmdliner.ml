@@ -30,6 +30,12 @@ module Term = struct
     | Ok (`Help _ as help) -> Error help
     | Error _ as e -> e
 
+  let ret_of_result ?(usage = false) = function
+  | Ok v -> `Ok v
+  | Error (`Msg e) -> `Error (usage, e)
+
+  let ret_result ?usage t = app (const @@ ret_of_result ?usage) t
+
   let main_name =
     Cmdliner_info.Args.empty,
     (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))
