@@ -88,8 +88,8 @@ Ivan Gotovchits and Nicolás Ojeda Bär for the feedback.
 
 - It is only allowed to use the variables `$(var)` that are mentioned in
   the docs (`$(docv)`, `$(opt)`, etc.) and the markup directives
-  `$({i,b},text)`. Any other unknown `$(var)` fails the man page
-  with `Invalid_argument`.
+  `$({i,b},text)`. Any other unknown `$(var)` will generate errors
+  on standard error during documentation generation.
 - Markup directives `$({i,b},text)` treat `text` as is, modulo escapes;
   see next point.
 - Characters `$`, `(`, `)` and `\` can respectively be escaped by `\$`,
@@ -98,9 +98,9 @@ Ivan Gotovchits and Nicolás Ojeda Bär for the feedback.
   is only here for your symmetric pleasure. Any other sequence of
   character starting with a `\` is an illegal sequence.
 - Variables `$(mname)` and `$(tname)` are now marked up with bold when
-  substituted. If you used to write `$(b,$(tname))` this will throw
-  `Invalid_argument`, since `$` is not escaped. Simply replace these by
-  `$(tname)`.
+  substituted. If you used to write `$(b,$(tname))` this will generate
+  an error on standard output, since `$` is not escaped in the markup
+  directive. Simply replace these by `$(tname)`.
 
 v0.9.8 2015-10-11 Cambridge (UK)
 --------------------------------

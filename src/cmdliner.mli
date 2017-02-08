@@ -994,8 +994,8 @@ markup language.
    mandatory only in markup directives. Escaping ( is only here for
    your symmetric pleasure. Any other sequence of characters starting
    with a \ is an illegal character sequence.}
-{- Refering to unknown markup directives or variables is a hard
-   failure; [Invalid_argument] is raised.}}
+{- Refering to unknown markup directives or variables will generate
+   errors on standard error during documentation generation.}}
 
 {2:manual Manual}
 
