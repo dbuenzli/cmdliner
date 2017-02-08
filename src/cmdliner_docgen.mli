@@ -7,9 +7,11 @@
 val plain_invocation : Cmdliner_info.eval -> string
 
 val pp_man :
-  Cmdliner_manpage.format -> Format.formatter -> Cmdliner_info.eval -> unit
+  errs:Format.formatter -> Cmdliner_manpage.format -> Format.formatter ->
+  Cmdliner_info.eval -> unit
 
-val pp_plain_synopsis : Format.formatter -> Cmdliner_info.eval -> unit
+val pp_plain_synopsis :
+  errs:Format.formatter -> Format.formatter -> Cmdliner_info.eval -> unit
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

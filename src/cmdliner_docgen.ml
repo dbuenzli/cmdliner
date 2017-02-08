@@ -95,7 +95,7 @@ let synopsis ei = match Cmdliner_info.eval_kind ei with
     let pargs = String.concat " " (List.rev_map snd pargs) in
     strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
 
-let cmd_man_docs ei = match Cmdliner_info.eval_kind ei with
+let cmd_docs ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_sub -> []
 | `Multiple_main ->
     let add_cmd acc t =
@@ -134,7 +134,7 @@ let arg_man_item_label a =
   let s = String.concat ", " (List.rev_map (fmt_name var) names) in
   s
 
-let arg_to_man_item ~buf ~subst a =
+let arg_to_man_item ~errs ~subst ~buf a =
   let or_env ~value a = match Cmdliner_info.arg_env a with
   | None -> ""
   | Some e ->
@@ -158,10 +158,11 @@ let arg_to_man_item ~buf ~subst a =
   | s, s' -> strf " (%s) (%s)" s s'
   in
   let subst = arg_info_subst ~subst a in
-  let doc = Cmdliner_manpage.subst_vars buf ~subst (Cmdliner_info.arg_doc a) in
+  let doc = Cmdliner_info.arg_doc a in
+  let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
   (Cmdliner_info.arg_docs a, `I (arg_man_item_label a ^ argvdoc, doc))
 
-let arg_man_docs ~buf ~subst ei =
+let arg_docs ~errs ~subst ~buf ei =
   let by_sec_by_arg a0 a1 =
     let c = compare (Cmdliner_info.arg_docs a0) (Cmdliner_info.arg_docs a1) in
     if c <> 0 then c else
@@ -189,7 +190,7 @@ let arg_man_docs ~buf ~subst ei =
   let args = Cmdliner_info.(term_args @@ eval_term ei) in
   let args = Cmdliner_info.Args.fold keep_arg args [] in
   let args = List.sort by_sec_by_arg args in
-  let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
+  let args = List.rev_map (arg_to_man_item ~errs ~subst ~buf) args in
   sorted_items_to_blocks ~boilerplate:None args
 
 (* Exit statuses doc *)
@@ -198,14 +199,14 @@ let exit_boilerplate sec = match sec = Cmdliner_manpage.s_exit_status with
 | false -> None
 | true -> Some (Cmdliner_manpage.s_exit_status_intro)
 
-let exit_man_docs ~buf ~subst ~has_sexit ei =
+let exit_docs ~errs ~subst ~buf ~has_sexit ei =
   let by_sec (s0, _) (s1, _) = compare s0 s1 in
   let add_exit_item acc e =
     let subst = exit_info_subst ~subst e in
     let min, max = Cmdliner_info.exit_statuses e in
     let doc = Cmdliner_info.exit_doc e in
     let label = if min = max then strf "%d" min else strf "%d-%d" min max in
-    let item = `I (label, Cmdliner_manpage.subst_vars buf ~subst doc) in
+    let item = `I (label, Cmdliner_manpage.subst_vars ~errs ~subst buf doc) in
     Cmdliner_info.(exit_docs e, item) :: acc
   in
   let exits = Cmdliner_info.(term_exits @@ eval_term ei) in
@@ -221,13 +222,13 @@ let env_boilerplate sec = match sec = Cmdliner_manpage.s_environment with
 | false -> None
 | true -> Some (Cmdliner_manpage.s_environment_intro)
 
-let env_man_docs ~buf ~subst ~has_senv ei =
+let env_docs ~errs ~subst ~buf ~has_senv ei =
   let add_env_item ~subst (seen, envs as acc) e =
     if Cmdliner_info.Envs.mem e seen then acc else
     let seen = Cmdliner_info.Envs.add e seen in
     let var = strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e) in
     let doc = Cmdliner_info.env_doc e in
-    let doc = Cmdliner_manpage.subst_vars buf ~subst doc in
+    let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
     let envs = (Cmdliner_info.env_docs e, `I (var, doc)) :: envs in
     seen, envs
   in
@@ -254,7 +255,7 @@ let env_man_docs ~buf ~subst ~has_senv ei =
 
 (* xref doc *)
 
-let xref_man_docs ei =
+let xref_docs ~errs ei =
   let main = Cmdliner_info.(term_name @@ eval_main ei) in
   let to_xref = function
   | `Main -> 1, main
@@ -262,7 +263,7 @@ let xref_man_docs ei =
   | `Page (sec, name) -> sec, name
   | `Cmd c ->
       if Cmdliner_info.eval_has_choice ei c then 1, strf "%s-%s" main c else
-      invalid_arg (strf "xref %s: no such term name" c)
+      (Format.fprintf errs "xref %s: no such term name@." c; 0, "doc-err")
   in
   let xref_str (sec, name) = strf "%s(%d)" (esc name) sec in
   let xrefs = Cmdliner_info.(term_man_xrefs @@ eval_term ei) in
@@ -285,25 +286,25 @@ let ensure_s_synopsis ei sm =
   let synopsis = `P (synopsis ei) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_synopsis synopsis)
 
-let insert_term_man_docs ei sm =
+let insert_term_man_docs ~errs ei sm =
   let buf = Buffer.create 200 in
   let subst = term_info_subst ei in
-  let insert sm (s, b) = Cmdliner_manpage.smap_append_block sm s b in
+  let ins sm (s, b) = Cmdliner_manpage.smap_append_block sm s b in
   let has_senv = Cmdliner_manpage.(smap_has_section sm s_environment) in
   let has_sexit = Cmdliner_manpage.(smap_has_section sm s_exit_status) in
-  let sm = List.fold_left insert sm (cmd_man_docs ei) in
-  let sm = List.fold_left insert sm (arg_man_docs ~buf ~subst ei) in
-  let sm = List.fold_left insert sm (exit_man_docs ~buf ~subst ~has_sexit ei) in
-  let sm = List.fold_left insert sm (env_man_docs ~buf ~subst ~has_senv ei) in
-  let sm = insert sm (xref_man_docs ei) in
+  let sm = List.fold_left ins sm (cmd_docs ei) in
+  let sm = List.fold_left ins sm (arg_docs ~errs ~subst ~buf ei) in
+  let sm = List.fold_left ins sm (exit_docs ~errs ~subst ~buf ~has_sexit ei)in
+  let sm = List.fold_left ins sm (env_docs ~errs ~subst ~buf ~has_senv ei) in
+  let sm = ins sm (xref_docs ~errs ei) in
   sm
 
-let text ei =
+let text ~errs ei =
   let man = Cmdliner_info.(term_man @@ eval_term ei) in
   let sm = Cmdliner_manpage.smap_of_blocks man in
   let sm = ensure_s_name ei sm in
   let sm = ensure_s_synopsis ei sm in
-  let sm = insert_term_man_docs ei sm in
+  let sm = insert_term_man_docs ei ~errs sm in
   Cmdliner_manpage.smap_to_blocks sm
 
 let title ei =
@@ -319,17 +320,18 @@ let title ei =
   in
   name, 1, "", left_footer, center_header
 
-let man ei = title ei, text ei
+let man ~errs ei = title ei, text ~errs ei
 
-let pp_man fmt ppf ei =
-  Cmdliner_manpage.print ~subst:(term_info_subst ei) fmt ppf (man ei)
+let pp_man ~errs fmt ppf ei =
+  Cmdliner_manpage.print
+    ~errs ~subst:(term_info_subst ei) fmt ppf (man ~errs ei)
 
 (* Plain synopsis for usage *)
 
-let pp_plain_synopsis ppf ei =
+let pp_plain_synopsis ~errs ppf ei =
   let buf = Buffer.create 100 in
   let subst = term_info_subst ei in
-  let syn = Cmdliner_manpage.doc_to_plain ~subst buf (synopsis ei) in
+  let syn = Cmdliner_manpage.doc_to_plain ~errs ~subst buf (synopsis ei) in
   Format.fprintf ppf "@[%s@]" syn
 
 (*---------------------------------------------------------------------------

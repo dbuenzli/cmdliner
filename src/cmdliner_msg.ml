@@ -86,7 +86,7 @@ let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_text err
 
 let pp_err_usage ppf ei ~err =
   pp ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-    (exec_name ei) pp_text err Cmdliner_docgen.pp_plain_synopsis ei
+    (exec_name ei) pp_text err (Cmdliner_docgen.pp_plain_synopsis ~errs:ppf) ei
     pp_try_help ei
 
 let pp_backtrace ppf ei e bt =

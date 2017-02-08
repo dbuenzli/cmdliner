@@ -165,11 +165,13 @@ module Manpage : sig
       {- [`Groff], formats to groff commands.}} *)
 
   val print :
+    ?errs:Format.formatter ->
     ?subst:(string -> string option) -> format -> Format.formatter -> t -> unit
-  (** [print ~subst fmt ppf page] prints [page] on [ppf] in the format
+  (** [print ~errs ~subst fmt ppf page] prints [page] on [ppf] in the format
       [fmt]. [subst] can be used to perform variable
       substitution, see {!Buffer.add_substitute} (defaults to the
-      identity). *)
+      identity). [errs] is used to print formatting errors, it defaults
+      to {!Format.err_formatter}. *)
 end
 
 (** Terms.

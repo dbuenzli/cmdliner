@@ -144,13 +144,14 @@ let pp_tokens = Cmdliner_base.pp_tokens
 
 (* Cmdliner markup handling *)
 
-let err_unescaped c s = invalid_arg (strf "Unescaped %C in %S" c s)
-let err_malformed s = invalid_arg (strf "Malformed $(...) in %S" s)
-let err_unclosed s = invalid_arg (strf "Unclosed $(...) in %S" s)
-let err_undef id s = invalid_arg (strf "Undefined variable $(%s) in %S" id s)
-let err_illegal_esc c s = invalid_arg (strf "Illegal escape char %C in %S" c s)
-let err_markup dir s =
-  invalid_arg (strf "Unknown cmdliner markup $(%c,...) in %S" dir s)
+let err e fmt = pf e ("cmdliner error: " ^^ fmt ^^ "@.")
+let err_unescaped ~errs c s = err errs "unescaped %C in %S" c s
+let err_malformed ~errs s = err errs "Malformed $(...) in %S" s
+let err_unclosed ~errs s = err errs "Unclosed $(...) in %S" s
+let err_undef ~errs id s = err errs "Undefined variable $(%s) in %S" id s
+let err_illegal_esc ~errs c s = err errs "Illegal escape char %C in %S" c s
+let err_markup ~errs dir s =
+  err errs "Unknown cmdliner markup $(%c,...) in %S" dir s
 
 let is_markup_dir = function 'i' | 'b' -> true | _ -> false
 let is_markup_esc = function '$' | '\\' | '(' | ')' -> true | _ -> false
@@ -177,77 +178,83 @@ let escape s = (* escapes [s] from doc language. *)
   in
   loop 0 0
 
-let subst_vars b ~subst s =
+let subst_vars ~errs ~subst b s =
   let max_i = String.length s - 1 in
   let flush start stop = match start > max_i with
   | true -> ()
   | false -> Buffer.add_substring b s start (stop - start + 1)
   in
   let skip_escape k start i =
-    if i > max_i then err_unescaped '\\' s else k start (i + 1)
+    if i > max_i then err_unescaped ~errs '\\' s else k start (i + 1)
   in
   let rec skip_markup k start i =
-    if i > max_i then err_unclosed s else
+    if i > max_i then (err_unclosed ~errs s; k start i) else
     match s.[i] with
     | '\\' -> skip_escape (skip_markup k) start (i + 1)
     | ')' -> k start (i + 1)
     | c -> skip_markup k start (i + 1)
   in
   let rec add_subst start i =
-    if i > max_i then err_unclosed s else
+    if i > max_i then (err_unclosed ~errs s; loop start i) else
     if s.[i] <> ')' then add_subst start (i + 1) else
     let id = String.sub s start (i - start) in
     let next = i + 1 in
-    match subst id with
-    | None -> err_undef id s
-    | Some v -> Buffer.add_string b v; loop next next
+    begin match subst id with
+    | None -> err_undef ~errs id s; Buffer.add_string b "undefined";
+    | Some v -> Buffer.add_string b v
+    end;
+    loop next next
   and loop start i =
     if i > max_i then flush start max_i else
     let next = i + 1 in
     match s.[i] with
     | '\\' -> skip_escape loop start next
     | '$' ->
-        if next > max_i then err_unescaped '$' s else
+        if next > max_i then err_unescaped ~errs '$' s else
         begin match s.[next] with
         | '(' ->
             let min = next + 2 in
-            if min > max_i then err_unclosed s else
+            if min > max_i then (err_unclosed ~errs s; loop start next) else
             begin match s.[min] with
             | ',' -> skip_markup loop start (min + 1)
             | _ ->
                 let start_id = next + 1 in
                 flush start (i - 1); add_subst start_id start_id
             end
-        | _ -> err_unescaped '$' s
+        | _ -> err_unescaped ~errs '$' s; loop start next
         end;
     | c -> loop start next
   in
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 
-let add_markup_esc k b s start next target_need_escape target_escape =
+let add_markup_esc ~errs k b s start next target_need_escape target_escape =
   let max_i = String.length s - 1 in
-  if next > max_i then err_unescaped '\\' s else
+  if next > max_i then err_unescaped ~errs '\\' s else
   match s.[next] with
-  | c when not (is_markup_esc s.[next]) -> err_illegal_esc c s
+  | c when not (is_markup_esc s.[next]) ->
+      err_illegal_esc ~errs c s;
+      k (next + 1) (next + 1)
   | c ->
       (if target_need_escape c then target_escape b c else Buffer.add_char b c);
       k (next + 1) (next + 1)
 
-let add_markup_text k b s start target_need_escape target_escape =
+let add_markup_text ~errs k b s start target_need_escape target_escape =
   let max_i = String.length s - 1 in
   let flush start stop = match start > max_i with
   | true -> ()
   | false -> Buffer.add_substring b s start (stop - start + 1)
   in
   let rec loop start i =
-    if i > max_i then err_unclosed s else
+    if i > max_i then (err_unclosed ~errs s; flush start max_i) else
     let next = i + 1 in
     match s.[i] with
     | '\\' -> (* unescape *)
         flush start (i - 1);
-        add_markup_esc loop b s start next target_need_escape target_escape
+        add_markup_esc ~errs loop b s start next
+          target_need_escape target_escape
     | ')' -> flush start (i - 1); k next next
-    | c when markup_text_need_esc c -> err_unescaped c s
+    | c when markup_text_need_esc c ->
+        err_unescaped ~errs c s; flush start (i - 1); loop next next
     | c when target_need_escape c ->
         flush start (i - 1); target_escape b c; loop next next
     | c -> loop start next
@@ -256,7 +263,7 @@ let add_markup_text k b s start target_need_escape target_escape =
 
 (* Plain text output *)
 
-let markup_to_plain b s =
+let markup_to_plain ~errs b s =
   let max_i = String.length s - 1 in
   let flush start stop = match start > max_i with
   | true -> ()
@@ -270,37 +277,41 @@ let markup_to_plain b s =
     match s.[i] with
     | '\\' ->
         flush start (i - 1);
-        add_markup_esc loop b s start next need_escape escape
+        add_markup_esc ~errs loop b s start next need_escape escape
     | '$' ->
-        if next > max_i then err_unescaped '$' s else
+        if next > max_i then err_unescaped ~errs '$' s else
         begin match s.[next] with
         | '(' ->
             let min = next + 2 in
-            if min > max_i then err_unclosed s else
+            if min > max_i then (err_unclosed ~errs s; loop start next) else
             begin match s.[min] with
             | ',' ->
                 let markup = s.[min - 1] in
-                if not (is_markup_dir markup) then err_markup markup s else
+                if not (is_markup_dir markup)
+                then (err_markup ~errs markup s; loop start next) else
                 let start_data = min + 1 in
                 (flush start (i - 1);
-                 add_markup_text loop b s start_data need_escape escape)
-            | _ -> err_malformed s
+                 add_markup_text ~errs loop b s start_data need_escape escape)
+            | _ ->
+                err_malformed ~errs s; loop start next
             end
-        | _ -> err_unescaped '$' s
+        | _ -> err_unescaped ~errs '$' s; loop start next
         end
-    | c when markup_need_esc c -> err_unescaped c s
+    | c when markup_need_esc c ->
+        err_unescaped ~errs c s; flush start (i - 1); loop next next
     | c -> loop start next
   in
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 
-let doc_to_plain b ~subst s = markup_to_plain b (subst_vars b ~subst s)
+let doc_to_plain ~errs ~subst b s =
+  markup_to_plain ~errs b (subst_vars ~errs ~subst b s)
 
 let p_indent = 7                                  (* paragraph indentation. *)
 let l_indent = 4                                      (* label indentation. *)
 
-let pp_plain_blocks subst ppf ts =
+let pp_plain_blocks ~errs subst ppf ts =
   let b = Buffer.create 1024 in
-  let markup t = doc_to_plain b ~subst t in
+  let markup t = doc_to_plain ~errs b ~subst t in
   let pp_tokens ppf t = pp_tokens ~spaces:true ppf t in
   let rec loop = function
   | [] -> ()
@@ -333,12 +344,12 @@ let pp_plain_blocks subst ppf ts =
   in
   loop ts
 
-let pp_plain_page subst ppf (_, text) =
-  pf ppf "@[<v>%a@]" (pp_plain_blocks subst) text
+let pp_plain_page ~errs subst ppf (_, text) =
+  pf ppf "@[<v>%a@]" (pp_plain_blocks ~errs subst) text
 
 (* Groff output *)
 
-let markup_to_groff b s =
+let markup_to_groff ~errs b s =
   let max_i = String.length s - 1 in
   let flush start stop = match start > max_i with
   | true -> ()
@@ -353,13 +364,13 @@ let markup_to_groff b s =
     match s.[i] with
     | '\\' ->
         flush start (i - 1);
-        add_markup_esc loop b s start next need_escape escape
+        add_markup_esc ~errs loop b s start next need_escape escape
     | '$' ->
-        if next > max_i then err_unescaped '$' s else
+        if next > max_i then err_unescaped ~errs '$' s else
         begin match s.[next] with
         | '(' ->
             let min = next + 2 in
-            if min > max_i then err_unclosed s else
+            if min > max_i then (err_unclosed ~errs s; loop start next) else
             begin match s.[min] with
             | ','  ->
                 let start_data = min + 1 in
@@ -367,25 +378,27 @@ let markup_to_groff b s =
                 begin match s.[min - 1] with
                 | 'i' -> Buffer.add_string b "\\fI"
                 | 'b' -> Buffer.add_string b "\\fB"
-                | markup -> err_markup markup s
+                | markup -> err_markup ~errs markup s
                 end;
-                add_markup_text end_text b s start_data need_escape escape
-            | _ -> err_malformed s
+                add_markup_text ~errs end_text b s start_data need_escape escape
+            | _ -> err_malformed ~errs s; loop start next
             end
-        | _ -> err_unescaped '$' s
+        | _ -> err_unescaped ~errs '$' s; flush start (i - 1); loop next next
         end
-    | c when markup_need_esc c -> err_unescaped c s
+    | c when markup_need_esc c ->
+        err_unescaped ~errs c s; flush start (i - 1); loop next next
     | c when need_escape c ->
         flush start (i - 1); escape b c; loop next next
     | c -> loop start next
   in
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 
-let doc_to_groff b ~subst s = markup_to_groff b (subst_vars b subst s)
+let doc_to_groff ~errs ~subst b s =
+  markup_to_groff ~errs b (subst_vars ~errs ~subst b s)
 
-let pp_groff_blocks subst ppf text =
+let pp_groff_blocks ~errs subst ppf text =
   let buf = Buffer.create 1024 in
-  let markup t = doc_to_groff ~subst buf t in
+  let markup t = doc_to_groff ~errs ~subst buf t in
   let pp_tokens ppf t = pp_tokens ~spaces:false ppf t in
   let rec pp_block = function
   | `Blocks bs -> List.iter pp_block bs (* not T.R. *)
@@ -398,7 +411,7 @@ let pp_groff_blocks subst ppf text =
   in
   List.iter pp_block text
 
-let pp_groff_page subst ppf ((n, s, a1, a2, a3), t) =
+let pp_groff_page ~errs subst ppf ((n, s, a1, a2, a3), t) =
   pf ppf ".\\\" Pipe this output to groff -Tutf8 | less@\n\
           .\\\"@\n\
           .mso an.tmac@\n\
@@ -407,7 +420,7 @@ let pp_groff_page subst ppf ((n, s, a1, a2, a3), t) =
           .nh@\n\
           .ad l\
           %a@?"
-    n s a1 a2 a3 (pp_groff_blocks subst) t
+    n s a1 a2 a3 (pp_groff_blocks ~errs subst) t
 
 (* Printing to a pager *)
 
@@ -462,14 +475,17 @@ let pp_to_pager print ppf v =
 
 type format = [ `Auto | `Pager | `Plain | `Groff ]
 
-let rec print ?(subst = fun x -> None) fmt ppf page = match fmt with
-| `Pager -> pp_to_pager (print ~subst) ppf page
-| `Plain -> pp_plain_page subst ppf page
-| `Groff -> pp_groff_page subst ppf page
-| `Auto ->
-    match try (Some (Sys.getenv "TERM")) with Not_found -> None with
-    | None | Some "dumb" -> print ~subst `Plain ppf page
-    | Some _ -> print ~subst `Pager ppf page
+let rec print
+    ?(errs = Format.err_formatter)
+    ?(subst = fun x -> None) fmt ppf page =
+  match fmt with
+  | `Pager -> pp_to_pager (print ~errs ~subst) ppf page
+  | `Plain -> pp_plain_page ~errs subst ppf page
+  | `Groff -> pp_groff_page ~errs subst ppf page
+  | `Auto ->
+      match try (Some (Sys.getenv "TERM")) with Not_found -> None with
+      | None | Some "dumb" -> print ~errs ~subst `Plain ppf page
+      | Some _ -> print ~errs ~subst `Pager ppf page
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
