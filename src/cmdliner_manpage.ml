@@ -317,12 +317,14 @@ let pp_plain_blocks subst ppf ts =
           pf ppf "@[%a@[%a@]" pp_indent p_indent pp_tokens label;
           if s = "" then pf ppf "@]@," else
           let ll = String.length label in
-          match ll < l_indent with
+          begin match ll < l_indent with
           | true ->
-              pf ppf "%a@[%a@]@]@," pp_indent (l_indent - ll) pp_tokens s
+              pf ppf "%a@[%a@]@]" pp_indent (l_indent - ll) pp_tokens s
           | false ->
-              pf ppf "@\n%a@[%a@]@]@,"
+              pf ppf "@\n%a@[%a@]@]"
                 pp_indent (p_indent + l_indent) pp_tokens s
+          end;
+          match ts with `I _ :: _ -> pf ppf "@," | _ -> ()
       end;
       begin match ts with
       | `Noblank :: ts -> loop ts

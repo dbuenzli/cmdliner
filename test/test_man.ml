@@ -88,6 +88,9 @@ let info =
           There should be no blanks before and after it.";
     `Noblank;
     `P "Hey ho";
+    `I ("label", "item label");
+    `I ("lebal", "item lebal");
+    `P "The last paragraph";
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>.";]
   in
