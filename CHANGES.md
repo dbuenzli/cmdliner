@@ -20,6 +20,8 @@ via the new `Arg.[p]conv` and `Arg.conv_{parser,printer}` functions.
 - Add `Arg.parser_of_kind_of_string`.
 - Change semantics of `Arg.pos_left` (see #76 for details).
 - Deprecate `Term.man_format` in favor of `Arg.man_format`.
+- Reserve the `--cmdliner` option for library use. This is unused for now
+  but will be in the future.
 - Relicense from BSD3 to ISC.
 - Safe-string support.
 - Build depend on topkg.
