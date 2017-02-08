@@ -453,6 +453,7 @@ module Arg : sig
   (** @deprecated Use the {!type:conv} type via the {!val:conv} and {!pconv}
       functions. *)
 
+(*
   val conv :
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
     'a conv
@@ -461,6 +462,7 @@ module Arg : sig
       [print]. [docv] is a documentation meta-variable used in the
       documentation to stand for the argument value, defaults to
       ["VALUE"]. *)
+*)
 
   val pconv :
     ?docv:string -> 'a parser * 'a printer -> 'a conv
