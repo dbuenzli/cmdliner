@@ -88,6 +88,7 @@ let initialize_cmd =
   in
   Term.(const initialize $ copts_t $ repodir),
   Term.info "initialize" ~sdocs:Manpage.s_common_options ~doc ~man
+    ~exits:Term.std_exits
 
 let record_cmd =
   let pname =
@@ -118,6 +119,7 @@ let record_cmd =
   in
   Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~man
+    ~exits:Term.std_exits
 
 let help_cmd =
   let topic =
@@ -132,7 +134,7 @@ let help_cmd =
   in
   Term.(ret
           (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
-  Term.info "help" ~doc ~man
+  Term.info "help" ~doc ~man ~exits:Term.std_exits
 
 let default_cmd =
   let doc = "a revision control system" in

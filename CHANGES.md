@@ -1,17 +1,15 @@
 
-*IMPORTANT* message for users that defined their own argument
-converters. The `Arg.converter` type is deprecated in favor of the
+**IMPORTANT** The `Arg.converter` type is deprecated in favor of the
 `Arg.conv` type. For this release both types are equal but the next
 major release will drop the former and make the latter abstract. All
 users are kindly requested to migrate to use the new type and **only**
-by using the newly introduced `Arg.[p]conv` functions to construct
-them and `Arg.conv_{parser,printer}` to deconstruct them.
+via the new `Arg.[p]conv` and `Arg.conv_{parser,printer}` functions.
 
 - Allow terms to be used more than once in terms without tripping out
   documentation generation (#77). Thanks to François Bobot and Gabriel
   Radanne.
-- Disallow defining the same option or command name twice via two
-  different arguments or terms. Raises Invalid_argument, used
+- Disallow defining the same option (resp. command) name twice via two
+  different arguments (resp. terms). Raises Invalid_argument, used
   to be undefined behaviour (in practice, an arbitrary one would be
   ignored).
 - Improve converter API (see important message above).
@@ -51,6 +49,9 @@ cmdliner.
 - Add `?envs` optional argument to `Term.info`. Documents environment
   variables that influence a term's evaluation and automatically
   integrate them in the manual.
+- Add `Term.exit_info` and `?exits` optional argument to `Term.info`.
+  Documents exit statuses of the program. Use `Term.std_exits` if
+  you are using the new `Term.exit`.
 - Add `Manpage.escape` to escape a string from the documentation markup
   language.
 - Add `Manpage.s_*` constants for standard man page section names.

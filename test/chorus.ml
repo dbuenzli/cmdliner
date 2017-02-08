@@ -26,6 +26,6 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>." ]
   in
-  Term.info "chorus" ~version:"%%VERSION%%" ~doc ~man
+  Term.info "chorus" ~version:"%%VERSION%%" ~doc ~man ~exits:Term.std_exits
 
 let () = Term.exit @@ Term.eval (chorus_t, info)

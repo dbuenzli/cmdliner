@@ -50,6 +50,20 @@ module Term = struct
   type env = Cmdliner_info.env
   let env_var = Cmdliner_info.env
 
+  type exit_info = Cmdliner_info.exit
+  let exit_info = Cmdliner_info.exit
+
+  let exit_status_success = 0
+  let exit_status_err_internal = 124
+  let exit_status_err_cli = 125
+  let std_exits =
+    [ exit_info exit_status_success
+        ~doc:"on success.";
+      exit_info exit_status_err_internal
+        ~doc:"on unexpected internal errors (bugs).";
+      exit_info exit_status_err_cli
+        ~doc:"on command line parsing errors."; ]
+
   type info = Cmdliner_info.term
   let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
   let name ti = Cmdliner_info.term_name ti
@@ -242,10 +256,10 @@ module Term = struct
   (* Exits *)
 
   let exit_status_of_result ?(term_err = 1) = function
-  | `Ok _ | `Help | `Version -> 0
+  | `Ok _ | `Help | `Version -> exit_status_success
   | `Error `Term -> term_err
-  | `Error `Exn -> 124
-  | `Error `Parse -> 125
+  | `Error `Exn -> exit_status_err_internal
+  | `Error `Parse -> exit_status_err_cli
 
   let exit_status_of_status_result ?term_err = function
   | `Ok n -> n

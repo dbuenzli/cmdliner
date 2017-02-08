@@ -47,6 +47,6 @@ let cmd =
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
-  Term.info "cp" ~version:"%%VERSION%%" ~doc ~man
+  Term.info "cp" ~version:"%%VERSION%%" ~doc ~man ~exits:Term.std_exits
 
 let () = Term.(exit @@ eval cmd)

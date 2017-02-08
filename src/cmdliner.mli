@@ -248,14 +248,36 @@ module Term : sig
       In [doc] the {{!doclang}documentation markup language} can be
       used with following variables:
       {ul
-      {- ["$(env)"], the value of [var].}
+      {- [$(env)], the value of [var].}
       {- The variables mentioned in {!info}}} *)
+
+  type exit_info
+  (** The type for exit status information. *)
+
+  val exit_info : ?docs:string -> ?doc:string -> ?max:int -> int -> exit_info
+  (** [exit_info ~docs ~doc min ~max] describe the range of exit
+      statuses from [min] to [max] (defaults to [min]). [doc] is the
+      man page information for the statuses, defaults to ["undocumented"].
+      [docs] is the title of the man page section in which the statuses
+      will be listed, it defaults to {!Manpage.s_exit_status}.
+
+      In [doc] the {{!doclang}documentation markup language} can be
+      used with following variables:
+      {ul
+      {- [$(status)], the value of [min].}
+      {- [$(status_max)], the value of [max].}
+      {- The variables mentioned in {!info}}} *)
+
+  val std_exits : exit_info list
+  (** [std_exits] is information about the exit statuses of
+      {!exit_status_of_result}. *)
 
   type info
   (** The type for term information. *)
 
   val info :
-    ?man:Manpage.block list -> ?envs:env list -> ?sdocs:string ->
+    ?man:Manpage.block list -> ?exits:exit_info list ->
+    ?envs:env list -> ?sdocs:string ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
@@ -363,7 +385,11 @@ module Term : sig
       positional argument from the value of an unknown optional
       argument.  *)
 
-  (** {1:exits Turning evaluation results into exit codes} *)
+  (** {1:exits Turning evaluation results into exit codes}
+
+      {b Note.} If you are using the following functions to handle
+      the evaluation result of a term you should add {!std_exits} to
+      the term's information {{!info}[~exits]} argument. *)
 
   val exit_status_of_result : ?term_err:int -> 'a result -> int
   (** [exit_status_of_result ~term_err r] is an [exit(3)] status
@@ -851,7 +877,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>." ]
   in
-  Term.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man
+  Term.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man ~exits:Term.std_exits
 
 let () = Term.exit @@ Term.eval (chorus_t, info))
 ]}
@@ -962,6 +988,7 @@ following order:
 {- Positional arguments, see {!Arg.info}. Those are listed iff
    both the [docv] and [doc] string is specified by {!Arg.info}.}
 {- Optional arguments, see {!Arg.info}.}
+{- Exit statuses, see {!Term.exit_info}.}
 {- Environment variables, see {!Arg.env_var}.}}
 
 If a [docs] section name is mentioned and does not exist in the term's
@@ -1178,7 +1205,7 @@ let cmd =
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~man
+  Term.info "rm" ~version:"%%VERSION%%" ~doc ~man ~exits:Term.std_exits
 
 let () = Term.(exit @@ eval cmd)
 ]}
@@ -1246,7 +1273,7 @@ let cmd =
     `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
-  Term.info "cp" ~version:"%‌%VERSION%%" ~doc ~man
+  Term.info "cp" ~version:"%‌%VERSION%%" ~doc ~man ~exits:Term.std_exits
 
 let () = Term.(exit @@ eval cmd)
 ]}
@@ -1345,7 +1372,7 @@ let cmd =
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~man
+  Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~man ~exits:Term.std_exits
 
 let () = Term.(exit @@ eval cmd)
 ]}
@@ -1466,6 +1493,7 @@ let initialize_cmd =
   in
   Term.(const initialize $ copts_t $ repodir),
   Term.info "initialize" ~sdocs:Manpage.s_common_options ~doc ~man
+    ~exits:Term.std_exits
 
 let record_cmd =
   let pname =
@@ -1496,6 +1524,7 @@ let record_cmd =
   in
   Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
   Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~man
+    ~exits:Term.std_exits
 
 let help_cmd =
   let topic =
@@ -1510,7 +1539,7 @@ let help_cmd =
   in
   Term.(ret
           (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
-  Term.info "help" ~doc ~man
+  Term.info "help" ~doc ~man ~exits:Term.std_exits
 
 let default_cmd =
   let doc = "a revision control system" in

@@ -75,14 +75,23 @@ module Arg : Set.OrderedType with type t = arg
 module Args : Set.S with type elt = arg
 type args = Args.t
 
+(** {1:exit Exit status} *)
+
+type exit
+val exit : ?docs:string -> ?doc:string -> ?max:int -> int -> exit
+val exit_statuses : exit -> int * int
+val exit_doc : exit -> string
+val exit_docs : exit -> string
+val exit_order : exit -> exit -> int
+
 (** {1:term Term information} *)
 
 type term
 
 val term :
-  ?args:args -> ?man:Cmdliner_manpage.block list -> ?envs:env list ->
-  ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
-  string -> term
+  ?args:args -> ?man:Cmdliner_manpage.block list -> ?exits:exit list ->
+  ?envs:env list -> ?sdocs:string -> ?docs:string -> ?doc:string ->
+  ?version:string -> string -> term
 
 val term_name : term -> string
 val term_version : term -> string option
@@ -90,6 +99,7 @@ val term_doc : term -> string
 val term_docs : term -> string
 val term_stdopts_docs : term -> string
 val term_envs : term -> env list
+val term_exits : term -> exit list
 val term_man : term -> Cmdliner_manpage.block list
 val term_args : term -> args
 

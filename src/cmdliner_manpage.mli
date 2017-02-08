@@ -49,6 +49,7 @@ val smap_append_block : smap -> sec:string -> block -> smap
 
 (** {1 Content boilerplate} *)
 
+val s_exit_status_intro : block
 val s_environment_intro : block
 
 

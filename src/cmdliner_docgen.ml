@@ -34,6 +34,11 @@ let env_info_subst ~subst e = function
 | "env" -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.env_var e))
 | id -> subst id
 
+let exit_info_subst ~subst e = function
+| "status" -> Some (strf "%d" (fst @@ Cmdliner_info.exit_statuses e))
+| "status_max" -> Some (strf "%d" (snd @@ Cmdliner_info.exit_statuses e))
+| id -> subst id
+
 let arg_info_subst ~subst a = function
 | "docv" ->
     Some (strf "$(i,%s)" @@ esc (Cmdliner_info.arg_docv a))
@@ -187,6 +192,29 @@ let arg_man_docs ~buf ~subst ei =
   let args = List.rev_map (arg_to_man_item ~buf ~subst) args in
   sorted_items_to_blocks ~boilerplate:None args
 
+(* Exit statuses doc *)
+
+let exit_boilerplate sec = match sec = Cmdliner_manpage.s_exit_status with
+| false -> None
+| true -> Some (Cmdliner_manpage.s_exit_status_intro)
+
+let exit_man_docs ~buf ~subst ~has_sexit ei =
+  let by_sec (s0, _) (s1, _) = compare s0 s1 in
+  let add_exit_item acc e =
+    let subst = exit_info_subst ~subst e in
+    let min, max = Cmdliner_info.exit_statuses e in
+    let doc = Cmdliner_info.exit_doc e in
+    let label = if min = max then strf "%d" min else strf "%d-%d" min max in
+    let item = `I (label, Cmdliner_manpage.subst_vars buf ~subst doc) in
+    Cmdliner_info.(exit_docs e, item) :: acc
+  in
+  let exits = Cmdliner_info.(term_exits @@ eval_term ei) in
+  let exits = List.sort Cmdliner_info.exit_order exits in
+  let exits = List.fold_left add_exit_item [] exits in
+  let exits = List.stable_sort by_sec (* sort by section *) exits in
+  let boilerplate = if has_sexit then None else Some exit_boilerplate in
+  sorted_items_to_blocks ~boilerplate exits
+
 (* Environment doc *)
 
 let env_boilerplate sec = match sec = Cmdliner_manpage.s_environment with
@@ -244,8 +272,10 @@ let insert_term_man_docs ei sm =
   let subst = term_info_subst ei in
   let insert sm (s, b) = Cmdliner_manpage.smap_append_block sm s b in
   let has_senv = Cmdliner_manpage.(smap_has_section sm s_environment) in
+  let has_sexit = Cmdliner_manpage.(smap_has_section sm s_exit_status) in
   let sm = List.fold_left insert sm (cmd_man_docs ei) in
   let sm = List.fold_left insert sm (arg_man_docs ~buf ~subst ei) in
+  let sm = List.fold_left insert sm (exit_man_docs ~buf ~subst ~has_sexit ei) in
   let sm = List.fold_left insert sm (env_man_docs ~buf ~subst ~has_senv ei) in
   sm
 

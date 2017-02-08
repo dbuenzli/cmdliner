@@ -24,12 +24,15 @@ let s_commands = "COMMANDS"
 let s_arguments = "ARGUMENTS"
 let s_options = "OPTIONS"
 let s_common_options = "COMMON OPTIONS"
+let s_exit_status = "EXIT STATUS"
+let s_exit_status_intro =
+  `P "$(tname) exits with the following status:"
+
 let s_environment = "ENVIRONMENT"
 let s_environment_intro =
   `P "These environment variables affect the execution of $(tname):"
 
 let s_files = "FILES"
-let s_exit_status = "EXIT STATUS"
 let s_examples = "EXAMPLES"
 let s_bugs = "BUGS"
 let s_authors = "AUTHORS"
@@ -40,8 +43,8 @@ let s_see_also = "SEE ALSO"
 let s_created = ""
 let order =
   [| s_name; s_synopsis; s_description; s_created; s_commands;
-     s_arguments; s_options; s_common_options; s_environment;
-     s_files; s_exit_status; s_examples; s_bugs; s_authors; s_see_also; |]
+     s_arguments; s_options; s_common_options; s_exit_status;
+     s_environment; s_files; s_examples; s_bugs; s_authors; s_see_also; |]
 
 let order_synopsis = 1
 let order_created = 3

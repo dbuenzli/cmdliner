@@ -130,6 +130,24 @@ end
 module Args = Set.Make (Arg)
 type args = Args.t
 
+(* Exit info *)
+
+type exit =
+  { exit_statuses : int * int;
+    exit_doc : string;
+    exit_docs : string; }
+
+let exit
+    ?docs:(exit_docs = Cmdliner_manpage.s_exit_status)
+    ?doc:(exit_doc = "undocumented") ?max min =
+  let max = match max with None -> min | Some max -> max in
+  { exit_statuses = (min, max); exit_doc; exit_docs }
+
+let exit_statuses e = e.exit_statuses
+let exit_doc e = e.exit_doc
+let exit_docs e = e.exit_docs
+let exit_order e0 e1 = compare e0.exit_statuses e1.exit_statuses
+
 (* Term info *)
 
 type term_info =
@@ -139,6 +157,7 @@ type term_info =
     term_docs : string;     (* title of man section where listed (commands). *)
     term_sdocs : string; (* standard options, title of section where listed. *)
     term_envs : env list;               (* env vars that influence the term. *)
+    term_exits : exit list;                      (* exit codes for the term. *)
     term_man : Cmdliner_manpage.block list; }              (* man page text. *)
 
 type term =
@@ -146,13 +165,13 @@ type term =
     term_args : args; }
 
 let term
-    ?args:(term_args = Args.empty) ?man:(term_man = [])
+    ?args:(term_args = Args.empty) ?man:(term_man = []) ?exits:(term_exits = [])
     ?envs:(term_envs = []) ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
     ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
     term_name =
   let term_info =
     { term_name; term_version; term_doc; term_docs; term_sdocs; term_envs;
-      term_man }
+      term_exits; term_man }
   in
   { term_info; term_args }
 
@@ -161,8 +180,9 @@ let term_version t = t.term_info.term_version
 let term_doc t = t.term_info.term_doc
 let term_docs t = t.term_info.term_docs
 let term_stdopts_docs t = t.term_info.term_sdocs
-let term_man t = t.term_info.term_man
 let term_envs t = t.term_info.term_envs
+let term_exits t = t.term_info.term_exits
+let term_man t = t.term_info.term_man
 let term_args t = t.term_args
 
 let term_add_args t args =
