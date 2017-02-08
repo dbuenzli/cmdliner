@@ -919,7 +919,18 @@ OPTIONS
        --version
            Show version information.
 
+EXIT STATUS
+       chorus exits with the following status:
+
+       0   on success.
+
+       124 on unexpected internal errors (bugs).
+
+       125 on command line parsing errors.
+
 ENVIRONMENT
+       These environment variables affect the execution of chorus:
+
        CHORUS_MSG
            Overrides the default message to print.
 
