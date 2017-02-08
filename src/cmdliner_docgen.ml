@@ -269,7 +269,8 @@ let xref_docs ~errs ei =
   let xrefs = Cmdliner_info.(term_man_xrefs @@ eval_term ei) in
   let xrefs = List.fold_left (fun acc x -> to_xref x :: acc) [] xrefs in
   let xrefs = List.(rev_map xref_str (sort rev_compare xrefs)) in
-  Cmdliner_manpage.s_see_also, `P (String.concat ", " xrefs)
+  if xrefs = [] then [] else
+  [Cmdliner_manpage.s_see_also, `P (String.concat ", " xrefs)]
 
 (* Man page construction *)
 
@@ -296,7 +297,7 @@ let insert_term_man_docs ~errs ei sm =
   let sm = List.fold_left ins sm (arg_docs ~errs ~subst ~buf ei) in
   let sm = List.fold_left ins sm (exit_docs ~errs ~subst ~buf ~has_sexit ei)in
   let sm = List.fold_left ins sm (env_docs ~errs ~subst ~buf ~has_senv ei) in
-  let sm = ins sm (xref_docs ~errs ei) in
+  let sm = List.fold_left ins sm (xref_docs ~errs ei) in
   sm
 
 let text ~errs ei =
