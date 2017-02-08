@@ -1041,14 +1041,13 @@ If the created section is:
     manual.}}
 
 Ideally all manual strings should be UTF-8 encoded. However at the
-moment Groff (at least [1.19.2]) doesn't seem to cope with UTF-8 input
-and UTF-8 characters beyond the ASCII set will look garbled.
-Regarding UTF-8 output, generating the man page with [-Tutf8] maps the
-hyphen-minus [U+002D] to the minus sign [U+2212] which makes it
-difficult to search it in the pager, so [-Tascii] is used for now.
-Conclusion is that it may be better to stick to the ASCII set for now.
-Please contact the author if something seems wrong in this reasoning
-or if you know a work around this.
+moment macOS (until at least 10.12) is stuck with [groff 1.19.2] which
+doesn't support `preconv(1)`. Regarding UTF-8 output, generating the
+man page with [-Tutf8] maps the hyphen-minus [U+002D] to the minus
+sign [U+2212] which makes it difficult to search it in the pager, so
+[-Tascii] is used for now.  Conclusion is that it is better to stick
+to the ASCII set for now. Please contact the author if something seems
+wrong in this reasoning or if you know a work around this.
 
 {2:misc Miscellaneous}
 
