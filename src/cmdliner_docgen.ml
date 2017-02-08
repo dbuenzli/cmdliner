@@ -252,6 +252,24 @@ let env_man_docs ~buf ~subst ~has_senv ei =
   let boilerplate = if has_senv then None else Some env_boilerplate in
   sorted_items_to_blocks ~boilerplate envs
 
+(* xref doc *)
+
+let xref_man_docs ei =
+  let main = Cmdliner_info.(term_name @@ eval_main ei) in
+  let to_xref = function
+  | `Main -> 1, main
+  | `Tool tool -> 1, tool
+  | `Page (sec, name) -> sec, name
+  | `Cmd c ->
+      if Cmdliner_info.eval_has_choice ei c then 1, strf "%s-%s" main c else
+      invalid_arg (strf "xref %s: no such term name" c)
+  in
+  let xref_str (sec, name) = strf "%s(%d)" (esc name) sec in
+  let xrefs = Cmdliner_info.(term_man_xrefs @@ eval_term ei) in
+  let xrefs = List.fold_left (fun acc x -> to_xref x :: acc) [] xrefs in
+  let xrefs = List.(rev_map xref_str (sort rev_compare xrefs)) in
+  Cmdliner_manpage.s_see_also, `P (String.concat ", " xrefs)
+
 (* Man page construction *)
 
 let ensure_s_name ei sm =
@@ -277,6 +295,7 @@ let insert_term_man_docs ei sm =
   let sm = List.fold_left insert sm (arg_man_docs ~buf ~subst ei) in
   let sm = List.fold_left insert sm (exit_man_docs ~buf ~subst ~has_sexit ei) in
   let sm = List.fold_left insert sm (env_man_docs ~buf ~subst ~has_senv ei) in
+  let sm = insert sm (xref_man_docs ei) in
   sm
 
 let text ei =

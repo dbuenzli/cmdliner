@@ -89,7 +89,8 @@ val exit_order : exit -> exit -> int
 type term
 
 val term :
-  ?args:args -> ?man:Cmdliner_manpage.block list -> ?exits:exit list ->
+  ?args:args -> ?man_xrefs:Cmdliner_manpage.xref list ->
+  ?man:Cmdliner_manpage.block list -> ?exits:exit list ->
   ?envs:env list -> ?sdocs:string -> ?docs:string -> ?doc:string ->
   ?version:string -> string -> term
 
@@ -101,6 +102,7 @@ val term_stdopts_docs : term -> string
 val term_envs : term -> env list
 val term_exits : term -> exit list
 val term_man : term -> Cmdliner_manpage.block list
+val term_man_xrefs : term -> Cmdliner_manpage.xref list
 val term_args : term -> args
 
 val term_add_args : term -> args -> term
@@ -118,8 +120,8 @@ val eval_main : eval -> term
 val eval_choices : eval -> term list
 val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
-
 val eval_with_term : eval -> term -> eval
+val eval_has_choice : eval -> string -> bool
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

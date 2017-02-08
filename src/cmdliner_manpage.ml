@@ -8,12 +8,16 @@ open Result
 
 (* Manpages *)
 
-type title = string * int * string * string * string
 type block =
   [ `S of string | `P of string | `Pre of string | `I of string * string
   | `Noblank | `Blocks of block list ]
 
+type title = string * int * string * string * string
+
 type t = title * block list
+
+type xref =
+  [ `Main | `Cmd of string | `Tool of string | `Page of int * string ]
 
 (* Standard sections *)
 

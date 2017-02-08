@@ -75,6 +75,17 @@ module Manpage : sig
   type t = title * block list
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
+  type xref =
+    [ `Main | `Cmd of string | `Tool of string | `Page of int * string ]
+  (** The type for man page cross-references.
+      {ul
+      {- [`Main] refers to the man page of the program itself.}
+      {- [`Cmd cmd] refers to the man page of the program's [cmd]
+         command (which must exist).}
+      {- [`Tool bin] refers to the command line tool named [bin].}
+      {- [`Page (sec, name)] refers to the man page [name] of section
+         [sec].}} *)
+
   (** {1:standard_sections Standard section names and content}
 
       The following are standard man page section names, roughly ordered
@@ -276,8 +287,8 @@ module Term : sig
   (** The type for term information. *)
 
   val info :
-    ?man:Manpage.block list -> ?exits:exit_info list ->
-    ?envs:env_info list -> ?sdocs:string ->
+    ?man_xrefs:Manpage.xref list -> ?man:Manpage.block list ->
+    ?exits:exit_info list -> ?envs:env_info list -> ?sdocs:string ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
@@ -295,9 +306,13 @@ module Term : sig
       {- [sdocs] defines the title of the section in which the
          standard [--help] and [--version] arguments are listed
          (defaults to {!Manpage.s_options}).}
-      {- [man] is the text of the man page for the term.}
       {- [envs] is a list of environment variables that influence
-         the term's evaluation.}}
+         the term's evaluation.}
+      {- [exits] is a list of exit statuses that the term evaluation
+         may produce.}
+      {- [man] is the text of the man page for the term.}
+      {- [man_xrefs] are cross-references to other manual pages. These
+         are used to generate a {!Manpage.s_see_also} section.}}
       [doc], [man], [envs] support the {{!doclang}documentation markup
       language} in which the following variables are recognized:
       {ul

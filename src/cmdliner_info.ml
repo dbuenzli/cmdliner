@@ -158,20 +158,22 @@ type term_info =
     term_sdocs : string; (* standard options, title of section where listed. *)
     term_envs : env list;               (* env vars that influence the term. *)
     term_exits : exit list;                      (* exit codes for the term. *)
-    term_man : Cmdliner_manpage.block list; }              (* man page text. *)
+    term_man : Cmdliner_manpage.block list;                (* man page text. *)
+    term_man_xrefs : Cmdliner_manpage.xref list; }        (* man cross-refs. *)
 
 type term =
   { term_info : term_info;
     term_args : args; }
 
 let term
-    ?args:(term_args = Args.empty) ?man:(term_man = []) ?exits:(term_exits = [])
-    ?envs:(term_envs = []) ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
+    ?args:(term_args = Args.empty) ?man_xrefs:(term_man_xrefs = [])
+    ?man:(term_man = []) ?exits:(term_exits = []) ?envs:(term_envs = [])
+    ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
     ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
     term_name =
   let term_info =
     { term_name; term_version; term_doc; term_docs; term_sdocs; term_envs;
-      term_exits; term_man }
+      term_exits; term_man; term_man_xrefs }
   in
   { term_info; term_args }
 
@@ -183,6 +185,7 @@ let term_stdopts_docs t = t.term_info.term_sdocs
 let term_envs t = t.term_info.term_envs
 let term_exits t = t.term_info.term_exits
 let term_man t = t.term_info.term_man
+let term_man_xrefs t = t.term_info.term_man_xrefs
 let term_args t = t.term_args
 
 let term_add_args t args =
@@ -208,6 +211,10 @@ let eval_kind ei =
   then `Multiple_main else `Multiple_sub
 
 let eval_with_term ei term = { ei with term }
+
+let eval_has_choice e cmd =
+  let is_cmd t = t.term_info.term_name = cmd in
+  List.exists is_cmd e.choices
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

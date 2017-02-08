@@ -49,9 +49,12 @@ cmdliner.
 - Add `?envs` optional argument to `Term.info`. Documents environment
   variables that influence a term's evaluation and automatically
   integrate them in the manual.
-- Add `Term.exit_info` and `?exits` optional argument to `Term.info`.
-  Documents exit statuses of the program. Use `Term.std_exits` if
-  you are using the new `Term.exit`.
+- Add `?exits` optional argument to `Term.info`. Documents exit statuses of
+  the program. Use `Term.std_exits` if you are using the new `Term.exit`
+  functions.
+- Add `?man_xrefs` optional argument to `Term.info`. Documents
+  references to other manpages. Automatically formats a `SEE ALSO` section
+  in the manual.
 - Add `Manpage.escape` to escape a string from the documentation markup
   language.
 - Add `Manpage.s_*` constants for standard man page section names.

@@ -12,11 +12,15 @@ type block =
   [ `S of string | `P of string | `Pre of string | `I of string * string
   | `Noblank | `Blocks of block list ]
 
-type title = string * int * string * string * string
-type t = title * block list
-
 val escape : string -> string
 (** [escape s] escapes [s] from the doc language. *)
+
+type title = string * int * string * string * string
+
+type t = title * block list
+
+type xref =
+  [ `Main | `Cmd of string | `Tool of string | `Page of int * string ]
 
 (** {1 Standard section names} *)
 
@@ -51,7 +55,6 @@ val smap_append_block : smap -> sec:string -> block -> smap
 
 val s_exit_status_intro : block
 val s_environment_intro : block
-
 
 (** {1 Output} *)
 
