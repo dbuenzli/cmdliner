@@ -47,8 +47,8 @@ module Term = struct
 
   (* Term information *)
 
-  type env = Cmdliner_info.env
-  let env_var = Cmdliner_info.env
+  type env_info = Cmdliner_info.env
+  let env_info = Cmdliner_info.env
 
   type exit_info = Cmdliner_info.exit
   let exit_info = Cmdliner_info.exit

@@ -235,11 +235,11 @@ module Term : sig
       man page. For multiple term evaluation, this is
       the name of a command and its man page. *)
 
-  type env
+  type env_info
   (** The type for environment variable information. *)
 
-  val env_var : ?docs:string -> ?doc:string -> string -> env
-  (** [env_var ~docs ~doc var] describes an environment variable
+  val env_info : ?docs:string -> ?doc:string -> string -> env_info
+  (** [env_info ~docs ~doc var] describes an environment variable
       [var]. [doc] is the man page information of the environment
       variable, defaults to ["undocumented"]. [docs] is the title of
       the man page section in which the environment variable will be
@@ -277,7 +277,7 @@ module Term : sig
 
   val info :
     ?man:Manpage.block list -> ?exits:exit_info list ->
-    ?envs:env list -> ?sdocs:string ->
+    ?envs:env_info list -> ?sdocs:string ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
@@ -500,7 +500,7 @@ module Arg : sig
     if the argument is absent from the command line and the variable
     is defined. *)
 
-  type env = Term.env
+  type env = Term.env_info
   (** The type for environment variables and their documentation. *)
 
   val env_var : ?docs:string -> ?doc:string -> string -> env
@@ -989,7 +989,7 @@ following order:
    both the [docv] and [doc] string is specified by {!Arg.info}.}
 {- Optional arguments, see {!Arg.info}.}
 {- Exit statuses, see {!Term.exit_info}.}
-{- Environment variables, see {!Arg.env_var}.}}
+{- Environment variables, see {!Arg.env_var} and {!Term.env_info}.}}
 
 If a [docs] section name is mentioned and does not exist in the term's
 manual, an empty section is created for it, to which the [doc] strings

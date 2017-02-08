@@ -40,7 +40,7 @@ let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)
 
 let info =
   let doc = "print a customizable message repeatedly" in
-  let envs = [ Term.env_var "TEST_IT" ~doc:"This is $(env) for $(tname)" ] in
+  let envs = [ Term.env_info "TEST_IT" ~doc:"This is $(env) for $(tname)" ] in
   let exits = [ Term.exit_info ~doc:"This is a $(status) for $(tname)" 1;
                 Term.exit_info ~doc:"Ranges from $(status) to $(status_max)"
                   ~max:10 2; ] @ Term.std_exits
