@@ -36,6 +36,18 @@ module Term = struct
 
   let ret_result ?usage t = app (const @@ ret_of_result ?usage) t
 
+  let term_result ?(usage = false) (al, v) =
+    al, fun ei cl -> match v ei cl with
+    | Ok (Ok _ as ok) -> ok
+    | Ok (Error (`Msg e)) -> Error (`Error (usage, e))
+    | Error _ as e -> e
+
+  let cli_parse_result (al, v) =
+    al, fun ei cl -> match v ei cl with
+    | Ok (Ok _ as ok) -> ok
+    | Ok (Error (`Msg e)) -> Error (`Parse e)
+    | Error _ as e -> e
+
   let main_name =
     Cmdliner_info.Args.empty,
     (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))

@@ -234,6 +234,21 @@ module Term : sig
   val ret_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a ret t
   (** [ret_result ~usage r] is [app (const @@ ret_of_result ~usage) r]. *)
 
+  val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t
+  (** [term_result ~usage t] evaluates to
+      {ul
+      {- [`Ok v] if [t] evaluates to [Ok v]}
+      {- [`Error `Term] with the error message [e] and usage shown according
+         to [usage] (defaults to [false]), if [t] evaluates to
+         [Error (`Msg e)].}} *)
+
+  val cli_parse_result : ('a, [`Msg of string]) result t -> 'a t
+  (** [cli_parse_result t] is a term that evaluates to:
+      {ul
+      {- [`Ok v] if [t] evaluates to [Ok v].}
+      {- [`Error `Parse] with the error message [e]
+         if [t] evaluates to [Error (`Msg e)].}} *)
+
   val main_name : string t
   (** [main_name] is a term that evaluates to the "main" term's name. *)
 
