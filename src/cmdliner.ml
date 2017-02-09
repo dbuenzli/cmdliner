@@ -53,13 +53,14 @@ module Term = struct
   let exit_status_success = 0
   let exit_status_err_internal = 124
   let exit_status_err_cli = 125
-  let std_exits =
-    [ exit_info exit_status_success
-        ~doc:"on success.";
-      exit_info exit_status_err_internal
+  let std_error_exits =
+    [ exit_info exit_status_err_internal
         ~doc:"on unexpected internal errors (bugs).";
       exit_info exit_status_err_cli
         ~doc:"on command line parsing errors."; ]
+
+  let std_exits =
+    (exit_info exit_status_success ~doc:"on success.") :: std_error_exits
 
   type env_info = Cmdliner_info.env
   let env_info = Cmdliner_info.env

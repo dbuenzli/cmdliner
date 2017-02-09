@@ -269,6 +269,10 @@ module Term : sig
   (** [std_exits] is information about the constant exit statuses of
       {!exit_status_of_result}. *)
 
+  val std_error_exits : exit_info list
+  (** [std_error_exits] is information about the constant error exit
+      statuses of {!exit_status_of_result}. *)
+
   type env_info
   (** The type for environment variable information. *)
 
