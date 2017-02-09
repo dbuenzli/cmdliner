@@ -282,7 +282,7 @@ module Term : sig
       {- The variables mentioned in {!info}}} *)
 
   val std_exits : exit_info list
-  (** [std_exits] is information about the exit statuses of
+  (** [std_exits] is information about the constant exit statuses of
       {!exit_status_of_result}. *)
 
   type info
