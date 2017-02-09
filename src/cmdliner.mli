@@ -248,22 +248,6 @@ module Term : sig
       man page. For multiple term evaluation, this is
       the name of a command and its man page. *)
 
-  type env_info
-  (** The type for environment variable information. *)
-
-  val env_info : ?docs:string -> ?doc:string -> string -> env_info
-  (** [env_info ~docs ~doc var] describes an environment variable
-      [var]. [doc] is the man page information of the environment
-      variable, defaults to ["undocumented"]. [docs] is the title of
-      the man page section in which the environment variable will be
-      listed, it defaults to {!Manpage.s_environment}.
-
-      In [doc] the {{!doclang}documentation markup language} can be
-      used with following variables:
-      {ul
-      {- [$(env)], the value of [var].}
-      {- The variables mentioned in {!info}}} *)
-
   type exit_info
   (** The type for exit status information. *)
 
@@ -285,12 +269,28 @@ module Term : sig
   (** [std_exits] is information about the constant exit statuses of
       {!exit_status_of_result}. *)
 
+  type env_info
+  (** The type for environment variable information. *)
+
+  val env_info : ?docs:string -> ?doc:string -> string -> env_info
+  (** [env_info ~docs ~doc var] describes an environment variable
+      [var]. [doc] is the man page information of the environment
+      variable, defaults to ["undocumented"]. [docs] is the title of
+      the man page section in which the environment variable will be
+      listed, it defaults to {!Manpage.s_environment}.
+
+      In [doc] the {{!doclang}documentation markup language} can be
+      used with following variables:
+      {ul
+      {- [$(env)], the value of [var].}
+      {- The variables mentioned in {!info}}} *)
+
   type info
   (** The type for term information. *)
 
   val info :
     ?man_xrefs:Manpage.xref list -> ?man:Manpage.block list ->
-    ?exits:exit_info list -> ?envs:env_info list -> ?sdocs:string ->
+    ?envs:env_info list -> ?exits:exit_info list -> ?sdocs:string ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
@@ -308,10 +308,10 @@ module Term : sig
       {- [sdocs] defines the title of the section in which the
          standard [--help] and [--version] arguments are listed
          (defaults to {!Manpage.s_options}).}
-      {- [envs] is a list of environment variables that influence
-         the term's evaluation.}
       {- [exits] is a list of exit statuses that the term evaluation
          may produce.}
+      {- [envs] is a list of environment variables that influence
+         the term's evaluation.}
       {- [man] is the text of the man page for the term.}
       {- [man_xrefs] are cross-references to other manual pages. These
          are used to generate a {!Manpage.s_see_also} section.}}

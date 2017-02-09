@@ -90,17 +90,17 @@ type term
 
 val term :
   ?args:args -> ?man_xrefs:Cmdliner_manpage.xref list ->
-  ?man:Cmdliner_manpage.block list -> ?exits:exit list ->
-  ?envs:env list -> ?sdocs:string -> ?docs:string -> ?doc:string ->
-  ?version:string -> string -> term
+  ?man:Cmdliner_manpage.block list -> ?envs:env list -> ?exits:exit list ->
+  ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
+  string -> term
 
 val term_name : term -> string
 val term_version : term -> string option
 val term_doc : term -> string
 val term_docs : term -> string
 val term_stdopts_docs : term -> string
-val term_envs : term -> env list
 val term_exits : term -> exit list
+val term_envs : term -> env list
 val term_man : term -> Cmdliner_manpage.block list
 val term_man_xrefs : term -> Cmdliner_manpage.xref list
 val term_args : term -> args

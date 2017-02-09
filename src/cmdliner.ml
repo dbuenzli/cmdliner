@@ -47,9 +47,6 @@ module Term = struct
 
   (* Term information *)
 
-  type env_info = Cmdliner_info.env
-  let env_info = Cmdliner_info.env
-
   type exit_info = Cmdliner_info.exit
   let exit_info = Cmdliner_info.exit
 
@@ -63,6 +60,9 @@ module Term = struct
         ~doc:"on unexpected internal errors (bugs).";
       exit_info exit_status_err_cli
         ~doc:"on command line parsing errors."; ]
+
+  type env_info = Cmdliner_info.env
+  let env_info = Cmdliner_info.env
 
   type info = Cmdliner_info.term
   let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty

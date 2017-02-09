@@ -156,8 +156,8 @@ type term_info =
     term_doc : string;                      (* one line description of term. *)
     term_docs : string;     (* title of man section where listed (commands). *)
     term_sdocs : string; (* standard options, title of section where listed. *)
-    term_envs : env list;               (* env vars that influence the term. *)
     term_exits : exit list;                      (* exit codes for the term. *)
+    term_envs : env list;               (* env vars that influence the term. *)
     term_man : Cmdliner_manpage.block list;                (* man page text. *)
     term_man_xrefs : Cmdliner_manpage.xref list; }        (* man cross-refs. *)
 
@@ -167,13 +167,13 @@ type term =
 
 let term
     ?args:(term_args = Args.empty) ?man_xrefs:(term_man_xrefs = [])
-    ?man:(term_man = []) ?exits:(term_exits = []) ?envs:(term_envs = [])
+    ?man:(term_man = []) ?envs:(term_envs = []) ?exits:(term_exits = [])
     ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
     ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
     term_name =
   let term_info =
-    { term_name; term_version; term_doc; term_docs; term_sdocs; term_envs;
-      term_exits; term_man; term_man_xrefs }
+    { term_name; term_version; term_doc; term_docs; term_sdocs; term_exits;
+      term_envs; term_man; term_man_xrefs }
   in
   { term_info; term_args }
 
@@ -182,8 +182,8 @@ let term_version t = t.term_info.term_version
 let term_doc t = t.term_info.term_doc
 let term_docs t = t.term_info.term_docs
 let term_stdopts_docs t = t.term_info.term_sdocs
-let term_envs t = t.term_info.term_envs
 let term_exits t = t.term_info.term_exits
+let term_envs t = t.term_info.term_envs
 let term_man t = t.term_info.term_man
 let term_man_xrefs t = t.term_info.term_man_xrefs
 let term_args t = t.term_args
