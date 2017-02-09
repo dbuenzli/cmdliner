@@ -4,8 +4,6 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Result
-
 (** Declarative definition of command line interfaces.
 
     [Cmdliner] provides a simple and compositional mechanism
@@ -27,6 +25,8 @@ open Result
     {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1:top Interface} *)
+
+open Result
 
 (** Man page specification.
 
@@ -266,12 +266,12 @@ module Term : sig
       {- The variables mentioned in {!info}}} *)
 
   val default_exits : exit_info list
-  (** [default_exits] is information about the constant exit statuses of
-      {!exit_status_of_result}. *)
+  (** [default_exits] is information for exit status {!exit_status_success}
+      added to {!default_error_exits}. *)
 
   val default_error_exits : exit_info list
-  (** [default_error_exits] is information about the constant error exit
-      statuses of {!exit_status_of_result}. *)
+  (** [default_error_exits] is information for exit statuses
+      {!exit_status_cli_error} and {!exit_status_internal_error}. *)
 
   type env_info
   (** The type for environment variable information. *)
@@ -412,20 +412,31 @@ module Term : sig
       the evaluation result of a term you should add {!default_exits} to
       the term's information {{!info}[~exits]} argument. *)
 
+  val exit_status_success : int
+  (** [exit_status_success] is 0, the exit status for success. *)
+
+  val exit_status_cli_error : int
+  (** [exit_status_cli_error] is 125, an exit status for command line
+      parsing errors. *)
+
+  val exit_status_internal_error : int
+  (** [exit_status_internal_error] is 124, an exit status for unexpected
+      internal errors. *)
+
   val exit_status_of_result : ?term_err:int -> 'a result -> int
   (** [exit_status_of_result ~term_err r] is an [exit(3)] status
       code determined from [r] as follows:
       {ul
-      {- [0] if [r] is one of [`Ok _], [`Version], [`Help]}
+      {- {!exit_status_success} if [r] is one of [`Ok _], [`Version], [`Help]}
       {- [term_err] if [r] is [`Error `Term], [term_err] defaults to [1].}
-      {- [124] if [r] is [`Error `Exn]}
-      {- [125] if [r] is [`Error `Parse]}} *)
+      {- {!exit_status_internal_error} if [r] is [`Error `Exn]}
+      {- {!exit_status_cli_error} if [r] is [`Error `Parse]}} *)
 
   val exit_status_of_status_result : ?term_err:int -> int result -> int
   (** [exit_status_of_status_result] is like {!exit_status_of_result}
       except for [`Ok n] where [n] is used as the status exit code.
 
-      {b WARNING.} You should avoid status codes stricly greater than 125
+      {b WARNING.} You should avoid status codes strictly greater than 125
       as those may be used by
       {{:https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html}
        some} shells. *)

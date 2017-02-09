@@ -51,12 +51,12 @@ module Term = struct
   let exit_info = Cmdliner_info.exit
 
   let exit_status_success = 0
-  let exit_status_err_internal = 124
-  let exit_status_err_cli = 125
+  let exit_status_internal_error = 124
+  let exit_status_cli_error = 125
   let default_error_exits =
-    [ exit_info exit_status_err_internal
+    [ exit_info exit_status_internal_error
         ~doc:"on unexpected internal errors (bugs).";
-      exit_info exit_status_err_cli
+      exit_info exit_status_cli_error
         ~doc:"on command line parsing errors."; ]
 
   let default_exits =
@@ -259,8 +259,8 @@ module Term = struct
   let exit_status_of_result ?(term_err = 1) = function
   | `Ok _ | `Help | `Version -> exit_status_success
   | `Error `Term -> term_err
-  | `Error `Exn -> exit_status_err_internal
-  | `Error `Parse -> exit_status_err_cli
+  | `Error `Exn -> exit_status_internal_error
+  | `Error `Parse -> exit_status_cli_error
 
   let exit_status_of_status_result ?term_err = function
   | `Ok n -> n
