@@ -69,6 +69,6 @@ let cmd =
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"%%VERSION%%" ~doc ~man ~exits:Term.std_exits
+  Term.info "tail" ~version:"%%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
 let () = Term.(exit @@ eval cmd)

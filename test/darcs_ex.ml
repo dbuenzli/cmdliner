@@ -80,6 +80,7 @@ let initialize_cmd =
            ~docv:"DIR" ~doc)
   in
   let doc = "make the current directory a repository" in
+  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
@@ -87,8 +88,7 @@ let initialize_cmd =
     `Blocks help_secs; ]
   in
   Term.(const initialize $ copts_t $ repodir),
-  Term.info "initialize" ~sdocs:Manpage.s_common_options ~doc ~man
-    ~exits:Term.std_exits
+  Term.info "initialize" ~doc ~sdocs:Manpage.s_common_options ~exits ~man
 
 let record_cmd =
   let pname =
@@ -111,6 +111,7 @@ let record_cmd =
   in
   let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
   let doc = "create a patch from unrecorded changes" in
+  let exits = Term.default_exits in
   let man =
     [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
@@ -118,8 +119,7 @@ let record_cmd =
      `Blocks help_secs; ]
   in
   Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
-  Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~man
-    ~exits:Term.std_exits
+  Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~exits ~man
 
 let help_cmd =
   let topic =
@@ -127,21 +127,22 @@ let help_cmd =
     Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" ~doc)
   in
   let doc = "display help about darcs and darcs commands" in
+  let exits = Term.default_exits in
   let man =
     [`S Manpage.s_description;
      `P "Prints help about darcs commands and other subjects...";
      `Blocks help_secs; ]
   in
-  Term.(ret
-          (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
-  Term.info "help" ~doc ~man ~exits:Term.std_exits
+  Term.(ret (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
+  Term.info "help" ~doc ~exits ~man
 
 let default_cmd =
   let doc = "a revision control system" in
   let sdocs = Manpage.s_common_options in
+  let exits = Term.default_exits in
   let man = help_secs in
   Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
-  Term.info "darcs" ~version:"%%VERSION%%" ~sdocs ~doc ~man
+  Term.info "darcs" ~version:"%%VERSION%%" ~doc ~sdocs ~exits ~man
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 

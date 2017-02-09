@@ -265,12 +265,12 @@ module Term : sig
       {- [$(status_max)], the value of [max].}
       {- The variables mentioned in {!info}}} *)
 
-  val std_exits : exit_info list
-  (** [std_exits] is information about the constant exit statuses of
+  val default_exits : exit_info list
+  (** [default_exits] is information about the constant exit statuses of
       {!exit_status_of_result}. *)
 
-  val std_error_exits : exit_info list
-  (** [std_error_exits] is information about the constant error exit
+  val default_error_exits : exit_info list
+  (** [default_error_exits] is information about the constant error exit
       statuses of {!exit_status_of_result}. *)
 
   type env_info
@@ -409,7 +409,7 @@ module Term : sig
   (** {1:exits Turning evaluation results into exit codes}
 
       {b Note.} If you are using the following functions to handle
-      the evaluation result of a term you should add {!std_exits} to
+      the evaluation result of a term you should add {!default_exits} to
       the term's information {{!info}[~exits]} argument. *)
 
   val exit_status_of_result : ?term_err:int -> 'a result -> int
@@ -900,7 +900,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>." ]
   in
-  Term.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man ~exits:Term.std_exits
+  Term.info "chorus" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
 let () = Term.exit @@ Term.eval (chorus_t, info))
 ]}
@@ -1239,7 +1239,7 @@ let cmd =
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~man ~exits:Term.std_exits
+  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
 let () = Term.(exit @@ eval cmd)
 ]}
@@ -1300,14 +1300,16 @@ let dest =
 
 let cmd =
   let doc = "copy files" in
-  let man = [
-    `S Manpage.s_bugs;
-    `P "Email them to <hehey at example.org>.";
-    `S Manpage.s_see_also;
-    `P "$(b,mv)(1), $(b,scp)(1), $(b,umask)(2), $(b,symlink)(7)" ]
+  let man_xrefs =
+    [ `Tool "mv"; `Tool "scp"; `Page (2, "umask"); `Page (7, "symlink") ]
+  in
+  let exits = Term.default_exits in
+  let man =
+    [ `S Manpage.s_bugs;
+      `P "Email them to <hehey at example.org>."; ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
-  Term.info "cp" ~version:"%‌%VERSION%%" ~doc ~man ~exits:Term.std_exits
+  Term.info "cp" ~version:"%%VERSION%%" ~doc ~exits ~man ~man_xrefs
 
 let () = Term.(exit @@ eval cmd)
 ]}
@@ -1406,7 +1408,7 @@ let cmd =
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~man ~exits:Term.std_exits
+  Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
 let () = Term.(exit @@ eval cmd)
 ]}
@@ -1519,6 +1521,7 @@ let initialize_cmd =
            ~docv:"DIR" ~doc)
   in
   let doc = "make the current directory a repository" in
+  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
@@ -1526,8 +1529,7 @@ let initialize_cmd =
     `Blocks help_secs; ]
   in
   Term.(const initialize $ copts_t $ repodir),
-  Term.info "initialize" ~sdocs:Manpage.s_common_options ~doc ~man
-    ~exits:Term.std_exits
+  Term.info "initialize" ~doc ~sdocs:Manpage.s_common_options ~exits ~man
 
 let record_cmd =
   let pname =
@@ -1550,6 +1552,7 @@ let record_cmd =
   in
   let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
   let doc = "create a patch from unrecorded changes" in
+  let exits = Term.default_exits in
   let man =
     [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
@@ -1557,8 +1560,7 @@ let record_cmd =
      `Blocks help_secs; ]
   in
   Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
-  Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~man
-    ~exits:Term.std_exits
+  Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~exits ~man
 
 let help_cmd =
   let topic =
@@ -1573,14 +1575,15 @@ let help_cmd =
   in
   Term.(ret
           (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
-  Term.info "help" ~doc ~man ~exits:Term.std_exits
+  Term.info "help" ~doc ~exits:Term.default_exits ~man
 
 let default_cmd =
   let doc = "a revision control system" in
   let sdocs = Manpage.s_common_options in
+  let exits = Term.default_exits in
   let man = help_secs in
   Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
-  Term.info "darcs" ~version:"%%VERSION%%" ~sdocs ~doc ~man
+  Term.info "darcs" ~version:"%%VERSION%%" ~doc ~sdocs ~exits ~man
 
 let cmds = [initialize_cmd; record_cmd; help_cmd]
 

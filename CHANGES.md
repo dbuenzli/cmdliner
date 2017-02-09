@@ -52,7 +52,7 @@ cmdliner.
   variables that influence a term's evaluation and automatically
   integrate them in the manual.
 - Add `?exits` optional argument to `Term.info`. Documents exit statuses of
-  the program. Use `Term.std_exits` if you are using the new `Term.exit`
+  the program. Use `Term.default_exits` if you are using the new `Term.exit`
   functions.
 - Add `?man_xrefs` optional argument to `Term.info`. Documents
   references to other manpages. Automatically formats a `SEE ALSO` section

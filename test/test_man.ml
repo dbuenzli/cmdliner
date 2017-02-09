@@ -43,7 +43,7 @@ let info =
   let envs = [ Term.env_info "TEST_IT" ~doc:"This is $(env) for $(tname)" ] in
   let exits = [ Term.exit_info ~doc:"This is a $(status) for $(tname)" 1;
                 Term.exit_info ~doc:"Ranges from $(status) to $(status_max)"
-                  ~max:10 2; ] @ Term.std_exits
+                  ~max:10 2; ] @ Term.default_exits
   in
   let man = [
     `S "THIS IS A SECTION FOR $(mname)";

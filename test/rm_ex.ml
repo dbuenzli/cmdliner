@@ -48,6 +48,6 @@ let cmd =
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~man ~exits:Term.std_exits
+  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
 let () = Term.(exit @@ eval cmd)
