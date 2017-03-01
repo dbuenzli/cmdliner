@@ -57,13 +57,12 @@ module Term = struct
   let exit_info = Cmdliner_info.exit
 
   let exit_status_success = 0
-  let exit_status_internal_error = 124
-  let exit_status_cli_error = 125
+  let exit_status_cli_error = 124
+  let exit_status_internal_error = 125
   let default_error_exits =
-    [ exit_info exit_status_internal_error
-        ~doc:"on unexpected internal errors (bugs).";
-      exit_info exit_status_cli_error
-        ~doc:"on command line parsing errors."; ]
+    [ exit_info exit_status_cli_error ~doc:"on command line parsing errors.";
+      exit_info exit_status_internal_error
+        ~doc:"on unexpected internal errors (bugs)."; ]
 
   let default_exits =
     (exit_info exit_status_success ~doc:"on success.") :: default_error_exits

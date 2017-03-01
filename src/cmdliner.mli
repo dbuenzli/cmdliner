@@ -415,17 +415,22 @@ module Term : sig
 
       {b Note.} If you are using the following functions to handle
       the evaluation result of a term you should add {!default_exits} to
-      the term's information {{!info}[~exits]} argument. *)
+      the term's information {{!info}[~exits]} argument.
+
+      {b WARNING.} You should avoid status codes strictly greater than 125
+      as those may be used by
+      {{:https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html}
+       some} shells. *)
 
   val exit_status_success : int
   (** [exit_status_success] is 0, the exit status for success. *)
 
   val exit_status_cli_error : int
-  (** [exit_status_cli_error] is 125, an exit status for command line
+  (** [exit_status_cli_error] is 124, an exit status for command line
       parsing errors. *)
 
   val exit_status_internal_error : int
-  (** [exit_status_internal_error] is 124, an exit status for unexpected
+  (** [exit_status_internal_error] is 125, an exit status for unexpected
       internal errors. *)
 
   val exit_status_of_result : ?term_err:int -> 'a result -> int
@@ -434,17 +439,12 @@ module Term : sig
       {ul
       {- {!exit_status_success} if [r] is one of [`Ok _], [`Version], [`Help]}
       {- [term_err] if [r] is [`Error `Term], [term_err] defaults to [1].}
-      {- {!exit_status_internal_error} if [r] is [`Error `Exn]}
-      {- {!exit_status_cli_error} if [r] is [`Error `Parse]}} *)
+      {- {!exit_status_cli_error} if [r] is [`Error `Parse]}
+      {- {!exit_status_internal_error} if [r] is [`Error `Exn]}} *)
 
   val exit_status_of_status_result : ?term_err:int -> int result -> int
   (** [exit_status_of_status_result] is like {!exit_status_of_result}
-      except for [`Ok n] where [n] is used as the status exit code.
-
-      {b WARNING.} You should avoid status codes strictly greater than 125
-      as those may be used by
-      {{:https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html}
-       some} shells. *)
+      except for [`Ok n] where [n] is used as the status exit code. *)
 
   val exit : ?term_err:int -> 'a result -> unit
   (** [exit ~term_err r] is
@@ -959,9 +959,9 @@ EXIT STATUS
 
        0   on success.
 
-       124 on unexpected internal errors (bugs).
+       124 on command line parsing errors.
 
-       125 on command line parsing errors.
+       125 on unexpected internal errors (bugs).
 
 ENVIRONMENT
        These environment variables affect the execution of chorus:
