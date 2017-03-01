@@ -142,7 +142,7 @@ let arg_to_man_item ~errs ~subst ~buf a =
       strf "%s $(b,%s) env" value (esc @@ Cmdliner_info.env_var e)
   in
   let absent = match Cmdliner_info.arg_absent a with
-  | Cmdliner_info.Err -> ""
+  | Cmdliner_info.Err -> "required"
   | Cmdliner_info.Val v ->
       match Lazy.force v with
       | "" -> strf "%s" (or_env ~value:false a)

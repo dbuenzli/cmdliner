@@ -81,6 +81,8 @@ cmdliner.
 - Request `an` macros directly in the man page via `.mso` this
   makes man pages self-describing and avoids having to call `groff` with
   the `-man` option.
+- Document required optional arguments as such (#82). Thanks to Isaac Hodes
+  for the report.
 
 ### Doc language sanitization
 
