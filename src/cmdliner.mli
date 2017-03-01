@@ -1027,8 +1027,8 @@ populated for you:
 {- {{!Manpage.s_synopsis}[SYNOPSIS]} section.}}
 
 The various [doc] documentation strings specified by the term's
-subterms and additional metadata get integrated at the end of the
-documentation section name [docs] they respecively mention, in the
+subterms and additional metadata get inserted at the end of the
+documentation section name [docs] they respectively mention, in the
 following order:
 
 {ol
@@ -1040,18 +1040,18 @@ following order:
 {- Environment variables, see {!Arg.env_var} and {!Term.env_info}.}}
 
 If a [docs] section name is mentioned and does not exist in the term's
-manual, an empty section is created for it, to which the [doc] strings
-are intergrated, possibly prefixed by boilerplate text (e.g. for
+manual, an empty section is created for it, after which the [doc] strings
+are inserted, possibly prefixed by boilerplate text (e.g. for
 {!Manpage.s_environment} and {!Manpage.s_exit_status}).
 
 If the created section is:
 {ul
 {- {{!Manpage.standard_sections}standard}, it
     is inserted at the right place in the order specified
-    {{!Manpage.standard_sections}here}, but after possible non-standard
-    section explicitely specified by the term as the latter get the order number
-    of the last previously specified standard section or the order of
-    {!Manpage.s_synopsis} if there is no such section.}
+    {{!Manpage.standard_sections}here}, but after a possible non-standard
+    section explicitely specified by the term since the latter get the
+    order number of the last previously specified standard section
+    or the order of {!Manpage.s_synopsis} if there is no such section.}
 {-  non-standard, it is inserted before the {!Manpage.s_commands}
     section or the first subsequent existing standard section if it
     doesn't exist. Taking advantage of this behaviour is discouraged,
