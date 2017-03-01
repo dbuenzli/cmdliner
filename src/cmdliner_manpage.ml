@@ -17,7 +17,7 @@ type title = string * int * string * string * string
 type t = title * block list
 
 type xref =
-  [ `Main | `Cmd of string | `Tool of string | `Page of int * string ]
+  [ `Main | `Cmd of string | `Tool of string | `Page of string * int ]
 
 (* Standard sections *)
 

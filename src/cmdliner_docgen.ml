@@ -258,14 +258,14 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
 let xref_docs ~errs ei =
   let main = Cmdliner_info.(term_name @@ eval_main ei) in
   let to_xref = function
-  | `Main -> 1, main
-  | `Tool tool -> 1, tool
-  | `Page (sec, name) -> sec, name
+  | `Main -> main, 1
+  | `Tool tool -> tool, 1
+  | `Page (name, sec) -> name, sec
   | `Cmd c ->
-      if Cmdliner_info.eval_has_choice ei c then 1, strf "%s-%s" main c else
-      (Format.fprintf errs "xref %s: no such term name@." c; 0, "doc-err")
+      if Cmdliner_info.eval_has_choice ei c then strf "%s-%s" main c, 1 else
+      (Format.fprintf errs "xref %s: no such term name@." c; "doc-err", 0)
   in
-  let xref_str (sec, name) = strf "%s(%d)" (esc name) sec in
+  let xref_str (name, sec) = strf "%s(%d)" (esc name) sec in
   let xrefs = Cmdliner_info.(term_man_xrefs @@ eval_term ei) in
   let xrefs = List.fold_left (fun acc x -> to_xref x :: acc) [] xrefs in
   let xrefs = List.(rev_map xref_str (sort rev_compare xrefs)) in

@@ -41,7 +41,7 @@ let dest =
 let cmd =
   let doc = "copy files" in
   let man_xrefs =
-    [ `Tool "mv"; `Tool "scp"; `Page (2, "umask"); `Page (7, "symlink") ]
+    [ `Tool "mv"; `Tool "scp"; `Page ("umask", 2); `Page ("symlink", 7) ]
   in
   let exits = Term.default_exits in
   let man =

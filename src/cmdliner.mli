@@ -76,15 +76,14 @@ module Manpage : sig
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
   type xref =
-    [ `Main | `Cmd of string | `Tool of string | `Page of int * string ]
+    [ `Main | `Cmd of string | `Tool of string | `Page of string * int ]
   (** The type for man page cross-references.
       {ul
       {- [`Main] refers to the man page of the program itself.}
       {- [`Cmd cmd] refers to the man page of the program's [cmd]
          command (which must exist).}
       {- [`Tool bin] refers to the command line tool named [bin].}
-      {- [`Page (sec, name)] refers to the man page [name] of section
-         [sec].}} *)
+      {- [`Page (name, sec)] refers to the man page [name(sec)].}} *)
 
   (** {1:standard_sections Standard section names and content}
 

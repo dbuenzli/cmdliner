@@ -94,7 +94,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Email bug reports to <hehey at example.org>.";]
   in
-  let man_xrefs = [`Page (7, "ascii"); `Main; `Tool "grep";] in
+  let man_xrefs = [`Page ("ascii", 7); `Main; `Tool "grep";] in
   Term.info "man_test" ~version:"%%VERSION%%" ~doc ~envs ~exits ~man ~man_xrefs
 
 let () = Term.exit @@ Term.eval (man_test_t, info)
