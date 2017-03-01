@@ -224,16 +224,6 @@ module Term : sig
          term's man page in the given [format] (or the man page for a
          specific [name] term in case of multiple term evaluation).}}   *)
 
-  val ret_of_result : ?usage:bool -> ('a, [`Msg of string]) result -> 'a ret
-  (** [ret_of_result ~usage r] is
-      {ul
-      {- [`Ok v] if [r] is [Ok v].}
-      {- [`Error (usage, e)] if [r] is [Error (`Msg e)], [usage] defaults
-         to [false]}} *)
-
-  val ret_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a ret t
-  (** [ret_result ~usage r] is [app (const @@ ret_of_result ~usage) r]. *)
-
   val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t
   (** [term_result ~usage t] evaluates to
       {ul

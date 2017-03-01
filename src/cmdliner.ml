@@ -30,12 +30,6 @@ module Term = struct
     | Ok (`Help _ as help) -> Error help
     | Error _ as e -> e
 
-  let ret_of_result ?(usage = false) = function
-  | Ok v -> `Ok v
-  | Error (`Msg e) -> `Error (usage, e)
-
-  let ret_result ?usage t = app (const @@ ret_of_result ?usage) t
-
   let term_result ?(usage = false) (al, v) =
     al, fun ei cl -> match v ei cl with
     | Ok (Ok _ as ok) -> ok
