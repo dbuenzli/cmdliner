@@ -1,3 +1,5 @@
+v1.0.0 2017-03-02 La Forclaz (VS)
+---------------------------------
 
 **IMPORTANT** The `Arg.converter` type is deprecated in favor of the
 `Arg.conv` type. For this release both types are equal but the next
@@ -13,10 +15,10 @@ via the new `Arg.[p]conv` and `Arg.conv_{parser,printer}` functions.
   to be undefined behaviour (in practice, an arbitrary one would be
   ignored).
 - Improve converter API (see important message above).
-- Add `Term.{ret_of_result,ret_result}`. Improves composition with
-  terms evaluating to `result`s.
 - Add `Term.exit[_status]` and `Term.exit_status_of[_status]_result`.
-  Improves composition with `Pervasives.exit`.
+  improves composition with `Pervasives.exit`.
+- Add `Term.term_result` and `Term.cli_parse_result` improves composition
+  with terms evaluating to `result` types.
 - Add `Arg.parser_of_kind_of_string`.
 - Change semantics of `Arg.pos_left` (see #76 for details).
 - Deprecate `Term.man_format` in favor of `Arg.man_format`.
@@ -43,7 +45,7 @@ cmdliner.
   `TERM` environment variable is `dumb` or undefined (#43). At the API
   level this changes the signature of the type `Term.ret` and values
   `Term.ret`, `Term.man_format` (deprecated) and `Manpage.print` to add the
-  new `` `Auto`` case to manual formats. now represented by the
+  new `` `Auto`` case to manual formats. These are now represented by the
   `Manpage.format` type rather than inlined polyvars.
 
 ### Doc specification improvements and fixes
