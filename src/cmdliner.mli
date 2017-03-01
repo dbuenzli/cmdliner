@@ -473,7 +473,8 @@ module Arg : sig
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
   (** The type for argument parsers.
 
-      @deprecated Use a parser with [('a, [ `Msg of string]) result] results. *)
+      @deprecated Use a parser with [('a, [ `Msg of string]) result] results
+      and {!conv}. *)
 
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
@@ -520,7 +521,7 @@ module Arg : sig
     (string -> ('a, [`Msg of string]) result)
   (** [parser_of_kind_of_string ~kind kind_of_string] is an argument
       parser using the [kind_of_string] function for parsing and [kind]
-      to report errors (e.g. could be "an integer" for an [int] parser.). *)
+      to report errors (e.g. could be ["an integer"] for an [int] parser.). *)
 
   val some : ?none:string -> 'a conv -> 'a option conv
   (** [some none c] is like the converter [c] except it returns
@@ -573,10 +574,10 @@ module Arg : sig
          The {{!doclang}documentation language} can be used and
          the following variables are recognized:
          {ul
-         {- ["$(docv)"] the value of [docv] (see below)}
+         {- ["$(docv)"] the value of [docv] (see below).}
          {- ["$(opt)"], one of the options of [names], preference
             is given to a long one.}
-         {- ["$(env)", the environment var specified by [env] (if any)]}}
+         {- ["$(env)"], the environment var specified by [env] (if any).}}
          {{!doc_helpers}These functions} can help with formatting argument
          values.}
       {- [docv] is for positional and non-flag optional arguments.
@@ -840,7 +841,7 @@ let () = Term.exit @@ Term.eval (revolt_t, Term.info "revolt")
 ]}
 
 This defines a command line program named ["revolt"], without command
-line arguments arguments, that just prints ["Revolt!"] on [stdout].
+line arguments, that just prints ["Revolt!"] on [stdout].
 
 {[
 > ./revolt
