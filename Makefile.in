@@ -1,0 +1,67 @@
+####### Variables set by configure ##########################
+
+# library installation directory, usually /usr/lib/ocaml/cmdliner
+LIBDIR=@LIBDIR@
+
+# documentation installation directory, usually /usr/share/doc/cmdliner
+DOCDIR=@DOCDIR@
+
+# native compilation, set to ``true'' if you have ocamlopt
+NATIVE=@NATIVE@
+
+####### End of configuration section
+
+INSTALL=install
+OCAMLBUILD=ocamlbuild -use-ocamlfind
+
+B=_build/src
+BASE=$(B)/cmdliner
+
+ifeq ($(NATIVE),true)
+  BUILD-GOALS=build-byte build-native build-native-dynlink
+  INSTALL-GOALS=install-common install-byte install-native install-native-dynlink
+else
+  BUILD-GOALS=build-byte
+  INSTALL-GOALS=install-common install-byte
+endif
+
+all: $(BUILD-GOALS)
+
+install: $(INSTALL-GOALS)
+
+install-doc:
+	$(INSTALL) -d $(DESTDIR)$(DOCDIR)
+	$(INSTALL) CHANGES.md LICENSE.md README.md $(DESTDIR)$(DOCDIR)
+
+clean:
+	$(OCAMLBUILD) -clean
+
+
+build-byte:
+	$(OCAMLBUILD) src/cmdliner.cma
+
+build-native:
+	$(OCAMLBUILD) src/cmdliner.cmxa
+
+build-native-dynlink:
+	$(OCAMLBUILD) src/cmdliner.cmxs
+
+install-common:
+	$(INSTALL) -d $(DESTDIR)$(LIBDIR)
+	$(INSTALL) pkg/META opam $(BASE).mli $(BASE).cmi $(BASE).cmti $(DESTDIR)$(LIBDIR)
+
+install-byte:
+	$(INSTALL) -d $(DESTDIR)$(LIBDIR)
+	$(INSTALL) $(BASE).cma $(DESTDIR)$(LIBDIR)
+
+install-native:
+	$(INSTALL) -d $(DESTDIR)$(LIBDIR)
+	$(INSTALL) $(BASE).cmxa $(BASE).a $(wildcard $(B)/cmdliner*.cmx) $(DESTDIR)$(LIBDIR)
+
+install-native-dynlink:
+	$(INSTALL) -d $(DESTDIR)$(LIBDIR)
+	$(INSTALL) $(BASE).cmxs $(DESTDIR)$(LIBDIR)
+
+.PHONY: all install install-doc clean build-byte build-native \
+	build-native-dynlink install-common install-byte install-native \
+	install-dynlink

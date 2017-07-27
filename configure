@@ -1,0 +1,139 @@
+#!/bin/sh
+
+# To be used by system package managers to bootstrap opam. topkg
+# cannot be used as it needs opam-installer which is provided by opam
+# itself.
+
+# Typical usage:
+#
+# configure
+# make all
+# make DESTDIR=... install 
+# make DESTDIR=... install-doc
+
+# fail on error
+set -e
+
+destdir=/usr
+libdir=$destdir/lib/ocaml/cmdliner
+docdir=$destdir/share/doc/cmdliner
+native=
+
+usage (){
+    echo "Usage:"
+    echo "./configure [OPTION]..."
+    echo
+    echo "Recognized options are:"
+    echo "  --prefix <path>	installation prefix [/usr]"
+    echo "  --libdir <path>	OCaml library [PREFIX/lib/ocaml/cmdliner]"
+    echo "  --docdir <path>	documentation [PREFIX/share/doc/cmdliner]"
+}
+
+while : ; do
+  case "$1" in
+    "") break;;
+    -help|--help) usage; exit 0;;
+    -prefix|--prefix) libdir=$2/lib/ocaml/cmdliner
+                      docdir=$2/share/doc/cmdliner
+		      shift;;
+    -libdir|--libdir) libdir=$2
+		      shift;;
+    -docdir|--docdir) docdir=$2
+		      shift;;
+     *) echo "Unknown option \"$1\"." 1>&2; usage; exit 2;;
+  esac
+  shift
+done
+
+# disable error checking
+set +e
+
+# check for ocaml 
+version=$(ocamlc -version)
+if [ $? -ne 0 ] ; then
+    set -e
+    echo ocamlc not found. 
+    echo Please adjust \$PATH or install ocamlc
+    exit 1
+else
+    set -e
+    echo ocamlc version $version found.
+fi
+
+# disable error checking
+set +e
+
+# check for ocamlbuild
+version=$(ocamlbuild -version)
+if [ $? -ne 0 ] ; then
+    set -e
+    echo ocamlbuild not found. 
+    echo Please adjust \$PATH or install ocamlbuild
+    exit 1
+else
+    set -e
+    echo ocamlbuild version $version found.
+fi
+
+# disable error checking
+set +e
+
+# check for ocamlfind
+version=$(ocamlfind ocamlc -version)
+if [ $? -ne 0 ] ; then
+    set -e
+    echo ocamlfind not found. 
+    echo Please adjust \$PATH or install ocamlfind
+    exit 1
+else
+    set -e
+    echo ocamlfind found.
+fi
+
+# disable error checking
+set +e
+
+# check for libresult
+version=$(ocamlfind query result)
+if [ -r ${version}/result.cmi ] ; then
+    set -e
+    echo result library found at $version.
+else
+    set -e
+    echo result library not found, please install it.
+    echo For opam you need package result, for Debian/Ubuntu libresult-ocaml-dev.
+    exit 1
+fi
+
+# disable error checking
+set +e
+
+# check for ocamlopt.opt
+version=$(ocamlopt.opt -version)
+if [ $? -eq 0 ] ; then
+    set -e
+    echo ocamlopt.opt version $version found. Native compilation enabled.
+    native=true
+    
+else
+    set -e
+    echo ocamlopt.opt not found. Native compilation disabled.
+    native=false
+fi
+
+# Summary of the configuration
+echo
+echo "Configuration summary:"
+echo "    libraries will be installed in $libdir"
+echo "    documentation will be installed in $docdir"
+if [ $native = "true" ] ; then
+    echo "    native-code compilation enabled"
+else
+    echo "    native-code compilation disabled"
+fi
+
+# Make the Makefile
+sed -e "s|@LIBDIR@|$libdir|" \
+    -e "s|@DOCDIR@|$docdir|" \
+    -e "s|@NATIVE@|$native|" \
+    Makefile.in > Makefile
