@@ -6,3 +6,4 @@ tmp
 *.byte
 *.native
 cmdliner.install
+Makefile
