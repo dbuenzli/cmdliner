@@ -21,8 +21,8 @@ B=_build/src
 BASE=$(B)/cmdliner
 
 ifeq ($(NATIVE),true)
-   BUILD-TARGETS=build-byte build-native build-native-dynlink
-   INSTALL-TARGETS=install-common install-byte install-native \
+	BUILD-TARGETS=build-byte build-native build-native-dynlink
+	INSTALL-TARGETS=install-common install-byte install-native \
                  install-native-dynlink
 else
 	BUILD-TARGETS=build-byte
