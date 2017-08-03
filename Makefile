@@ -5,14 +5,14 @@
 # Typical usage:
 #
 # make all
-# make install DESTDIR=/usr/local
-# make install-doc DESTDIR=/usr/local
+# make install PREFIX=/usr/local
+# make install-doc PREFIX=/usr/local
 
 # Adjust the following on the cli invocation for configuring
 
-DESTDIR=/usr
-LIBDIR=$(DESTDIR)/lib/ocaml/cmdliner
-DOCDIR=$(DESTDIR)/share/doc/cmdliner
+PREFIX=/usr
+LIBDIR=$(DESTDIR)$(PREFIX)/lib/ocaml/cmdliner
+DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/cmdliner
 NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
 
 INSTALL=install
