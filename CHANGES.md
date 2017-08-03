@@ -1,3 +1,10 @@
+v1.0.1 2017-08-03 Zagreb
+------------------------
+
+- Add a `Makefile` to build and install cmdliner without `topkg` and
+  opam `.install` files. Helps bootstraping opam in OS package
+  managers. Thanks to Hendrik Tews for the patches.
+
 v1.0.0 2017-03-02 La Forclaz (VS)
 ---------------------------------
 
