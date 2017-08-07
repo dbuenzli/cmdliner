@@ -4,8 +4,13 @@
 open Topkg
 
 let test t = Pkg.flatten [ Pkg.test ~run:false t; Pkg.doc (t ^ ".ml")]
+
+let distrib =
+  let exclude_paths () = Ok [".git";".gitignore";".gitattributes";"_build"] in
+  Pkg.distrib ~exclude_paths ()
+
 let () =
-  Pkg.describe "cmdliner" @@ fun c ->
+  Pkg.describe ~distrib "cmdliner" @@ fun c ->
   Ok [ Pkg.mllib ~api:["Cmdliner"] "src/cmdliner.mllib";
        test "test/chorus";
        test "test/cp_ex";

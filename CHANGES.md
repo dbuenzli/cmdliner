@@ -1,3 +1,8 @@
+v1.0.2 2017-08-07 Zagreb
+------------------------
+
+- Don't remove the `Makefile` from the distribution.
+
 v1.0.1 2017-08-03 Zagreb
 ------------------------
 
