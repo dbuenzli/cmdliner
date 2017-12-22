@@ -1,5 +1,5 @@
-
-
+- Drop support for ocaml < 4.02.3
+- Drop ocamlbuild requirement for `Makefile` "bootstrap" build.
 - Add a jbuild file.
 
 v1.0.2 2017-08-07 Zagreb
