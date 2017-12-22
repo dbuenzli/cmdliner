@@ -35,6 +35,8 @@ let cuts ~sep s =
 
 (* Read, write and collect files *)
 
+let fpath ~dir f = String.concat "" [dir; "/"; f]
+
 let string_of_file f =
   let ic = open_in f in
   let len = in_channel_length ic in
@@ -92,7 +94,7 @@ let mkdir dir =
   | Sys_error e -> err "%s: %s" dir e
 
 let rmdir dir =
-  let rm f = Sys.remove (strf "%s/%s" dir f) in
+  let rm f = Sys.remove (fpath ~dir f) in
   Array.iter rm (Sys.readdir dir);
   run_cmd ["rmdir"; dir]
 
@@ -102,9 +104,9 @@ let really_find_cmd alts = match find_cmd alts with
 | Some cmd -> cmd
 | None -> err "No %s found in PATH\n" (List.hd @@ List.rev alts)
 
-let ocamlc = really_find_cmd ["ocamlc.opt"; "ocamlc"]
-let ocamlopt = really_find_cmd ["ocamlopt.opt"; "ocamlopt"]
-let ocamldep = really_find_cmd ["ocamldep.opt"; "ocamldep"]
+let ocamlc () = really_find_cmd ["ocamlc.opt"; "ocamlc"]
+let ocamlopt () = really_find_cmd ["ocamlopt.opt"; "ocamlopt"]
+let ocamldep () = really_find_cmd ["ocamldep.opt"; "ocamldep"]
 
 (* Lookup the result library directory, once we support only >= 4.03
    all this can go. *)
@@ -121,7 +123,7 @@ let result_lib_dir () = String.trim @@ try Sys.getenv "RESULT_LIB_DIR" with
 (* Build *)
 
 let sort_srcs srcs =
-  read_cmd (ocamldep :: "-slash" :: "-sort" :: srcs)
+  read_cmd (ocamldep () :: "-slash" :: "-sort" :: srcs)
   |> String.trim |> cuts ~sep:' '
 
 let common srcs =
@@ -129,18 +131,17 @@ let common srcs =
   "-I" :: result :: (base_ocaml_opts @ sort_srcs srcs)
 
 let build_cma srcs =
-  run_cmd ([ocamlc] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
+  run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
 
 let build_cmxa srcs =
-  run_cmd ([ocamlopt] @ common srcs @ ["-a"; "-o"; "cmdliner.cmxa"])
+  run_cmd ([ocamlopt ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cmxa"])
 
 let build_cmxs srcs =
-  run_cmd ([ocamlopt] @ common srcs @ ["-shared"; "-o"; "cmdliner.cmxs"])
+  run_cmd ([ocamlopt ()] @ common srcs @ ["-shared"; "-o"; "cmdliner.cmxs"])
 
 let clean () = rmdir build_dir
 
 let in_build_dir f =
-  let fpath ~dir f = String.concat "" [dir; "/"; f] in
   let srcs = ml_srcs src_dir in
   let cp src = cp (fpath ~dir:src_dir src) (fpath ~dir:build_dir src) in
   mkdir build_dir;
