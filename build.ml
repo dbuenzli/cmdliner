@@ -38,7 +38,7 @@ let cuts ~sep s =
 let fpath ~dir f = String.concat "" [dir; "/"; f]
 
 let string_of_file f =
-  let ic = open_in f in
+  let ic = open_in_bin f in
   let len = in_channel_length ic in
   let buf = Bytes.create len in
   really_input ic buf 0 len;
@@ -46,7 +46,7 @@ let string_of_file f =
   Bytes.unsafe_to_string buf
 
 let string_to_file f s =
-  let oc = open_out f in
+  let oc = open_out_bin f in
   output_string oc s;
   close_out oc
 
