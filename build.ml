@@ -70,18 +70,22 @@ let find_cmd cmds =
   try Some (List.find cmd cmds) with Not_found -> None
 
 let err_cmd exit cmd = err "exited with %d: %s\n" exit cmd
+let quote_cmd = match Sys.win32 with
+| false -> fun cmd -> cmd
+| true -> fun cmd -> strf "\"%s\"" cmd
+
 let run_cmd args =
   let cmd = String.concat " " (List.map Filename.quote args) in
 (*  log "[EXEC] %s\n" cmd; *)
-  let exit = Sys.command cmd in
+  let exit = Sys.command (quote_cmd cmd) in
   if exit = 0 then () else err_cmd exit cmd
 
 let read_cmd args =
-  let cmd = String.concat " " (List.map Filename.quote args) in
-  let wquote = if Sys.win32 then "\"" else "" in
   let stdout = Filename.temp_file (Filename.basename Sys.argv.(0)) "b00t" in
   at_exit (fun () -> try ignore (Sys.remove stdout) with _ -> ());
-  let exit = Sys.command @@ strf "%s%s 1>%s%s" wquote cmd stdout wquote in
+  let cmd = String.concat " " (List.map Filename.quote args) in
+  let cmd = quote_cmd @@ strf "%s 1>%s" cmd (Filename.quote stdout) in
+  let exit = Sys.command cmd in
   if exit = 0 then string_of_file stdout else err_cmd exit cmd
 
 (* Create and delete directories *)
