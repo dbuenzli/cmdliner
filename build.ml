@@ -98,9 +98,14 @@ let mkdir dir =
   | Sys_error e -> err "%s: %s" dir e
 
 let rmdir dir =
-  let rm f = Sys.remove (fpath ~dir f) in
-  Array.iter rm (Sys.readdir dir);
-  run_cmd ["rmdir"; dir]
+  try match Sys.file_exists dir with
+  | false -> ()
+  | true ->
+      let rm f = Sys.remove (fpath ~dir f) in
+      Array.iter rm (Sys.readdir dir);
+      run_cmd ["rmdir"; dir]
+  with
+  | Sys_error e -> err "%s: %s" dir e
 
 (* Lookup OCaml compilers and ocamldep *)
 
