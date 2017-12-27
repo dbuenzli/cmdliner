@@ -991,7 +991,7 @@ that have multiple commands each with their own syntax:
 A command is defined by coupling a term with {{!Term.tinfo}term
 information}. The term information defines the command name and its
 man page. Given a list of commands the function {!Term.eval_choice}
-will execute the term corresponding to the [COMMAND] argument or or a
+will execute the term corresponding to the [COMMAND] argument or a
 specific "main" term if there is no [COMMAND] argument.
 
 {2:doclang Documentation markup language}
