@@ -29,4 +29,5 @@ let () =
        Pkg.test ~run:false "test/test_pos_left";
        Pkg.test ~run:false "test/test_pos_req";
        Pkg.test ~run:false "test/test_opt_req";
-       Pkg.test ~run:false "test/test_term_dups"; ]
+       Pkg.test ~run:false "test/test_term_dups";
+       Pkg.test ~run:false "test/test_with_evaluated_args"; ]
