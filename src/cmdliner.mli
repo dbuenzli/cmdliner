@@ -244,6 +244,11 @@ module Term : sig
   (** [choice_names] is a term that evaluates to the names of the terms
       to choose from. *)
 
+  val capture : 'a t -> ('a * string list) t
+  (** [capture t] is a term whose evaluation captures the actual
+      command line arguments passed by the user that are consumed by
+      [t]. *)
+
   (** {1:tinfo Term information}
 
       Term information defines the name and man page of a term.
