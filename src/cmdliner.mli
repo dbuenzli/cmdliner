@@ -1211,7 +1211,7 @@ let prompt_str = function
 | Always -> "always" | Once -> "once" | Never -> "never"
 
 let rm prompt recurse files =
-  Printf.printf "prompt = %s\nrecurse = %b\nfiles = %s\n"
+  Printf.printf "prompt = %s\nrecurse = %B\nfiles = %s\n"
     (prompt_str prompt) recurse (String.concat ", " files)
 
 (* Command line interface *)
@@ -1282,7 +1282,7 @@ let cp verbose recurse force srcs dest =
     `Error (false, dest ^ " is not a directory")
   else
     `Ok (Printf.printf
-     "verbose = %b\nrecurse = %b\nforce = %b\nsrcs = %s\ndest = %s\n"
+     "verbose = %B\nrecurse = %B\nforce = %B\nsrcs = %s\ndest = %s\n"
       verbose recurse force (String.concat ", " srcs) dest)
 
 (* Command line interface *)
@@ -1466,14 +1466,14 @@ let verb_str = function
   | Normal -> "normal" | Quiet -> "quiet" | Verbose -> "verbose"
 
 let pr_copts oc copts = Printf.fprintf oc
-    "debug = %b\nverbosity = %s\nprehook = %s\n"
+    "debug = %B\nverbosity = %s\nprehook = %s\n"
     copts.debug (verb_str copts.verb) (opt_str_str copts.prehook)
 
 let initialize copts repodir = Printf.printf
     "%arepodir = %s\n" pr_copts copts repodir
 
 let record copts name email all ask_deps files = Printf.printf
-    "%aname = %s\nemail = %s\nall = %b\nask-deps = %b\nfiles = %s\n"
+    "%aname = %s\nemail = %s\nall = %B\nask-deps = %B\nfiles = %s\n"
     pr_copts copts (opt_str_str name) (opt_str_str email) all ask_deps
     (String.concat ", " files)
 

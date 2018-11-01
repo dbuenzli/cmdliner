@@ -33,7 +33,7 @@ let miaouw =
   Arg.(value & opt string "miaouw" & info ["m";] ~env ~docv:"MIAOUW" ~doc)
 
 let test hey repodir id miaouw =
-  Format.printf "hey: %b@.repodir: %s@.id: %d@.miaouw: %s@."
+  Format.printf "hey: %B@.repodir: %s@.id: %d@.miaouw: %s@."
     hey repodir id miaouw
 
 let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)

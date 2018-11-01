@@ -7,7 +7,7 @@ let prompt_str = function
 | Always -> "always" | Once -> "once" | Never -> "never"
 
 let rm prompt recurse files =
-  Printf.printf "prompt = %s\nrecurse = %b\nfiles = %s\n"
+  Printf.printf "prompt = %s\nrecurse = %B\nfiles = %s\n"
     (prompt_str prompt) recurse (String.concat ", " files)
 
 (* Command line interface *)
