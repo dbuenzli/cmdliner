@@ -1451,7 +1451,7 @@ use of {!Term.ret} on the lifted [help] function.
 
 If the program is invoked without a command we just want to show the
 help of the program as printed by [Cmdliner] with [--help]. This is
-done by the [no_cmd] term.
+done by the [default_cmd] term.
 
 {[
 (* Implementations, just print the args. *)
