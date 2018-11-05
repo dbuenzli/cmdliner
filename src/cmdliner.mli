@@ -244,10 +244,10 @@ module Term : sig
   (** [choice_names] is a term that evaluates to the names of the terms
       to choose from. *)
 
-  val capture : 'a t -> ('a * string list) t
-  (** [capture t] is a term whose evaluation captures the actual
-      command line arguments passed by the user that are consumed by
-      [t]. *)
+  val with_evaluated_args : 'a t -> ('a * string list) t
+  (** [with_evaluated_args t] is a term whose evaluation returns the
+      arguments evaluated from the command line passed by the user that
+      are consumed by [t]. *)
 
   (** {1:tinfo Term information}
 
