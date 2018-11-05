@@ -7,3 +7,4 @@ tmp
 *.byte
 *.native
 cmdliner.install
+src/.merlin
