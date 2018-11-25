@@ -53,7 +53,8 @@ create-libdir:
 	$(INSTALL) -d $(LIBDIR)
 
 install-common: create-libdir
-	$(INSTALL) pkg/META opam $(BASE).mli $(BASE).cmi $(BASE).cmti $(LIBDIR)
+	$(INSTALL) pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti $(LIBDIR)
+	$(INSTALL) cmdliner.opam $(LIBDIR)/opam
 
 install-byte: create-libdir
 	$(INSTALL) $(BASE).cma $(LIBDIR)
