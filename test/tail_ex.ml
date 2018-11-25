@@ -19,7 +19,6 @@ let tail lines follow verb pid files =
 
 (* Command line interface *)
 
-open Result
 open Cmdliner
 
 let lines =

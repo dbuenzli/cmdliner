@@ -117,27 +117,13 @@ let ocamlc () = really_find_cmd ["ocamlc.opt"; "ocamlc"]
 let ocamlopt () = really_find_cmd ["ocamlopt.opt"; "ocamlopt"]
 let ocamldep () = really_find_cmd ["ocamldep.opt"; "ocamldep"]
 
-(* Lookup the result library directory, once we support only >= 4.03
-   all this can go. *)
-
-let result_lib_dir () = String.trim @@ try Sys.getenv "RESULT_LIB_DIR" with
-| Not_found ->
-    match find_cmd ["ocamlfind"] with
-    | None ->
-        err "No ocamlfind in PATH. Indicate the location of the result
-             library directory via the RESULT_LIB_DIR environment variable."
-    | Some ocamlfind ->
-        read_cmd [ocamlfind; "query"; "-format"; "%d"; "result"]
-
 (* Build *)
 
 let sort_srcs srcs =
   read_cmd (ocamldep () :: "-slash" :: "-sort" :: srcs)
   |> String.trim |> cuts ~sep:' '
 
-let common srcs =
-  let result = result_lib_dir () in
-  "-I" :: result :: (base_ocaml_opts @ sort_srcs srcs)
+let common srcs = base_ocaml_opts @ sort_srcs srcs
 
 let build_cma srcs =
   run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])

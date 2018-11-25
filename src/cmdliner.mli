@@ -26,8 +26,6 @@
 
 (** {1:top Interface} *)
 
-open Result
-
 (** Man page specification.
 
     Man page generation is automatically handled by [Cmdliner],
@@ -1375,7 +1373,6 @@ let tail lines follow verb pid files =
 
 (* Command line interface *)
 
-open Result
 open Cmdliner
 
 let lines =

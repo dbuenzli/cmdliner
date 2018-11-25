@@ -4,8 +4,6 @@
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Result
-
 module Manpage = Cmdliner_manpage
 module Arg = Cmdliner_arg
 module Term = struct
@@ -113,7 +111,7 @@ module Term = struct
     ('a, [ term_escape
          | `Exn of exn * Printexc.raw_backtrace
          | `Parse of string
-         | `Std_help of Manpage.format | `Std_version ]) Result.result
+         | `Std_help of Manpage.format | `Std_version ]) Pervasives.result
 
   let run ~catch ei cl f = try (f ei cl :> 'a eval_result) with
   | exn when catch ->
