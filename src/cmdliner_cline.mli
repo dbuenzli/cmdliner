@@ -16,7 +16,6 @@ val create :
 
 val opt_arg : t -> Cmdliner_info.arg -> (int * string * (string option)) list
 val pos_arg : t -> Cmdliner_info.arg -> string list
-
 val actual_args : t -> Cmdliner_info.arg -> string list
 (** Actual command line arguments from the command line *)
 

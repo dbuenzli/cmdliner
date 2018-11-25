@@ -29,17 +29,13 @@ type t = arg Amap.t  (* command line, maps arg_infos to arg value. *)
 let get_arg cl a = try Amap.find a cl with Not_found -> assert false
 let opt_arg cl a = match get_arg cl a with O l -> l | _ -> assert false
 let pos_arg cl a = match get_arg cl a with P l -> l | _ -> assert false
-
-let actual_args cl a =
-  match get_arg cl a with
-  | P args -> args
-  | O l ->
-      let extract_args (_pos, name, value) =
-        name :: (match value with
-          | None -> []
-          | Some v -> [v])
-      in
-      List.concat (List.map extract_args l)
+let actual_args cl a = match get_arg cl a with
+| P args -> args
+| O l ->
+    let extract_args (_pos, name, value) =
+      name :: (match value with None -> [] | Some v -> [v])
+    in
+    List.concat (List.map extract_args l)
 
 let arg_info_indexes args =
   (* from [args] returns a trie mapping the names of optional arguments to

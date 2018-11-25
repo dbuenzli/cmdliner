@@ -1,3 +1,6 @@
+
+- Add `Term.with_used_args`. Thanks to Jeremie Dimino for
+  the patch.
 - Drop support for ocaml < 4.02.3
 - Drop ocamlbuild requirement for `Makefile` "bootstrap" build.
 - Add a jbuild file.

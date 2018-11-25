@@ -8,5 +8,5 @@
         test_pos_req
         test_opt_req
         test_term_dups
-        test_with_evaluated_args)
+        test_with_used_args)
  (libraries cmdliner))

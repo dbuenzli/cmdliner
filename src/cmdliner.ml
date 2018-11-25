@@ -51,18 +51,16 @@ module Term = struct
     Cmdliner_info.Args.empty,
     (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei)))
 
-  let with_evaluated_args (al, v) : (_ * string list) t =
+  let with_used_args (al, v) : (_ * string list) t =
     al, fun ei cl ->
       match v ei cl with
       | Ok x ->
-          let capture_args arg_info acc =
+          let actual_args arg_info acc =
             let args = Cmdliner_cline.actual_args cl arg_info in
             List.rev_append args acc
           in
-          let consumed_args =
-            List.rev (Cmdliner_info.Args.fold capture_args al [])
-          in
-          Ok (x, consumed_args)
+          let used = List.rev (Cmdliner_info.Args.fold actual_args al []) in
+          Ok (x, used)
       | Error _ as e -> e
 
   (* Term information *)

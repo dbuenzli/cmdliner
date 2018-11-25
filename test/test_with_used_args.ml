@@ -9,7 +9,7 @@ let test_pos_left =
   let c = Arg.(value & pos_all string [] & info []) in
   let main =
     let ignore_values _a _b _c = () in
-    Term.(with_evaluated_args (const ignore_values $ a $ b $ c))
+    Term.(with_used_args (const ignore_values $ a $ b $ c))
   in
   let other = Arg.(value & flag & info ["other"]) in
   Term.(const print_args $ main $ other),
