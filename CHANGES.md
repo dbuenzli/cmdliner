@@ -1,3 +1,5 @@
+v1.0.3 2018-11-26 Zagreb
+------------------------
 
 - Add `Term.with_used_args`. Thanks to Jeremie Dimino for
   the patch.
