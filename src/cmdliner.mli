@@ -370,7 +370,7 @@ module Term : sig
       uses {!Sys.getenv}. *)
 
   val eval_choice :
-    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool -> ?main_on_err:bool ->
     ?env:(string -> string option) -> ?argv:string array ->
     'a t * info -> ('a t * info) list -> 'a result
   (** [eval_choice help err catch argv (t,i) choices] is like {!eval}

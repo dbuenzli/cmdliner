@@ -219,7 +219,7 @@ module Term = struct
     let ei, res = term_eval ~catch ~stop_on_pos ei f args in
     do_result help_ppf err_ppf ei res
 
-  let choose_term main choices = function
+  let choose_term ~main_on_err main choices = function
   | [] -> Ok (main, [])
   | maybe :: args' as args ->
       if String.length maybe > 1 && maybe.[0] = '-' then Ok (main, args) else
@@ -235,25 +235,31 @@ module Term = struct
       match Cmdliner_trie.find index maybe with
       | `Ok choice -> Ok (choice, args')
       | `Not_found ->
-          let all = Cmdliner_trie.ambiguities index "" in
-          let hints = Cmdliner_suggest.value maybe all in
-          Error (Cmdliner_base.err_unknown ~kind:"command" maybe ~hints)
+          if main_on_err
+          then Ok (main, args)
+          else
+            let all = Cmdliner_trie.ambiguities index "" in
+            let hints = Cmdliner_suggest.value maybe all in
+            Error (Cmdliner_base.err_unknown ~kind:"command" maybe ~hints)
       | `Ambiguous ->
-          let ambs = Cmdliner_trie.ambiguities index maybe in
-          let ambs = List.sort compare ambs in
-          Error (Cmdliner_base.err_ambiguous ~kind:"command" maybe ~ambs)
+          if main_on_err
+          then Ok (main, args)
+          else
+            let ambs = Cmdliner_trie.ambiguities index maybe in
+            let ambs = List.sort compare ambs in
+            Error (Cmdliner_base.err_ambiguous ~kind:"command" maybe ~ambs)
 
   let eval_choice
       ?help:(help_ppf = Format.std_formatter)
       ?err:(err_ppf = Format.err_formatter)
-      ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
+      ?(catch = true) ?(main_on_err = false) ?(env = env_default) ?(argv = Sys.argv)
       main choices =
     let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
     let choices_f = List.rev_map to_term_f choices in
     let main_f = to_term_f main in
     let choices = List.rev_map fst choices_f in
     let main = fst main_f in
-    match choose_term main_f choices_f (remove_exec argv) with
+    match choose_term ~main_on_err main_f choices_f (remove_exec argv) with
     | Error err ->
         let ei = Cmdliner_info.eval ~term:main ~main ~choices ~env in
         Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
