@@ -159,7 +159,8 @@ type term_info =
     term_exits : exit list;                      (* exit codes for the term. *)
     term_envs : env list;               (* env vars that influence the term. *)
     term_man : Cmdliner_manpage.block list;                (* man page text. *)
-    term_man_xrefs : Cmdliner_manpage.xref list; }        (* man cross-refs. *)
+    term_man_xrefs : Cmdliner_manpage.xref list;          (* man cross-refs. *)
+    term_stop_on_pos : bool; }        (* stop parsing opts on first pos arg. *)
 
 type term =
   { term_info : term_info;
@@ -170,10 +171,11 @@ let term
     ?man:(term_man = []) ?envs:(term_envs = []) ?exits:(term_exits = [])
     ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
     ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
+    ?stop_on_pos:(term_stop_on_pos = false)
     term_name =
   let term_info =
     { term_name; term_version; term_doc; term_docs; term_sdocs; term_exits;
-      term_envs; term_man; term_man_xrefs }
+      term_envs; term_man; term_man_xrefs; term_stop_on_pos; }
   in
   { term_info; term_args }
 
@@ -187,6 +189,7 @@ let term_envs t = t.term_info.term_envs
 let term_man t = t.term_info.term_man
 let term_man_xrefs t = t.term_info.term_man_xrefs
 let term_args t = t.term_args
+let term_stop_on_pos t = t.term_info.term_stop_on_pos
 
 let term_add_args t args =
   { t with term_args = Args.union args t.term_args }

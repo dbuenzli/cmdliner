@@ -7,6 +7,7 @@
         test_pos_left
         test_pos_req
         test_opt_req
+        test_stop_on_pos
         test_term_dups
         test_with_used_args)
  (libraries cmdliner))

@@ -301,7 +301,7 @@ module Term : sig
   val info :
     ?man_xrefs:Manpage.xref list -> ?man:Manpage.block list ->
     ?envs:env_info list -> ?exits:exit_info list -> ?sdocs:string ->
-    ?docs:string -> ?doc:string -> ?version:string -> string -> info
+    ?docs:string -> ?doc:string -> ?version:string -> ?stop_on_pos:bool -> string -> info
   (** [info sdocs man docs doc version name] is a term information
       such that:
       {ul

@@ -92,6 +92,7 @@ val term :
   ?args:args -> ?man_xrefs:Cmdliner_manpage.xref list ->
   ?man:Cmdliner_manpage.block list -> ?envs:env list -> ?exits:exit list ->
   ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
+  ?stop_on_pos:bool ->
   string -> term
 
 val term_name : term -> string
@@ -104,6 +105,7 @@ val term_envs : term -> env list
 val term_man : term -> Cmdliner_manpage.block list
 val term_man_xrefs : term -> Cmdliner_manpage.xref list
 val term_args : term -> args
+val term_stop_on_pos : term -> bool
 
 val term_add_args : term -> args -> term
 

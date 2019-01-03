@@ -88,7 +88,7 @@ let hint_matching_opt optidx s =
   | true, [] -> [short_opt]
   | true, l -> if List.mem short_opt l then l else short_opt :: l
 
-let parse_opt_args ~peek_opts optidx cl args =
+let parse_opt_args ~peek_opts ~stop_on_pos optidx cl args =
   (* returns an updated [cl] cmdline according to the options found in [args]
      with the trie index [optidx]. Positional arguments are returned in order
      in a list. *)
@@ -96,7 +96,11 @@ let parse_opt_args ~peek_opts optidx cl args =
   | [] -> List.rev errs, cl, List.rev pargs
   | "--" :: args -> List.rev errs, cl, (List.rev_append pargs args)
   | s :: args ->
-      if not (is_opt s) then loop errs (k + 1) cl (s :: pargs) args else
+      if not (is_opt s) then
+        if stop_on_pos
+        then List.rev errs, cl, List.rev (List.rev_append args (s :: pargs))
+        else loop errs (k + 1) cl (s :: pargs) args
+      else
       let name, value = parse_opt_arg s in
       match Cmdliner_trie.find optidx name with
       | `Ok a ->
@@ -175,9 +179,9 @@ let process_pos_args posidx cl pargs =
   let excess = take_range (max_spec + 1) last pargs in
   Error (Cmdliner_msg.err_pos_excess excess, cl)
 
-let create ?(peek_opts = false) al args =
+let create ?(peek_opts = false) ?(stop_on_pos = false) al args =
   let optidx, posidx, cl = arg_info_indexes al in
-  match parse_opt_args ~peek_opts optidx cl args with
+  match parse_opt_args ~peek_opts ~stop_on_pos optidx cl args with
   | Ok (cl, _) when peek_opts -> Ok cl
   | Ok (cl, pargs) -> process_pos_args posidx cl pargs
   | Error (errs, cl, _) -> Error (errs, cl)

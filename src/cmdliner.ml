@@ -131,10 +131,10 @@ module Term = struct
             | Ok true -> Some (Error (`Std_version))
             | Error _ as err -> Some err
 
-  let term_eval ~catch ei f args =
+  let term_eval ~catch ~stop_on_pos ei f args =
     let help, version, ei = add_stdopts ei in
     let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
-    let res = match Cmdliner_cline.create term_args args with
+    let res = match Cmdliner_cline.create ~stop_on_pos term_args args with
     | Error (e, cl) ->
         begin match try_eval_stdopts ~catch ei cl help version with
         | Some e -> e
@@ -215,7 +215,8 @@ module Term = struct
     let term = Cmdliner_info.term_add_args ti al in
     let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env in
     let args = remove_exec argv in
-    let ei, res = term_eval ~catch ei f args in
+    let stop_on_pos = Cmdliner_info.term_stop_on_pos term in
+    let ei, res = term_eval ~catch ~stop_on_pos ei f args in
     do_result help_ppf err_ppf ei res
 
   let choose_term main choices = function
@@ -257,8 +258,9 @@ module Term = struct
         let ei = Cmdliner_info.eval ~term:main ~main ~choices ~env in
         Cmdliner_msg.pp_err_usage err_ppf ei ~err; `Error `Parse
     | Ok ((chosen, f), args) ->
+        let stop_on_pos = Cmdliner_info.term_stop_on_pos chosen in
         let ei = Cmdliner_info.eval ~term:chosen ~main ~choices ~env in
-        let ei, res = term_eval ~catch ei f args in
+        let ei, res = term_eval ~stop_on_pos ~catch ei f args in
         do_result help_ppf err_ppf ei res
 
   let eval_peek_opts

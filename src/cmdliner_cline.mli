@@ -9,7 +9,7 @@
 type t
 
 val create :
-  ?peek_opts:bool -> Cmdliner_info.args -> string list ->
+  ?peek_opts:bool -> ?stop_on_pos:bool -> Cmdliner_info.args -> string list ->
   (t, string * t) result
 
 val opt_arg : t -> Cmdliner_info.arg -> (int * string * (string option)) list
