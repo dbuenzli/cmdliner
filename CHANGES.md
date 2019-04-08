@@ -1,3 +1,9 @@
+
+
+
+- Make the `Makefile` bootstrap build reproducible.
+  Thanks to Thomas Leonard for the patch.
+
 v1.0.3 2018-11-26 Zagreb
 ------------------------
 
