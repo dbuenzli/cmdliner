@@ -120,6 +120,7 @@ let ocamldep () = really_find_cmd ["ocamldep.opt"; "ocamldep"]
 (* Build *)
 
 let sort_srcs srcs =
+  let srcs = List.sort String.compare srcs in
   read_cmd (ocamldep () :: "-slash" :: "-sort" :: srcs)
   |> String.trim |> cuts ~sep:' '
 
