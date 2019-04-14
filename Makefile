@@ -10,20 +10,26 @@
 
 # Adjust the following on the cli invocation for configuring
 
+-include $(shell ocamlc -where)/Makefile.config
+
 PREFIX=/usr
 LIBDIR=$(DESTDIR)$(PREFIX)/lib/ocaml/cmdliner
 DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/cmdliner
 NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
-EXT_LIB=.a
+# EXT_LIB     by default value of OCaml's Makefile.config
+# NATDYNLINK  by default value of OCaml's Makefile.config
 
 INSTALL=install
 B=_build
 BASE=$(B)/cmdliner
 
 ifeq ($(NATIVE),true)
-	BUILD-TARGETS=build-byte build-native build-native-dynlink
-	INSTALL-TARGETS=install-common install-byte install-native \
-                 install-native-dynlink
+	BUILD-TARGETS=build-byte build-native
+	INSTALL-TARGETS=install-common install-byte install-native
+	ifeq ($(NATDYNLINK),true)
+	  BUILD-TARGETS += build-native-dynlink
+	  INSTALL-TARGETS += install-native-dynlink
+	endif
 else
 	BUILD-TARGETS=build-byte
 	INSTALL-TARGETS=install-common install-byte
