@@ -16,22 +16,28 @@ let pp = Format.fprintf
 let pp_sp = Format.pp_print_space
 let pp_str = Format.pp_print_string
 let pp_char = Format.pp_print_char
-
-let pp_white_str ~spaces ppf s =  (* hint spaces (maybe) and new lines. *)
-  let left = ref 0 and right = ref 0 and len = String.length s in
-  let flush () =
-    Format.pp_print_string ppf (String.sub s !left (!right - !left));
-    incr right; left := !right;
+let pp_text = Format.pp_print_text
+let pp_lines ppf s =
+  let rec stop_at sat ~start ~max s =
+    if start > max then start else
+    if sat s.[start] then start else
+    stop_at sat ~start:(start + 1) ~max s
   in
-  while (!right <> len) do
-    if s.[!right] = '\n' then (flush (); Format.pp_force_newline ppf ()) else
-    if spaces && s.[!right] = ' ' then (flush (); Format.pp_print_space ppf ())
-    else incr right;
-  done;
-  if !left <> len then flush ()
-
-let pp_text = pp_white_str ~spaces:true
-let pp_lines = pp_white_str ~spaces:false
+  let sub s start stop ~max =
+    if start = stop then "" else
+    if start = 0 && stop > max then s else
+    String.sub s start (stop - start)
+  in
+  let is_nl c = c = '\n' in
+  let max = String.length s - 1 in
+  let rec loop start s = match stop_at is_nl ~start ~max s with
+  | stop when stop > max -> Format.pp_print_string ppf (sub s start stop ~max)
+  | stop ->
+      Format.pp_print_string ppf (sub s start stop ~max);
+      Format.pp_force_newline ppf ();
+      loop (stop + 1) s
+  in
+  loop 0 s
 
 let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
   let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
