@@ -449,11 +449,11 @@ module Term : sig
 
   val exit : ?term_err:int -> 'a result -> unit
   (** [exit ~term_err r] is
-      [Pervasives.exit @@ exit_status_of_result ~term_err r] *)
+      [Stdlib.exit @@ exit_status_of_result ~term_err r] *)
 
   val exit_status : ?term_err:int -> int result -> unit
   (** [exit_status ~term_err r] is
-      [Pervasives.exit @@ exit_status_of_status_result ~term_err r] *)
+      [Stdlib.exit @@ exit_status_of_status_result ~term_err r] *)
 end
 
 (** Terms for command line arguments.
