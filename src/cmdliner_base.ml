@@ -9,12 +9,6 @@
 let err_empty_list = "empty list"
 let err_incomplete_enum = "Incomplete enumeration for the type"
 
-(* String helpers, should be migrated to ascii_ versions once >= 4.03 *)
-
-let lowercase = String.lowercase
-let uppercase = String.lowercase
-let capitalize = String.capitalize
-
 (* Formatting tools *)
 
 let strf = Printf.sprintf
@@ -280,7 +274,7 @@ let t4 ?(sep = ',') (pa0, pr0) (pa1, pr1) (pa2, pr2) (pa3, pr3) =
   in
   parse, print
 
-let env_bool_parse s = match lowercase s with
+let env_bool_parse s = match String.lowercase_ascii s with
 | "" | "false" | "no" | "n" | "0" -> `Ok false
 | "true" | "yes" | "y" | "1" -> `Ok true
 | s -> `Error (err_invalid_val s (alts_str ["true"; "yes"; "false"; "no" ]))

@@ -1,6 +1,7 @@
 
 
-
+- Fix 4.03 String deprecations.
+- Fix boostrap build in absence of dynlink.
 - Make the `Makefile` bootstrap build reproducible.
   Thanks to Thomas Leonard for the patch.
 

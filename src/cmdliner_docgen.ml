@@ -170,7 +170,7 @@ let arg_docs ~errs ~subst ~buf ei =
     | true, true -> (* optional by name *)
         let key names =
           let k = List.hd (List.sort rev_compare names) in
-          let k = Cmdliner_base.lowercase k in
+          let k = String.lowercase_ascii k in
           if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
         in
         compare
@@ -178,8 +178,8 @@ let arg_docs ~errs ~subst ~buf ei =
           (key @@ Cmdliner_info.arg_opt_names a1)
     | false, false -> (* positional by variable *)
         compare
-          (Cmdliner_base.lowercase @@ Cmdliner_info.arg_docv a0)
-          (Cmdliner_base.lowercase @@ Cmdliner_info.arg_docv a1)
+          (String.lowercase_ascii @@ Cmdliner_info.arg_docv a0)
+          (String.lowercase_ascii @@ Cmdliner_info.arg_docv a1)
     | true, false -> -1 (* positional first *)
     | false, true -> 1  (* optional after *)
   in
@@ -310,8 +310,8 @@ let text ~errs ei =
 
 let title ei =
   let main = Cmdliner_info.eval_main ei in
-  let exec = Cmdliner_base.capitalize (Cmdliner_info.term_name main) in
-  let name = Cmdliner_base.uppercase (invocation ~sep:'-' ei) in
+  let exec = String.capitalize_ascii (Cmdliner_info.term_name main) in
+  let name = String.uppercase_ascii (invocation ~sep:'-' ei) in
   let center_header = esc @@ strf "%s Manual" exec in
   let left_footer =
     let version = match Cmdliner_info.term_version main with

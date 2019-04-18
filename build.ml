@@ -8,8 +8,7 @@ let src_dir = "src"
 
 let base_ocaml_opts =
   [ "-g"; "-bin-annot";
-    "-safe-string"; (* Remove once we require >= 4.06 *)
-    "-w"; "-3" (* Remove once we require >= 4.03 *) ]
+    "-safe-string"; (* Remove once we require >= 4.06 *) ]
 
 (* Logging *)
 

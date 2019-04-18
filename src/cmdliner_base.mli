@@ -6,12 +6,6 @@
 
 (** A few helpful base definitions. *)
 
-(** {1:str String helpers} *)
-
-val lowercase : string -> string
-val uppercase : string -> string
-val capitalize : string -> string
-
 (** {1:fmt Formatting helpers} *)
 
 val pp_text : Format.formatter -> string -> unit
