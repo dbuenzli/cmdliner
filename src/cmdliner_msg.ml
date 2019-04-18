@@ -82,11 +82,12 @@ let pp_try_help ppf ei = match Cmdliner_info.eval_kind ei with
     pp ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
       exec_cmd (exec_name ei)
 
-let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_text err
+let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_lines err
 
-let pp_err_usage ppf ei ~err =
+let pp_err_usage ppf ei ~err_lines ~err =
+  let pp_err = if err_lines then pp_lines else pp_text in
   pp ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-    (exec_name ei) pp_text err (Cmdliner_docgen.pp_plain_synopsis ~errs:ppf) ei
+    (exec_name ei) pp_err err (Cmdliner_docgen.pp_plain_synopsis ~errs:ppf) ei
     pp_try_help ei
 
 let pp_backtrace ppf ei e bt =

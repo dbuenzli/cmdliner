@@ -32,7 +32,9 @@ val err_arg_missing : Cmdliner_info.arg -> string
 val pp_version : Format.formatter -> Cmdliner_info.eval -> unit
 val pp_try_help : Format.formatter -> Cmdliner_info.eval -> unit
 val pp_err : Format.formatter -> Cmdliner_info.eval -> err:string -> unit
-val pp_err_usage : Format.formatter -> Cmdliner_info.eval -> err:string -> unit
+val pp_err_usage :
+  Format.formatter -> Cmdliner_info.eval -> err_lines:bool -> err:string -> unit
+
 val pp_backtrace :
   Format.formatter ->
   Cmdliner_info.eval -> exn -> Printexc.raw_backtrace -> unit

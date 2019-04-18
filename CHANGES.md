@@ -1,5 +1,6 @@
-
-
+- Change the way `Error (_, e)` term evaluation results 
+  are formatted. Instead of treating `e` as text, treat
+  it as formatted lines.
 - Fix 4.08 `Pervasives` deprecation.
 - Fix 4.03 String deprecations.
 - Fix boostrap build in absence of dynlink.
