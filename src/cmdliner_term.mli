@@ -22,6 +22,7 @@ type 'a t = Cmdliner_info.args * 'a parser
 
 val const : 'a -> 'a t
 val app : ('a -> 'b) t -> 'a t -> 'b t
+val seq : 'a t -> 'b t -> 'b t
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

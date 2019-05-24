@@ -207,6 +207,74 @@ let opt_all ?vopt (parse, print) v a =
   in
   arg_to_args a, convert
 
+let v_opt ?vopt (v, v_tag) l =
+  let tx ((_, print) as conv, tag, a) =
+    if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
+    let absent = Cmdliner_info.Val (lazy (str_of_pp print v)) in
+    let kind = match vopt with
+    | None -> Cmdliner_info.Opt
+    | Some dv -> Cmdliner_info.Opt_vopt (str_of_pp print dv) in
+    conv, tag, Cmdliner_info.arg_make_opt ~absent ~kind a in
+  let l = List.map tx l in
+  let convert _ cl =
+    let rec aux fv = function
+    | ((parse, _), tag, a) :: rest ->
+      begin match Cmdliner_cline.opt_arg cl a with
+        | [] -> aux fv rest
+        | [_, f, None] ->
+            begin match fv, vopt with
+            | None, None -> failwith (Cmdliner_msg.err_opt_value_missing f)
+            | None, Some v -> aux (Some (f, (v, tag))) rest
+            | Some (g, _), _ -> failwith (Cmdliner_msg.err_opt_repeated g f)
+            end
+        | [_, f, Some v] -> 
+          begin match fv with
+          | None ->
+            let v = parse_opt_value parse f v in
+            aux (Some (f, (v, tag))) rest
+          | Some (g, _) ->
+            failwith (Cmdliner_msg.err_opt_repeated g f)
+          end
+        | (_, f, _) :: (_, g, _) :: _ ->
+            failwith (Cmdliner_msg.err_opt_repeated g f)
+        end
+    | [] -> match fv with None -> (v, v_tag) | Some (_, v) -> v
+    in
+    try Ok (aux None l) with Failure e -> err e
+  in
+  list_to_args (fun (_,_,x) -> x) l, convert
+
+let v_opt_all ?vopt v l =
+  let tx ((_, print) as conv, tag, a) =
+    if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
+    let absent = Cmdliner_info.Val (lazy "") in
+    let kind = match vopt with
+    | None -> Cmdliner_info.Opt
+    | Some dv -> Cmdliner_info.Opt_vopt (str_of_pp print dv)
+    in
+    conv, tag, Cmdliner_info.arg_make_opt_all ~absent ~kind a in
+  let l = List.map tx l in
+  let convert _ cl =
+    let rec aux acc = function
+    | ((parse, _), tag, a) :: rest ->
+      begin match Cmdliner_cline.opt_arg cl a with
+        | [] -> aux acc rest
+        | l ->
+          let parse (k, f, v) = match v with
+          | Some v -> (k, (parse_opt_value parse f v, tag))
+          | None -> match vopt with
+          | None -> failwith (Cmdliner_msg.err_opt_value_missing f)
+          | Some dv -> (k, (dv, tag))
+          in
+          aux (List.rev_append (List.rev_map parse l) acc) rest
+        end
+    | [] -> 
+      if acc = [] then v else List.rev_map snd (List.sort rev_compare acc)
+    in
+    try Ok (aux [] l) with Failure e -> err e
+  in
+  list_to_args (fun (_,_,x) -> x) l, convert
+
 (* Positional arguments *)
 
 let parse_pos_value parse a v = match parse v with

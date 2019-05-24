@@ -18,6 +18,7 @@ module Term = struct
   (* Terms *)
 
   let ( $ ) = app
+  let ( & ) = seq
 
   type 'a ret = [ `Ok of 'a | term_escape ]
 

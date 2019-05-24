@@ -201,6 +201,12 @@ module Term : sig
   val app : ('a -> 'b) t -> 'a t -> 'b t
   (** [app] is {!($)}. *)
 
+  val ( & ) : 'a t -> 'b t -> 'b t
+  (** [v & v'] is a term that evaluates [v] and then evaluates [v']. *)
+
+  val seq : 'a t -> 'b t -> 'b t
+  (** [seq] is {!(&)}. *)
+
   (** {1 Interacting with Cmdliner's evaluation} *)
 
   type 'a ret =
@@ -648,6 +654,35 @@ module Arg : sig
       per occurrence of the flag in the order found on the command line.
       It holds the list [v] if the flag is absent from the command line. *)
 
+  val v_opt : 
+    ?vopt:'a -> ('a * 'b) -> ('a converter * 'b * info) list -> ('a * 'b) t
+  (** [vopt vopt (v, t) \[c]{_0}[t]{_0}[,i]{_0}[;...\]] is an ['a * 'b] argument
+      defined by the value of an optional argument that may appear {e at most}
+      once on the command line under one of the names specified in the [i]{_k} 
+      values. The argument holds [(v, t)] if the option is absent from the 
+      command line. Otherwise it is a pair of the value of the option (as 
+      converted by [c]{_k}) and [t]{_i}, where the name of the option present on
+      the command line is contained in [i]{_k}. 
+      The ['b] values serve as tags indicating which option was used.
+      
+      If [vopt] is provided the value of the optional argument is itself
+      optional, taking the value [vopt] if unspecified on the command line.
+
+      {b Note.} Environment variable lookup is unsupported for
+      for these arguments. *)
+
+  val v_opt_all : 
+    ?vopt:'a -> ('a * 'b) list -> ('a converter * 'b * info) list 
+      -> ('a * 'b) list t
+  (** [vopt_all vopt v \[c]{_0}[,t]{_0}[,i]{_0}[;...\]] is like {!vopt} except
+      that the optional argument may appear more than once. The argument holds a
+      list that contains one (value, tag) pair per occurrence of the flag in the
+      order found on the command line. It holds the list [v] if the flag is 
+      absent from the command line.
+
+      {b Note.} Environment variable lookup is unsupported for
+      for these arguments. *)
+      
   (** {1:posargs Positional arguments}
 
       The information of a positional argument must have no name

@@ -43,6 +43,11 @@ val vflag : 'a -> ('a * info) list -> 'a t
 val vflag_all : 'a list -> ('a * info) list -> 'a list t
 val opt : ?vopt:'a -> 'a converter -> 'a -> info -> 'a t
 val opt_all : ?vopt:'a -> 'a converter -> 'a list -> info -> 'a list t
+val v_opt : 
+  ?vopt:'a -> ('a * 'b) -> ('a converter * 'b * info) list -> ('a * 'b) t
+val v_opt_all : 
+  ?vopt:'a -> ('a * 'b) list -> ('a converter * 'b * info) list 
+    -> ('a * 'b) list t
 
 val pos : ?rev:bool -> int -> 'a converter -> 'a -> info -> 'a t
 val pos_all : 'a converter -> 'a list -> info -> 'a list t

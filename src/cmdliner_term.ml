@@ -23,6 +23,11 @@ let app (args_f, f) (args_v, v) =
       match v ei cl with
       | Error _ as e -> e
       | Ok v -> Ok (f v)
+let seq (args_v, v) (args_v', v') =
+  Cmdliner_info.Args.union args_v args_v',
+  fun ei cl -> match (v ei cl) with
+  | Error _ as e -> e
+  | Ok _ -> v' ei cl
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
