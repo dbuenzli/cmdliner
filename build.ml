@@ -56,7 +56,9 @@ let ml_srcs dir =
   | Some (m, e) when e = "ml" || e = "mli" -> f :: acc
   | Some _ | None -> acc
   in
-  Array.fold_left (add_file dir) [] (Sys.readdir dir)
+  let files = Sys.readdir dir in
+  Array.sort String.compare files;
+  Array.fold_left (add_file dir) [] files
 
 (* Finding and running commands *)
 
