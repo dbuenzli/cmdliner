@@ -1,3 +1,6 @@
+v1.0.4 2019-06-14 Zagreb
+------------------------
+
 - Change the way `Error (_, e)` term evaluation results 
   are formatted. Instead of treating `e` as text, treat
   it as formatted lines.
