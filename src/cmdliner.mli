@@ -447,11 +447,11 @@ module Term : sig
   (** [exit_status_of_status_result] is like {!exit_status_of_result}
       except for [`Ok n] where [n] is used as the status exit code. *)
 
-  val exit : ?term_err:int -> 'a result -> unit
+  val exit : ?term_err:int -> 'a result -> 'b
   (** [exit ~term_err r] is
       [Stdlib.exit @@ exit_status_of_result ~term_err r] *)
 
-  val exit_status : ?term_err:int -> int result -> unit
+  val exit_status : ?term_err:int -> int result -> 'a
   (** [exit_status ~term_err r] is
       [Stdlib.exit @@ exit_status_of_status_result ~term_err r] *)
 end
