@@ -1,9 +1,27 @@
-open B0
+open B0_kit.V000
+open B00_std
 
-let cmdliner = "cmdliner"
-let doc = "Declarative definition of command line interfaces for OCaml"
+(* Units *)
 
-let pkg = Pkg.create cmdliner ~doc
-let lib =
-  let srcs = (`Src_dirs [Fpath.v "src"]) in
-  B0_ocaml.Unit.lib ~pkg cmdliner srcs ~doc
+let cmdliner = B0_ocaml.libname "cmdliner"
+let cmdliner_lib =
+  B0_ocaml.lib cmdliner ~srcs:Fpath.[`Dir (v "src")] ~requires:[]
+
+(* Packs *)
+
+let default =
+  let units = [cmdliner_lib] in
+  let meta =
+    let open B0_meta in
+    empty
+    |> add authors ["The cmdliner programmers"]
+    |> add maintainers ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
+    |> add homepage "https://erratique.ch/software/cmdliner"
+    |> add online_doc "https://erratique.ch/software/cmdliner/doc"
+    |> add description_tags ["cli"; "system"; "declarative"; "org:erratique"]
+    |> add licenses ["ISC"]
+    |> add repo "git+https://erratique.ch/repos/cmdliner.git"
+    |> add issues "https://github.com/dbuenzli/cmdliner/issues"
+    |> tag B0_opam.tag
+  in
+  B0_pack.v "default" ~doc:"cmdliner" ~meta ~locked:true units

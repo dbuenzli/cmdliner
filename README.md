@@ -17,8 +17,6 @@ Cmdliner has no dependencies and is distributed under the ISC license.
 [2]: http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
 
 Home page: http://erratique.ch/software/cmdliner  
-Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
-
 
 ## Installation
 
