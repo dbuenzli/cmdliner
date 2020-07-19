@@ -437,7 +437,15 @@ let find_cmd cmds =
   | "Win32" -> "where", " NUL"
   | _ -> "type", "/dev/null"
   in
-  let cmd c = Sys.command (strf "%s %s 1>%s 2>%s" test c null null) = 0 in
+  let trim_cmd c =
+    try
+      String.sub c 0 (String.index c ' ')
+    with Not_found -> c
+  in
+  let cmd c =
+    let c = trim_cmd c in
+    Sys.command (strf "%s %s 1>%s 2>%s" test c null null) = 0
+  in
   try Some (List.find cmd cmds) with Not_found -> None
 
 let pp_to_pager print ppf v =
