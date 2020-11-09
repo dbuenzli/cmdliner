@@ -265,6 +265,64 @@ module Term = struct
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
 
+  module Group = struct
+    type 'a node =
+    | Term of 'a Cmdliner_term.t
+    | Group of 'a t list
+
+    and 'a t = 'a node * info
+
+    let term_add_args (al, f) info =
+      Cmdliner_info.term_add_args info al
+
+    let rec add_args (node, info) =
+      match node with
+      | Term (al, f) -> (Term (al, f), term_add_args (al, f) info)
+      | Group subs -> (Group (List.map add_args subs), info)
+
+    let (>>=) x f =
+      match x with
+      | Error e -> Error e
+      | Ok x -> f x
+
+    let parse_arg_cmd = function
+    | [] -> Error `No_args
+    | cmd :: args ->
+        if String.length cmd >= 1 && cmd.[0] = '-' then
+          Error `No_args
+        else
+        Ok (cmd, args)
+
+    let cmd_name (_, info) = Cmdliner_info.term_name info
+
+    let one_of choices args =
+      parse_arg_cmd args >>= fun (cmd, args) ->
+      match List.find (fun t -> cmd_name t = cmd) choices with
+      | exception Not_found -> Error (`Invalid_command (cmd, choices))
+      | choice -> Ok (choice, args)
+
+    let rec choose_term choices args =
+      one_of choices args >>= fun ((t, info), args) ->
+      match t with
+      | Term t -> Ok ((t, info), args)
+      | Group subs -> choose_term subs args
+
+    let eval
+        ?help:(help_ppf = Format.std_formatter)
+        ?err:(err_ppf = Format.err_formatter)
+        ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) main choices =
+    let choices_f = List.map add_args choices in
+    let main_f = (term_add_args (fst main) (snd main)), fst main in
+    let main = fst main_f in
+    match choose_term choices_f (remove_exec argv) with
+    | Error `No_args -> assert false
+    | Error (`Invalid_command _) -> `Error `Exn
+    | Ok (((_, f), info), args) ->
+        let ei = Cmdliner_info.eval ~term:info ~main ~choices:[] ~env in
+        let ei, res = term_eval ~catch ei f args in
+        do_result help_ppf err_ppf ei res
+  end
+
   let eval_peek_opts
       ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv)
       ((args, f) : 'a t) =

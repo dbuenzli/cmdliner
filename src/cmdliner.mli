@@ -382,6 +382,21 @@ module Term : sig
       is unspecified the "main" term [t] is evaluated. [i] defines the
       name and man page of the program. *)
 
+  module Group : sig
+    type 'a term
+
+    type 'a node =
+    | Term of 'a term
+    | Group of 'a t list
+
+    and 'a t = 'a node * info
+
+    val eval :
+      ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+      ?env:(string -> string option) -> ?argv:string array ->
+      'a term * info -> 'a t list -> 'a result
+  end with type 'a term := 'a t
+
   val eval_peek_opts :
     ?version_opt:bool -> ?env:(string -> string option) ->
     ?argv:string array -> 'a t -> 'a option * 'a result
