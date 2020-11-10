@@ -111,12 +111,21 @@ val term_add_args : term -> args -> term
 
 type eval
 
-val eval :
-  term:term -> main:term -> choices:term list ->
-  env:(string -> string option) -> eval
+type eval_kind =
+| Simple of term
+| Main of { term : term ; choices : term list }
+| Sub_command of { path : term list ; sibling_terms : term list }
 
+val eval : env:(string -> string option) -> eval_kind -> eval
+
+val eval_term_path : eval -> term list
+
+(** Equivalent to [List.last (eval_term_full e)] *)
 val eval_term : eval -> term
+
+(** Equivalent to [List.hd (eval_term_full e)] *)
 val eval_main : eval -> term
+
 val eval_choices : eval -> term list
 val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]

@@ -191,21 +191,43 @@ let term_args t = t.term_args
 let term_add_args t args =
   { t with term_args = Args.union args t.term_args }
 
+type eval_kind =
+| Simple of term
+| Main of { term : term ; choices : term list }
+| Sub_command of { path : term list ; sibling_terms : term list }
+
 (* Eval info *)
 
 type eval =                     (* information about the evaluation context. *)
   { term : term;                                    (* term being evaluated. *)
     main : term;                                               (* main term. *)
+    path : term list;
     choices : term list;                                (* all term choices. *)
     env : string -> string option }          (* environment variable lookup. *)
 
-let eval ~term ~main ~choices ~env = { term; main; choices; env }
+let eval ~env kind =
+  let (main, term, path, choices) =
+    match kind with
+    | Simple term -> (term, term, [term], [])
+    | Main { term ; choices } -> (term, term, [term], choices)
+    | Sub_command { path ; sibling_terms } ->
+        let (main, term) =
+          match path with
+          | main :: rest ->
+              (main, List.fold_left (fun _ last -> last) main rest)
+          | [] -> assert false
+        in
+        (main, term, path, sibling_terms)
+  in
+  { term; main; choices; env; path }
 let eval_term e = e.term
 let eval_main e = e.main
+let eval_term_path e = e.path
 let eval_choices e = e.choices
 let eval_env_var e v = e.env v
 
 let eval_kind ei =
+  (* subgroup *)
   if ei.choices = [] then `Simple else
   if (ei.term.term_info.term_name == ei.main.term_info.term_name)
   then `Multiple_main else `Multiple_sub
@@ -213,6 +235,7 @@ let eval_kind ei =
 let eval_with_term ei term = { ei with term }
 
 let eval_has_choice e cmd =
+  (* handle subgroup *)
   let is_cmd t = t.term_info.term_name = cmd in
   List.exists is_cmd e.choices
 

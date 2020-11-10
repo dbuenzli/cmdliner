@@ -216,7 +216,7 @@ module Term = struct
       ?err:(err_ppf = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) ((al, f), ti) =
     let term = Cmdliner_info.term_add_args ti al in
-    let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env in
+    let ei = Cmdliner_info.eval ~env (Simple term) in
     let args = remove_exec argv in
     let ei, res = term_eval ~catch ei f args in
     do_result help_ppf err_ppf ei res
@@ -257,11 +257,14 @@ module Term = struct
     let main = fst main_f in
     match choose_term main_f choices_f (remove_exec argv) with
     | Error err ->
-        let ei = Cmdliner_info.eval ~term:main ~main ~choices ~env in
+        let ei = Cmdliner_info.eval ~env
+            (Sub_command { path = [main] ; sibling_terms = choices})
+        in
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         `Error `Parse
     | Ok ((chosen, f), args) ->
-        let ei = Cmdliner_info.eval ~term:chosen ~main ~choices ~env in
+        let ei = Cmdliner_info.eval ~env
+            (Sub_command { path = [main; chosen]; sibling_terms = choices }) in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
 
@@ -318,7 +321,8 @@ module Term = struct
     | Error `No_args -> assert false
     | Error (`Invalid_command _) -> `Error `Exn
     | Ok (((_, f), info), args) ->
-        let ei = Cmdliner_info.eval ~term:info ~main ~choices:[] ~env in
+        let ei = Cmdliner_info.eval ~env
+            (Sub_command { path = [main ; info] ; sibling_terms = []}) in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
   end
@@ -328,7 +332,7 @@ module Term = struct
       ((args, f) : 'a t) =
     let version = if version_opt then Some "dummy" else None in
     let term = Cmdliner_info.term ~args ?version "dummy" in
-    let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env  in
+    let ei = Cmdliner_info.eval ~env (Simple term) in
     (term_eval_peek_opts ei f (remove_exec argv) :> 'a option * 'a result)
 
   (* Exits *)
