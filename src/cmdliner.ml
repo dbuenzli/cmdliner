@@ -336,11 +336,10 @@ module Term = struct
     | Error (`No_args (path, choices)) ->
         let sibling_terms = List.map snd choices in
         let ei = Cmdliner_info.eval ~env
-            (Sub_command { term = main ; path ; main ; sibling_terms})
-        in
-        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false
-          ~err:"this command has subcommands";
-        `Error `Parse
+            (Sub_command { term = main ; path ; main ; sibling_terms}) in
+        let _, _, ei = add_stdopts ei in
+        Cmdliner_docgen.pp_man ~errs:err_ppf `Auto help_ppf ei;
+        `Help
     | Error (`Invalid_command (maybe, path, _choices)) ->
         let err = Cmdliner_base.err_unknown ~kind:"command" maybe ~hints:[] in
         let sibling_terms = List.map snd choices in
