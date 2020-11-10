@@ -2,18 +2,20 @@
   listing things
 
   $ ./groups.exe things
-  Fatal error: exception File "src/cmdliner.ml", line 336, characters 42-48: Assertion failed
-  [2]
+  groups: this command has subcommands
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]
 
   $ ./groups.exe things show foo
   showing foo
 
   $ ./groups.exe things list --help
   NAME
-         groups-list
+         groups-things-list
   
   SYNOPSIS
-         groups list [OPTION]... 
+         groups things list [OPTION]... 
   
   OPTIONS
          --help[=FMT] (default=auto)
@@ -26,8 +28,10 @@
   
 
   $ ./groups.exe things --help
-  Fatal error: exception File "src/cmdliner.ml", line 336, characters 42-48: Assertion failed
-  [2]
+  groups: this command has subcommands
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]
 
   $ ./groups.exe --help
   NAME
@@ -38,6 +42,8 @@
   
   COMMANDS
          things
+  
+         widgets
   
   
   OPTIONS

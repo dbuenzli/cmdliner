@@ -258,13 +258,15 @@ module Term = struct
     match choose_term main_f choices_f (remove_exec argv) with
     | Error err ->
         let ei = Cmdliner_info.eval ~env
-            (Sub_command { path = [main] ; sibling_terms = choices})
+            (Sub_command { term = main ; path = [main] ; main
+                         ; sibling_terms = choices})
         in
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         `Error `Parse
     | Ok ((chosen, f), args) ->
         let ei = Cmdliner_info.eval ~env
-            (Sub_command { path = [main; chosen]; sibling_terms = choices }) in
+            (Sub_command { term = chosen ; path = [main; chosen] ; main;
+                           sibling_terms = choices }) in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
 
@@ -329,14 +331,21 @@ module Term = struct
     let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
     let main_args = fst main in
     let main_f = to_term_f main in
-    (* let main = fst main_f in *)
+    let main = fst main_f in
     match choose_term (main_args, (fst main_f)) choices_f (remove_exec argv) with
-    | Error (`No_args (path, choices)) -> assert false
+    | Error (`No_args (path, choices)) ->
+        let sibling_terms = List.map snd choices in
+        let ei = Cmdliner_info.eval ~env
+            (Sub_command { term = main ; path ; main ; sibling_terms})
+        in
+        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false
+          ~err:"this command has subcommands";
+        `Error `Parse
     | Error (`Invalid_command _) -> `Error `Exn
     | Ok (((_, f), info), sibling_terms, path, args) ->
         let sibling_terms = List.map snd sibling_terms in
         let ei = Cmdliner_info.eval ~env
-            (Sub_command { path = List.rev (info :: path) ; sibling_terms }) in
+            (Sub_command { main ; term = info ; path ; sibling_terms }) in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
   end

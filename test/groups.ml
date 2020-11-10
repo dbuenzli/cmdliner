@@ -1,6 +1,6 @@
 open Cmdliner
 
-let things =
+let gen_group name =
   let thing =
     let doc = "thing to operate on" in
     let nfo = Arg.info ~doc [] in
@@ -11,7 +11,7 @@ let things =
     Term.(const show $ thing)
   in
   let list =
-    let list () = print_endline "listing things" in
+    let list () = Printf.printf "listing %s\n" name in
     Term.(const list $ (const ()))
   in
   let term : _ Term.Group.t list =
@@ -19,7 +19,7 @@ let things =
     ; Term list, Term.info "list"
     ]
   in
-  (Term.Group.Group term), Term.info "things"
+  (Term.Group.Group term), Term.info name
 
 let default_cmd =
   let term =
@@ -33,7 +33,8 @@ let default_cmd =
 
 let cmds :  _ Term.Group.t list =
   let _term (t, info) = Term.Group.Term t, info in
-  [ things
+  [ gen_group "things"
+  ; gen_group "widgets"
   ]
 
 let () =

@@ -61,9 +61,11 @@ let term_info_subst ei = function
 let invocation ?(sep = ' ') ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_main -> term_name (Cmdliner_info.eval_main ei)
 | `Multiple_sub ->
-    strf "%s%c%s"
-      Cmdliner_info.(term_name @@ eval_main ei) sep
-      Cmdliner_info.(term_name @@ eval_term ei)
+    let sep = String.make 1 sep in
+    Cmdliner_info.eval_parents_invocation_order ei
+    |> List.map Cmdliner_info.term_name
+    |> String.concat sep
+    |> strf "%s"
 
 let plain_invocation ei = invocation ei
 let invocation ?sep ei = esc @@ invocation ?sep ei

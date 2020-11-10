@@ -114,11 +114,14 @@ type eval
 type eval_kind =
 | Simple of term
 | Main of { term : term ; choices : term list }
-| Sub_command of { path : term list ; sibling_terms : term list }
+| Sub_command of { term : term;
+                   (** is [term] is from a group, [path] are the ancestors
+                        direct with the direct parent *)
+                   path : term list;
+                   main : term;
+                   sibling_terms : term list }
 
 val eval : env:(string -> string option) -> eval_kind -> eval
-
-val eval_term_path : eval -> term list
 
 (** Equivalent to [List.last (eval_term_full e)] *)
 val eval_term : eval -> term
@@ -131,6 +134,7 @@ val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
 val eval_with_term : eval -> term -> eval
 val eval_has_choice : eval -> string -> bool
+val eval_parents_invocation_order : eval -> term list
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli

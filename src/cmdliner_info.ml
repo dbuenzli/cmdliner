@@ -194,7 +194,12 @@ let term_add_args t args =
 type eval_kind =
 | Simple of term
 | Main of { term : term ; choices : term list }
-| Sub_command of { path : term list ; sibling_terms : term list }
+| Sub_command of { term : term;
+                   (** is [term] is from a group, [path] are the ancestors
+                        direct with the direct parent *)
+                   path : term list;
+                   main : term;
+                   sibling_terms : term list }
 
 (* Eval info *)
 
@@ -210,13 +215,7 @@ let eval ~env kind =
     match kind with
     | Simple term -> (term, term, [term], [])
     | Main { term ; choices } -> (term, term, [term], choices)
-    | Sub_command { path ; sibling_terms } ->
-        let (main, term) =
-          match path with
-          | main :: rest ->
-              (main, List.fold_left (fun _ last -> last) main rest)
-          | [] -> assert false
-        in
+    | Sub_command { main ; term ; path ; sibling_terms } ->
         (main, term, path, sibling_terms)
   in
   { term; main; choices; env; path }
@@ -231,6 +230,8 @@ let eval_kind ei =
   if ei.choices = [] then `Simple else
   if (ei.term.term_info.term_name == ei.main.term_info.term_name)
   then `Multiple_main else `Multiple_sub
+
+let eval_parents_invocation_order ei = List.rev ei.path
 
 let eval_with_term ei term = { ei with term }
 

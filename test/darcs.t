@@ -6,16 +6,16 @@
 
   $ ./darcs_ex.exe initialize --invalid
   darcs: unknown option `--invalid'.
-  Usage: darcs initialize [OPTION]... 
-  Try `darcs initialize --help' or `darcs --help' for more information.
+  Usage: initialize darcs [OPTION]... 
+  Try `initialize darcs --help' or `darcs --help' for more information.
   [1]
 
   $ ./darcs_ex.exe initialize --help
   NAME
-         darcs-initialize - make the current directory a repository
+         initialize-darcs - make the current directory a repository
   
   SYNOPSIS
-         darcs initialize [OPTION]... 
+         initialize darcs [OPTION]... 
   
   DESCRIPTION
          Turns the current directory into a Darcs repository. Any existing
