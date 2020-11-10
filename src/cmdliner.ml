@@ -283,8 +283,8 @@ module Term = struct
       | Term (al, f) -> (Term (al, f), term_add_args (al, f) info)
       | Group subs -> (Group (List.map add_args subs), info)
 
-    let (>>=) x f =
-      match x with
+    let (>>=) res f =
+      match res with
       | Error e -> Error e
       | Ok x -> f x
 
@@ -298,26 +298,37 @@ module Term = struct
 
     let cmd_name (_, info) = Cmdliner_info.term_name info
 
-    let one_of choices args =
-      parse_arg_cmd args >>= fun (cmd, args) ->
+    let one_of (cmd, args) choices =
       match List.find (fun t -> cmd_name t = cmd) choices with
       | exception Not_found -> Error (`Invalid_command (cmd, choices))
       | choice -> Ok (choice, args)
 
-    let rec choose_term choices args =
-      one_of choices args >>= fun ((t, info), args) ->
+    let try_one_of choices args =
+      parse_arg_cmd args >>= fun (cmd, args) -> one_of (cmd, args) choices
+
+    let rec try_choose_term choices args =
+      try_one_of choices args >>= choose_term
+
+    and choose_term ((t, info), args) =
       match t with
       | Term t -> Ok ((t, info), args)
-      | Group subs -> choose_term subs args
+      | Group subs -> try_choose_term subs args
+
+    let choose_term main choices args =
+      match parse_arg_cmd args with
+      | Error `No_args -> Ok (main, args)
+      | Ok (cmd, args) -> one_of (cmd, args) choices >>= choose_term
 
     let eval
         ?help:(help_ppf = Format.std_formatter)
         ?err:(err_ppf = Format.err_formatter)
         ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) main choices =
     let choices_f = List.map add_args choices in
-    let main_f = (term_add_args (fst main) (snd main)), fst main in
+    let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
+    let main_args = fst main in
+    let main_f = to_term_f main in
     let main = fst main_f in
-    match choose_term choices_f (remove_exec argv) with
+    match choose_term (main_args, (fst main_f)) choices_f (remove_exec argv) with
     | Error `No_args -> assert false
     | Error (`Invalid_command _) -> `Error `Exn
     | Ok (((_, f), info), args) ->
