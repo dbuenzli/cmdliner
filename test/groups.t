@@ -2,7 +2,7 @@
   listing things
 
   $ ./groups.exe things
-  Fatal error: exception File "src/cmdliner.ml", line 334, characters 24-30: Assertion failed
+  Fatal error: exception File "src/cmdliner.ml", line 336, characters 42-48: Assertion failed
   [2]
 
   $ ./groups.exe things show foo
@@ -10,10 +10,10 @@
 
   $ ./groups.exe things list --help
   NAME
-         groups
+         groups-list
   
   SYNOPSIS
-         groups [OPTION]... 
+         groups list [OPTION]... 
   
   OPTIONS
          --help[=FMT] (default=auto)
@@ -26,7 +26,7 @@
   
 
   $ ./groups.exe things --help
-  Fatal error: exception File "src/cmdliner.ml", line 334, characters 24-30: Assertion failed
+  Fatal error: exception File "src/cmdliner.ml", line 336, characters 42-48: Assertion failed
   [2]
 
   $ ./groups.exe --help
@@ -34,7 +34,11 @@
          groups
   
   SYNOPSIS
-         groups [OPTION]... 
+         groups COMMAND ...
+  
+  COMMANDS
+         things
+  
   
   OPTIONS
          --help[=FMT] (default=auto)

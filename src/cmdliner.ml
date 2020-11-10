@@ -298,26 +298,28 @@ module Term = struct
 
     let cmd_name (_, info) = Cmdliner_info.term_name info
 
-    let one_of (cmd, args) choices =
+    let one_of (cmd, choices, path, args) =
       match List.find (fun t -> cmd_name t = cmd) choices with
-      | exception Not_found -> Error (`Invalid_command (cmd, choices))
-      | choice -> Ok (choice, args)
+      | exception Not_found -> Error (`Invalid_command (cmd, path, choices))
+      | (choice, info) -> Ok ((choice, info), choices, info :: path, args)
 
-    let try_one_of choices args =
-      parse_arg_cmd args >>= fun (cmd, args) -> one_of (cmd, args) choices
+    let try_one_of choices path args =
+      match parse_arg_cmd args with
+      | Ok (cmd, args) -> one_of (cmd, choices, path, args)
+      | Error `No_args -> Error (`No_args (path, choices))
 
-    let rec try_choose_term choices args =
-      try_one_of choices args >>= choose_term
+    let rec try_choose_term choices path args =
+      try_one_of choices path args >>= choose_term
 
-    and choose_term ((t, info), args) =
+    and choose_term ((t, info), choices, path, args) =
       match t with
-      | Term t -> Ok ((t, info), args)
-      | Group subs -> try_choose_term subs args
+      | Term t -> Ok ((t, info), choices, path, args)
+      | Group subs -> try_choose_term subs path args
 
     let choose_term main choices args =
       match parse_arg_cmd args with
-      | Error `No_args -> Ok (main, args)
-      | Ok (cmd, args) -> one_of (cmd, args) choices >>= choose_term
+      | Error `No_args -> Ok (main, choices, [], args)
+      | Ok (cmd, args) -> one_of (cmd, choices, [snd main], args) >>= choose_term
 
     let eval
         ?help:(help_ppf = Format.std_formatter)
@@ -327,13 +329,14 @@ module Term = struct
     let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
     let main_args = fst main in
     let main_f = to_term_f main in
-    let main = fst main_f in
+    (* let main = fst main_f in *)
     match choose_term (main_args, (fst main_f)) choices_f (remove_exec argv) with
-    | Error `No_args -> assert false
+    | Error (`No_args (path, choices)) -> assert false
     | Error (`Invalid_command _) -> `Error `Exn
-    | Ok (((_, f), info), args) ->
+    | Ok (((_, f), info), sibling_terms, path, args) ->
+        let sibling_terms = List.map snd sibling_terms in
         let ei = Cmdliner_info.eval ~env
-            (Sub_command { path = [main ; info] ; sibling_terms = []}) in
+            (Sub_command { path = List.rev (info :: path) ; sibling_terms }) in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
   end
