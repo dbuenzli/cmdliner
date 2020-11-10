@@ -55,3 +55,15 @@
          --version
              Show version information.
   
+
+  $ ./groups.exe foobar
+  groups: unknown command `foobar'.
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]
+
+  $ ./groups.exe widgets baz
+  groups: unknown command `baz'.
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]

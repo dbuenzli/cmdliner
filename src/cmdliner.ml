@@ -341,7 +341,14 @@ module Term = struct
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false
           ~err:"this command has subcommands";
         `Error `Parse
-    | Error (`Invalid_command _) -> `Error `Exn
+    | Error (`Invalid_command (maybe, path, _choices)) ->
+        let err = Cmdliner_base.err_unknown ~kind:"command" maybe ~hints:[] in
+        let sibling_terms = List.map snd choices in
+        let ei = Cmdliner_info.eval ~env
+            (Sub_command { term = main ; path ; main ; sibling_terms})
+        in
+        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
+        `Error `Parse
     | Ok (((_, f), info), sibling_terms, path, args) ->
         let sibling_terms = List.map snd sibling_terms in
         let ei = Cmdliner_info.eval ~env
