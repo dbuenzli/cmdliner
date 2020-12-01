@@ -300,10 +300,28 @@ module Term = struct
 
     let cmd_name (_, info) = Cmdliner_info.term_name info
 
-    let one_of (cmd, choices, path, args) =
-      match List.find (fun t -> cmd_name t = cmd) choices with
-      | exception Not_found -> Error (`Invalid_command (cmd, path, choices))
-      | (choice, info) -> Ok ((choice, info), choices, info :: path, args)
+    let one_of (cmd, (choices : _ t list), path, args) =
+      let index =
+        let add acc c =
+          let name = cmd_name c in
+          match Cmdliner_trie.add acc name c with
+          | `New t -> t
+          | `Replaced (c', _) ->
+              let flip (x, y) = (y, x) in
+              invalid_arg (err_multi_cmd_def name (flip c) (flip c'))
+        in
+        List.fold_left add Cmdliner_trie.empty choices
+      in
+      match Cmdliner_trie.find index cmd with
+      | `Ok (choice, info) -> Ok ((choice, info), choices, info :: path, args)
+      | `Not_found ->
+          let all = Cmdliner_trie.ambiguities index "" in
+          let hints = Cmdliner_suggest.value cmd all in
+          Error (`Invalid_command (cmd, path, choices, hints))
+      | `Ambiguous ->
+          let ambs = Cmdliner_trie.ambiguities index cmd in
+          let ambs = List.sort compare ambs in
+          Error (`Ambiguous (cmd, path, ambs))
 
     let try_one_of choices path args =
       match parse_arg_cmd args with
@@ -340,8 +358,16 @@ module Term = struct
         let _, _, ei = add_stdopts ei in
         Cmdliner_docgen.pp_man ~errs:err_ppf `Auto help_ppf ei;
         `Help
-    | Error (`Invalid_command (maybe, path, _choices)) ->
-        let err = Cmdliner_base.err_unknown ~kind:"command" maybe ~hints:[] in
+    | Error (`Invalid_command (maybe, path, choices, hints)) ->
+        let err = Cmdliner_base.err_unknown ~kind:"command" maybe ~hints in
+        let sibling_terms = List.map snd choices in
+        let ei = Cmdliner_info.eval ~env
+            (Sub_command { term = main ; path ; main ; sibling_terms})
+        in
+        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
+        `Error `Parse
+    | Error (`Ambiguous (cmd, path, ambs)) ->
+        let err = (Cmdliner_base.err_ambiguous ~kind:"command" cmd ~ambs) in
         let sibling_terms = List.map snd choices in
         let ei = Cmdliner_info.eval ~env
             (Sub_command { term = main ; path ; main ; sibling_terms})

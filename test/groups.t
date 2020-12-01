@@ -77,6 +77,8 @@
   COMMANDS
          things
   
+         widg
+  
          widgets
   
   
@@ -98,6 +100,17 @@
 
   $ ./groups.exe widgets baz
   groups: unknown command `baz'.
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]
+
+Prefixes
+
+  $ ./groups.exe th show foo
+  showing foo
+
+  $ ./groups.exe wid show foo
+  groups: command `wid' ambiguous and could be either `widg' or `widgets'
   Usage: groups COMMAND ...
   Try `groups --help' for more information.
   [124]

@@ -35,6 +35,7 @@ let cmds :  _ Term.Group.t list =
   let _term (t, info) = Term.Group.Term t, info in
   [ gen_group "things"
   ; gen_group "widgets"
+  ; gen_group "widg"
   ]
 
 let () =
