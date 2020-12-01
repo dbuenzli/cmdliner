@@ -2,27 +2,10 @@
   listing things
 
   $ ./groups.exe things
-  NAME
-         groups
-  
-  SYNOPSIS
-         groups COMMAND ...
-  
-  COMMANDS
-         list
-  
-         show
-  
-  
-  OPTIONS
-         --help[=FMT] (default=auto)
-             Show this help in format FMT. The value FMT must be one of `auto',
-             `pager', `groff' or `plain'. With `auto', the format is `pager` or
-             `plain' whenever the TERM env var is `dumb' or undefined.
-  
-         --version
-             Show version information.
-  
+  groups: things groups is a command group and requires a command argument.
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]
 
   $ ./groups.exe things show foo
   showing foo
@@ -45,27 +28,10 @@
   
 
   $ ./groups.exe things --help
-  NAME
-         groups
-  
-  SYNOPSIS
-         groups COMMAND ...
-  
-  COMMANDS
-         list
-  
-         show
-  
-  
-  OPTIONS
-         --help[=FMT] (default=auto)
-             Show this help in format FMT. The value FMT must be one of `auto',
-             `pager', `groff' or `plain'. With `auto', the format is `pager` or
-             `plain' whenever the TERM env var is `dumb' or undefined.
-  
-         --version
-             Show version information.
-  
+  groups: things groups is a command group and requires a command argument.
+  Usage: groups COMMAND ...
+  Try `groups --help' for more information.
+  [124]
 
   $ ./groups.exe --help
   NAME

@@ -352,12 +352,16 @@ module Term = struct
     let main = fst main_f in
     match choose_term (main_args, (fst main_f)) choices_f (remove_exec argv) with
     | Error (`No_args (path, choices)) ->
+        let err =
+          let name = List.map Cmdliner_info.term_name path in
+          Cmdliner_base.err_no_sub_command name
+        in
         let sibling_terms = List.map snd choices in
         let ei = Cmdliner_info.eval ~env
             (Sub_command { term = main ; path ; main ; sibling_terms}) in
         let _, _, ei = add_stdopts ei in
-        Cmdliner_docgen.pp_man ~errs:err_ppf `Auto help_ppf ei;
-        `Help
+        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
+        `Error `Parse
     | Error (`Invalid_command (maybe, path, choices, hints)) ->
         let err = Cmdliner_base.err_unknown ~kind:"command" maybe ~hints in
         let sibling_terms = List.map snd choices in
@@ -367,7 +371,7 @@ module Term = struct
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         `Error `Parse
     | Error (`Ambiguous (cmd, path, ambs)) ->
-        let err = (Cmdliner_base.err_ambiguous ~kind:"command" cmd ~ambs) in
+        let err = Cmdliner_base.err_ambiguous ~kind:"command" cmd ~ambs in
         let sibling_terms = List.map snd choices in
         let ei = Cmdliner_info.eval ~env
             (Sub_command { term = main ; path ; main ; sibling_terms})
