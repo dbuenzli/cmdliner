@@ -222,9 +222,9 @@ module Term = struct
     do_result help_ppf err_ppf ei res
 
   let choose_term main choices = function
-  | [] -> Ok (main, [])
+  | [] -> Ok (main, [], [fst main])
   | maybe :: args' as args ->
-      if String.length maybe > 1 && maybe.[0] = '-' then Ok (main, args) else
+      if String.length maybe > 1 && maybe.[0] = '-' then Ok (main, args, [fst main]) else
       let index =
         let add acc (choice, _ as c) =
           let name = Cmdliner_info.term_name choice in
@@ -235,7 +235,7 @@ module Term = struct
         List.fold_left add Cmdliner_trie.empty choices
       in
       match Cmdliner_trie.find index maybe with
-      | `Ok choice -> Ok (choice, args')
+      | `Ok choice -> Ok (choice, args', [fst main ; fst choice])
       | `Not_found ->
           let all = Cmdliner_trie.ambiguities index "" in
           let hints = Cmdliner_suggest.value maybe all in
@@ -263,9 +263,9 @@ module Term = struct
         in
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         `Error `Parse
-    | Ok ((chosen, f), args) ->
+    | Ok ((chosen, f), args, path) ->
         let ei = Cmdliner_info.eval ~env
-            (Sub_command { term = chosen ; path = [main; chosen] ; main;
+            (Sub_command { term = chosen ; path ; main;
                            sibling_terms = choices }) in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
