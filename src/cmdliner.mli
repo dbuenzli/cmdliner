@@ -388,13 +388,23 @@ module Term : sig
     type 'a node =
     | Term of 'a term
     | Group of 'a t list
+    (** The type for an individual command or a command group.
+        {ul
+        {- [Term], individual command term.}
+        {- [Group], a list of command terms in the same group.}} *)
 
     and 'a t = 'a node * info
+    (** An individual command or a command group annotated with an [info] *)
 
     val eval :
       ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
       ?env:(string -> string option) -> ?argv:string array ->
       'a term * info -> 'a t list -> 'a result
+    (** [eval help err catch argv (t, i) choices] is like {!eval_choice}
+        except that it will search for term inside the command group [choices]
+
+        If a command group is selected without a sub command, the program will
+        exit with an error message. *)
   end with type 'a term := 'a t
 
   val eval_peek_opts :
