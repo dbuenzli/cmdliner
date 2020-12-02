@@ -83,9 +83,8 @@ let err_unknown ?(hints = []) ~kind v =
   let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
   strf "unknown %s %s%s" kind (quote v) hints
 
-let err_no_sub_command cmd_path =
-  strf "%s is a command group and requires a command argument."
-    (String.concat " " cmd_path)
+let err_no_sub_command =
+  "is a command group and requires a command argument."
 
 let err_no kind s = strf "no %s %s" (quote s) kind
 let err_not_dir s = strf "%s is not a directory" (quote s)

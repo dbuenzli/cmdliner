@@ -2,8 +2,7 @@
   listing things
 
   $ ./groups.exe things
-  groups things: groups things is a command group and requires a command
-                 argument.
+  groups things: is a command group and requires a command argument.
   Usage: groups COMMAND ...
   Try `groups things --help' for more information.
   [124]
@@ -29,8 +28,7 @@
   
 
   $ ./groups.exe things --help
-  groups things: groups things is a command group and requires a command
-                 argument.
+  groups things: is a command group and requires a command argument.
   Usage: groups COMMAND ...
   Try `groups things --help' for more information.
   [124]
