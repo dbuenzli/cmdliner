@@ -312,9 +312,10 @@ module Term = struct
       | Group subs -> try_choose_term subs path args
 
     let choose_term main choices args =
+      let path = [snd main] in
       match parse_arg_cmd args with
-      | Error `No_args -> Ok (main, choices, [], args)
-      | Ok (cmd, args) -> one_of (cmd, choices, [snd main], args) >>= choose_term
+      | Error `No_args -> Ok (main, choices, path, args)
+      | Ok (cmd, args) -> one_of (cmd, choices, path, args) >>= choose_term
 
     let eval
         ?help:(help_ppf = Format.std_formatter)
