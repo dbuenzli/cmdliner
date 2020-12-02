@@ -62,7 +62,7 @@ let invocation ?(sep = ' ') ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_main -> term_name (Cmdliner_info.eval_main ei)
 | `Multiple_sub ->
     let sep = String.make 1 sep in
-    Cmdliner_info.eval_parents_invocation_order ei
+    Cmdliner_info.eval_terms ei
     |> List.map Cmdliner_info.term_name
     |> String.concat sep
     |> strf "%s"
