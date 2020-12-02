@@ -2,9 +2,10 @@
   listing things
 
   $ ./groups.exe things
-  groups: things groups is a command group and requires a command argument.
+  things groups: things groups is a command group and requires a command
+                 argument.
   Usage: groups COMMAND ...
-  Try `groups --help' for more information.
+  Try `things groups --help' for more information.
   [124]
 
   $ ./groups.exe things show foo
@@ -28,9 +29,10 @@
   
 
   $ ./groups.exe things --help
-  groups: things groups is a command group and requires a command argument.
+  things groups: things groups is a command group and requires a command
+                 argument.
   Usage: groups COMMAND ...
-  Try `groups --help' for more information.
+  Try `things groups --help' for more information.
   [124]
 
   $ ./groups.exe --help
@@ -65,9 +67,9 @@
   [124]
 
   $ ./groups.exe widgets baz
-  groups: unknown command `baz'.
+  widgets groups: unknown command `baz'.
   Usage: groups COMMAND ...
-  Try `groups --help' for more information.
+  Try `widgets groups --help' for more information.
   [124]
 
 Prefixes

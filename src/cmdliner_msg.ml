@@ -68,7 +68,8 @@ let err_arg_missing a =
 
 (* Other messages *)
 
-let exec_name ei = Cmdliner_info.(term_name @@ eval_main ei)
+let exec_name ei =
+  Cmdliner_info.(String.concat " " (List.map term_name (eval_terms ei)))
 
 let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
 | None -> assert false

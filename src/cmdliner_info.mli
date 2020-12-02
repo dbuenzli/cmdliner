@@ -123,12 +123,9 @@ type eval_kind =
 
 val eval : env:(string -> string option) -> eval_kind -> eval
 
-(** Equivalent to [List.last (eval_term_full e)] *)
+val eval_terms : eval -> term list
 val eval_term : eval -> term
-
-(** Equivalent to [List.hd (eval_term_full e)] *)
 val eval_main : eval -> term
-
 val eval_choices : eval -> term list
 val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]

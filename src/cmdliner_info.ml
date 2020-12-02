@@ -219,6 +219,8 @@ let eval ~env kind =
         (main, term, path, sibling_terms)
   in
   { term; main; choices; env; path }
+
+let eval_terms e = e.path
 let eval_term e = e.term
 let eval_main e = e.main
 let eval_term_path e = e.path

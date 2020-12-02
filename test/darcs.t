@@ -1,13 +1,13 @@
   $ ./darcs_ex.exe --invalid opt
-  darcs: unknown option `--invalid'.
+  darcs darcs: unknown option `--invalid'.
   Usage: darcs COMMAND ...
-  Try `darcs --help' for more information.
+  Try `darcs darcs --help' for more information.
   [1]
 
   $ ./darcs_ex.exe initialize --invalid
-  darcs: unknown option `--invalid'.
+  darcs initialize: unknown option `--invalid'.
   Usage: initialize darcs [OPTION]... 
-  Try `initialize darcs --help' or `darcs --help' for more information.
+  Try `initialize darcs --help' or `darcs initialize --help' for more information.
   [1]
 
   $ ./darcs_ex.exe initialize --help
