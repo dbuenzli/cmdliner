@@ -7,7 +7,7 @@
   $ ./darcs_ex.exe initialize --invalid
   darcs initialize: unknown option `--invalid'.
   Usage: darcs initialize [OPTION]... 
-  Try `darcs initialize --help' or `darcs initialize --help' for more information.
+  Try `darcs initialize --help' or `darcs --help' for more information.
   [1]
 
   $ ./darcs_ex.exe initialize --help

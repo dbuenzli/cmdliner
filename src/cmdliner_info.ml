@@ -220,7 +220,6 @@ let eval ~env kind =
   in
   { term; main; choices; env; path }
 
-let eval_terms e = e.path
 let eval_term e = e.term
 let eval_main e = e.main
 let eval_term_path e = e.path
@@ -233,7 +232,7 @@ let eval_kind ei =
   if (ei.term.term_info.term_name == ei.main.term_info.term_name)
   then `Multiple_main else `Multiple_sub
 
-let eval_parents_invocation_order ei = List.rev ei.path
+let eval_terms_rev ei = ei.path
 
 let eval_with_term ei term = { ei with term }
 

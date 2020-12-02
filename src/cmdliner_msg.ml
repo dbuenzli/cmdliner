@@ -68,8 +68,9 @@ let err_arg_missing a =
 
 (* Other messages *)
 
-let exec_name ei =
-  Cmdliner_info.(String.concat " " (List.map term_name (eval_terms ei)))
+let exec_name_terms terms =
+  String.concat " " (List.rev_map Cmdliner_info.term_name terms)
+let exec_name ei = exec_name_terms (Cmdliner_info.eval_terms_rev ei)
 
 let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
 | None -> assert false
@@ -80,8 +81,13 @@ let pp_try_help ppf ei = match Cmdliner_info.eval_kind ei with
     pp ppf "@[<2>Try `%s --help' for more information.@]" (exec_name ei)
 | `Multiple_sub ->
     let exec_cmd = Cmdliner_docgen.plain_invocation ei in
+    let parent =
+      Cmdliner_info.eval_terms_rev ei
+      |> List.tl
+      |> exec_name_terms
+    in
     pp ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
-      exec_cmd (exec_name ei)
+      exec_cmd parent
 
 let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_lines err
 

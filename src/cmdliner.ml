@@ -235,7 +235,7 @@ module Term = struct
         List.fold_left add Cmdliner_trie.empty choices
       in
       match Cmdliner_trie.find index maybe with
-      | `Ok choice -> Ok (choice, args', [fst main ; fst choice])
+      | `Ok choice -> Ok (choice, args', [fst choice ; fst main])
       | `Not_found ->
           let all = Cmdliner_trie.ambiguities index "" in
           let hints = Cmdliner_suggest.value maybe all in
@@ -339,18 +339,7 @@ module Term = struct
     let choose_term main choices args =
       match parse_arg_cmd args with
       | Error `No_args -> Ok (main, choices, [], args)
-      | Ok (cmd, args) ->
-          match one_of (cmd, choices, [snd main], args) >>= choose_term with
-          | Ok (t, choices, path, args) -> Ok (t, choices, List.rev path, args)
-          | Error e ->
-              Error (
-                match e with
-                | `Invalid_command (cmd, path, choices, hint) ->
-                    `Invalid_command (cmd, List.rev path, choices, hint)
-                | `Ambiguous (cmd, path, ambs) ->
-                    `Ambiguous (cmd, List.rev path, ambs)
-                | `No_args (path, choices) ->
-                    `No_args (List.rev path, choices))
+      | Ok (cmd, args) -> one_of (cmd, choices, [snd main], args) >>= choose_term
 
     let eval
         ?help:(help_ppf = Format.std_formatter)

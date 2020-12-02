@@ -123,7 +123,6 @@ type eval_kind =
 
 val eval : env:(string -> string option) -> eval_kind -> eval
 
-val eval_terms : eval -> term list
 val eval_term : eval -> term
 val eval_main : eval -> term
 val eval_choices : eval -> term list
@@ -131,7 +130,7 @@ val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
 val eval_with_term : eval -> term -> eval
 val eval_has_choice : eval -> string -> bool
-val eval_parents_invocation_order : eval -> term list
+val eval_terms_rev : eval -> term list
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
