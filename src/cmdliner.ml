@@ -245,31 +245,6 @@ module Term = struct
           let ambs = List.sort compare ambs in
           Error (Cmdliner_base.err_ambiguous ~kind:"command" maybe ~ambs)
 
-  let eval_choice
-      ?help:(help_ppf = Format.std_formatter)
-      ?err:(err_ppf = Format.err_formatter)
-      ?(catch = true) ?(env = env_default) ?(argv = Sys.argv)
-      main choices =
-    let to_term_f ((al, f), ti) = Cmdliner_info.term_add_args ti al, f in
-    let choices_f = List.rev_map to_term_f choices in
-    let main_f = to_term_f main in
-    let choices = List.rev_map fst choices_f in
-    let main = fst main_f in
-    match choose_term main_f choices_f (remove_exec argv) with
-    | Error err ->
-        let ei = Cmdliner_info.eval ~env
-            (Sub_command { term = main ; path = [main] ; main
-                         ; sibling_terms = choices})
-        in
-        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
-        `Error `Parse
-    | Ok ((chosen, f), args, path) ->
-        let ei = Cmdliner_info.eval ~env
-            (Sub_command { term = chosen ; path ; main;
-                           sibling_terms = choices }) in
-        let ei, res = term_eval ~catch ei f args in
-        do_result help_ppf err_ppf ei res
-
   module Group = struct
     type 'a node =
     | Term of 'a Cmdliner_term.t
@@ -382,6 +357,10 @@ module Term = struct
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
   end
+
+  let eval_choice ?help ?err ?catch ?env ?argv main choices =
+    let choices = List.map (fun (c, nfo) -> Group.Term c, nfo) choices in
+    Group.eval ?help ?err ?catch ?env ?argv main choices
 
   let eval_peek_opts
       ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv)
