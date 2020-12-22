@@ -276,14 +276,14 @@ module Term = struct
   (* Exits *)
 
   let exit_status_of_result ?(term_err = 1) = function
-  | `Ok _ | `Help | `Version -> exit_status_success
+  | `Ok () | `Help | `Version -> exit_status_success
   | `Error `Term -> term_err
   | `Error `Exn -> exit_status_internal_error
   | `Error `Parse -> exit_status_cli_error
 
   let exit_status_of_status_result ?term_err = function
   | `Ok n -> n
-  | r -> exit_status_of_result ?term_err r
+  | `Help | `Version | `Error _ as r -> exit_status_of_result ?term_err r
 
   let stdlib_exit = exit
   let exit ?term_err r = stdlib_exit (exit_status_of_result ?term_err r)

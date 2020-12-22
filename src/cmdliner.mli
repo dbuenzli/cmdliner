@@ -434,11 +434,11 @@ module Term : sig
   (** [exit_status_internal_error] is 125, an exit status for unexpected
       internal errors. *)
 
-  val exit_status_of_result : ?term_err:int -> 'a result -> int
+  val exit_status_of_result : ?term_err:int -> unit result -> int
   (** [exit_status_of_result ~term_err r] is an [exit(3)] status
       code determined from [r] as follows:
       {ul
-      {- {!exit_status_success} if [r] is one of [`Ok _], [`Version], [`Help]}
+      {- {!exit_status_success} if [r] is one of [`Ok ()], [`Version], [`Help]}
       {- [term_err] if [r] is [`Error `Term], [term_err] defaults to [1].}
       {- {!exit_status_cli_error} if [r] is [`Error `Parse]}
       {- {!exit_status_internal_error} if [r] is [`Error `Exn]}} *)
@@ -447,7 +447,7 @@ module Term : sig
   (** [exit_status_of_status_result] is like {!exit_status_of_result}
       except for [`Ok n] where [n] is used as the status exit code. *)
 
-  val exit : ?term_err:int -> 'a result -> unit
+  val exit : ?term_err:int -> unit result -> unit
   (** [exit ~term_err r] is
       [Stdlib.exit @@ exit_status_of_result ~term_err r] *)
 
