@@ -1,7 +1,9 @@
 
-
+- `Term.exit` and `Term.exit_status_of_result` now require a `unit`
+  result.  This avoids various errors to go undetected. Thanks to
+  Thomas Leonard for the patch (#124).
 - Fix default value rendering in manpages. These were not properly
-  escaped. Thanks to David Allsopp for the patch.
+  escaped. Thanks to David Allsopp for the patch (#111).
 
 v1.0.4 2019-06-14 Zagreb
 ------------------------
