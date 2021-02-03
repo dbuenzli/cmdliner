@@ -79,6 +79,7 @@ let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
 let pp_try_help ppf ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_main ->
     pp ppf "@[<2>Try `%s --help' for more information.@]" (exec_name ei)
+| `Multiple_group
 | `Multiple_sub ->
     let exec_cmd = Cmdliner_docgen.plain_invocation ei in
     let parent =

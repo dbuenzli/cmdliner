@@ -332,9 +332,19 @@ module Term = struct
         let sibling_terms = List.map snd choices in
         let ei = Cmdliner_info.eval ~env
             (Sub_command { term = main ; path ; main ; sibling_terms}) in
-        let _, _, ei = add_stdopts ei in
-        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
-        `Error `Parse
+        let help, version, ei = add_stdopts ei in
+        let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+        let args = remove_exec argv in
+        begin match Cmdliner_cline.create ~peek_opts:true term_args args with
+        | Ok cl
+        | Error (_, cl) ->
+            begin match try_eval_stdopts ~catch:true ei cl help version with
+            | Some e -> do_result help_ppf err_ppf ei e
+            | None ->
+                Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
+                `Error `Parse
+            end
+        end
     | Error (`Invalid_command (maybe, path, choices, hints)) ->
         let err = Cmdliner_base.err_unknown ~kind:"command" maybe ~hints in
         let sibling_terms = List.map snd choices in

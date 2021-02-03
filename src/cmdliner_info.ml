@@ -230,7 +230,12 @@ let eval_kind ei =
   (* subgroup *)
   if ei.choices = [] then `Simple else
   if (ei.term.term_info.term_name == ei.main.term_info.term_name)
-  then `Multiple_main else `Multiple_sub
+  then
+    match ei.path with
+    | [] -> assert false
+    | [_] -> `Multiple_main
+    | _ :: _ :: _ -> `Multiple_group
+  else `Multiple_sub
 
 let eval_terms_rev ei = ei.path
 

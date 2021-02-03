@@ -3,8 +3,8 @@
 
   $ ./groups.exe things
   groups things: is a command group and requires a command argument.
-  Usage: groups COMMAND ...
-  Try `groups things --help' for more information.
+  Usage: groups things [OPTION]... 
+  Try `groups things --help' or `groups --help' for more information.
   [124]
 
   $ ./groups.exe things show foo
@@ -28,9 +28,32 @@
   
 
   $ ./groups.exe things --help
+  NAME
+         groups-things
+  
+  SYNOPSIS
+         groups things [OPTION]... 
+  
+  COMMANDS
+         list
+  
+         show
+  
+  
+  OPTIONS
+         --help[=FMT] (default=auto)
+             Show this help in format FMT. The value FMT must be one of `auto',
+             `pager', `groff' or `plain'. With `auto', the format is `pager` or
+             `plain' whenever the TERM env var is `dumb' or undefined.
+  
+         --version
+             Show version information.
+  
+
+  $ ./groups.exe things --invalid-arg
   groups things: is a command group and requires a command argument.
-  Usage: groups COMMAND ...
-  Try `groups things --help' for more information.
+  Usage: groups things [OPTION]... 
+  Try `groups things --help' or `groups --help' for more information.
   [124]
 
   $ ./groups.exe --help
@@ -66,8 +89,8 @@
 
   $ ./groups.exe widgets baz
   groups widgets: unknown command `baz'.
-  Usage: groups COMMAND ...
-  Try `groups widgets --help' for more information.
+  Usage: groups widgets [OPTION]... 
+  Try `groups widgets --help' or `groups --help' for more information.
   [124]
 
 Prefixes
@@ -85,3 +108,10 @@ Default cmd
 
   $ ./groups.exe
   default cmd
+
+Version
+
+  $ ./groups.exe things --version
+  %%VERSION%%
+  $ ./groups.exe things list --version
+  %%VERSION%%

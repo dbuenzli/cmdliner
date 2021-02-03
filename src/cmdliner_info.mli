@@ -127,7 +127,7 @@ val eval_term : eval -> term
 val eval_main : eval -> term
 val eval_choices : eval -> term list
 val eval_env_var : eval -> string -> string option
-val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
+val eval_kind : eval -> [> `Multiple_main | `Multiple_group | `Multiple_sub | `Simple ]
 val eval_with_term : eval -> term -> eval
 val eval_has_choice : eval -> string -> bool
 val eval_terms_rev : eval -> term list

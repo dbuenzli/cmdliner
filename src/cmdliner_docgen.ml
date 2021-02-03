@@ -60,6 +60,7 @@ let term_info_subst ei = function
 
 let invocation ?(sep = ' ') ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_main -> term_name (Cmdliner_info.eval_main ei)
+| `Multiple_group
 | `Multiple_sub ->
     let sep = String.make 1 sep in
     Cmdliner_info.eval_terms_rev ei
@@ -83,6 +84,7 @@ let synopsis_pos_arg a =
 
 let synopsis ei = match Cmdliner_info.eval_kind ei with
 | `Multiple_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ invocation ei
+| `Multiple_group
 | `Simple | `Multiple_sub ->
     let rev_cli_order (a0, _) (a1, _) =
       Cmdliner_info.rev_arg_pos_cli_order a0 a1
@@ -99,6 +101,7 @@ let synopsis ei = match Cmdliner_info.eval_kind ei with
 
 let cmd_docs ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_sub -> []
+| `Multiple_group
 | `Multiple_main ->
     let add_cmd acc t =
       let cmd = strf "$(b,%s)" @@ term_name t in
