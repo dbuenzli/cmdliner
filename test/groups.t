@@ -80,3 +80,8 @@ Prefixes
   Usage: groups COMMAND ...
   Try `groups --help' for more information.
   [124]
+
+Default cmd
+
+  $ ./groups.exe
+  default cmd
