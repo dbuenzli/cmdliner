@@ -19,7 +19,13 @@ let gen_group name =
     ; Term list, Term.info "list"
     ]
   in
-  (Term.Group.Group term), Term.info name
+  let man =
+    [ `S "DESCRIPTION"
+    ; `P (Printf.sprintf "description of %S" name)
+    ]
+  in
+  let doc = Printf.sprintf "doc for %S" name in
+  (Term.Group.Group term), Term.info ~doc ~man name
 
 let default_cmd =
   let term =
@@ -29,7 +35,13 @@ let default_cmd =
     in
     Term.(ret (const run $ (const ())))
   in
-  term, Term.info "groups" ~version:"%%VERSION%%"
+  let doc = "default term doc" in
+  let man =
+    [ `S "DESCRIPTION"
+    ; `P "description of default term"
+    ]
+  in
+  term, Term.info "groups" ~version:"%%VERSION%%" ~doc ~man
 
 let cmds :  _ Term.Group.t list =
   let _term (t, info) = Term.Group.Term t, info in

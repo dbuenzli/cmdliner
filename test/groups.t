@@ -29,10 +29,13 @@
 
   $ ./groups.exe things --help
   NAME
-         groups-things
+         groups-things - default term doc
   
   SYNOPSIS
          groups things [OPTION]... 
+  
+  DESCRIPTION
+         description of default term
   
   COMMANDS
          list
@@ -58,18 +61,23 @@
 
   $ ./groups.exe --help
   NAME
-         groups
+         groups - default term doc
   
   SYNOPSIS
          groups COMMAND ...
   
+  DESCRIPTION
+         description of default term
+  
   COMMANDS
          things
+             doc for "things"
   
          widg
+             doc for "widg"
   
          widgets
-  
+             doc for "widgets"
   
   OPTIONS
          --help[=FMT] (default=auto)
