@@ -29,19 +29,13 @@
 
   $ ./groups.exe things --help
   NAME
-         groups-things - default term doc
+         groups-things - doc for "things"
   
   SYNOPSIS
          groups things [OPTION]... 
   
   DESCRIPTION
-         description of default term
-  
-  COMMANDS
-         list
-  
-         show
-  
+         description of "things"
   
   OPTIONS
          --help[=FMT] (default=auto)

@@ -114,10 +114,7 @@ type eval
 type eval_kind =
 | Simple of term
 | Main of { term : term ; choices : term list }
-| Sub_command of { term : term;
-                   (** is [term] is from a group, [path] are the ancestors
-                        direct with the direct parent *)
-                   path : term list;
+| Sub_command of { path : term list;
                    main : term;
                    sibling_terms : term list }
 
