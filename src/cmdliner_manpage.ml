@@ -481,9 +481,9 @@ let rec print
   | `Plain -> pp_plain_page ~errs subst ppf page
   | `Groff -> pp_groff_page ~errs subst ppf page
   | `Auto ->
-      match try (Some (Sys.getenv "TERM")) with Not_found -> None with
-      | None | Some "dumb" -> print ~errs ~subst `Plain ppf page
-      | Some _ -> print ~errs ~subst `Pager ppf page
+      match Sys.getenv "TERM" with
+      | exception Not_found | "dumb" -> print ~errs ~subst `Plain ppf page
+      | _ -> print ~errs ~subst `Pager ppf page
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 Daniel C. Bünzli
