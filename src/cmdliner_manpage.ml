@@ -437,24 +437,26 @@ let find_cmd cmds =
   | "Win32" -> "where", " NUL"
   | _ -> "command -v", "/dev/null"
   in
-  let cmd c = Sys.command (strf "%s %s 1>%s 2>%s" test c null null) = 0 in
+  let cmd (c, _) = Sys.command (strf "%s %s 1>%s 2>%s" test c null null) = 0 in
   try Some (List.find cmd cmds) with Not_found -> None
 
 let pp_to_pager print ppf v =
   let pager =
-    let cmds = ["less -R"; "more"] in
-    let cmds = try (Sys.getenv "PAGER") :: cmds with Not_found -> cmds in
-    let cmds = try (Sys.getenv "MANPAGER") :: cmds with Not_found -> cmds in
+    let cmds = ["less"," -R"; "more", ""] in
+    (* Fundamentally env var lookups should try to cut the exec name. *)
+    let cmds = try (Sys.getenv "PAGER", "") :: cmds with Not_found -> cmds in
+    let cmds = try (Sys.getenv "MANPAGER", "") :: cmds with Not_found -> cmds in
     find_cmd cmds
   in
   match pager with
   | None -> print `Plain ppf v
-  | Some pager ->
+  | Some (pager, opts) ->
+      let pager = pager ^ opts in
       let groffer =
         let cmds =
-          ["mandoc -m man -K utf-8 -T utf8";
-           "groff -m man -K utf8 -T utf8";
-           "nroff"]
+          ["mandoc", " -m man -K utf-8 -T utf8";
+           "groff", " -m man -K utf8 -T utf8";
+           "nroff", ""]
         in
         find_cmd cmds
       in
@@ -464,11 +466,11 @@ let pp_to_pager print ppf v =
           | None -> None
           | Some f -> Some (strf "%s < %s" pager f)
           end
-      | Some c ->
+      | Some (groffer, opts) ->
+          let groffer = groffer ^ opts in
           begin match pp_to_temp_file (print `Groff) v with
           | None -> None
-          | Some f ->
-              Some (strf "%s < %s | %s" c f pager)
+          | Some f -> Some (strf "%s < %s | %s" groffer f pager)
           end
       in
       match cmd with
