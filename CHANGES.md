@@ -3,12 +3,12 @@
 - UTF-8 manpage support. You can now write UTF-8 encoded text in your
   manpage. The rendering pipeline was changed in order to allow UTF-8
   manpage rendering. The manpage renderer now defaults to `mandoc` if
-  available (in particular this catches macOS whose groff does not
-  support UTF-8), then uses `groff` and then defaults to `nroff`. The
-  invocations where also tweaked to remove the `-P-c` option which
-  entails that default pager `less` is now invoked with the `-R`
-  option. Thanks to Antonin Décimo for his deep dive into these
-  `man`gnificent intricacies (#27).
+  available (in particular this catches macOS whose `groff` still
+  doesn't support UTF-8), then uses `groff` and then defaults to
+  `nroff`. The invocations were also tweaked to remove the `-P-c`
+  option which entails that default pager `less` is now invoked with
+  the `-R` option. Thanks to Antonin Décimo for his deep dive into
+  these `man`gnificent intricacies (#27).
 - On unices, use `command -v` rather than `type` to find commands.
 - `Term.exit` and `Term.exit_status_of_result` now require a `unit`
   result.  This avoids various errors to go undetected. Thanks to
