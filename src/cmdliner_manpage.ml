@@ -410,7 +410,7 @@ let pp_groff_blocks ~errs subst ppf text =
   List.iter pp_block text
 
 let pp_groff_page ~errs subst ppf ((n, s, a1, a2, a3), t) =
-  pf ppf ".\\\" Pipe this output to groff -Tutf8 | less@\n\
+  pf ppf ".\\\" Pipe this output to groff -m man -K utf8 -T utf8 | less -R@\n\
           .\\\"@\n\
           .mso an.tmac@\n\
           .TH \"%s\" %d \"%s\" \"%s\" \"%s\"@\n\
