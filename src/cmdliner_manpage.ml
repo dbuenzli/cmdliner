@@ -435,7 +435,7 @@ let pp_to_temp_file pp_v v =
 let find_cmd cmds =
   let test, null = match Sys.os_type with
   | "Win32" -> "where", " NUL"
-  | _ -> "type", "/dev/null"
+  | _ -> "command -v", "/dev/null"
   in
   let cmd c = Sys.command (strf "%s %s 1>%s 2>%s" test c null null) = 0 in
   try Some (List.find cmd cmds) with Not_found -> None

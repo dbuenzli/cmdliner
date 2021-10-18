@@ -1,4 +1,6 @@
 
+
+- On unices, use `command -v` rather than `type` to find commands.
 - `Term.exit` and `Term.exit_status_of_result` now require a `unit`
   result.  This avoids various errors to go undetected. Thanks to
   Thomas Leonard for the patch (#124).
