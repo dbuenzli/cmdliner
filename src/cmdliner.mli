@@ -1,7 +1,6 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 (** Declarative definition of command line interfaces.
@@ -11,9 +10,7 @@
     use.
 
     Open the module to use it, it defines only three modules in your
-    scope.
-
-    {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
+    scope. *)
 
 (** Man page specification.
 
