@@ -145,10 +145,10 @@ let arg_to_man_item ~errs ~subst ~buf a =
   | Cmdliner_info.Val v ->
       match Lazy.force v with
       | "" -> strf "%s" (or_env ~value:false a)
-      | v -> strf "absent=%s%s" (esc v) (or_env ~value:true a)
+      | v -> strf "absent=$(b,%s)%s" (esc v) (or_env ~value:true a)
   in
   let optvopt = match Cmdliner_info.arg_opt_kind a with
-  | Cmdliner_info.Opt_vopt v -> strf "default=%s" v
+  | Cmdliner_info.Opt_vopt v -> strf "default=$(b,%s)" (esc v)
   | _ -> ""
   in
   let argvdoc = match optvopt, absent with
