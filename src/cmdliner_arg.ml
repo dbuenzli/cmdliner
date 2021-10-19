@@ -299,9 +299,9 @@ let man_fmt_docv = "FMT"
 let man_fmts_enum = Cmdliner_base.enum man_fmts
 let man_fmts_alts = doc_alts_enum man_fmts
 let man_fmts_doc kind =
-  strf "Show %s in format $(docv). The value $(docv) must be %s. With `auto',
-        the format is `pager` or `plain' whenever the $(b,TERM) env var is
-        `dumb' or undefined."
+  strf "Show %s in format $(docv). The value $(docv) must be %s. \
+        With $(b,auto), the format is $(b,pager) or $(b,plain) whenever \
+        the $(b,TERM) env var is $(b,dumb) or undefined."
     kind man_fmts_alts
 
 let man_format =
