@@ -75,10 +75,10 @@ let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
 
 let pp_try_help ppf ei = match Cmdliner_info.eval_kind ei with
 | `Simple | `Multiple_main ->
-    pp ppf "@[<2>Try `%s --help' for more information.@]" (exec_name ei)
+    pp ppf "@[<2>Try '%s --help' for more information.@]" (exec_name ei)
 | `Multiple_sub ->
     let exec_cmd = Cmdliner_docgen.plain_invocation ei in
-    pp ppf "@[<2>Try `%s --help' or `%s --help' for more information.@]"
+    pp ppf "@[<2>Try '%s --help' or '%s --help' for more information.@]"
       exec_cmd (exec_name ei)
 
 let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_lines err

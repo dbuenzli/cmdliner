@@ -1,7 +1,9 @@
 
-
+- Stop using backticks for left quotes. Use apostrophes everywhere. 
+  Thanks to Ryan Moore for reporting a typo that prompted the change 
+  (#128).
 - Rework documentation structure. Move out tutorial, examples and
-  reference doc from the `.mli` to `.mld` pages..
+  reference doc from the `.mli` to multiple `.mld` pages.
 - `Arg.doc_alts` and `Arg.doc_alts_enum`, change the default rendering
   to match the manpage convention which is to render these tokens in bold.
   If you want to recover the previous rendering or were using these functions

@@ -57,7 +57,7 @@ let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
 
 (* Converter (end-user) error messages *)
 
-let quote s = strf "`%s'" s
+let quote s = strf "'%s'" s
 let alts_str ?quoted alts =
   let quote = match quoted with
   | None -> strf "$(b,%s)"
@@ -89,12 +89,12 @@ let err_no kind s = strf "no %s %s" (quote s) kind
 let err_not_dir s = strf "%s is not a directory" (quote s)
 let err_is_dir s = strf "%s is a directory" (quote s)
 let err_element kind s exp =
-  strf "invalid element in %s (`%s'): %s" kind s exp
+  strf "invalid element in %s ('%s'): %s" kind s exp
 
 let err_invalid kind s exp = strf "invalid %s %s, %s" kind (quote s) exp
 let err_invalid_val = err_invalid "value"
 let err_sep_miss sep s =
-  err_invalid_val s (strf "missing a `%c' separator" sep)
+  err_invalid_val s (strf "missing a '%c' separator" sep)
 
 (* Converters *)
 
