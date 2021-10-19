@@ -15,6 +15,10 @@ let opams =
 let () =
   Pkg.describe ~distrib "cmdliner" ~opams @@ fun c ->
   Ok [ Pkg.mllib ~api:["Cmdliner"] "src/cmdliner.mllib";
+       Pkg.doc "doc/index.mld" ~dst:"odoc-pages/index.mld";
+       Pkg.doc "doc/tutorial.mld" ~dst:"odoc-pages/tutorial.mld";
+       Pkg.doc "doc/cli.mld" ~dst:"odoc-pages/cli.mld";
+       Pkg.doc "doc/examples.mld" ~dst:"odoc-pages/examples.mld";
        test "test/chorus";
        test "test/cp_ex";
        test "test/darcs_ex";

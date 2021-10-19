@@ -1,5 +1,7 @@
 
 
+- Rework documentation structure. Move out tutorial, examples and
+  reference doc from the `.mli` to `.mld` pages..
 - `Arg.doc_alts` and `Arg.doc_alts_enum`, change the default rendering
   to match the manpage convention which is to render these tokens in bold.
   If you want to recover the previous rendering or were using these functions
