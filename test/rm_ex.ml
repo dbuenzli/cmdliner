@@ -16,15 +16,21 @@ open Cmdliner
 
 let files = Arg.(non_empty & pos_all file [] & info [] ~docv:"FILE")
 let prompt =
-  let doc = "Prompt before every removal." in
-  let always = Always, Arg.info ["i"] ~doc in
-  let doc = "Ignore nonexistent files and never prompt." in
-  let never = Never, Arg.info ["f"; "force"] ~doc in
-  let doc = "Prompt once before removing more than three files, or when
-             removing recursively. Less intrusive than $(b,-i), while
-             still giving protection against most mistakes."
+  let always =
+    let doc = "Prompt before every removal." in
+    Always, Arg.info ["i"] ~doc
   in
-  let once = Once, Arg.info ["I"] ~doc in
+  let never =
+    let doc = "Ignore nonexistent files and never prompt." in
+    Never, Arg.info ["f"; "force"] ~doc
+  in
+  let once =
+    let doc = "Prompt once before removing more than three files, or when
+               removing recursively. Less intrusive than $(b,-i), while
+               still giving protection against most mistakes."
+    in
+    Once, Arg.info ["I"] ~doc
+  in
   Arg.(last & vflag_all [Always] [always; never; once])
 
 let recursive =
@@ -32,7 +38,8 @@ let recursive =
   Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
 
 let cmd =
-  let doc = "remove files or directories" in
+  let doc = "Remove files or directories" in
+  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) removes each specified $(i,FILE). By default it does not
@@ -44,10 +51,11 @@ let cmd =
     `Pre "$(mname) $(b,./-foo)";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
-    `S Manpage.s_bugs; `P "Report bugs to <hehey at example.org>.";
+    `S Manpage.s_bugs; `P "Report bugs to <bugs@example.org>.";
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits:Term.default_exits ~man
+  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits ~man
 
-let () = Term.(exit @@ eval cmd)
+let main () = Term.(exit @@ eval cmd)
+let () = main ()

@@ -1,24 +1,29 @@
 {0 Examples}
 
+The examples are self-contained, cut and paste them in a file to play
+with them.
+
 {1:exrm A [rm] command}
 
-We define the command line interface of a [rm] command with the synopsis:
+We define the command line interface of an [rm] command with the
+synopsis:
 
-{[
+{v
 rm [OPTION]... FILE...
-]}
+v}
 
-The [-f], [-i] and [-I] flags define the prompt behaviour of [rm],
-represented in our program by the [prompt] type. If more than one of
-these flags is present on the command line the last one takes
+The [-f], [-i] and [-I] flags define the prompt behaviour of [rm].  It
+is represented in our program by the [prompt] type. If more than one
+of these flags is present on the command line the last one takes
 precedence.
 
 To implement this behaviour we map the presence of these flags to
-values of the [prompt] type by using {!Cmdliner.Arg.vflag_all}.  This
-argument will contain all occurrences of the flag on the command line
-and we just take the {!Cmdliner.Arg.last} one to define our term value
-(if there's no occurrence the last value of the default list
-[[Always]] is taken, i.e. the default is [Always]).
+values of the [prompt] type by using {!Cmdliner.Arg.vflag_all}.
+
+This argument will contain all occurrences of the flag on the command
+line and we just take the {!Cmdliner.Arg.last} one to define our term
+value. If there is no occurrence the last value of the default list
+[[Always]] is taken. This means the default prompt behaviour is [Always].
 
 {[
 (* Implementation of the command, we just print the args. *)
@@ -37,15 +42,21 @@ open Cmdliner
 
 let files = Arg.(non_empty & pos_all file [] & info [] ~docv:"FILE")
 let prompt =
-  let doc = "Prompt before every removal." in
-  let always = Always, Arg.info ["i"] ~doc in
-  let doc = "Ignore nonexistent files and never prompt." in
-  let never = Never, Arg.info ["f"; "force"] ~doc in
-  let doc = "Prompt once before removing more than three files, or when
-             removing recursively. Less intrusive than $(b,-i), while
-             still giving protection against most mistakes."
+  let always =
+    let doc = "Prompt before every removal." in
+    Always, Arg.info ["i"] ~doc
   in
-  let once = Once, Arg.info ["I"] ~doc in
+  let never =
+    let doc = "Ignore nonexistent files and never prompt." in
+    Never, Arg.info ["f"; "force"] ~doc
+  in
+  let once =
+    let doc = "Prompt once before removing more than three files, or when
+               removing recursively. Less intrusive than $(b,-i), while
+               still giving protection against most mistakes."
+    in
+    Once, Arg.info ["I"] ~doc
+  in
   Arg.(last & vflag_all [Always] [always; never; once])
 
 let recursive =
@@ -53,7 +64,8 @@ let recursive =
   Arg.(value & flag & info ["r"; "R"; "recursive"] ~doc)
 
 let cmd =
-  let doc = "remove files or directories" in
+  let doc = "Remove files or directories" in
+  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) removes each specified $(i,FILE). By default it does not
@@ -61,46 +73,47 @@ let cmd =
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
     `P "To remove a file whose name starts with a $(b,-), for example
         $(b,-foo), use one of these commands:";
-    `Pre "$(b,rm -- -foo)"; `Noblank;
-    `Pre "$(b,rm ./-foo)";
+    `Pre "$(mname) $(b,-- -foo)"; `Noblank;
+    `Pre "$(mname) $(b,./-foo)";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
-    `S Manpage.s_bugs; `P "Report bugs to <hehey at example.org>.";
+    `S Manpage.s_bugs; `P "Report bugs to <bugs@example.org>.";
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
   Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits:Term.default_exits ~man
+  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits ~man
 
-let () = Term.(exit @@ eval cmd)
+let main () = Term.(exit @@ eval cmd)
+let () = main ()
 ]}
 
 {1:excp A [cp] command}
 
 We define the command line interface of a [cp] command with the synopsis:
-{[
+{v
 cp [OPTION]... SOURCE... DEST
-]}
+v}
 
 The [DEST] argument must be a directory if there is more than one
 [SOURCE]. This constraint is too complex to be expressed by the
-combinators of {!Cmdliner.Arg}. Hence we just give it the
-{!Cmdliner.Arg.string} type and verify the constraint at the beginning
-of the [cp] implementation. If unsatisfied we return an [`Error] and
-by using {!Cmdliner.Term.val-ret} on the lifted result [cp_t] of [cp],
+combinators of {!Cmdliner.Arg}.
+
+Hence we just give [DEST] the {!Cmdliner.Arg.string} type and verify the
+constraint at the beginning of the implementation of [cp]. If the
+constraint is unsatisfied we return an [`Error] result. By using
+{!Cmdliner.Term.val-ret} on the lifted result [cp_t] of [cp],
 [Cmdliner] handles the error reporting.
 
 {[
 (* Implementation, we check the dest argument and print the args *)
 
 let cp verbose recurse force srcs dest =
-  if List.length srcs > 1 &&
-  (not (Sys.file_exists dest) || not (Sys.is_directory dest))
-  then
-    `Error (false, dest ^ " is not a directory")
-  else
-    `Ok (Printf.printf
-     "verbose = %B\nrecurse = %B\nforce = %B\nsrcs = %s\ndest = %s\n"
-      verbose recurse force (String.concat ", " srcs) dest)
+  let many = List.length srcs > 1 in
+  if many && (not (Sys.file_exists dest) || not (Sys.is_directory dest))
+  then `Error (false, dest ^ ": not a directory") else
+  `Ok (Printf.printf
+         "verbose = %B\nrecurse = %B\nforce = %B\nsrcs = %s\ndest = %s\n"
+         verbose recurse force (String.concat ", " srcs) dest)
 
 (* Command line interface *)
 
@@ -123,25 +136,26 @@ let srcs =
   Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] ~docv:"SOURCE" ~doc)
 
 let dest =
-  let doc = "Destination of the copy. Must be a directory if there is more
+  let doc = "Destination of the copy. Must be a directory if there is more \
              than one $(i,SOURCE)." in
-  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DEST"
-         ~doc)
+  let docv = "DEST" in
+  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv ~doc)
 
 let cmd =
-  let doc = "copy files" in
-  let man_xrefs =
-    [ `Tool "mv"; `Tool "scp"; `Page (2, "umask"); `Page (7, "symlink") ]
-  in
+  let doc = "Copy files" in
   let exits = Term.default_exits in
+  let man_xrefs =
+    [ `Tool "mv"; `Tool "scp"; `Page ("umask", 2); `Page ("symlink", 7) ]
+  in
   let man =
     [ `S Manpage.s_bugs;
-      `P "Email them to <hehey at example.org>."; ]
+      `P "Email them to <bugs@example.org>."; ]
   in
   Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
   Term.info "cp" ~version:"%%VERSION%%" ~doc ~exits ~man ~man_xrefs
 
-let () = Term.(exit @@ eval cmd)
+let main () = Term.(exit @@ eval cmd)
+let () = main ()
 ]}
 
 {1:extail A [tail] command}
@@ -149,15 +163,15 @@ let () = Term.(exit @@ eval cmd)
 We define the command line interface of a [tail] command with the
 synopsis:
 
-{[
+{v
 tail [OPTION]... [FILE]...
-]}
+v}
 
 The [--lines] option whose value specifies the number of last lines to
 print has a special syntax where a [+] prefix indicates to start
 printing from that line number. In the program this is represented by
-the [loc] type. We define a custom [loc]
-{{!Cmdliner.Arg.argconv}argument converter} for this option.
+the [loc] type. We define a custom [loc_arg]
+{{!Cmdliner.Arg.conv}argument converter} for this option.
 
 The [--follow] option has an optional enumerated value. The argument
 converter [follow], created with {!Cmdliner.Arg.enum} parses the
@@ -181,7 +195,8 @@ let follow_str = function Name -> "name" | Descriptor -> "descriptor"
 let verb_str = function Verbose -> "verbose" | Quiet -> "quiet"
 
 let tail lines follow verb pid files =
-  Printf.printf "lines = %s\nfollow = %s\nverb = %s\npid = %s\nfiles = %s\n"
+  Printf.printf
+    "lines = %s\nfollow = %s\nverb = %s\npid = %s\nfiles = %s\n"
     (loc_str lines) (opt_str follow_str follow) (verb_str verb)
     (opt_str string_of_int pid) (String.concat ", " files)
 
@@ -189,34 +204,41 @@ let tail lines follow verb pid files =
 
 open Cmdliner
 
-let lines =
-  let loc =
-    let parse s =
-      try
-        if s <> "" && s.[0] <> '+' then Ok (true, int_of_string s) else
-        Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
-      with Failure _ -> Error (`Msg "unable to parse integer")
-    in
-    let print ppf p = Format.fprintf ppf "%s" (loc_str p) in
-    Arg.conv ~docv:"N" (parse, print)
+let loc_arg =
+  let parse s =
+    try
+      if s <> "" && s.[0] <> '+'
+      then Ok (true, int_of_string s)
+      else Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
+    with Failure _ -> Error (`Msg "unable to parse integer")
   in
-  Arg.(value & opt loc (true, 10) & info ["n"; "lines"] ~docv:"N"
-         ~doc:"Output the last $(docv) lines or use $(i,+)$(docv) to start
-               output after the $(i,N)-1th line.")
+  let print ppf p = Format.fprintf ppf "%s" (loc_str p) in
+  Arg.conv ~docv:"N" (parse, print)
+
+let lines =
+  let doc = "Output the last $(docv) lines or use $(i,+)$(docv) to start \
+             output after the $(i,N)-1th line."
+  in
+  Arg.(value & opt loc_arg (true, 10) & info ["n"; "lines"] ~docv:"N" ~doc)
 
 let follow =
-  let doc = "Output appended data as the file grows. $(docv) specifies how the
-             file should be tracked, by its $(b,name) or by its \
-             $(b,descriptor)." in
+  let doc = "Output appended data as the file grows. $(docv) specifies how \
+             the file should be tracked, by its $(b,name) or by its \
+             $(b,descriptor)."
+  in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None &
        info ["f"; "follow"] ~docv:"ID" ~doc)
 
 let verb =
-  let doc = "Never output headers giving file names." in
-  let quiet = Quiet, Arg.info ["q"; "quiet"; "silent"] ~doc in
-  let doc = "Always output headers giving file names." in
-  let verbose = Verbose, Arg.info ["v"; "verbose"] ~doc in
+  let quiet =
+    let doc = "Never output headers giving file names." in
+    Quiet, Arg.info ["q"; "quiet"; "silent"] ~doc
+  in
+  let verbose =
+    let doc = "Always output headers giving file names." in
+    Verbose, Arg.info ["v"; "verbose"] ~doc
+  in
   Arg.(last & vflag_all [Quiet] [quiet; verbose])
 
 let pid =
@@ -226,21 +248,23 @@ let pid =
 let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 
 let cmd =
-  let doc = "display the last part of a file" in
+  let doc = "Display the last part of a file" in
+  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
         lines can be  specified with the $(b,-n) option.";
     `S Manpage.s_bugs;
-    `P "Report them to <hehey at example.org>.";
+    `P "Report them to <bugs@example.org>.";
     `S Manpage.s_see_also;
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
   Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
+  Term.info "tail" ~version:"%%VERSION%%" ~doc ~exits ~man
 
-let () = Term.(exit @@ eval cmd)
+let main () = Term.(exit @@ eval cmd)
+let () = main ()
 ]}
 
 {1:exdarcs A [darcs] command}
@@ -248,9 +272,9 @@ let () = Term.(exit @@ eval cmd)
 We define the command line interface of a [darcs] command with the
 synopsis:
 
-{[
+{v
 darcs [COMMAND] ...
-]}
+v}
 
 The [--debug], [-q], [-v] and [--prehook] options are available in
 each command.  To avoid having to pass them individually to each
