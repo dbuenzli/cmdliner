@@ -9,15 +9,6 @@
   If you want to recover the previous rendering or were using these functions
   outside man page rendering use an explicit `~quoted:true` (the optional
   argument is available on earlier versions).
-- UTF-8 manpage support. You can now write UTF-8 encoded text in your
-  manpage. The rendering pipeline was changed in order to allow UTF-8
-  manpage rendering. The manpage renderer now defaults to `mandoc` if
-  available (in particular this catches macOS whose `groff` still
-  doesn't support UTF-8), then uses `groff` and then defaults to
-  `nroff`. The invocations were also tweaked to remove the `-P-c`
-  option which entails that default pager `less` is now invoked with
-  the `-R` option. Thanks to Antonin Décimo for his deep dive into
-  these `man`gnificent intricacies (#27).
 - On unices, use `command -v` rather than `type` to find commands.
 - `Term.exit` and `Term.exit_status_of_result` now require a `unit`
   result.  This avoids various errors to go undetected. Thanks to
@@ -26,6 +17,33 @@
   were not properly escaped. Also they are now rendered in
   bold. Thanks to David Allsopp for the patch (#111).
   
+### UTF-8 manpage support 
+
+It is now possible to write UTF-8 encoded text in your doc strings and
+man pages.
+
+The man page renderer used on `--help` defaults to `mandoc` if
+available, then uses `groff` and then defaults to `nroff`. Starting
+with `mandoc` catches macOS whose `groff` as of 11.6 still doesn't
+support UTF-8 input and struggles to render some Unicode characters.
+
+The invocations were also tweaked to remove the `-P-c` option which
+entails that the default pager `less` is now invoked with the `-R` option.
+
+If you install UTF-8 encoded man pages output via `--help=groff`, in
+`man` directories bear in mind that these pages will look garbled on
+stock macOS (at least until 11.6). One way to work around is to
+instruct your users to change the `NROFF` definition in
+`/private/etc/man.conf` from:
+
+    NROFF       /usr/bin/groff -Wall -mtty-char -Tascii -mandoc -c
+    
+to:
+
+    NROFF       /usr/bin/mandoc -Tutf8 -c
+
+Thanks to Antonin Décimo for his knowledge and helping with these
+`man`gnificent intricacies (#27).
 
 v1.0.4 2019-06-14 Zagreb
 ------------------------
