@@ -44,9 +44,9 @@ let help_secs = [
  `S Manpage.s_common_options;
  `P "These options are common to all commands.";
  `S "MORE HELP";
- `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
- `P "Use `$(mname) help patterns' for help on patch matching."; `Noblank;
- `P "Use `$(mname) help environment' for help on environment variables.";
+ `P "Use $(mname) $(i,COMMAND) --help for help on a single command.";`Noblank;
+ `P "Use $(mname) $(b,help patterns) for help on patch matching."; `Noblank;
+ `P "Use $(mname) $(b,help environment) for help on environment variables.";
  `S Manpage.s_bugs; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
@@ -123,7 +123,7 @@ let record_cmd =
 
 let help_cmd =
   let topic =
-    let doc = "The topic to get help on. `topics' lists the topics." in
+    let doc = "The topic to get help on. $(b,topics) lists the topics." in
     Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" ~doc)
   in
   let doc = "display help about darcs and darcs commands" in

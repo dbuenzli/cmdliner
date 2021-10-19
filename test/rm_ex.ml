@@ -38,10 +38,10 @@ let cmd =
     `P "$(tname) removes each specified $(i,FILE). By default it does not
         remove directories, to also remove them and their contents, use the
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
-    `P "To remove a file whose name starts with a `-', for example
-        `-foo', use one of these commands:";
-    `Pre "$(mname) -- -foo\n\
-          $(mname) ./-foo";
+    `P "To remove a file whose name starts with a $(b,-), for example
+        $(b,-foo), use one of these commands:";
+    `Pre "$(mname) $(b,-- -foo)"; `Noblank;
+    `Pre "$(mname) $(b,./-foo)";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
     `S Manpage.s_bugs; `P "Report bugs to <hehey at example.org>.";

@@ -954,9 +954,9 @@ OPTIONS
            Repeat the message COUNT times.
 
        --help[=FMT] (default=auto)
-           Show this help in format FMT. The value FMT must be one of `auto',
-           `pager', `groff' or `plain'. With `auto', the format is `pager` or
-           `plain' whenever the TERM env var is `dumb' or undefined.
+           Show this help in format FMT. The value FMT must be one of auto,
+           pager, groff or plain. With auto, the format is pager or
+           plain whenever the TERM env var is dumb or undefined.
 
        --version
            Show version information.
@@ -1241,10 +1241,10 @@ let cmd =
     `P "$(tname) removes each specified $(i,FILE). By default it does not
         remove directories, to also remove them and their contents, use the
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
-    `P "To remove a file whose name starts with a `-', for example
-        `-foo', use one of these commands:";
-    `P "rm -- -foo"; `Noblank;
-    `P "rm ./-foo";
+    `P "To remove a file whose name starts with a $(b,-), for example
+        $(b,-foo), use one of these commands:";
+    `Pre "$(b,rm -- -foo)"; `Noblank;
+    `Pre "$(b,rm ./-foo)";
     `P "$(tname) removes symbolic links, not the files referenced by the
         links.";
     `S Manpage.s_bugs; `P "Report bugs to <hehey at example.org>.";
@@ -1388,7 +1388,8 @@ let lines =
 
 let follow =
   let doc = "Output appended data as the file grows. $(docv) specifies how the
-             file should be tracked, by its `name' or by its `descriptor'." in
+             file should be tracked, by its $(b,name) or by its \
+             $(b,descriptor)." in
   let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None &
        info ["f"; "follow"] ~docv:"ID" ~doc)
@@ -1496,9 +1497,9 @@ let help_secs = [
  `S Manpage.s_common_options;
  `P "These options are common to all commands.";
  `S "MORE HELP";
- `P "Use `$(mname) $(i,COMMAND) --help' for help on a single command.";`Noblank;
- `P "Use `$(mname) help patterns' for help on patch matching."; `Noblank;
- `P "Use `$(mname) help environment' for help on environment variables.";
+ `P "Use $(mname) $(i,COMMAND) --help for help on a single command.";`Noblank;
+ `P "Use $(mname) $(b,help patterns) for help on patch matching."; `Noblank;
+ `P "Use $(mname) $(b,help environment) for help on environment variables.";
  `S Manpage.s_bugs; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
@@ -1575,7 +1576,7 @@ let record_cmd =
 
 let help_cmd =
   let topic =
-    let doc = "The topic to get help on. `topics' lists the topics." in
+    let doc = "The topic to get help on. $(b,topics) lists the topics." in
     Arg.(value & pos 0 (some string) None & info [] ~docv:"TOPIC" ~doc)
   in
   let doc = "display help about darcs and darcs commands" in
