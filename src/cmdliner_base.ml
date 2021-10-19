@@ -59,8 +59,11 @@ let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
 (* Converter (end-user) error messages *)
 
 let quote s = strf "`%s'" s
-let alts_str ?(quoted = true) alts =
-  let quote = if quoted then quote else (fun s -> s) in
+let alts_str ?quoted alts =
+  let quote = match quoted with
+  | None -> strf "$(b,%s)"
+  | Some quoted -> if quoted then quote else (fun s -> s)
+  in
   match alts with
   | [] -> invalid_arg err_empty_list
   | [a] -> (quote a)

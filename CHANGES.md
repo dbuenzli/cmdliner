@@ -1,5 +1,10 @@
 
 
+- `Arg.doc_alts` and `Arg.doc_alts_enum`, change the default rendering
+  to match the manpage convention which is to render these tokens in bold.
+  If you want to recover the previous rendering or were using these functions
+  outside man page rendering use an explicit `~quoted:true` (the optional
+  argument is available on earlier versions).
 - UTF-8 manpage support. You can now write UTF-8 encoded text in your
   manpage. The rendering pipeline was changed in order to allow UTF-8
   manpage rendering. The manpage renderer now defaults to `mandoc` if

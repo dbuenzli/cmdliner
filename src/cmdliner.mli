@@ -802,12 +802,17 @@ module Arg : sig
   (** [doc_quote s] quotes the string [s]. *)
 
   val doc_alts : ?quoted:bool -> string list -> string
-  (** [doc_alts alts] documents the alternative tokens [alts] according
-      the number of alternatives. If [quoted] is [true] (default)
-      the tokens are quoted. The resulting string can be used in
-      sentences of the form ["$(docv) must be %s"].
+  (** [doc_alts alts] documents the alternative tokens [alts]
+      according the number of alternatives. If [quoted] is:
+      {ul
+      {- [None], the tokens are enclosed in manpage markup directives
+         to render them in bold (manpage convention).}
+      {- [Some true], the tokens are quoted with {!doc_quote}.}
+      {- [Some false], the tokens are written as is}}
+      The resulting string can be used in sentences of
+      the form ["$(docv) must be %s"].
 
-      @raise Invalid_argument if [alts] is the empty string.  *)
+      @raise Invalid_argument if [alts] is the empty list.  *)
 
   val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
   (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
