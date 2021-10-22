@@ -1,4 +1,5 @@
 
+- Add deprecation alerts on what is already deprecated.
 - Stop using backticks for left quotes. Use apostrophes everywhere. 
   Thanks to Ryan Moore for reporting a typo that prompted the change 
   (#128).

@@ -174,9 +174,11 @@ module Term : sig
 
   (**/**)
   val pure : 'a -> 'a t
+  [@@ocaml.deprecated "use Term.const instead."]
   (** @deprecated use {!const} instead. *)
 
   val man_format : Manpage.format t
+  [@@ocaml.deprecated "use Arg.man_format instead."]
   (** @deprecated Use {!Arg.man_format} instead. *)
   (**/**)
 
