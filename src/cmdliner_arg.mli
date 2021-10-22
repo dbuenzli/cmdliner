@@ -5,9 +5,15 @@
 
 (** Command line arguments as terms. *)
 
+module Deprecated : sig
+  type 'a t =
+    (string -> [ `Ok of 'a | `Error of string ]) *
+    (Format.formatter -> 'a -> unit)
+end
+
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv = 'a parser * 'a printer
+type 'a conv = 'a Deprecated.t
 type 'a converter = 'a conv
 
 val conv :

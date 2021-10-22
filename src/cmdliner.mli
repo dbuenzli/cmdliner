@@ -460,20 +460,31 @@ module Arg : sig
     line to an OCaml value. {{!converters}Predefined converters}
     are provided for many types of the standard library. *)
 
+  (**/**)
+  module Deprecated : sig
+    type 'a t =
+      (string -> [ `Ok of 'a | `Error of string ]) *
+      (Format.formatter -> 'a -> unit)
+  end
+  [@@ocaml.deprecated
+    "The type 'a conv will become abstract use Arg.conv or Arg.conv'"]
+  (**/**)
+
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
+  [@@ocaml.deprecated "Use a parser with ('a, string) result and Arg.conv'"]
   (** The type for argument parsers.
 
-      @deprecated Use a parser with [('a, [ `Msg of string]) result] results
-      and {!conv}. *)
+      @deprecated Use a parser with [('a, string) result] results
+      and {!conv'}. *)
 
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
 
-  type 'a conv = 'a parser * 'a printer
+  type 'a conv = 'a Deprecated.t [@alert "-deprecated"]
   (** The type for argument converters.
 
       {b WARNING.} This type will become abstract in the next
-      major version of cmdliner, use {!val:conv} or {!pconv}
+      major version of cmdliner, use {!val:conv}, {!conv'} or {!pconv}
       to construct values of this type. *)
 
   type 'a converter = 'a conv
@@ -483,7 +494,7 @@ module Arg : sig
   val conv :
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
     'a conv
-  (** [converter ~docv (parse, print)] is an argument converter
+  (** [conv ~docv (parse, print)] is an argument converter
       parsing values with [parse] and printing them with
       [print]. [docv] is a documentation meta-variable used in the
       documentation to stand for the argument value, defaults to
@@ -496,7 +507,8 @@ module Arg : sig
       string. *)
 
   val pconv :
-    ?docv:string -> 'a parser * 'a printer -> 'a conv
+    ?docv:string ->
+    (string -> [ `Ok of 'a | `Error of string ]) * 'a printer -> 'a conv
   (** [pconv] is like {!converter}, but uses a deprecated {!parser}
       signature. *)
 
