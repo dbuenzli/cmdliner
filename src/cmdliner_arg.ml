@@ -32,6 +32,10 @@ let conv ?docv (parse, print) =
   let parse s = match parse s with Ok v -> `Ok v | Error (`Msg e) -> `Error e in
   parse, print
 
+let conv' ?docv (parse, print) =
+  let parse s = match parse s with Ok v -> `Ok v | Error e -> `Error e in
+  parse, print
+
 let pconv ?docv conv = conv
 
 let conv_parser (parse, _) =

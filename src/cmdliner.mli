@@ -489,6 +489,12 @@ module Arg : sig
       documentation to stand for the argument value, defaults to
       ["VALUE"]. *)
 
+  val conv' :
+    ?docv:string -> (string -> ('a, string) result) * 'a printer ->
+    'a conv
+  (** [conv'] is like {!conv} but the [Error] case has an unlabelled
+      string. *)
+
   val pconv :
     ?docv:string -> 'a parser * 'a printer -> 'a conv
   (** [pconv] is like {!converter}, but uses a deprecated {!parser}

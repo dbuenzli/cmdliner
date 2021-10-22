@@ -14,6 +14,9 @@ val conv :
   ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
   'a conv
 
+val conv' :
+  ?docv:string -> (string -> ('a, string) result) * 'a printer -> 'a conv
+
 val pconv : ?docv:string -> 'a parser * 'a printer -> 'a conv
 val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
 val conv_printer : 'a conv -> 'a printer
