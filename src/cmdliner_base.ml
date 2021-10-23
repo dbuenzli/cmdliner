@@ -3,14 +3,17 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
+let strf = Printf.sprintf
+
 (* Invalid argument strings *)
 
 let err_empty_list = "empty list"
-let err_incomplete_enum = "Incomplete enumeration for the type"
+let err_incomplete_enum ss =
+  strf "Arg.enum: missing printable string for a value, other strings are: %s"
+    (String.concat ", " ss)
 
 (* Formatting tools *)
 
-let strf = Printf.sprintf
 let pp = Format.fprintf
 let pp_sp = Format.pp_print_space
 let pp_str = Format.pp_print_string
@@ -165,7 +168,7 @@ let enum sl =
   let print ppf v =
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
     try pp_str ppf (List.assoc v sl_inv)
-    with Not_found -> invalid_arg err_incomplete_enum
+    with Not_found -> invalid_arg (err_incomplete_enum (List.map fst sl))
   in
   parse, print
 
