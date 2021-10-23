@@ -503,7 +503,7 @@ module Arg : sig
   val conv' :
     ?docv:string -> (string -> ('a, string) result) * 'a printer ->
     'a conv
-  (** [conv'] is like {!conv} but the [Error] case has an unlabelled
+  (** [conv'] is like {!val-conv} but the [Error] case has an unlabelled
       string. *)
 
   val pconv :
