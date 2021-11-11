@@ -43,7 +43,7 @@ install-doc:
 	$(INSTALL) -d $(DOCDIR)/odoc-pages
 	$(INSTALL) CHANGES.md LICENSE.md README.md $(DOCDIR)
 	$(INSTALL) doc/index.mld doc/cli.mld doc/examples.mld doc/tutorial.mld \
-	           $(DOCDIR)/odoc-pages
+	           doc/tool_man.mld $(DOCDIR)/odoc-pages
 
 clean:
 	ocaml build.ml clean
