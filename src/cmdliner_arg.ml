@@ -3,14 +3,6 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-(* Trick, see https://discuss.ocaml.org/t/\
-              warning-for-moving-to-an-abstract-type/8652/9 *)
-module Deprecated = struct
-  type 'a t =
-    (string -> [ `Ok of 'a | `Error of string ]) *
-    (Format.formatter -> 'a -> unit)
-end
-
 let rev_compare n0 n1 = compare n1 n0
 
 (* Invalid_argument strings **)
