@@ -81,11 +81,15 @@ let err_multi_def ~kind name doc v v' =
     kind name (doc v) (doc v')
 
 let err_ambiguous ~kind s ~ambs =
-    strf "%s %s ambiguous and could be %s" kind (quote s) (alts_str ambs)
+  strf "%s %s ambiguous and could be %s" kind (quote s)
+    (alts_str ~quoted:true ambs)
 
 let err_unknown ?(hints = []) ~kind v =
   let did_you_mean s = strf ", did you mean %s ?" s in
-  let hints = match hints with [] -> "." | hs -> did_you_mean (alts_str hs) in
+  let hints = match hints with
+  | [] -> "."
+  | hs -> did_you_mean (alts_str ~quoted:true hs)
+  in
   strf "unknown %s %s%s" kind (quote v) hints
 
 let err_no kind s = strf "no %s %s" (quote s) kind
