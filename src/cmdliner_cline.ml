@@ -119,7 +119,7 @@ let parse_opt_args ~peek_opts optidx cl args =
       | `Ambiguous ->
           let ambs = Cmdliner_trie.ambiguities optidx name in
           let ambs = List.sort compare ambs in
-          let err = Cmdliner_base.err_ambiguous "option" name ambs in
+          let err = Cmdliner_base.err_ambiguous ~kind:"option" name ~ambs in
           loop (err :: errs) (k + 1) cl pargs args
   in
   let errs, cl, pargs = loop [] 0 cl [] args in

@@ -172,7 +172,7 @@ let vflag_all v l =
 
 let parse_opt_value parse f v = match parse v with
 | `Ok v -> v
-| `Error e -> failwith (Cmdliner_msg.err_opt_parse f e)
+| `Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
 
 let opt ?vopt (parse, print) v a =
   if Cmdliner_info.arg_is_pos a then invalid_arg err_not_opt else
@@ -222,7 +222,7 @@ let opt_all ?vopt (parse, print) v a =
 
 let parse_pos_value parse a v = match parse v with
 | `Ok v -> v
-| `Error e -> failwith (Cmdliner_msg.err_pos_parse a e)
+| `Error err -> failwith (Cmdliner_msg.err_pos_parse a ~err)
 
 let pos ?(rev = false) k (parse, print) v a =
   if Cmdliner_info.arg_is_opt a then invalid_arg err_not_pos else
@@ -239,7 +239,7 @@ let pos ?(rev = false) k (parse, print) v a =
 
 let pos_list pos (parse, _) v a =
   if Cmdliner_info.arg_is_opt a then invalid_arg err_not_pos else
-  let a = Cmdliner_info.arg_make_pos pos a in
+  let a = Cmdliner_info.arg_make_pos ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with
   | [] -> try_env ei a (parse_to_list parse) ~absent:v
   | l ->

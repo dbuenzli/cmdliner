@@ -191,7 +191,7 @@ module Term = struct
   | Ok v -> `Ok v
   | Error res ->
       match res with
-      | `Std_help fmt -> Cmdliner_docgen.pp_man err_ppf fmt help_ppf ei; `Help
+      | `Std_help fmt -> Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei; `Help
       | `Std_version -> Cmdliner_msg.pp_version help_ppf ei; `Version
       | `Parse err ->
           Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
