@@ -25,6 +25,7 @@ val err_opt_repeated : string -> string -> string
 (** {1:arg_err Argument errors} *)
 
 val err_arg_missing : Cmdliner_info.arg -> string
+val err_cmd_missing : string
 
 (** {1:msgs Other messages} *)
 

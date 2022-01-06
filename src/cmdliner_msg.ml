@@ -65,6 +65,8 @@ let err_arg_missing a =
   if Cmdliner_info.arg_is_pos a then err_pos_miss a else
   strf "required option %s is missing" (Cmdliner_info.arg_opt_name_sample a)
 
+let err_cmd_missing = "required COMMAND is missing"
+
 (* Other messages *)
 
 let exec_name ei = Cmdliner_info.(term_name @@ eval_main ei)

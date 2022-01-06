@@ -8,4 +8,5 @@ Cmdliner_msg
 Cmdliner_cline
 Cmdliner_arg
 Cmdliner_term
+Cmdliner_cmd
 Cmdliner

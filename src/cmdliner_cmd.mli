@@ -1,24 +1,33 @@
 (*---------------------------------------------------------------------------
-   Copyright (c) 2011 The cmdliner programmers. All rights reserved.
+   Copyright (c) 2022 The cmdliner programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-(** Command lines. *)
+type info = Cmdliner_info.term
+val info :
+  ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->
+  ?envs:Cmdliner_info.env list -> ?exits:Cmdliner_info.exit list ->
+  ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
+  string -> info
 
-type t
+type 'a t
 
-val create :
-  ?peek_opts:bool -> Cmdliner_info.args -> string list ->
-  (t, string * t) result
+val v : info -> 'a Cmdliner_term.t -> 'a t
+val group : ?default:'a Cmdliner_term.t -> info -> 'a t list -> 'a t
 
-val opt_arg : t -> Cmdliner_info.arg -> (int * string * (string option)) list
-val pos_arg : t -> Cmdliner_info.arg -> string list
-val actual_args : t -> Cmdliner_info.arg -> string list
-(** Actual command line arguments from the command line *)
+(** {1:eval Eval} *)
 
-val is_opt : string -> bool
+
+type 'a ok = [ `Ok of 'a | `Version | `Help ]
+type err = [ `Parse | `Term | `Exn ]
+
+val eval :
+  ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+  ?env:(string -> string option) -> ?argv:string array -> 'a t ->
+  ('a ok, err) result
+
 (*---------------------------------------------------------------------------
-   Copyright (c) 2011 The cmdliner programmers
+   Copyright (c) 2022 The cmdliner programmers
 
    Permission to use, copy, modify, and/or distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
