@@ -15,52 +15,6 @@ module Term = struct
   let man_format = Cmdliner_arg.man_format
   let pure = const
 
-  (* Terms *)
-
-  let ( $ ) = app
-
-  type 'a ret = [ `Ok of 'a | term_escape ]
-
-  let ret (al, v) =
-    al, fun ei cl -> match v ei cl with
-    | Ok (`Ok v) -> Ok v
-    | Ok (`Error _ as err) -> Error err
-    | Ok (`Help _ as help) -> Error help
-    | Error _ as e -> e
-
-  let term_result ?(usage = false) (al, v) =
-    al, fun ei cl -> match v ei cl with
-    | Ok (Ok _ as ok) -> ok
-    | Ok (Error (`Msg e)) -> Error (`Error (usage, e))
-    | Error _ as e -> e
-
-  let cli_parse_result (al, v) =
-    al, fun ei cl -> match v ei cl with
-    | Ok (Ok _ as ok) -> ok
-    | Ok (Error (`Msg e)) -> Error (`Parse e)
-    | Error _ as e -> e
-
-  let main_name =
-    Cmdliner_info.Args.empty,
-    (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))
-
-  let choice_names =
-    let choice_name t = Cmdliner_info.term_name t in
-    Cmdliner_info.Args.empty,
-    (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei)))
-
-  let with_used_args (al, v) : (_ * string list) t =
-    al, fun ei cl ->
-      match v ei cl with
-      | Ok x ->
-          let actual_args arg_info acc =
-            let args = Cmdliner_cline.actual_args cl arg_info in
-            List.rev_append args acc
-          in
-          let used = List.rev (Cmdliner_info.Args.fold actual_args al []) in
-          Ok (x, used)
-      | Error _ as e -> e
-
   (* Term information *)
 
   type exit_info = Cmdliner_info.exit
@@ -288,7 +242,6 @@ module Term = struct
   let exit ?term_err r = stdlib_exit (exit_status_of_result ?term_err r)
   let exit_status ?term_err r =
     stdlib_exit (exit_status_of_status_result ?term_err r)
-
 end
 
 (*---------------------------------------------------------------------------
