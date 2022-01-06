@@ -134,7 +134,7 @@ module Term = struct
     | Some cmd ->
         try
           let is_cmd t = Cmdliner_info.term_name t = cmd in
-          let cmd = List.find is_cmd (Cmdliner_info.eval_choices ei) in
+          let cmd = List.find is_cmd (Cmdliner_info.eval_children ei) in
           Cmdliner_info.eval_with_term ei cmd
         with Not_found -> invalid_arg (err_help cmd)
     in
@@ -169,7 +169,7 @@ module Term = struct
       ?err:(err_ppf = Format.err_formatter)
       ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) ((al, f), ti) =
     let term = Cmdliner_info.term_add_args ti al in
-    let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env in
+    let ei = Cmdliner_info.eval ~term ~parents:[] ~children:[] ~env in
     let args = remove_exec argv in
     let ei, res = term_eval ~catch ei f args in
     do_result help_ppf err_ppf ei res
@@ -210,11 +210,16 @@ module Term = struct
     let main = fst main_f in
     match choose_term main_f choices_f (remove_exec argv) with
     | Error err ->
-        let ei = Cmdliner_info.eval ~term:main ~main ~choices ~env in
+        let ei =
+          Cmdliner_info.eval ~term:main ~parents:[] ~children:choices ~env
+        in
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         `Error `Parse
     | Ok ((chosen, f), args) ->
-        let ei = Cmdliner_info.eval ~term:chosen ~main ~choices ~env in
+        let parents = if chosen == main then [] else [main] in
+        let ei =
+          Cmdliner_info.eval ~term:chosen ~parents ~children:choices ~env
+        in
         let ei, res = term_eval ~catch ei f args in
         do_result help_ppf err_ppf ei res
 
@@ -223,7 +228,7 @@ module Term = struct
       ((args, f) : 'a t) =
     let version = if version_opt then Some "dummy" else None in
     let term = Cmdliner_info.term ~args ?version "dummy" in
-    let ei = Cmdliner_info.eval ~term ~main:term ~choices:[] ~env  in
+    let ei = Cmdliner_info.eval ~term ~parents:[] ~children:[] ~env  in
     (term_eval_peek_opts ei f (remove_exec argv) :> 'a option * 'a result)
 
   (* Exits *)

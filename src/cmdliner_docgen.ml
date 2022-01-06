@@ -105,7 +105,7 @@ let cmd_docs ei = match Cmdliner_info.eval_kind ei with
       let c = compare s0 s1 in
       if c <> 0 then c else compare c1 c0 (* N.B. reverse *)
     in
-    let cmds = List.fold_left add_cmd [] (Cmdliner_info.eval_choices ei) in
+    let cmds = List.fold_left add_cmd [] (Cmdliner_info.eval_children ei) in
     let cmds = List.sort by_sec_by_rev_name cmds in
     let cmds = (cmds :> (string * Cmdliner_manpage.block) list) in
     sorted_items_to_blocks ~boilerplate:None cmds

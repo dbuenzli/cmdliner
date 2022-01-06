@@ -57,7 +57,7 @@ let main_name =
 let choice_names =
   let choice_name t = Cmdliner_info.term_name t in
   Cmdliner_info.Args.empty,
-  (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_choices ei)))
+  (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_children ei)))
 
 let with_used_args (al, v) : (_ * string list) t =
   al, fun ei cl ->

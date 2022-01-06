@@ -197,26 +197,28 @@ let term_add_args t args =
 
 type eval =                     (* information about the evaluation context. *)
   { term : term;                                    (* term being evaluated. *)
-    main : term;                                               (* main term. *)
-    choices : term list;                                (* all term choices. *)
+    parents : term list;   (* parents of term, last element is program info. *)
+    children : term list;                   (* children if term is grouping. *)
     env : string -> string option }          (* environment variable lookup. *)
 
-let eval ~term ~main ~choices ~env = { term; main; choices; env }
+let eval ~term ~parents ~children ~env = { term; parents; children; env }
 let eval_term e = e.term
-let eval_main e = e.main
-let eval_choices e = e.choices
+let eval_parents e = e.parents
+let eval_children e = e.children
 let eval_env_var e v = e.env v
 
+let eval_main e = (* FIXME remove *)
+  if e.parents = [] then e.term else (List.hd @@ List.rev e.parents)
+
 let eval_kind ei =
-  if ei.choices = [] then `Simple else
-  if (ei.term.term_info.term_name == ei.main.term_info.term_name)
-  then `Multiple_main else `Multiple_sub
+  if ei.children = [] && ei.parents = [] then `Simple else
+  if ei.parents = [] then `Multiple_main else `Multiple_sub
 
 let eval_with_term ei term = { ei with term }
 
 let eval_has_choice e cmd =
   let is_cmd t = t.term_info.term_name = cmd in
-  List.exists is_cmd e.choices
+  List.exists is_cmd e.children
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers

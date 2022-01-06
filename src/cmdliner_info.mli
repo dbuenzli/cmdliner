@@ -111,12 +111,13 @@ val term_add_args : term -> args -> term
 type eval
 
 val eval :
-  term:term -> main:term -> choices:term list ->
+  term:term -> parents:term list -> children:term list ->
   env:(string -> string option) -> eval
 
 val eval_term : eval -> term
 val eval_main : eval -> term
-val eval_choices : eval -> term list
+val eval_children : eval -> term list
+val eval_parents : eval -> term list
 val eval_env_var : eval -> string -> string option
 val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
 val eval_with_term : eval -> term -> eval
