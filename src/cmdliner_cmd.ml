@@ -4,7 +4,6 @@
   ---------------------------------------------------------------------------*)
 
 type info = Cmdliner_info.term
-
 let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
 
 type 'a t =

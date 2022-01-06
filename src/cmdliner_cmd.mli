@@ -17,7 +17,6 @@ val group : ?default:'a Cmdliner_term.t -> info -> 'a t list -> 'a t
 
 (** {1:eval Eval} *)
 
-
 type 'a ok = [ `Ok of 'a | `Version | `Help ]
 type err = [ `Parse | `Term | `Exn ]
 
@@ -25,6 +24,11 @@ val eval :
   ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
   ?env:(string -> string option) -> ?argv:string array -> 'a t ->
   ('a ok, err) result
+
+val eval_peek_opts :
+  ?version_opt:bool ->
+  ?env:(string -> string option) ->
+  ?argv:string array -> 'a Cmdliner_term.t -> 'a option * ('a ok, err) result
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2022 The cmdliner programmers
