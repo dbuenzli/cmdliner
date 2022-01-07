@@ -23,8 +23,6 @@ let app (args_f, f) (args_v, v) =
       | Error _ as e -> e
       | Ok v -> Ok (f v)
 
-
-
 (* Terms *)
 
 let ( $ ) = app

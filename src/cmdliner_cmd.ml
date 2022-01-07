@@ -3,8 +3,35 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
+module Exit = struct
+  type code = int
+  let ok = 0
+  let some_error = 123
+  let cli_error = 124
+  let internal_error = 125
+
+  type info = Cmdliner_info.exit
+  let info = Cmdliner_info.exit
+  let info_code i = fst (Cmdliner_info.exit_statuses i)
+
+  let defaults =
+    [ info ok ~doc:"on success.";
+      info some_error ~doc:"on indiscriminate errors reported on stderr.";
+      info cli_error ~doc:"on command line parsing errors.";
+      info internal_error ~doc:"on unexpected internal errors (bugs)."; ]
+end
+
+module Env = struct
+  type var = string
+  type info = Cmdliner_info.env
+  let info = Cmdliner_info.env
+end
+
+(* Commands *)
+
 type info = Cmdliner_info.term
 let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
+let info_name i = Cmdliner_info.term_name i
 
 type 'a t =
 | Cmd of info * 'a Cmdliner_term.parser
@@ -18,14 +45,14 @@ let group ?default i cmds =
   in
   Group (i, (default, cmds))
 
-let cmd_info = function Cmd (i, _) | Group (i, _) -> i
+let get_info = function Cmd (i, _) | Group (i, _) -> i
 let children_infos = function
-| Cmd _ -> [] | Group (_, (_, cs)) -> List.map cmd_info cs
+| Cmd _ -> [] | Group (_, (_, cs)) -> List.map get_info cs
 
 (* Eval *)
 
-type 'a ok = [ `Ok of 'a | `Version | `Help ]
-type err = [ `Parse | `Term | `Exn ]
+type 'a eval_ok = [ `Ok of 'a | `Version | `Help ]
+type eval_error = [ `Parse | `Term | `Exn ]
 
 let err_help s = "Term error, help requested for unknown command " ^ s
 let err_argv = "argv array must have at least one element"
@@ -49,20 +76,20 @@ type 'a eval_result =
        | `Parse of string
        | `Std_help of Cmdliner_manpage.format | `Std_version ]) result
 
-let run ~catch ei cl f = try (f ei cl :> 'a eval_result) with
+let run_parser ~catch ei cl f = try (f ei cl :> 'a eval_result) with
 | exn when catch ->
     let bt = Printexc.get_raw_backtrace () in
     Error (`Exn (exn, bt))
 
 let try_eval_stdopts ~catch ei cl help version =
-  match run ~catch ei cl (snd help) with
+  match run_parser ~catch ei cl (snd help) with
   | Ok (Some fmt) -> Some (Error (`Std_help fmt))
   | Error _ as err -> Some err
   | Ok None ->
       match version with
       | None -> None
       | Some version ->
-          match run ~catch ei cl (snd version) with
+          match run_parser ~catch ei cl (snd version) with
           | Ok false -> None
           | Ok true -> Some (Error (`Std_version))
           | Error _ as err -> Some err
@@ -79,7 +106,7 @@ let term_eval ~catch ei f args =
   | Ok cl ->
       match try_eval_stdopts ~catch ei cl help version with
       | Some e -> e
-      | None -> run ~catch ei cl f
+      | None -> run_parser ~catch ei cl f
   in
   ei, res
 
@@ -115,12 +142,12 @@ let do_result help_ppf err_ppf ei = function
 
 let cmd_name_trie cmds =
   let add acc cmd =
-    let i = cmd_info cmd in
+    let i = get_info cmd in
     let name = Cmdliner_info.term_name i in
     match Cmdliner_trie.add acc name cmd with
     | `New t -> t
     | `Replaced (cmd', _) ->
-        let i' = cmd_info cmd' and kind = "command" in
+        let i' = get_info cmd' and kind = "command" in
         invalid_arg @@
         Cmdliner_base.err_multi_def ~kind name Cmdliner_info.term_doc i i'
   in
@@ -161,26 +188,26 @@ let env_default v = try Some (Sys.getenv v) with Not_found -> None
 let remove_exec argv =
   try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
-let eval
+let eval_value
     ?help:(help_ppf = Format.std_formatter)
     ?err:(err_ppf = Format.err_formatter)
     ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
   =
   match find_term (remove_exec argv) cmd with
   | Error err ->
-      let term = cmd_info cmd and children = children_infos cmd in
+      let term = get_info cmd and children = children_infos cmd in
       let ei = Cmdliner_info.eval ~term ~parents:[] ~children ~env in
       Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
       Error `Parse
   | Ok (args, f, i, parents, children) ->
-      let children = List.map cmd_info children in
+      let children = List.map get_info children in
       let ei = Cmdliner_info.eval ~term:i ~parents ~children ~env in
       let ei, res = term_eval ~catch ei f args in
       do_result help_ppf err_ppf ei res
 
 let eval_peek_opts
     ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv) t
-  : 'a option * ('a ok, err) result
+  : 'a option * ('a eval_ok, eval_error) result
   =
   let args, f = t in
   let version = if version_opt then Some "dummy" else None in
@@ -197,7 +224,7 @@ let eval_peek_opts
         | None -> None, Error (`Error (true, e))
         end
     | Ok cl ->
-        let ret = run ~catch:true ei cl f in
+        let ret = run_parser ~catch:true ei cl f in
         let v = match ret with Ok v -> Some v | Error _ -> None in
         match try_eval_stdopts ~catch:true ei cl help version with
         | Some e -> v, e
@@ -213,6 +240,40 @@ let eval_peek_opts
   | Error `Error _ -> Error `Term
   in
   (v, ret)
+
+let exit_status_of_result ?(term_err = Exit.cli_error) = function
+| Ok (`Ok _ | `Help | `Version) -> Exit.ok
+| Error `Term -> term_err
+| Error `Parse -> Exit.cli_error
+| Error `Exn -> Exit.internal_error
+
+let eval ?help ?err ?catch ?env ?argv ?term_err cmd =
+  exit_status_of_result ?term_err @@
+  eval_value ?help ?err ?catch ?env ?argv cmd
+
+let eval' ?help ?err ?catch ?env ?argv ?term_err cmd =
+  match eval_value ?help ?err ?catch ?env ?argv cmd with
+  | Ok (`Ok c) -> c
+  | r -> exit_status_of_result ?term_err r
+
+let pp_err ppf cmd ~msg = (* FIXME move that to Cmdliner_msgs *)
+  let name = info_name (get_info cmd) in
+  Format.fprintf  ppf "%s: @[%a@]@." name Cmdliner_base.pp_lines msg
+
+let eval_result
+    ?help ?(err = Format.err_formatter) ?catch ?env ?argv ?term_err cmd
+  =
+  match eval_value ?help ~err ?catch ?env ?argv cmd with
+  | Ok (`Ok (Error msg)) -> pp_err err cmd ~msg; Exit.some_error
+  | r -> exit_status_of_result ?term_err r
+
+let eval_result'
+    ?help ?(err = Format.err_formatter) ?catch ?env ?argv ?term_err cmd
+  =
+  match eval_value ?help ~err ?catch ?env ?argv cmd with
+  | Ok (`Ok (Ok c)) -> c
+  | Ok (`Ok (Error msg)) -> pp_err err cmd ~msg; Exit.some_error
+  | r -> exit_status_of_result ?term_err r
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2022 The cmdliner programmers

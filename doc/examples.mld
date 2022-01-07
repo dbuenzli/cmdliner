@@ -171,7 +171,7 @@ The [--lines] option whose value specifies the number of last lines to
 print has a special syntax where a [+] prefix indicates to start
 printing from that line number. In the program this is represented by
 the [loc] type. We define a custom [loc_arg]
-{{!Cmdliner.Arg.conv}argument converter} for this option.
+{{!type-Cmdliner.Arg.conv}argument converter} for this option.
 
 The [--follow] option has an optional enumerated value. The argument
 converter [follow], created with {!Cmdliner.Arg.enum} parses the

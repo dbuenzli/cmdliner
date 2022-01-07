@@ -20,9 +20,9 @@ module Term = struct
   type exit_info = Cmdliner_info.exit
   let exit_info = Cmdliner_info.exit
 
-  let exit_status_success = 0
-  let exit_status_cli_error = 124
-  let exit_status_internal_error = 125
+  let exit_status_success = Cmdliner_cmd.Exit.ok
+  let exit_status_cli_error = Cmdliner_cmd.Exit.cli_error
+  let exit_status_internal_error = Cmdliner_cmd.Exit.internal_error
   let default_error_exits =
     [ exit_info exit_status_cli_error ~doc:"on command line parsing errors.";
       exit_info exit_status_internal_error
@@ -44,17 +44,17 @@ module Term = struct
   [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
 
   let to_legacy_result = function
-  | Ok (#Cmdliner_cmd.ok as r) -> (r : 'a result)
+  | Ok (#Cmdliner_cmd.eval_ok as r) -> (r : 'a result)
   | Error e -> `Error e
 
   let eval ?help ?err ?catch ?env ?argv (t, i) =
     let cmd = Cmdliner_cmd.v i t in
-    to_legacy_result (Cmdliner_cmd.eval ?help ?err ?catch ?env ?argv cmd)
+    to_legacy_result (Cmdliner_cmd.eval_value ?help ?err ?catch ?env ?argv cmd)
 
   let eval_choice ?help ?err ?catch ?env ?argv (t, i) choices =
     let sub (t, i) = Cmdliner_cmd.v i t in
     let cmd = Cmdliner_cmd.group i ~default:t (List.map sub choices) in
-    to_legacy_result (Cmdliner_cmd.eval ?help ?err ?catch ?env ?argv cmd)
+    to_legacy_result (Cmdliner_cmd.eval_value ?help ?err ?catch ?env ?argv cmd)
 
   let eval_peek_opts ?version_opt ?env ?argv t =
     let o, r = Cmdliner_cmd.eval_peek_opts ?version_opt ?env ?argv t in
@@ -77,6 +77,8 @@ module Term = struct
   let exit_status ?term_err r =
     stdlib_exit (exit_status_of_status_result ?term_err r)
 end
+
+module Cmd = Cmdliner_cmd
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers

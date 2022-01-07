@@ -172,16 +172,6 @@ module Term : sig
   val const : 'a -> 'a t
   (** [const v] is a term that evaluates to [v]. *)
 
-  (**/**)
-  val pure : 'a -> 'a t
-  [@@ocaml.deprecated "use Term.const instead."]
-  (** @deprecated use {!const} instead. *)
-
-  val man_format : Manpage.format t
-  [@@ocaml.deprecated "use Arg.man_format instead."]
-  (** @deprecated Use {!Arg.man_format} instead. *)
-  (**/**)
-
   val ( $ ) : ('a -> 'b) t -> 'a t -> 'b t
   (** [f $ v] is a term that evaluates to the result of applying
       the evaluation of [v] to the one of [f]. *)
@@ -235,17 +225,26 @@ module Term : sig
       with the arguments from the command line that where used to
       evaluate [t]. *)
 
-  (** {1:tinfo Term information}
+  (** {1:deprecated Deprecated Term evaluation interface}
+
+      This interface is deprecated in favor of {!Cmdliner.Cmd}. Follow
+      the compiler deprecation warning hints to transition. *)
+
+  (** {2:tinfo Term information}
 
       Term information defines the name and man page of a term.
       For simple evaluation this is the name of the program and its
       man page. For multiple term evaluation, this is
       the name of a command and its man page. *)
 
+  [@@@alert "-deprecated"] (* Need to be able to mention them ! *)
+
   type exit_info
+  [@@ocaml.deprecated "Use Cmd.Exit.info instead."]
   (** The type for exit status information. *)
 
   val exit_info : ?docs:string -> ?doc:string -> ?max:int -> int -> exit_info
+  [@@ocaml.deprecated "Use Cmd.Exit.info instead."]
   (** [exit_info ~docs ~doc min ~max] describe the range of exit
       statuses from [min] to [max] (defaults to [min]). [doc] is the
       man page information for the statuses, defaults to ["undocumented"].
@@ -260,17 +259,21 @@ module Term : sig
       {- The variables mentioned in {!val-info}}} *)
 
   val default_exits : exit_info list
+  [@@ocaml.deprecated "Use Cmd.Exit.defaults instead."]
   (** [default_exits] is information for exit status {!exit_status_success}
       added to {!default_error_exits}. *)
 
   val default_error_exits : exit_info list
+  [@@ocaml.deprecated "List.filter the Cmd.Exit.defaults value instead."]
   (** [default_error_exits] is information for exit statuses
       {!exit_status_cli_error} and {!exit_status_internal_error}. *)
 
   type env_info
+  [@@ocaml.deprecated "Use Cmd.Env.info instead."]
   (** The type for environment variable information. *)
 
   val env_info : ?docs:string -> ?doc:string -> string -> env_info
+  [@@ocaml.deprecated "Use Cmd.Env.info instead."]
   (** [env_info ~docs ~doc var] describes an environment variable
       [var]. [doc] is the man page information of the environment
       variable, defaults to ["undocumented"]. [docs] is the title of
@@ -284,12 +287,14 @@ module Term : sig
       {- The variables mentioned in {!val-info}}} *)
 
   type info
+  [@@ocaml.deprecated "Use Cmd.info instead."]
   (** The type for term information. *)
 
   val info :
     ?man_xrefs:Manpage.xref list -> ?man:Manpage.block list ->
     ?envs:env_info list -> ?exits:exit_info list -> ?sdocs:string ->
     ?docs:string -> ?doc:string -> ?version:string -> string -> info
+  [@@ocaml.deprecated "Use Cmd.info instead."]
   (** [info sdocs man docs doc version name] is a term information
       such that:
       {ul
@@ -320,9 +325,10 @@ module Term : sig
       {- [$(mname)] the main term's name.}} *)
 
   val name : info -> string
+  [@@ocaml.deprecated "Use Cmd.info_name instead."]
   (** [name ti] is the name of the term information. *)
 
- (** {1:evaluation Evaluation} *)
+ (** {2:evaluation Evaluation} *)
 
   type 'a result =
     [ `Ok of 'a | `Error of [`Parse | `Term | `Exn ] | `Version | `Help ]
@@ -343,6 +349,7 @@ module Term : sig
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
     ?env:(string -> string option) -> ?argv:string array -> ('a t * info) ->
     'a result
+  [@@ocaml.deprecated "Use Cmd.v and one of Cmd.eval* instead."]
   (** [eval help err catch argv (t,i)]  is the evaluation result
       of [t] with command line arguments [argv] (defaults to {!Sys.argv}).
 
@@ -361,6 +368,7 @@ module Term : sig
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
     ?env:(string -> string option) -> ?argv:string array ->
     'a t * info -> ('a t * info) list -> 'a result
+  [@@ocaml.deprecated "Use Cmd.group and one of Cmd.eval* instead."]
   (** [eval_choice help err catch argv (t,i) choices] is like {!eval}
       except that if the first argument on the command line is not an option
       name it will look in [choices] for a term whose information has this
@@ -373,6 +381,7 @@ module Term : sig
   val eval_peek_opts :
     ?version_opt:bool -> ?env:(string -> string option) ->
     ?argv:string array -> 'a t -> 'a option * 'a result
+  [@@ocaml.deprecated "Use Cmd.eval_peek_opts instead."]
   (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
       of optional arguments only, with the command line [argv]
       (defaults to {!Sys.argv}). In this evaluation, unknown optional
@@ -400,7 +409,7 @@ module Term : sig
       positional argument from the value of an unknown optional
       argument.  *)
 
-  (** {1:exits Turning evaluation results into exit codes}
+  (** {2:exits Turning evaluation results into exit codes}
 
       {b Note.} If you are using the following functions to handle
       the evaluation result of a term you should add {!default_exits} to
@@ -412,17 +421,21 @@ module Term : sig
        some} shells. *)
 
   val exit_status_success : int
+  [@@ocaml.deprecated "Use Cmd.Exit.ok instead."]
   (** [exit_status_success] is 0, the exit status for success. *)
 
   val exit_status_cli_error : int
+  [@@ocaml.deprecated "Use Cmd.Exit.cli_error instead."]
   (** [exit_status_cli_error] is 124, an exit status for command line
       parsing errors. *)
 
   val exit_status_internal_error : int
+  [@@ocaml.deprecated "Use Cmd.Exit.internal_error instead."]
   (** [exit_status_internal_error] is 125, an exit status for unexpected
       internal errors. *)
 
   val exit_status_of_result : ?term_err:int -> unit result -> int
+  [@@ocaml.deprecated "Use Cmd.eval instead."]
   (** [exit_status_of_result ~term_err r] is an [exit(3)] status
       code determined from [r] as follows:
       {ul
@@ -432,16 +445,305 @@ module Term : sig
       {- {!exit_status_internal_error} if [r] is [`Error `Exn]}} *)
 
   val exit_status_of_status_result : ?term_err:int -> int result -> int
+  [@@ocaml.deprecated "Use Cmd.eval' instead."]
   (** [exit_status_of_status_result] is like {!exit_status_of_result}
       except for [`Ok n] where [n] is used as the status exit code. *)
 
   val exit : ?term_err:int -> unit result -> unit
+  [@@ocaml.deprecated "Use Stdlib.exit and Cmd.eval instead."]
   (** [exit ~term_err r] is
       [Stdlib.exit @@ exit_status_of_result ~term_err r] *)
 
   val exit_status : ?term_err:int -> int result -> unit
+  [@@ocaml.deprecated "Use Stdlib.exit and Cmd.eval' instead."]
   (** [exit_status ~term_err r] is
       [Stdlib.exit @@ exit_status_of_status_result ~term_err r] *)
+
+  (**/**)
+  val pure : 'a -> 'a t
+  [@@ocaml.deprecated "Use Term.const instead."]
+  (** @deprecated use {!const} instead. *)
+
+  val man_format : Manpage.format t
+  [@@ocaml.deprecated "Use Arg.man_format instead."]
+  (** @deprecated Use {!Arg.man_format} instead. *)
+  (**/**)
+end
+
+(** Commands.
+
+    Command line syntaxes are implicitely defined by {!Terms}. A command
+    value binds a syntax and its documentation to a command name.
+
+    A command can group a list of sub commands (and recursively). In this
+    case your tool defines a tree of commands, each with its own command
+    line syntax. The root of that tree is called the {e main command};
+    it represents your tool and its name. *)
+module Cmd : sig
+
+  (** {1:info Command information}
+
+      Command information defines the name and documentation of a command. *)
+
+  (** Exit codes and their information. *)
+  module Exit : sig
+
+    (** {1:codes Exit codes} *)
+
+    type code = int
+    (** The type for exit codes.
+
+        {b Warning.} You should avoid status codes strictly greater than 125
+        as those may be used by
+        {{:https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html}
+        some} shells. *)
+
+    val ok : code
+    (** [ok] is [0], the exit status for success. *)
+
+    val some_error : code
+    (** [some_error] is [123], an exit status for indisciminate errors
+        reported on stderr. *)
+
+    val cli_error : code
+    (** [cli_error] is [124], an exit status for command line parsing
+        errors. *)
+
+    val internal_error : code
+    (** [internal_error] is [125], an exit status for unexpected internal
+        errors. *)
+
+    (** {1:info Exit code information} *)
+
+    type info
+    (** The type for exit code information. *)
+
+    val info : ?docs:string -> ?doc:string -> ?max:code -> code -> info
+    (** [exit_info ~docs ~doc min ~max] describe the range of exit
+      statuses from [min] to [max] (defaults to [min]). [doc] is the
+      man page information for the statuses, defaults to ["undocumented"].
+      [docs] is the title of the man page section in which the statuses
+      will be listed, it defaults to {!Manpage.s_exit_status}.
+
+      In [doc] the {{!page-tutorial.doclang}documentation markup language}
+      can be used with following variables:
+      {ul
+      {- [$(status)], the value of [min].}
+      {- [$(status_max)], the value of [max].}
+      {- The variables mentioned in the {!Cmd.val-info}}} *)
+
+    val info_code : info -> code
+    (** [info_code i] is the minimal code of [i]. *)
+
+    val defaults : info list
+    (** [defaults] are exit code information for {!ok}, {!some_error}
+        {!cli_error} and {!internal_error}. *)
+  end
+
+  module Env : sig
+
+    (** {1:envvars Environment variables} *)
+
+    type var = string
+    (** The type for environment names. *)
+
+    (** {1:info Environment variable information} *)
+
+    type info
+    (** The type for environment variable information. *)
+
+    val info : ?docs:string -> ?doc:string -> var -> info
+    (** [env_info ~docs ~doc var] describes an environment variable
+        [var]. [doc] is the man page information of the environment
+        variable, defaults to ["undocumented"]. [docs] is the title of
+        the man page section in which the environment variable will be
+        listed, it defaults to {!Cmdliner.Manpage.s_environment}.
+
+        In [doc] the {{!page-tutorial.doclang}documentation markup language}
+        can be used with following variables:
+        {ul
+        {- [$(env)], the value of [var].}
+        {- The variables mentioned in {!val-info}}} *)
+  end
+
+  type info
+  (** The type for information about commands. *)
+
+  val info :
+    ?man_xrefs:Manpage.xref list -> ?man:Manpage.block list ->
+    ?envs:Env.info list -> ?exits:Exit.info list ->
+    ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
+    string -> info
+  (** [info name ?sdocs ?man ?docs ?doc ?version] is a term information
+      such that:
+      {ul
+      {- [name] is the name of the command.}
+      {- [version] is the version string of the command line tool, this
+         is only relevant for the toplevel command and ignored otherwise.}
+      {- [doc] is a one line description of the command used
+         for the [NAME] section of the command's man page and in command
+         group listings.}
+      {- [docs], for commands that are part of a group, the title of the
+         section of the parent's command man page where it should be listed
+         (defaults to {!Manpage.s_commands}).}
+      {- [sdocs] defines the title of the section in which the
+         standard [--help] and [--version] arguments are listed
+         (defaults to {!Manpage.s_options}).}
+      {- [exits] is a list of exit statuses that the command evaluation
+         may produce, defaults to {!Exit.defaults}.}
+      {- [envs] is a list of environment variables that influence
+         the command's evaluation.}
+      {- [man] is the text of the man page for the command.}
+      {- [man_xrefs] are cross-references to other manual pages. These
+         are used to generate a {!Manpage.s_see_also} section.}}
+
+      [doc], [man], [envs] support the {{!page-tutorial.doclang}documentation
+      markup language} in which the following variables are recognized:
+      {ul
+      {- [$(tname)] the command's name.}
+      {- [$(mname)] the toplevel's command name.}} *)
+
+  val info_name : info -> string
+  (** [info_name i] is the name of [i]. *)
+
+  (** {1:cmds Commands} *)
+
+  type 'a t
+  (** The type for commands whose evaluation result in a value of
+      type ['a]. *)
+
+  val v : info -> 'a Term.t -> 'a t
+  (** [v i t] is a command with information [i] and command line syntax
+      parsed by [t]. *)
+
+  val group : ?default:'a Term.t -> info -> 'a t list -> 'a t
+  (** [group i ?default cmds] is a command with information [i] that
+      groups sub commands [cmds].
+
+      [default] is the command line syntax to parse if no sub command
+      is specified on the command line. If [default] is [None]
+      (default), the tool errors when no sub command is specified. *)
+
+  val get_info : 'a t -> info
+  (** [get_info cmd] is the info of [cmd]. *)
+
+  (** {1:eval Evaluation}
+
+      These functions are meant to be composed with {!Stdlib.exit}.
+      The following exit codes can be returned by all these functions:
+      {ul
+      {- {!Exit.cli_error} in case of parsing errors.}
+      {- {!Exit.internal_error} if the [~catch] is [true] (default)
+         and an uncaught exception is raised.}
+      {- The value of [~term_err] (defaults to {!Exit.cli_error}) in case
+         a term error occurs.}}
+
+      These exit codes are described in {!Exit.defaults} and are added
+      by default to command {!info} values.
+
+      The menagerie of optional arguments is described in  *)
+
+  val eval :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array ->
+    ?term_err:Exit.code -> unit t -> Exit.code
+  (** [eval cmd] is {!Exit.ok} if [cmd] evaluates to [()].
+      See {!eval_value} for other arguments. *)
+
+  val eval' :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array ->
+    ?term_err:Exit.code -> Exit.code t -> Exit.code
+  (** [eval' cmd] is [c] if [cmd] evaluates to the exit code [c].
+      See {!eval_value} for other arguments. *)
+
+  val eval_result :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array ->
+    ?term_err:Exit.code -> (unit, string) result t -> Exit.code
+  (** [eval_result cmd] is:
+      {ul
+      {- {!Exit.ok} if [cmd] evaluates to [Ok ()].}
+      {- {!Exit.some_error} if [cmd] evaluates to [Error msg]. In this
+         case [msg] is printed on [err].}}
+      See {!eval_value} for other arguments. *)
+
+  val eval_result' :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array ->
+    ?term_err:Exit.code -> (Exit.code, string) result t -> Exit.code
+  (** [eval_result' cmd] is:
+      {ul
+      {- [c] if [cmd] evaluates to [Ok c].}
+      {- {!Exit.some_error} if [cmd] evaluates to [Error msg]. In this
+         case [msg] is printed on [err].}}
+      See {!eval_value} for other arguments. *)
+
+  (** {2:eval Low level evaluation}
+
+      This interface gives more information on command evaluation results
+      and lets you choose how to map evaluation results to exit codes. *)
+
+  type 'a eval_ok =
+  [ `Ok of 'a (** The term of the command evaluated to this value. *)
+  | `Version (** The version of the main cmd was requested. *)
+  | `Help (** Help was requested. *) ]
+  (** The type for successful evaluation results. *)
+
+  type eval_error =
+  [ `Parse (** A parse error occured. *)
+  | `Term (** A term evaluation error occured. *)
+  | `Exn (** An uncaught exception occured. *) ]
+  (** The type for erroring evaluation results. *)
+
+  val eval_value :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array -> 'a t ->
+    ('a eval_ok, eval_error) result
+  (** [eval ~help ~err ~catch ~env ~argv cmd] is the evaluation result
+      of [cmd] with:
+      {ul
+      {- [argv] the command line arguments to parse (defaults to {!Sys.argv})}
+      {- [env] the function used for environment variable lookup (defaults
+         to {!Sys.getenv}.}
+      {- [catch] if [true] (default) uncaught exceptions
+         are intercepted and their stack trace is written to the [err]
+         formatter}
+      {- [help] is the formatter used to print help or version messages
+         (defaults to {!Format.std_formatter})}
+      {- [err] is the formatter used to print error messages
+         (defaults to {!Format.err_formatter}.}} *)
+
+  val eval_peek_opts :
+    ?version_opt:bool -> ?env:(string -> string option) ->
+    ?argv:string array -> 'a Term.t ->
+    'a option * ('a eval_ok, eval_error) result
+  (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
+      of optional arguments only, with the command line [argv]
+      (defaults to {!Sys.argv}). In this evaluation, unknown optional
+      arguments and positional arguments are ignored.
+
+      The evaluation returns a pair. The first component is
+      the result of parsing the command line [argv] stripped from
+      any help and version option if [version_opt] is [true] (defaults
+      to [false]). It results in:
+      {ul
+      {- [Some _] if the command line would be parsed correctly given the
+         {e partial} knowledge in [t].}
+      {- [None] if a parse error would occur on the options of [t]}}
+
+      The second component is the result of parsing the command line
+      [argv] without stripping the help and version options. It
+      indicates what the evaluation would result in on [argv] given
+      the partial knowledge in [t] (for example it would return
+      [`Help] if there's a help option in [argv]). However in
+      contrasts to {!eval} and {!eval_choice} no side effects like
+      error reporting or help output occurs.
+
+      {b Note.} Positional arguments can't be peeked without the full
+      specification of the command line: we can't tell apart a
+      positional argument from the value of an unknown optional
+      argument.  *)
 end
 
 (** Terms for command line arguments.
@@ -533,10 +835,10 @@ module Arg : sig
     if the argument is absent from the command line and the variable
     is defined. *)
 
-  type env = Term.env_info
+  type env = Cmd.Env.info
   (** The type for environment variables and their documentation. *)
 
-  val env_var : ?docs:string -> ?doc:string -> string -> env
+  val env_var : ?docs:string -> ?doc:string -> Cmd.Env.var -> env
   (** [env_var docs doc var] is an environment variables [var]. [doc]
       is the man page information of the environment variable, the
       {{!page-tutorial.doclang}documentation markup language} with the variables
@@ -811,6 +1113,7 @@ module Arg : sig
   val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
   (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
 end
+
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers

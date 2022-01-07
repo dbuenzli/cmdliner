@@ -123,7 +123,7 @@ let some ?(none = "") (parse, print) =
 let bool =
   let parse s = try `Ok (bool_of_string s) with
   | Invalid_argument _ ->
-      `Error (err_invalid_val s (alts_str ["true"; "false"]))
+      `Error (err_invalid_val s (alts_str ~quoted:true ["true"; "false"]))
   in
   parse, Format.pp_print_bool
 
@@ -167,7 +167,7 @@ let enum sl =
       `Error (err_ambiguous "enum value" s ambs)
   | `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
-        `Error (err_invalid_val s ("expected " ^ (alts_str alts)))
+        `Error (err_invalid_val s ("expected " ^ (alts_str ~quoted:true alts)))
   in
   let print ppf v =
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
@@ -292,7 +292,8 @@ let t4 ?(sep = ',') (pa0, pr0) (pa1, pr1) (pa2, pr2) (pa3, pr3) =
 let env_bool_parse s = match String.lowercase_ascii s with
 | "" | "false" | "no" | "n" | "0" -> `Ok false
 | "true" | "yes" | "y" | "1" -> `Ok true
-| s -> `Error (err_invalid_val s (alts_str ["true"; "yes"; "false"; "no" ]))
+| s -> `Error (err_invalid_val s
+                 (alts_str ~quoted:true ["true"; "yes"; "false"; "no" ]))
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers

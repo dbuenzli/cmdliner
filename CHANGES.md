@@ -20,6 +20,29 @@
   were not properly escaped. Also they are now rendered in
   bold. Thanks to David Allsopp for the patch (#111).
   
+### New `Cmd` module and deprecation of the `Term` evaluation interface
+
+This version of cmdliner deprecates the `Term.eval*` evaluation
+functions and `Term.info` information structure in favor of the new
+`Cmdliner.Cmd` module. The latter generalizes the existing
+command/subcommand structure to allow arbitrarily nested commands each
+with its own command line syntax (represented by a `Term.t` value).
+
+The mapping between the old interface and the new one should be rather
+straightforward, in particular `Term.info` and `Cmd.info` have exactly
+the same semantics and default values except for the `?exits` argument:
+in `Cmd.info`, `?exits` defaults to `Cmd.Exit.defaults` rather than the 
+empty list.
+
+In this transition a few things are added: 
+
+* `Cmd.Exit.some_error`, this is an error code client can use when
+  they don't want to bother about having precise exit codes.  It is
+  high so that low, application specific, codes can later be used
+  without breaking the compatibility. In particular the convenience
+  evaluation functions `Cmd.eval_result*` use this code when they
+  evaluate to an error.
+      
 ### UTF-8 manpage support 
 
 It is now possible to write UTF-8 encoded text in your doc strings and
