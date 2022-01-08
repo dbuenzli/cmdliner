@@ -30,7 +30,13 @@ end
 (* Commands *)
 
 type info = Cmdliner_info.term
-let info = Cmdliner_info.term ~args:Cmdliner_info.Args.empty
+let info
+    ?man_xrefs ?man ?envs ?(exits = Exit.defaults) ?sdocs ?docs ?doc ?version
+    name
+  =
+  Cmdliner_info.term ~args:Cmdliner_info.Args.empty
+    ?man_xrefs ?man ?envs ~exits ?sdocs ?docs ?doc ?version name
+
 let info_name i = Cmdliner_info.term_name i
 
 type 'a t =

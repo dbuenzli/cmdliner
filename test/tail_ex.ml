@@ -67,7 +67,6 @@ let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 
 let cmd =
   let doc = "Display the last part of a file" in
-  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
@@ -78,8 +77,9 @@ let cmd =
     `S Manpage.s_see_also;
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
-  Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"%%VERSION%%" ~doc ~exits ~man
+  let info = Cmd.info "tail" ~version:"%%VERSION%%" ~doc ~man in
+  Cmd.v info Term.(const tail $ lines $ follow $ verb $ pid $ files)
 
-let main () = Term.(exit @@ eval cmd)
+
+let main () = exit (Cmd.eval cmd)
 let () = main ()

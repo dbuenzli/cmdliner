@@ -22,14 +22,14 @@ let msg =
 
 let chorus_t = Term.(const chorus $ count $ msg)
 
-let info =
+let cmd =
   let doc = "Print a customizable message repeatedly" in
   let man = [
     `S Manpage.s_bugs;
     `P "Email bug reports to <bugs@example.org>." ]
   in
-  let exits = Term.default_exits in
-  Term.info "chorus" ~version:"%%VERSION%%" ~doc ~exits ~man
+  let info = Cmd.info "chorus" ~version:"%%VERSION%%" ~doc ~man in
+  Cmd.v info chorus_t
 
-let main () = Term.exit @@ Term.eval (chorus_t, info)
+let main () = exit (Cmd.eval cmd)
 let () = main ()

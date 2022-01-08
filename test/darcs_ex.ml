@@ -89,7 +89,7 @@ let initialize_cmd =
     `Blocks help_secs; ]
   in
   let info = Cmd.info "initialize" ~doc ~sdocs ~man in
-  Cmd.v info @@ Term.(const initialize $ copts_t $ repodir)
+  Cmd.v info Term.(const initialize $ copts_t $ repodir)
 
 let record_cmd =
   let pname =
@@ -119,8 +119,8 @@ let record_cmd =
      `Blocks help_secs; ]
   in
   let info = Cmd.info "record" ~doc ~sdocs ~man in
-  Cmd.v info @@
-  Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files)
+  Cmd.v info
+    Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files)
 
 let help_cmd =
   let topic =
@@ -134,8 +134,9 @@ let help_cmd =
      `Blocks help_secs; ]
   in
   let info = Cmd.info "help" ~doc ~man in
-  Cmd.v info @@
-  Term.(ret (const help $ copts_t $ Arg.man_format $ Term.choice_names $ topic))
+  Cmd.v info
+    Term.(ret (const help $ copts_t $ Arg.man_format $ Term.choice_names $
+               topic))
 
 let main_cmd =
   let doc = "a revision control system" in

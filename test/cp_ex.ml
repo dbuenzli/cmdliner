@@ -38,7 +38,6 @@ let dest =
 
 let cmd =
   let doc = "Copy files" in
-  let exits = Term.default_exits in
   let man_xrefs =
     [ `Tool "mv"; `Tool "scp"; `Page ("umask", 2); `Page ("symlink", 7) ]
   in
@@ -46,8 +45,9 @@ let cmd =
     [ `S Manpage.s_bugs;
       `P "Email them to <bugs@example.org>."; ]
   in
-  Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
-  Term.info "cp" ~version:"%%VERSION%%" ~doc ~exits ~man ~man_xrefs
+  let info = Cmd.info "cp" ~version:"%%VERSION%%" ~doc ~man ~man_xrefs in
+  Cmd.v info Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest))
 
-let main () = Term.(exit @@ eval cmd)
+
+let main () = exit (Cmd.eval cmd)
 let () = main ()

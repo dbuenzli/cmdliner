@@ -15,7 +15,7 @@
 (** Man page specification.
 
     Man page generation is automatically handled by [Cmdliner],
-    consult the {{!page-tutorial.manual}details}.
+    consult the {{!page-tool_man.manual}details}.
 
     The {!Manpage.block} type is used to define a man page's
     content. It's a good idea to follow the
@@ -46,11 +46,11 @@ module Manpage : sig
 
       Except in [`Pre], whitespace and newlines are not significant
       and are all collapsed to a single space. All block strings
-      support the {{!page-tutorial.doclang}documentation markup language}.*)
+      support the {{!page-tool_man.doclang}documentation markup language}.*)
 
   val escape : string -> string
   (** [escape s] escapes [s] so that it doesn't get interpreted by the
-      {{!page-tutorial.doclang}documentation markup language}. *)
+      {{!page-tool_man.doclang}documentation markup language}. *)
 
   type title = string * int * string * string * string
   (** The type for man page titles. Describes the man page
@@ -251,7 +251,7 @@ module Term : sig
       [docs] is the title of the man page section in which the statuses
       will be listed, it defaults to {!Manpage.s_exit_status}.
 
-      In [doc] the {{!page-tutorial.doclang}documentation markup language}
+      In [doc] the {{!page-tool_man.doclang}documentation markup language}
       can be used with following variables:
       {ul
       {- [$(status)], the value of [min].}
@@ -259,7 +259,8 @@ module Term : sig
       {- The variables mentioned in {!val-info}}} *)
 
   val default_exits : exit_info list
-  [@@ocaml.deprecated "Use Cmd.Exit.defaults instead."]
+  [@@ocaml.deprecated
+    "Use Cmd.Exit.defaults or Cmd.info's defaults ~exits value instead."]
   (** [default_exits] is information for exit status {!exit_status_success}
       added to {!default_error_exits}. *)
 
@@ -280,7 +281,7 @@ module Term : sig
       the man page section in which the environment variable will be
       listed, it defaults to {!Cmdliner.Manpage.s_environment}.
 
-      In [doc] the {{!page-tutorial.doclang}documentation markup language}
+      In [doc] the {{!page-tool_man.doclang}documentation markup language}
       can be used with following variables:
       {ul
       {- [$(env)], the value of [var].}
@@ -318,7 +319,7 @@ module Term : sig
       {- [man] is the text of the man page for the term.}
       {- [man_xrefs] are cross-references to other manual pages. These
          are used to generate a {!Manpage.s_see_also} section.}}
-      [doc], [man], [envs] support the {{!page-tutorial.doclang}documentation
+      [doc], [man], [envs] support the {{!page-tool_man.doclang}documentation
       markup language} in which the following variables are recognized:
       {ul
       {- [$(tname)] the term's name.}
@@ -525,7 +526,7 @@ module Cmd : sig
       [docs] is the title of the man page section in which the statuses
       will be listed, it defaults to {!Manpage.s_exit_status}.
 
-      In [doc] the {{!page-tutorial.doclang}documentation markup language}
+      In [doc] the {{!page-tool_man.doclang}documentation markup language}
       can be used with following variables:
       {ul
       {- [$(status)], the value of [min].}
@@ -559,7 +560,7 @@ module Cmd : sig
         the man page section in which the environment variable will be
         listed, it defaults to {!Cmdliner.Manpage.s_environment}.
 
-        In [doc] the {{!page-tutorial.doclang}documentation markup language}
+        In [doc] the {{!page-tool_man.doclang}documentation markup language}
         can be used with following variables:
         {ul
         {- [$(env)], the value of [var].}
@@ -579,7 +580,7 @@ module Cmd : sig
       {ul
       {- [name] is the name of the command.}
       {- [version] is the version string of the command line tool, this
-         is only relevant for the toplevel command and ignored otherwise.}
+         is only relevant for the main command and ignored otherwise.}
       {- [doc] is a one line description of the command used
          for the [NAME] section of the command's man page and in command
          group listings.}
@@ -597,11 +598,11 @@ module Cmd : sig
       {- [man_xrefs] are cross-references to other manual pages. These
          are used to generate a {!Manpage.s_see_also} section.}}
 
-      [doc], [man], [envs] support the {{!page-tutorial.doclang}documentation
+      [doc], [man], [envs] support the {{!page-tool_man.doclang}documentation
       markup language} in which the following variables are recognized:
       {ul
-      {- [$(tname)] the command's name.}
-      {- [$(mname)] the toplevel's command name.}} *)
+      {- [$(tname)] the (term's) command's name.}
+      {- [$(mname)] the main command name.}} *)
 
   val info_name : info -> string
   (** [info_name i] is the name of [i]. *)
@@ -618,11 +619,10 @@ module Cmd : sig
 
   val group : ?default:'a Term.t -> info -> 'a t list -> 'a t
   (** [group i ?default cmds] is a command with information [i] that
-      groups sub commands [cmds].
-
-      [default] is the command line syntax to parse if no sub command
-      is specified on the command line. If [default] is [None]
-      (default), the tool errors when no sub command is specified. *)
+      groups sub commands [cmds]. [default] is the command line syntax
+      to parse if no sub command is specified on the command line. If
+      [default] is [None] (default), the tool errors when no sub
+      command is specified. *)
 
   val get_info : 'a t -> info
   (** [get_info cmd] is the info of [cmd]. *)
@@ -639,9 +639,7 @@ module Cmd : sig
          a term error occurs.}}
 
       These exit codes are described in {!Exit.defaults} and are added
-      by default to command {!info} values.
-
-      The menagerie of optional arguments is described in  *)
+      by default to command {!type-info} values. *)
 
   val eval :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
@@ -679,7 +677,7 @@ module Cmd : sig
          case [msg] is printed on [err].}}
       See {!eval_value} for other arguments. *)
 
-  (** {2:eval Low level evaluation}
+  (** {2:eval_low Low level evaluation}
 
       This interface gives more information on command evaluation results
       and lets you choose how to map evaluation results to exit codes. *)
@@ -737,8 +735,8 @@ module Cmd : sig
       indicates what the evaluation would result in on [argv] given
       the partial knowledge in [t] (for example it would return
       [`Help] if there's a help option in [argv]). However in
-      contrasts to {!eval} and {!eval_choice} no side effects like
-      error reporting or help output occurs.
+      contrasts to {!val-eval_value} no side effects like error
+      reporting or help output occurs.
 
       {b Note.} Positional arguments can't be peeked without the full
       specification of the command line: we can't tell apart a
@@ -841,7 +839,7 @@ module Arg : sig
   val env_var : ?docs:string -> ?doc:string -> Cmd.Env.var -> env
   (** [env_var docs doc var] is an environment variables [var]. [doc]
       is the man page information of the environment variable, the
-      {{!page-tutorial.doclang}documentation markup language} with the variables
+      {{!page-tool_man.doclang}documentation markup language} with the variables
       mentioned in {!val-info} be used; it defaults to ["See option
       $(opt)."].  [docs] is the title of the man page section in which
       the environment variable will be listed, it defaults to
@@ -869,7 +867,7 @@ module Arg : sig
          command line. See {{!page-cli.envlookup}environment variables} for
          details.}
       {- [doc] is the man page information of the argument.
-         The {{!page-tutorial.doclang}documentation language} can be used and
+         The {{!page-tool_man.doclang}documentation language} can be used and
          the following variables are recognized:
          {ul
          {- ["$(docv)"] the value of [docv] (see below).}

@@ -65,7 +65,6 @@ let recursive =
 
 let cmd =
   let doc = "Remove files or directories" in
-  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) removes each specified $(i,FILE). By default it does not
@@ -80,10 +79,10 @@ let cmd =
     `S Manpage.s_bugs; `P "Report bugs to <bugs@example.org>.";
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
-  Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits ~man
+  let info = Cmd.info "rm" ~version:"%%VERSION%%" ~doc ~man in
+  Cmd.v info Term.(const rm $ prompt $ recursive $ files)
 
-let main () = Term.(exit @@ eval cmd)
+let main () = exit (Cmd.eval cmd)
 let () = main ()
 ]}
 
@@ -143,7 +142,6 @@ let dest =
 
 let cmd =
   let doc = "Copy files" in
-  let exits = Term.default_exits in
   let man_xrefs =
     [ `Tool "mv"; `Tool "scp"; `Page ("umask", 2); `Page ("symlink", 7) ]
   in
@@ -151,10 +149,11 @@ let cmd =
     [ `S Manpage.s_bugs;
       `P "Email them to <bugs@example.org>."; ]
   in
-  Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest)),
-  Term.info "cp" ~version:"%%VERSION%%" ~doc ~exits ~man ~man_xrefs
+  let info = Cmd.info "cp" ~version:"%%VERSION%%" ~doc ~man ~man_xrefs in
+  Cmd.v info Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest))
 
-let main () = Term.(exit @@ eval cmd)
+
+let main () = exit (Cmd.eval cmd)
 let () = main ()
 ]}
 
@@ -171,7 +170,7 @@ The [--lines] option whose value specifies the number of last lines to
 print has a special syntax where a [+] prefix indicates to start
 printing from that line number. In the program this is represented by
 the [loc] type. We define a custom [loc_arg]
-{{!type-Cmdliner.Arg.conv}argument converter} for this option.
+{{!Cmdliner.Arg.type-conv}argument converter} for this option.
 
 The [--follow] option has an optional enumerated value. The argument
 converter [follow], created with {!Cmdliner.Arg.enum} parses the
@@ -249,7 +248,6 @@ let files = Arg.(value & (pos_all non_dir_file []) & info [] ~docv:"FILE")
 
 let cmd =
   let doc = "Display the last part of a file" in
-  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
@@ -260,10 +258,11 @@ let cmd =
     `S Manpage.s_see_also;
     `P "$(b,cat)(1), $(b,head)(1)" ]
   in
-  Term.(const tail $ lines $ follow $ verb $ pid $ files),
-  Term.info "tail" ~version:"%%VERSION%%" ~doc ~exits ~man
+  let info = Cmd.info "tail" ~version:"%%VERSION%%" ~doc ~man in
+  Cmd.v info Term.(const tail $ lines $ follow $ verb $ pid $ files)
 
-let main () = Term.(exit @@ eval cmd)
+
+let main () = exit (Cmd.eval cmd)
 let () = main ()
 ]}
 
@@ -368,6 +367,8 @@ let copts_t =
 
 (* Commands *)
 
+let sdocs = Manpage.s_common_options
+
 let initialize_cmd =
   let repodir =
     let doc = "Run the program in repository directory $(docv)." in
@@ -375,15 +376,14 @@ let initialize_cmd =
            ~docv:"DIR" ~doc)
   in
   let doc = "make the current directory a repository" in
-  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
        existing files and subdirectories become ...";
     `Blocks help_secs; ]
   in
-  Term.(const initialize $ copts_t $ repodir),
-  Term.info "initialize" ~doc ~sdocs:Manpage.s_common_options ~exits ~man
+  let info = Cmd.info "initialize" ~doc ~sdocs ~man in
+  Cmd.v info Term.(const initialize $ copts_t $ repodir)
 
 let record_cmd =
   let pname =
@@ -406,15 +406,15 @@ let record_cmd =
   in
   let files = Arg.(value & (pos_all file) [] & info [] ~docv:"FILE or DIR") in
   let doc = "create a patch from unrecorded changes" in
-  let exits = Term.default_exits in
   let man =
     [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
          a set of files ...";
      `Blocks help_secs; ]
   in
-  Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files),
-  Term.info "record" ~doc ~sdocs:Manpage.s_common_options ~exits ~man
+  let info = Cmd.info "record" ~doc ~sdocs ~man in
+  Cmd.v info
+    Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files)
 
 let help_cmd =
   let topic =
@@ -427,19 +427,17 @@ let help_cmd =
      `P "Prints help about darcs commands and other subjects...";
      `Blocks help_secs; ]
   in
-  Term.(ret
-          (const help $ copts_t $ Arg.man_format $ Term.choice_names $topic)),
-  Term.info "help" ~doc ~exits:Term.default_exits ~man
+  let info = Cmd.info "help" ~doc ~man in
+  Cmd.v info
+    Term.(ret (const help $ copts_t $ Arg.man_format $ Term.choice_names $
+               topic))
 
-let default_cmd =
+let main_cmd =
   let doc = "a revision control system" in
-  let sdocs = Manpage.s_common_options in
-  let exits = Term.default_exits in
   let man = help_secs in
-  Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)),
-  Term.info "darcs" ~version:"%%VERSION%%" ~doc ~sdocs ~exits ~man
+  let info = Cmd.info "darcs" ~version:"%%VERSION%%" ~doc ~sdocs ~man in
+  let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)) in
+  Cmd.group info ~default [initialize_cmd; record_cmd; help_cmd]
 
-let cmds = [initialize_cmd; record_cmd; help_cmd]
-
-let () = Term.(exit @@ eval_choice default_cmd cmds)
+let () = exit (Cmd.eval main_cmd)
 ]}

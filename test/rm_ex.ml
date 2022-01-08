@@ -39,7 +39,6 @@ let recursive =
 
 let cmd =
   let doc = "Remove files or directories" in
-  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_description;
     `P "$(tname) removes each specified $(i,FILE). By default it does not
@@ -54,8 +53,8 @@ let cmd =
     `S Manpage.s_bugs; `P "Report bugs to <bugs@example.org>.";
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
   in
-  Term.(const rm $ prompt $ recursive $ files),
-  Term.info "rm" ~version:"%%VERSION%%" ~doc ~exits ~man
+  let info = Cmd.info "rm" ~version:"%%VERSION%%" ~doc ~man in
+  Cmd.v info Term.(const rm $ prompt $ recursive $ files)
 
-let main () = Term.(exit @@ eval cmd)
+let main () = exit (Cmd.eval cmd)
 let () = main ()

@@ -1,21 +1,30 @@
 
-- Add `Arg.conv'` like `Arg.conv` but with a parser signature
-  that returns untagged string errors.
+- Require OCaml 4.08.
+
+- Add `Arg.conv'` like `Arg.conv` but with a parser signature that returns 
+  untagged string errors.
+  
 - Add deprecation alerts on what is already deprecated.
+
 - Stop using backticks for left quotes. Use apostrophes everywhere. 
-  Thanks to Ryan Moore for reporting a typo that prompted the change 
-  (#128).
+  Thanks to Ryan Moore for reporting a typo that prompted the change (#128).
+
 - Rework documentation structure. Move out tutorial, examples and
   reference doc from the `.mli` to multiple `.mld` pages.
+
 - `Arg.doc_alts` and `Arg.doc_alts_enum`, change the default rendering
-  to match the manpage convention which is to render these tokens in bold.
-  If you want to recover the previous rendering or were using these functions
-  outside man page rendering use an explicit `~quoted:true` (the optional
-  argument is available on earlier versions).
+  to match the manpage convention which is to render these tokens in
+  bold.  If you want to recover the previous rendering or were using
+  these functions outside man page rendering use an explicit
+  `~quoted:true` (the optional argument is available on earlier
+  versions).
+
 - On unices, use `command -v` rather than `type` to find commands.
+
 - `Term.exit` and `Term.exit_status_of_result` now require a `unit`
   result.  This avoids various errors to go undetected. Thanks to
   Thomas Leonard for the patch (#124).
+
 - Fix absent and default option values rendering in manpages. They
   were not properly escaped. Also they are now rendered in
   bold. Thanks to David Allsopp for the patch (#111).
@@ -23,25 +32,37 @@
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 
 This version of cmdliner deprecates the `Term.eval*` evaluation
-functions and `Term.info` information structure in favor of the new
-`Cmdliner.Cmd` module. The latter generalizes the existing
-command/subcommand structure to allow arbitrarily nested commands each
-with its own command line syntax (represented by a `Term.t` value).
+functions and `Term.info` information values in favor of the new
+`Cmdliner.Cmd` module. 
+
+The `Cmd` module generalizes the existing sub command support to allow
+arbitrarily nested sub commands each with its own man page and command
+line syntax represented by a `Term.t` value.
 
 The mapping between the old interface and the new one should be rather
-straightforward, in particular `Term.info` and `Cmd.info` have exactly
-the same semantics and default values except for the `?exits` argument:
-in `Cmd.info`, `?exits` defaults to `Cmd.Exit.defaults` rather than the 
-empty list.
+straightforward. In particular `Term.info` and `Cmd.info` have exactly
+the same semantics and fields and a command value simply pairs a
+command information with a term.
 
-In this transition a few things are added: 
+However in this transition the following things are changed or added:
 
-* `Cmd.Exit.some_error`, this is an error code client can use when
-  they don't want to bother about having precise exit codes.  It is
-  high so that low, application specific, codes can later be used
-  without breaking the compatibility. In particular the convenience
-  evaluation functions `Cmd.eval_result*` use this code when they
-  evaluate to an error.
+* All default values of `Cmd.info` match those of `Term.info` except
+  for the `?exits` argument which default to `Cmd.Exit.defaults`
+  rather than the empty list.
+
+* The `Cmd.Exit.some_error` code is added to `Cmd.Exit.defaults`
+  (which in turn is the default for command infos see above).  This is
+  an error code clients can use when they don't want to bother about
+  having precise exit codes.  It is high so that low, application
+  specific, codes can later be used without breaking the
+  compatibility. In particular the convenience evaluation functions
+  `Cmd.eval_result*` use this code when they evaluate to an error.
+
+* If you relied on `?term_err` defaulting to `1` in the various
+  `Term.exit*` function, note that the new `Cmd.eval*` function use
+  Exit.cli_error` as a default. You may want to explicitely specify
+  1` instead if you use `Term.ret` with the ``Error` case 
+  or `Term.term_result`.
       
 ### UTF-8 manpage support 
 
