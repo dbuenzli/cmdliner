@@ -76,6 +76,8 @@ let add_stdopts ei =
   let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
   help, vers, Cmdliner_info.eval_with_term ei term
 
+let parse_error_term err ei cl = Error (`Parse err)
+
 type 'a eval_result =
   ('a, [ Cmdliner_term.term_escape
        | `Exn of exn * Printexc.raw_backtrace
@@ -100,21 +102,6 @@ let try_eval_stdopts ~catch ei cl help version =
           | Ok true -> Some (Error (`Std_version))
           | Error _ as err -> Some err
 
-let term_eval ~catch ei f args =
-  let help, version, ei = add_stdopts ei in
-  let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
-  let res = match Cmdliner_cline.create term_args args with
-  | Error (e, cl) ->
-      begin match try_eval_stdopts ~catch ei cl help version with
-      | Some e -> e
-      | None -> Error (`Error (true, e))
-      end
-  | Ok cl ->
-      match try_eval_stdopts ~catch ei cl help version with
-      | Some e -> e
-      | None -> run_parser ~catch ei cl f
-  in
-  ei, res
 
 let do_help help_ppf err_ppf ei fmt cmd =
   let ei = match cmd with
@@ -159,13 +146,23 @@ let cmd_name_trie cmds =
   in
   List.fold_left add Cmdliner_trie.empty cmds
 
+let cmd_name_dom cmds =
+  let cmd_name c = Cmdliner_info.term_name (get_info c) in
+  List.sort String.compare (List.rev_map cmd_name cmds)
+
+let never_term _ _ = assert false
+
 let find_term args cmd =
   let stop args_rest args_rev parents cmd =
     let args = List.rev_append args_rev args_rest in
     match cmd with
-    | Cmd (i, t) -> Ok (args, t, i, parents, [])
-    | Group (i, (Some t, children)) -> Ok (args, t, i, parents, children)
-    | Group (_, (None, _)) -> Error Cmdliner_msg.err_cmd_missing
+    | Cmd (i, t) ->
+        args, t, i, false, parents, [], Ok ()
+    | Group (i, (Some t, children)) ->
+        args, t, i, false, parents, children, Ok ()
+    | Group (i, (None, children)) ->
+        let err = Cmdliner_msg.err_cmd_missing in
+        args, never_term, i, true, parents, children, Error err
   in
   let rec loop args_rev parents cmd = function
   | ("--" :: _ | [] as rest) -> stop rest args_rev parents cmd
@@ -174,19 +171,28 @@ let find_term args cmd =
   | arg :: args ->
       match cmd with
       | Cmd (i, t) ->
-          Ok (List.rev_append args_rev (arg :: args), t, i, parents, [])
+          let args = List.rev_append args_rev (arg :: args) in
+          args, t, i, false, parents, [], Ok ()
       | Group (i, (t, children)) ->
           let index = cmd_name_trie children in
           match Cmdliner_trie.find index arg with
           | `Ok cmd -> loop args_rev (i :: parents) cmd args
           | `Not_found ->
+              let args = List.rev_append args_rev (arg :: args) in
+              let only_grouping = Option.is_none t in
               let all = Cmdliner_trie.ambiguities index "" in
               let hints = Cmdliner_suggest.value arg all in
-              Error (Cmdliner_base.err_unknown ~kind:"command" arg ~hints)
+              let dom = cmd_name_dom children in
+              let kind = "command" in
+              let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
+              args, never_term, i, only_grouping, parents, children, Error err
           | `Ambiguous ->
+              let args = List.rev_append args_rev (arg :: args) in
+              let only_grouping = Option.is_none t in
               let ambs = Cmdliner_trie.ambiguities index arg in
               let ambs = List.sort compare ambs in
-              Error (Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs)
+              let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
+              args, never_term, i, only_grouping, parents, children, Error err
   in
   loop [] [] cmd args
 
@@ -199,17 +205,35 @@ let eval_value
     ?err:(err_ppf = Format.err_formatter)
     ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
   =
-  match find_term (remove_exec argv) cmd with
-  | Error err ->
-      let term = get_info cmd and children = children_infos cmd in
-      let ei = Cmdliner_info.eval ~term ~parents:[] ~children ~env in
-      Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
-      Error `Parse
-  | Ok (args, f, i, parents, children) ->
-      let children = List.map get_info children in
-      let ei = Cmdliner_info.eval ~term:i ~parents ~children ~env in
-      let ei, res = term_eval ~catch ei f args in
-      do_result help_ppf err_ppf ei res
+  let args, f, i, only_grouping, parents, children, res =
+    find_term (remove_exec argv) cmd
+  in
+  let children = List.map get_info children in
+  let ei = Cmdliner_info.eval ~term:i ~only_grouping ~parents ~children ~env in
+  let help, version, ei = add_stdopts ei in
+  let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+  let res = match res with
+  | Error msg -> (* Command lookup error, we still prioritize stdargs *)
+      let cl = match Cmdliner_cline.create term_args args with
+      | Error (_, cl) -> cl | Ok cl -> cl
+      in
+      begin match try_eval_stdopts ~catch ei cl help version with
+      | Some e -> e
+      | None -> Error (`Error (true, msg))
+      end
+  | Ok () ->
+      match Cmdliner_cline.create term_args args with
+      | Error (e, cl) ->
+          begin match try_eval_stdopts ~catch ei cl help version with
+          | Some e -> e
+          | None -> Error (`Error (true, e))
+          end
+      | Ok cl ->
+          match try_eval_stdopts ~catch ei cl help version with
+          | Some e -> e
+          | None -> run_parser ~catch ei cl f
+  in
+  do_result help_ppf err_ppf ei res
 
 let eval_peek_opts
     ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv) t
@@ -218,7 +242,10 @@ let eval_peek_opts
   let args, f = t in
   let version = if version_opt then Some "dummy" else None in
   let term = Cmdliner_info.term ~args ?version "dummy" in
-  let ei = Cmdliner_info.eval ~term ~parents:[] ~children:[] ~env  in
+  let ei =
+    Cmdliner_info.eval ~term ~only_grouping:false ~parents:[] ~children:[]
+      ~env
+  in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
   let cli_args =  remove_exec argv in

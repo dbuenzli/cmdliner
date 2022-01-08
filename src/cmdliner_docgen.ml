@@ -57,15 +57,8 @@ let term_info_subst ei = function
 
 (* Command docs *)
 
-let invocation ?(sep = ' ') ei = match Cmdliner_info.eval_kind ei with
-| `Simple | `Multiple_main -> term_name (Cmdliner_info.eval_main ei)
-| `Multiple_sub ->
-    strf "%s%c%s"
-      Cmdliner_info.(term_name @@ eval_main ei) sep
-      Cmdliner_info.(term_name @@ eval_term ei)
-
-let plain_invocation ei = invocation ei
-let invocation ?sep ei = esc @@ invocation ?sep ei
+let invocation ?(sep = " ") ei =
+  esc @@ String.concat sep (Cmdliner_info.eval_cmd_names ei)
 
 let synopsis_pos_arg a =
   let v = match Cmdliner_info.arg_docv a with "" -> "ARG" | v -> v in
@@ -78,9 +71,8 @@ let synopsis_pos_arg a =
       let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
       String.concat " " (loop n [])
 
-let synopsis ei = match Cmdliner_info.eval_kind ei with
-| `Multiple_main -> strf "$(b,%s) $(i,COMMAND) ..." @@ invocation ei
-| `Simple | `Multiple_sub ->
+let synopsis ei = match Cmdliner_info.eval_children ei with
+| [] ->
     let rev_cli_order (a0, _) (a1, _) =
       Cmdliner_info.rev_arg_pos_cli_order a0 a1
     in
@@ -93,10 +85,15 @@ let synopsis ei = match Cmdliner_info.eval_kind ei with
     let pargs = List.sort rev_cli_order pargs in
     let pargs = String.concat " " (List.rev_map snd pargs) in
     strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
+| cmds ->
+    let cmd = match Cmdliner_info.eval_only_grouping ei with
+    | true -> "$(i,COMMAND)" | false -> "[$(i,COMMAND)]"
+    in
+    strf "$(b,%s) %s ..." (invocation ei) cmd
 
-let cmd_docs ei = match Cmdliner_info.eval_kind ei with
-| `Simple | `Multiple_sub -> []
-| `Multiple_main ->
+let cmd_docs ei = match Cmdliner_info.eval_children ei with
+| [] -> []
+| cmds ->
     let add_cmd acc t =
       let cmd = strf "$(b,%s)" @@ term_name t in
       (Cmdliner_info.term_docs t, `I (cmd, Cmdliner_info.term_doc t)) :: acc
@@ -105,7 +102,7 @@ let cmd_docs ei = match Cmdliner_info.eval_kind ei with
       let c = compare s0 s1 in
       if c <> 0 then c else compare c1 c0 (* N.B. reverse *)
     in
-    let cmds = List.fold_left add_cmd [] (Cmdliner_info.eval_children ei) in
+    let cmds = List.fold_left add_cmd [] cmds in
     let cmds = List.sort by_sec_by_rev_name cmds in
     let cmds = (cmds :> (string * Cmdliner_manpage.block) list) in
     sorted_items_to_blocks ~boilerplate:None cmds
@@ -275,7 +272,7 @@ let xref_docs ~errs ei =
 
 let ensure_s_name ei sm =
   if Cmdliner_manpage.(smap_has_section sm s_name) then sm else
-  let tname = invocation ~sep:'-' ei in
+  let tname = invocation ~sep:"-" ei in
   let tdoc = Cmdliner_info.(term_doc @@ eval_term ei) in
   let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
   let tagline = `P (strf "%s%s" tname tagline) in
@@ -310,7 +307,7 @@ let text ~errs ei =
 let title ei =
   let main = Cmdliner_info.eval_main ei in
   let exec = String.capitalize_ascii (Cmdliner_info.term_name main) in
-  let name = String.uppercase_ascii (invocation ~sep:'-' ei) in
+  let name = String.uppercase_ascii (invocation ~sep:"-" ei) in
   let center_header = esc @@ strf "%s Manual" exec in
   let left_footer =
     let version = match Cmdliner_info.term_version main with

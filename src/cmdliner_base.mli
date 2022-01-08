@@ -16,7 +16,8 @@ val pp_tokens : spaces:bool -> Format.formatter -> string -> unit
 val quote : string -> string
 val alts_str : ?quoted:bool -> string list -> string
 val err_ambiguous : kind:string -> string -> ambs:string list -> string
-val err_unknown : ?hints:string list -> kind:string -> string -> string
+val err_unknown :
+  ?dom:string list -> ?hints:string list -> kind:string -> string -> string
 val err_multi_def :
   kind:string -> string -> ('b -> string) -> 'b -> 'b -> string
 

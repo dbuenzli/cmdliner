@@ -3,8 +3,6 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-val plain_invocation : Cmdliner_info.eval -> string
-
 val pp_man :
   errs:Format.formatter -> Cmdliner_manpage.format -> Format.formatter ->
   Cmdliner_info.eval -> unit

@@ -111,15 +111,16 @@ val term_add_args : term -> args -> term
 type eval
 
 val eval :
-  term:term -> parents:term list -> children:term list ->
+  term:term -> only_grouping:bool -> parents:term list -> children:term list ->
   env:(string -> string option) -> eval
 
 val eval_term : eval -> term
+val eval_only_grouping : eval -> bool
 val eval_main : eval -> term
 val eval_children : eval -> term list
 val eval_parents : eval -> term list
 val eval_env_var : eval -> string -> string option
-val eval_kind : eval -> [> `Multiple_main | `Multiple_sub | `Simple ]
+val eval_cmd_names : eval -> string list
 val eval_with_term : eval -> term -> eval
 val eval_has_choice : eval -> string -> bool
 

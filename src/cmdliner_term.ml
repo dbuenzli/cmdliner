@@ -69,7 +69,6 @@ let with_used_args (al, v) : (_ * string list) t =
         Ok (x, used)
     | Error _ as e -> e
 
-
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers
 

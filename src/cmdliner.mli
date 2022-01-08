@@ -473,7 +473,7 @@ end
 
 (** Commands.
 
-    Command line syntaxes are implicitely defined by {!Terms}. A command
+    Command line syntaxes are implicitely defined by {!Term}s. A command
     value binds a syntax and its documentation to a command name.
 
     A command can group a list of sub commands (and recursively). In this

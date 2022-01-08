@@ -197,25 +197,23 @@ let term_add_args t args =
 
 type eval =                     (* information about the evaluation context. *)
   { term : term;                                    (* term being evaluated. *)
+    only_grouping : bool;             (* term groups, has no cli on its own. *)
     parents : term list;   (* parents of term, last element is program info. *)
     children : term list;                   (* children if term is grouping. *)
     env : string -> string option }          (* environment variable lookup. *)
 
-let eval ~term ~parents ~children ~env = { term; parents; children; env }
+let eval ~term ~only_grouping ~parents ~children ~env =
+  { term; only_grouping; parents; children; env }
 let eval_term e = e.term
+let eval_only_grouping e = e.only_grouping
 let eval_parents e = e.parents
 let eval_children e = e.children
 let eval_env_var e v = e.env v
-
-let eval_main e = (* FIXME remove *)
+let eval_main e =
   if e.parents = [] then e.term else (List.hd @@ List.rev e.parents)
 
-let eval_kind ei =
-  if ei.children = [] && ei.parents = [] then `Simple else
-  if ei.parents = [] then `Multiple_main else `Multiple_sub
-
+let eval_cmd_names e = List.rev_map term_name (e.term :: e.parents)
 let eval_with_term ei term = { ei with term }
-
 let eval_has_choice e cmd =
   let is_cmd t = t.term_info.term_name = cmd in
   List.exists is_cmd e.children

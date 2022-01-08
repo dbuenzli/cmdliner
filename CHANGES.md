@@ -63,7 +63,20 @@ However in this transition the following things are changed or added:
   Exit.cli_error` as a default. You may want to explicitely specify
   1` instead if you use `Term.ret` with the ``Error` case 
   or `Term.term_result`.
-      
+  
+Finally be aware that if you replace, in an existing tool, an encoding
+of sub commands as positional arguments you will effectively break the
+command line compatibility of your tool since options can no longer be
+specified before the sub commands, i.e. your tool synopsis moves from:
+
+```
+tool cmd [OPTION]... SUBCMD [ARG]...
+```
+to 
+```
+tool cmd SUBCMD [OPTION]... [ARG]...
+```
+
 ### UTF-8 manpage support 
 
 It is now possible to write UTF-8 encoded text in your doc strings and

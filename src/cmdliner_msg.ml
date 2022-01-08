@@ -65,7 +65,7 @@ let err_arg_missing a =
   if Cmdliner_info.arg_is_pos a then err_pos_miss a else
   strf "required option %s is missing" (Cmdliner_info.arg_opt_name_sample a)
 
-let err_cmd_missing = "required COMMAND is missing"
+let err_cmd_missing = "required COMMAND name is missing"
 
 (* Other messages *)
 
@@ -75,13 +75,12 @@ let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
 | None -> assert false
 | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 
-let pp_try_help ppf ei = match Cmdliner_info.eval_kind ei with
-| `Simple | `Multiple_main ->
-    pp ppf "@[<2>Try '%s --help' for more information.@]" (exec_name ei)
-| `Multiple_sub ->
-    let exec_cmd = Cmdliner_docgen.plain_invocation ei in
-    pp ppf "@[<2>Try '%s --help' or '%s --help' for more information.@]"
-      exec_cmd (exec_name ei)
+let pp_try_help ppf ei = match Cmdliner_info.eval_cmd_names ei with
+| [] -> assert false
+| [n] -> pp ppf "@[<2>Try '%s --help' for more information.@]" n
+| n :: _ as cmds ->
+    let cmds = String.concat " " cmds in
+    pp ppf "@[<2>Try '%s --help' or '%s --help' for more information.@]" cmds n
 
 let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_lines err
 

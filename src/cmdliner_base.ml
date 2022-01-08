@@ -84,11 +84,11 @@ let err_ambiguous ~kind s ~ambs =
   strf "%s %s ambiguous and could be %s" kind (quote s)
     (alts_str ~quoted:true ambs)
 
-let err_unknown ?(hints = []) ~kind v =
-  let did_you_mean s = strf ", did you mean %s ?" s in
-  let hints = match hints with
-  | [] -> "."
-  | hs -> did_you_mean (alts_str ~quoted:true hs)
+let err_unknown ?(dom = []) ?(hints = []) ~kind v =
+  let hints = match hints, dom with
+  | [], [] -> "."
+  | [], dom -> strf ", must be %s." (alts_str ~quoted:true dom)
+  | hints, _ -> strf ", did you mean %s?" (alts_str ~quoted:true hints)
   in
   strf "unknown %s %s%s" kind (quote v) hints
 
@@ -292,8 +292,9 @@ let t4 ?(sep = ',') (pa0, pr0) (pa1, pr1) (pa2, pr2) (pa3, pr3) =
 let env_bool_parse s = match String.lowercase_ascii s with
 | "" | "false" | "no" | "n" | "0" -> `Ok false
 | "true" | "yes" | "y" | "1" -> `Ok true
-| s -> `Error (err_invalid_val s
-                 (alts_str ~quoted:true ["true"; "yes"; "false"; "no" ]))
+| s ->
+    let alts = alts_str ~quoted:true ["true"; "yes"; "false"; "no" ] in
+    `Error (err_invalid_val s alts)
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers
