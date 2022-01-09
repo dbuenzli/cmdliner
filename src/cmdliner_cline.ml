@@ -13,7 +13,7 @@
 
 let err_multi_opt_name_def name a a' =
   Cmdliner_base.err_multi_def
-    ~kind:"option name" name Cmdliner_info.arg_doc a a'
+    ~kind:"option name" name Cmdliner_info.Arg.doc a a'
 
 module Amap = Map.Make (Cmdliner_info.Arg)
 
@@ -41,18 +41,18 @@ let arg_info_indexes args =
   let rec loop optidx posidx cl = function
   | [] -> optidx, posidx, cl
   | a :: l ->
-      match Cmdliner_info.arg_is_pos a with
+      match Cmdliner_info.Arg.is_pos a with
       | true -> loop optidx (a :: posidx) (Amap.add a (P []) cl) l
       | false ->
           let add t name = match Cmdliner_trie.add t name a with
           | `New t -> t
           | `Replaced (a', _) -> invalid_arg (err_multi_opt_name_def name a a')
           in
-          let names = Cmdliner_info.arg_opt_names a in
+          let names = Cmdliner_info.Arg.opt_names a in
           let optidx = List.fold_left add optidx names in
           loop optidx posidx (Amap.add a (O []) cl) l
   in
-  loop Cmdliner_trie.empty [] Amap.empty (Cmdliner_info.Args.elements args)
+  loop Cmdliner_trie.empty [] Amap.empty (Cmdliner_info.Arg.Set.elements args)
 
 (* Optional argument parsing *)
 
@@ -99,11 +99,11 @@ let parse_opt_args ~peek_opts optidx cl args =
       let name, value = parse_opt_arg s in
       match Cmdliner_trie.find optidx name with
       | `Ok a ->
-          let value, args = match value, Cmdliner_info.arg_opt_kind a with
-          | Some v, Cmdliner_info.Flag when is_short_opt name ->
+          let value, args = match value, Cmdliner_info.Arg.opt_kind a with
+          | Some v, Cmdliner_info.Arg.Flag when is_short_opt name ->
               None, ("-" ^ v) :: args
           | Some _, _ -> value, args
-          | None, Cmdliner_info.Flag -> value, args
+          | None, Cmdliner_info.Arg.Flag -> value, args
           | None, _ ->
               match args with
               | [] -> None, args
@@ -142,7 +142,7 @@ let process_pos_args posidx cl pargs =
      in the list index posidx, is given a value according the list
      of positional arguments values [pargs]. *)
   if pargs = [] then
-    let misses = List.filter Cmdliner_info.arg_is_req posidx in
+    let misses = List.filter Cmdliner_info.Arg.is_req posidx in
     if misses = [] then Ok cl else
     Error (Cmdliner_msg.err_pos_misses misses, cl)
   else
@@ -151,18 +151,18 @@ let process_pos_args posidx cl pargs =
   let rec loop misses cl max_spec = function
   | [] -> misses, cl, max_spec
   | a :: al ->
-      let apos = Cmdliner_info.arg_pos a in
-      let rev = Cmdliner_info.pos_rev apos in
-      let start = pos rev (Cmdliner_info.pos_start apos) in
-      let stop = match Cmdliner_info.pos_len apos with
+      let apos = Cmdliner_info.Arg.pos_kind a in
+      let rev = Cmdliner_info.Arg.pos_rev apos in
+      let start = pos rev (Cmdliner_info.Arg.pos_start apos) in
+      let stop = match Cmdliner_info.Arg.pos_len apos with
       | None -> pos rev last
-      | Some n -> pos rev (Cmdliner_info.pos_start apos + n - 1)
+      | Some n -> pos rev (Cmdliner_info.Arg.pos_start apos + n - 1)
       in
       let start, stop = if rev then stop, start else start, stop in
       let args = take_range start stop pargs in
       let max_spec = max stop max_spec in
       let cl = Amap.add a (P args) cl in
-      let misses = match Cmdliner_info.arg_is_req a && args = [] with
+      let misses = match Cmdliner_info.Arg.is_req a && args = [] with
       | true -> a :: misses
       | false -> misses
       in

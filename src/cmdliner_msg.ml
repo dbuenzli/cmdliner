@@ -13,7 +13,7 @@ let pp_lines = Cmdliner_base.pp_lines
 (* Environment variable errors *)
 
 let err_env_parse env ~err =
-  let var = Cmdliner_info.env_var env in
+  let var = Cmdliner_info.Env.info_var env in
   strf "environment variable %s: %s" (quote var) err
 
 (* Positional argument errors *)
@@ -22,7 +22,7 @@ let err_pos_excess excess =
   strf "too many arguments, don't know what to do with %s"
     (String.concat ", " (List.map quote excess))
 
-let err_pos_miss a = match Cmdliner_info.arg_docv a with
+let err_pos_miss a = match Cmdliner_info.Arg.docv a with
 | "" -> "a required argument is missing"
 | v -> strf "required argument %s is missing" v
 
@@ -30,19 +30,19 @@ let err_pos_misses = function
 | [] -> assert false
 | [a] -> err_pos_miss a
 | args ->
-    let add_arg acc a = match Cmdliner_info.arg_docv a with
+    let add_arg acc a = match Cmdliner_info.Arg.docv a with
     | "" -> "ARG" :: acc
     | argv -> argv :: acc
     in
-    let rev_args = List.sort Cmdliner_info.rev_arg_pos_cli_order args in
+    let rev_args = List.sort Cmdliner_info.Arg.rev_pos_cli_order args in
     let args = List.fold_left add_arg [] rev_args in
     let args = String.concat ", " args in
     strf "required arguments %s are missing" args
 
-let err_pos_parse a ~err = match Cmdliner_info.arg_docv a with
+let err_pos_parse a ~err = match Cmdliner_info.Arg.docv a with
 | "" -> err
 | argv ->
-    match Cmdliner_info.(pos_len @@ arg_pos a) with
+    match Cmdliner_info.Arg.(pos_len @@ pos_kind a) with
     | Some 1 -> strf "%s argument: %s" argv err
     | None | Some _ -> strf "%s... arguments: %s" argv err
 
@@ -62,20 +62,21 @@ let err_opt_repeated f f' =
 (* Argument errors *)
 
 let err_arg_missing a =
-  if Cmdliner_info.arg_is_pos a then err_pos_miss a else
-  strf "required option %s is missing" (Cmdliner_info.arg_opt_name_sample a)
+  if Cmdliner_info.Arg.is_pos a then err_pos_miss a else
+  strf "required option %s is missing" (Cmdliner_info.Arg.opt_name_sample a)
 
 let err_cmd_missing = "required COMMAND name is missing"
 
 (* Other messages *)
 
-let exec_name ei = Cmdliner_info.(cmd_name @@ eval_main ei)
+let exec_name ei = Cmdliner_info.Cmd.name @@ Cmdliner_info.Eval.main ei
 
-let pp_version ppf ei = match Cmdliner_info.(cmd_version @@ eval_main ei) with
-| None -> assert false
-| Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
+let pp_version ppf ei =
+  match Cmdliner_info.Cmd.version @@ Cmdliner_info.Eval.main ei with
+  | None -> assert false
+  | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 
-let pp_try_help ppf ei = match Cmdliner_info.eval_cmd_names ei with
+let pp_try_help ppf ei = match Cmdliner_info.Eval.cmd_names ei with
 | [] -> assert false
 | [n] -> pp ppf "@[<2>Try '%s --help' for more information.@]" n
 | n :: _ as cmds ->

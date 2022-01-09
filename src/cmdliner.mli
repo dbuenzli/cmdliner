@@ -605,9 +605,6 @@ module Cmd : sig
       {- [$(tname)] the (term's) command's name.}
       {- [$(mname)] the main command name.}} *)
 
-  val info_name : info -> string
-  (** [info_name i] is the name of [i]. *)
-
   (** {1:cmds Commands} *)
 
   type 'a t
@@ -625,8 +622,8 @@ module Cmd : sig
       [default] is [None] (default), the tool errors when no sub
       command is specified. *)
 
-  val get_info : 'a t -> info
-  (** [get_info cmd] is the info of [cmd]. *)
+  val name : 'a t -> string
+  (** [name c] is the name of [c]. *)
 
   (** {1:eval Evaluation}
 

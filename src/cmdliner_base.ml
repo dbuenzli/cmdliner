@@ -5,6 +5,17 @@
 
 let strf = Printf.sprintf
 
+(* Unique ids *)
+
+let uid =
+  (* Thread-safe UIDs, Oo.id (object end) was used before.
+     Note this won't be thread-safe in multicore, we should use
+     Atomic but this is >= 4.12 and we have 4.08 for now. *)
+  let c = ref 0 in
+  fun () ->
+    let id = !c in
+    incr c; if id > !c then assert false (* too many ids *) else id
+
 (* Edit distance *)
 
 let edit_distance s0 s1 =

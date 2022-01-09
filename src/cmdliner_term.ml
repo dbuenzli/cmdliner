@@ -8,14 +8,14 @@ type term_escape =
   | `Help of Cmdliner_manpage.format * string option ]
 
 type 'a parser =
-  Cmdliner_info.eval -> Cmdliner_cline.t ->
+  Cmdliner_info.Eval.t -> Cmdliner_cline.t ->
   ('a, [ `Parse of string | term_escape ]) result
 
-type 'a t = Cmdliner_info.args * 'a parser
+type 'a t = Cmdliner_info.Arg.Set.t * 'a parser
 
-let const v = Cmdliner_info.Args.empty, (fun _ _ -> Ok v)
+let const v = Cmdliner_info.Arg.Set.empty, (fun _ _ -> Ok v)
 let app (args_f, f) (args_v, v) =
-  Cmdliner_info.Args.union args_f args_v,
+  Cmdliner_info.Arg.Set.union args_f args_v,
   fun ei cl -> match (f ei cl) with
   | Error _ as e -> e
   | Ok f ->
@@ -49,13 +49,13 @@ let cli_parse_result (al, v) =
   | Error _ as e -> e
 
 let main_name =
-  Cmdliner_info.Args.empty,
-  (fun ei _ -> Ok (Cmdliner_info.(cmd_name @@ eval_main ei)))
+  Cmdliner_info.Arg.Set.empty,
+  (fun ei _ -> Ok (Cmdliner_info.Cmd.name @@ Cmdliner_info.Eval.main ei))
 
 let choice_names =
-  let choice_name t = Cmdliner_info.cmd_name t in
-  Cmdliner_info.Args.empty,
-  (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_children ei)))
+  let choice_name t = Cmdliner_info.Cmd.name t in
+  Cmdliner_info.Arg.Set.empty,
+  (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.Eval.children ei)))
 
 let with_used_args (al, v) : (_ * string list) t =
   al, fun ei cl ->
@@ -65,7 +65,7 @@ let with_used_args (al, v) : (_ * string list) t =
           let args = Cmdliner_cline.actual_args cl arg_info in
           List.rev_append args acc
         in
-        let used = List.rev (Cmdliner_info.Args.fold actual_args al []) in
+        let used = List.rev (Cmdliner_info.Arg.Set.fold actual_args al []) in
         Ok (x, used)
     | Error _ as e -> e
 

@@ -5,6 +5,9 @@
 
 (** A few helpful base definitions. *)
 
+val uid : unit -> int
+(** [uid ()] is new unique for the program run. *)
+
 val suggest : string -> string list -> string list
 (** [suggest near candidates]  suggest values from [candidates]
     not too far from [near]. *)
