@@ -69,9 +69,9 @@ let err_cmd_missing = "required COMMAND name is missing"
 
 (* Other messages *)
 
-let exec_name ei = Cmdliner_info.(term_name @@ eval_main ei)
+let exec_name ei = Cmdliner_info.(cmd_name @@ eval_main ei)
 
-let pp_version ppf ei = match Cmdliner_info.(term_version @@ eval_main ei) with
+let pp_version ppf ei = match Cmdliner_info.(cmd_version @@ eval_main ei) with
 | None -> assert false
 | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 

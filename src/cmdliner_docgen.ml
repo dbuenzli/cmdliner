@@ -7,7 +7,7 @@ let rev_compare n0 n1 = compare n1 n0
 let strf = Printf.sprintf
 
 let esc = Cmdliner_manpage.escape
-let term_name t = esc @@ Cmdliner_info.term_name t
+let cmd_name t = esc @@ Cmdliner_info.cmd_name t
 
 let sorted_items_to_blocks ~boilerplate:b items =
   (* Items are sorted by section and then rev. sorted by appearance.
@@ -50,9 +50,9 @@ let arg_info_subst ~subst a = function
     end
 | id -> subst id
 
-let term_info_subst ei = function
-| "tname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_term ei))
-| "mname" -> Some (strf "$(b,%s)" @@ term_name (Cmdliner_info.eval_main ei))
+let cmd_info_subst ei = function
+| "tname" -> Some (strf "$(b,%s)" @@ cmd_name (Cmdliner_info.eval_cmd ei))
+| "mname" -> Some (strf "$(b,%s)" @@ cmd_name (Cmdliner_info.eval_main ei))
 | _ -> None
 
 (* Command docs *)
@@ -80,7 +80,7 @@ let synopsis ei = match Cmdliner_info.eval_children ei with
     | true -> acc
     | false -> (a, synopsis_pos_arg a) :: acc
     in
-    let args = Cmdliner_info.(term_args @@ eval_term ei) in
+    let args = Cmdliner_info.(cmd_args @@ eval_cmd ei) in
     let pargs = Cmdliner_info.Args.fold add_pos args [] in
     let pargs = List.sort rev_cli_order pargs in
     let pargs = String.concat " " (List.rev_map snd pargs) in
@@ -95,8 +95,8 @@ let cmd_docs ei = match Cmdliner_info.eval_children ei with
 | [] -> []
 | cmds ->
     let add_cmd acc t =
-      let cmd = strf "$(b,%s)" @@ term_name t in
-      (Cmdliner_info.term_docs t, `I (cmd, Cmdliner_info.term_doc t)) :: acc
+      let cmd = strf "$(b,%s)" @@ cmd_name t in
+      (Cmdliner_info.cmd_docs t, `I (cmd, Cmdliner_info.cmd_doc t)) :: acc
     in
     let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
       let c = compare s0 s1 in
@@ -183,7 +183,7 @@ let arg_docs ~errs ~subst ~buf ei =
     if not Cmdliner_info.(arg_is_pos a && (arg_docv a = "" || arg_doc a = ""))
     then (a :: acc) else acc
   in
-  let args = Cmdliner_info.(term_args @@ eval_term ei) in
+  let args = Cmdliner_info.(cmd_args @@ eval_cmd ei) in
   let args = Cmdliner_info.Args.fold keep_arg args [] in
   let args = List.sort by_sec_by_arg args in
   let args = List.rev_map (arg_to_man_item ~errs ~subst ~buf) args in
@@ -205,7 +205,7 @@ let exit_docs ~errs ~subst ~buf ~has_sexit ei =
     let item = `I (label, Cmdliner_manpage.subst_vars ~errs ~subst buf doc) in
     Cmdliner_info.(exit_docs e, item) :: acc
   in
-  let exits = Cmdliner_info.(term_exits @@ eval_term ei) in
+  let exits = Cmdliner_info.(cmd_exits @@ eval_cmd ei) in
   let exits = List.sort Cmdliner_info.exit_order exits in
   let exits = List.fold_left add_exit_item [] exits in
   let exits = List.stable_sort by_sec (* sort by section *) exits in
@@ -239,8 +239,8 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
   in
   (* Arg envs before term envs is important here: if the same is mentioned
      both in an arg and in a term the substs of the arg are allowed. *)
-  let args = Cmdliner_info.(term_args @@ eval_term ei) in
-  let tenvs = Cmdliner_info.(term_envs @@ eval_term ei) in
+  let args = Cmdliner_info.(cmd_args @@ eval_cmd ei) in
+  let tenvs = Cmdliner_info.(cmd_envs @@ eval_cmd ei) in
   let init = Cmdliner_info.Envs.empty, [] in
   let acc = Cmdliner_info.Args.fold add_arg_env args init in
   let _, envs = List.fold_left add_env acc tenvs in
@@ -252,7 +252,7 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
 (* xref doc *)
 
 let xref_docs ~errs ei =
-  let main = Cmdliner_info.(term_name @@ eval_main ei) in
+  let main = Cmdliner_info.(cmd_name @@ eval_main ei) in
   let to_xref = function
   | `Main -> main, 1
   | `Tool tool -> tool, 1
@@ -262,7 +262,7 @@ let xref_docs ~errs ei =
       (Format.fprintf errs "xref %s: no such term name@." c; "doc-err", 0)
   in
   let xref_str (name, sec) = strf "%s(%d)" (esc name) sec in
-  let xrefs = Cmdliner_info.(term_man_xrefs @@ eval_term ei) in
+  let xrefs = Cmdliner_info.(cmd_man_xrefs @@ eval_cmd ei) in
   let xrefs = List.fold_left (fun acc x -> to_xref x :: acc) [] xrefs in
   let xrefs = List.(rev_map xref_str (sort rev_compare xrefs)) in
   if xrefs = [] then [] else
@@ -273,7 +273,7 @@ let xref_docs ~errs ei =
 let ensure_s_name ei sm =
   if Cmdliner_manpage.(smap_has_section sm s_name) then sm else
   let tname = invocation ~sep:"-" ei in
-  let tdoc = Cmdliner_info.(term_doc @@ eval_term ei) in
+  let tdoc = Cmdliner_info.(cmd_doc @@ eval_cmd ei) in
   let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
   let tagline = `P (strf "%s%s" tname tagline) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_name tagline)
@@ -283,9 +283,9 @@ let ensure_s_synopsis ei sm =
   let synopsis = `P (synopsis ei) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_synopsis synopsis)
 
-let insert_term_man_docs ~errs ei sm =
+let insert_cmd_man_docs ~errs ei sm =
   let buf = Buffer.create 200 in
-  let subst = term_info_subst ei in
+  let subst = cmd_info_subst ei in
   let ins sm (s, b) = Cmdliner_manpage.smap_append_block sm s b in
   let has_senv = Cmdliner_manpage.(smap_has_section sm s_environment) in
   let has_sexit = Cmdliner_manpage.(smap_has_section sm s_exit_status) in
@@ -297,20 +297,20 @@ let insert_term_man_docs ~errs ei sm =
   sm
 
 let text ~errs ei =
-  let man = Cmdliner_info.(term_man @@ eval_term ei) in
+  let man = Cmdliner_info.(cmd_man @@ eval_cmd ei) in
   let sm = Cmdliner_manpage.smap_of_blocks man in
   let sm = ensure_s_name ei sm in
   let sm = ensure_s_synopsis ei sm in
-  let sm = insert_term_man_docs ei ~errs sm in
+  let sm = insert_cmd_man_docs ei ~errs sm in
   Cmdliner_manpage.smap_to_blocks sm
 
 let title ei =
   let main = Cmdliner_info.eval_main ei in
-  let exec = String.capitalize_ascii (Cmdliner_info.term_name main) in
+  let exec = String.capitalize_ascii (Cmdliner_info.cmd_name main) in
   let name = String.uppercase_ascii (invocation ~sep:"-" ei) in
   let center_header = esc @@ strf "%s Manual" exec in
   let left_footer =
-    let version = match Cmdliner_info.term_version main with
+    let version = match Cmdliner_info.cmd_version main with
     | None -> "" | Some v -> " " ^ v
     in
     esc @@ strf "%s%s" exec version
@@ -321,13 +321,13 @@ let man ~errs ei = title ei, text ~errs ei
 
 let pp_man ~errs fmt ppf ei =
   Cmdliner_manpage.print
-    ~errs ~subst:(term_info_subst ei) fmt ppf (man ~errs ei)
+    ~errs ~subst:(cmd_info_subst ei) fmt ppf (man ~errs ei)
 
 (* Plain synopsis for usage *)
 
 let pp_plain_synopsis ~errs ppf ei =
   let buf = Buffer.create 100 in
-  let subst = term_info_subst ei in
+  let subst = cmd_info_subst ei in
   let syn = Cmdliner_manpage.doc_to_plain ~errs ~subst buf (synopsis ei) in
   Format.fprintf ppf "@[%s@]" syn
 

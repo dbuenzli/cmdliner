@@ -30,7 +30,6 @@ let env_var e = e.env_var
 let env_doc e = e.env_doc
 let env_docs e = e.env_docs
 
-
 module Env = struct
   type t = env
   let compare a0 a1 = (compare : int -> int -> int) a0.env_id a1.env_id
@@ -152,70 +151,70 @@ let exit_order e0 e1 = compare e0.exit_statuses e1.exit_statuses
 
 (* Term info *)
 
-type term_info =
-  { term_name : string;                                 (* name of the term. *)
-    term_version : string option;                (* version (for --version). *)
-    term_doc : string;                      (* one line description of term. *)
-    term_docs : string;     (* title of man section where listed (commands). *)
-    term_sdocs : string; (* standard options, title of section where listed. *)
-    term_exits : exit list;                      (* exit codes for the term. *)
-    term_envs : env list;               (* env vars that influence the term. *)
-    term_man : Cmdliner_manpage.block list;                (* man page text. *)
-    term_man_xrefs : Cmdliner_manpage.xref list; }        (* man cross-refs. *)
+type cmd_info =
+  { cmd_name : string;                                 (* name of the term. *)
+    cmd_version : string option;                (* version (for --version). *)
+    cmd_doc : string;                      (* one line description of term. *)
+    cmd_docs : string;     (* title of man section where listed (commands). *)
+    cmd_sdocs : string; (* standard options, title of section where listed. *)
+    cmd_exits : exit list;                      (* exit codes for the term. *)
+    cmd_envs : env list;               (* env vars that influence the term. *)
+    cmd_man : Cmdliner_manpage.block list;                (* man page text. *)
+    cmd_man_xrefs : Cmdliner_manpage.xref list; }        (* man cross-refs. *)
 
-type term =
-  { term_info : term_info;
-    term_args : args; }
+type cmd =
+  { cmd_info : cmd_info;
+    cmd_args : args; }
 
-let term
-    ?args:(term_args = Args.empty) ?man_xrefs:(term_man_xrefs = [])
-    ?man:(term_man = []) ?envs:(term_envs = []) ?exits:(term_exits = [])
-    ?sdocs:(term_sdocs = Cmdliner_manpage.s_options)
-    ?docs:(term_docs = "COMMANDS") ?doc:(term_doc = "") ?version:term_version
-    term_name =
-  let term_info =
-    { term_name; term_version; term_doc; term_docs; term_sdocs; term_exits;
-      term_envs; term_man; term_man_xrefs }
+let cmd
+    ?args:(cmd_args = Args.empty) ?man_xrefs:(cmd_man_xrefs = [])
+    ?man:(cmd_man = []) ?envs:(cmd_envs = []) ?exits:(cmd_exits = [])
+    ?sdocs:(cmd_sdocs = Cmdliner_manpage.s_options)
+    ?docs:(cmd_docs = "COMMANDS") ?doc:(cmd_doc = "") ?version:cmd_version
+    cmd_name =
+  let cmd_info =
+    { cmd_name; cmd_version; cmd_doc; cmd_docs; cmd_sdocs; cmd_exits;
+      cmd_envs; cmd_man; cmd_man_xrefs }
   in
-  { term_info; term_args }
+  { cmd_info; cmd_args }
 
-let term_name t = t.term_info.term_name
-let term_version t = t.term_info.term_version
-let term_doc t = t.term_info.term_doc
-let term_docs t = t.term_info.term_docs
-let term_stdopts_docs t = t.term_info.term_sdocs
-let term_exits t = t.term_info.term_exits
-let term_envs t = t.term_info.term_envs
-let term_man t = t.term_info.term_man
-let term_man_xrefs t = t.term_info.term_man_xrefs
-let term_args t = t.term_args
+let cmd_name t = t.cmd_info.cmd_name
+let cmd_version t = t.cmd_info.cmd_version
+let cmd_doc t = t.cmd_info.cmd_doc
+let cmd_docs t = t.cmd_info.cmd_docs
+let cmd_stdopts_docs t = t.cmd_info.cmd_sdocs
+let cmd_exits t = t.cmd_info.cmd_exits
+let cmd_envs t = t.cmd_info.cmd_envs
+let cmd_man t = t.cmd_info.cmd_man
+let cmd_man_xrefs t = t.cmd_info.cmd_man_xrefs
+let cmd_args t = t.cmd_args
 
-let term_add_args t args =
-  { t with term_args = Args.union args t.term_args }
+let cmd_add_args t args =
+  { t with cmd_args = Args.union args t.cmd_args }
 
 (* Eval info *)
 
 type eval =                     (* information about the evaluation context. *)
-  { term : term;                                    (* term being evaluated. *)
-    only_grouping : bool;             (* term groups, has no cli on its own. *)
-    parents : term list;   (* parents of term, last element is program info. *)
-    children : term list;                   (* children if term is grouping. *)
+  { cmd : cmd;                                    (* cmd being evaluated. *)
+    only_grouping : bool;             (* cmd groups, has no cli on its own. *)
+    parents : cmd list;   (* parents of cmd, last element is program info. *)
+    children : cmd list;                   (* children if cmd is grouping. *)
     env : string -> string option }          (* environment variable lookup. *)
 
-let eval ~term ~only_grouping ~parents ~children ~env =
-  { term; only_grouping; parents; children; env }
-let eval_term e = e.term
+let eval ~cmd ~only_grouping ~parents ~children ~env =
+  { cmd; only_grouping; parents; children; env }
+let eval_cmd e = e.cmd
 let eval_only_grouping e = e.only_grouping
 let eval_parents e = e.parents
 let eval_children e = e.children
 let eval_env_var e v = e.env v
 let eval_main e =
-  if e.parents = [] then e.term else (List.hd @@ List.rev e.parents)
+  if e.parents = [] then e.cmd else (List.hd @@ List.rev e.parents)
 
-let eval_cmd_names e = List.rev_map term_name (e.term :: e.parents)
-let eval_with_term ei term = { ei with term }
+let eval_cmd_names e = List.rev_map cmd_name (e.cmd :: e.parents)
+let eval_with_cmd ei cmd = { ei with cmd }
 let eval_has_choice e cmd =
-  let is_cmd t = t.term_info.term_name = cmd in
+  let is_cmd t = t.cmd_info.cmd_name = cmd in
   List.exists is_cmd e.children
 
 (*---------------------------------------------------------------------------

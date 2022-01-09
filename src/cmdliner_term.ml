@@ -50,10 +50,10 @@ let cli_parse_result (al, v) =
 
 let main_name =
   Cmdliner_info.Args.empty,
-  (fun ei _ -> Ok (Cmdliner_info.(term_name @@ eval_main ei)))
+  (fun ei _ -> Ok (Cmdliner_info.(cmd_name @@ eval_main ei)))
 
 let choice_names =
-  let choice_name t = Cmdliner_info.term_name t in
+  let choice_name t = Cmdliner_info.cmd_name t in
   Cmdliner_info.Args.empty,
   (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.eval_children ei)))
 

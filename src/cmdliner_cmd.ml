@@ -29,25 +29,25 @@ end
 
 (* Commands *)
 
-type info = Cmdliner_info.term
+type info = Cmdliner_info.cmd
 let info
     ?man_xrefs ?man ?envs ?(exits = Exit.defaults) ?sdocs ?docs ?doc ?version
     name
   =
-  Cmdliner_info.term ~args:Cmdliner_info.Args.empty
+  Cmdliner_info.cmd ~args:Cmdliner_info.Args.empty
     ?man_xrefs ?man ?envs ~exits ?sdocs ?docs ?doc ?version name
 
-let info_name i = Cmdliner_info.term_name i
+let info_name i = Cmdliner_info.cmd_name i
 
 type 'a t =
 | Cmd of info * 'a Cmdliner_term.parser
 | Group of info * ('a Cmdliner_term.parser option * 'a t list)
 
-let v i (args, p) = Cmd (Cmdliner_info.term_add_args i args, p)
+let v i (args, p) = Cmd (Cmdliner_info.cmd_add_args i args, p)
 let group ?default i cmds =
   let default, i = match default with
   | None -> None, i
-  | Some (args, p) -> Some p, Cmdliner_info.term_add_args i args
+  | Some (args, p) -> Some p, Cmdliner_info.cmd_add_args i args
   in
   Group (i, (default, cmds))
 
@@ -64,8 +64,8 @@ let err_help s = "Term error, help requested for unknown command " ^ s
 let err_argv = "argv array must have at least one element"
 
 let add_stdopts ei =
-  let docs = Cmdliner_info.(term_stdopts_docs @@ eval_term ei) in
-  let vargs, vers = match Cmdliner_info.(term_version @@ eval_main ei) with
+  let docs = Cmdliner_info.(cmd_stdopts_docs @@ eval_cmd ei) in
+  let vargs, vers = match Cmdliner_info.(cmd_version @@ eval_main ei) with
   | None -> Cmdliner_info.Args.empty, None
   | Some _ ->
       let args, _ as vers = Cmdliner_arg.stdopt_version ~docs in
@@ -73,8 +73,8 @@ let add_stdopts ei =
   in
   let help = Cmdliner_arg.stdopt_help ~docs in
   let args = Cmdliner_info.Args.union vargs (fst help) in
-  let term = Cmdliner_info.(term_add_args (eval_term ei) args) in
-  help, vers, Cmdliner_info.eval_with_term ei term
+  let cmd = Cmdliner_info.(cmd_add_args (eval_cmd ei) args) in
+  help, vers, Cmdliner_info.eval_with_cmd ei cmd
 
 let parse_error_term err ei cl = Error (`Parse err)
 
@@ -102,15 +102,14 @@ let try_eval_stdopts ~catch ei cl help version =
           | Ok true -> Some (Error (`Std_version))
           | Error _ as err -> Some err
 
-
 let do_help help_ppf err_ppf ei fmt cmd =
   let ei = match cmd with
-  | None -> Cmdliner_info.(eval_with_term ei @@ eval_main ei)
+  | None -> Cmdliner_info.(eval_with_cmd ei @@ eval_main ei)
   | Some cmd ->
       try
-        let is_cmd t = Cmdliner_info.term_name t = cmd in
+        let is_cmd t = Cmdliner_info.cmd_name t = cmd in
         let cmd = List.find is_cmd (Cmdliner_info.eval_children ei) in
-        Cmdliner_info.eval_with_term ei cmd
+        Cmdliner_info.eval_with_cmd ei cmd
       with Not_found -> invalid_arg (err_help cmd)
   in
   let _, _, ei = add_stdopts ei (* may not be the originally eval'd term *) in
@@ -136,23 +135,22 @@ let do_result help_ppf err_ppf ei = function
 let cmd_name_trie cmds =
   let add acc cmd =
     let i = get_info cmd in
-    let name = Cmdliner_info.term_name i in
+    let name = Cmdliner_info.cmd_name i in
     match Cmdliner_trie.add acc name cmd with
     | `New t -> t
     | `Replaced (cmd', _) ->
         let i' = get_info cmd' and kind = "command" in
         invalid_arg @@
-        Cmdliner_base.err_multi_def ~kind name Cmdliner_info.term_doc i i'
+        Cmdliner_base.err_multi_def ~kind name Cmdliner_info.cmd_doc i i'
   in
   List.fold_left add Cmdliner_trie.empty cmds
 
 let cmd_name_dom cmds =
-  let cmd_name c = Cmdliner_info.term_name (get_info c) in
+  let cmd_name c = Cmdliner_info.cmd_name (get_info c) in
   List.sort String.compare (List.rev_map cmd_name cmds)
 
-let never_term _ _ = assert false
-
 let find_term args cmd =
+  let never_term _ _ = assert false in
   let stop args_rest args_rev parents cmd =
     let args = List.rev_append args_rev args_rest in
     match cmd with
@@ -209,9 +207,9 @@ let eval_value
     find_term (remove_exec argv) cmd
   in
   let children = List.map get_info children in
-  let ei = Cmdliner_info.eval ~term:i ~only_grouping ~parents ~children ~env in
+  let ei = Cmdliner_info.eval ~cmd:i ~only_grouping ~parents ~children ~env in
   let help, version, ei = add_stdopts ei in
-  let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+  let term_args = Cmdliner_info.(cmd_args @@ eval_cmd ei) in
   let res = match res with
   | Error msg -> (* Command lookup error, we still prioritize stdargs *)
       let cl = match Cmdliner_cline.create term_args args with
@@ -241,13 +239,13 @@ let eval_peek_opts
   =
   let args, f = t in
   let version = if version_opt then Some "dummy" else None in
-  let term = Cmdliner_info.term ~args ?version "dummy" in
+  let cmd = Cmdliner_info.cmd ~args ?version "dummy" in
   let ei =
-    Cmdliner_info.eval ~term ~only_grouping:false ~parents:[] ~children:[]
+    Cmdliner_info.eval ~cmd ~only_grouping:false ~parents:[] ~children:[]
       ~env
   in
   let help, version, ei = add_stdopts ei in
-  let term_args = Cmdliner_info.(term_args @@ eval_term ei) in
+  let term_args = Cmdliner_info.(cmd_args @@ eval_cmd ei) in
   let cli_args =  remove_exec argv in
   let v, ret =
     match Cmdliner_cline.create ~peek_opts:true term_args cli_args with

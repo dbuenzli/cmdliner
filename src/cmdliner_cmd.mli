@@ -24,7 +24,7 @@ end
 
 (** {1:cmds Commands} *)
 
-type info = Cmdliner_info.term
+type info = Cmdliner_info.cmd
 
 val info :
   ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->

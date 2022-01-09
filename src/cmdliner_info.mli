@@ -83,45 +83,44 @@ val exit_doc : exit -> string
 val exit_docs : exit -> string
 val exit_order : exit -> exit -> int
 
-(** {1:term Term information} *)
+(** {1:cmd Command information} *)
 
-type term
+type cmd
 
-val term :
+val cmd :
   ?args:args -> ?man_xrefs:Cmdliner_manpage.xref list ->
   ?man:Cmdliner_manpage.block list -> ?envs:env list -> ?exits:exit list ->
   ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
-  string -> term
+  string -> cmd
 
-val term_name : term -> string
-val term_version : term -> string option
-val term_doc : term -> string
-val term_docs : term -> string
-val term_stdopts_docs : term -> string
-val term_exits : term -> exit list
-val term_envs : term -> env list
-val term_man : term -> Cmdliner_manpage.block list
-val term_man_xrefs : term -> Cmdliner_manpage.xref list
-val term_args : term -> args
-
-val term_add_args : term -> args -> term
+val cmd_name : cmd -> string
+val cmd_version : cmd -> string option
+val cmd_doc : cmd -> string
+val cmd_docs : cmd -> string
+val cmd_stdopts_docs : cmd -> string
+val cmd_exits : cmd -> exit list
+val cmd_envs : cmd -> env list
+val cmd_man : cmd -> Cmdliner_manpage.block list
+val cmd_man_xrefs : cmd -> Cmdliner_manpage.xref list
+val cmd_args : cmd -> args
+val cmd_add_args : cmd -> args -> cmd
 
 (** {1:eval Evaluation information} *)
 
 type eval
 
 val eval :
-  term:term -> only_grouping:bool -> parents:term list -> children:term list ->
+  cmd:cmd -> only_grouping:bool -> parents:cmd list -> children:cmd list ->
   env:(string -> string option) -> eval
 
-val eval_term : eval -> term
+val eval_cmd : eval -> cmd
 val eval_only_grouping : eval -> bool
-val eval_main : eval -> term
-val eval_children : eval -> term list
-val eval_parents : eval -> term list
+val eval_main : eval -> cmd
+val eval_children : eval -> cmd list
+val eval_parents : eval -> cmd list
 val eval_env_var : eval -> string -> string option
 val eval_cmd_names : eval -> string list
-val eval_with_term : eval -> term -> eval
+val eval_with_cmd : eval -> cmd -> eval
 val eval_has_choice : eval -> string -> bool
 
 (*---------------------------------------------------------------------------
