@@ -3,17 +3,14 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-module Manpage = Cmdliner_manpage
-module Arg = Cmdliner_arg
-module Term = struct
-  type ('a, 'b) stdlib_result = ('a, 'b) result
+(* Deprecated functionality from Term module *)
 
-  include Cmdliner_term
+module Term_deprecated = struct
 
-  (* Deprecated *)
+  (* Term combinators *)
 
   let man_format = Cmdliner_arg.man_format
-  let pure = const
+  let pure = Cmdliner_term.const
 
   (* Term information *)
 
@@ -78,7 +75,13 @@ module Term = struct
     stdlib_exit (exit_status_of_status_result ?term_err r)
 end
 
+module Manpage = Cmdliner_manpage
+module Term = struct
+  include Cmdliner_term
+  include Term_deprecated
+end
 module Cmd = Cmdliner_cmd
+module Arg = Cmdliner_arg
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers

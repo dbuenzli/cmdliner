@@ -149,10 +149,10 @@ let exit_doc e = e.exit_doc
 let exit_docs e = e.exit_docs
 let exit_order e0 e1 = compare e0.exit_statuses e1.exit_statuses
 
-(* Term info *)
+(* Command info *)
 
 type cmd_info =
-  { cmd_name : string;                                 (* name of the term. *)
+  { cmd_name : string;                                  (* name of the cmd. *)
     cmd_version : string option;                (* version (for --version). *)
     cmd_doc : string;                      (* one line description of term. *)
     cmd_docs : string;     (* title of man section where listed (commands). *)

@@ -541,6 +541,7 @@ module Cmd : sig
         {!cli_error} and {!internal_error}. *)
   end
 
+  (** Environment variable and their information. *)
   module Env : sig
 
     (** {1:envvars Environment variables} *)
