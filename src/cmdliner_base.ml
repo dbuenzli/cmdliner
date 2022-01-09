@@ -5,6 +5,34 @@
 
 let strf = Printf.sprintf
 
+(* Edit distance *)
+
+let edit_distance s0 s1 =
+  let minimum (a : int) (b : int) (c : int) : int = min a (min b c) in
+  let s0,s1 = if String.length s0 <= String.length s1 then s0,s1 else s1,s0 in
+  let m = String.length s0 and n = String.length s1 in
+  let rec rows row0 row i = match i > n with
+  | true -> row0.(m)
+  | false ->
+      row.(0) <- i;
+      for j = 1 to m do
+        if s0.[j - 1] = s1.[i - 1] then row.(j) <- row0.(j - 1) else
+        row.(j) <- minimum (row0.(j - 1) + 1) (row0.(j) + 1) (row.(j - 1) + 1)
+      done;
+      rows row row0 (i + 1)
+  in
+  rows (Array.init (m + 1) (fun x -> x)) (Array.make (m + 1) 0) 1
+
+let suggest s candidates =
+  let add (min, acc) name =
+    let d = edit_distance s name in
+    if d = min then min, (name :: acc) else
+    if d < min then d, [name] else
+    min, acc
+  in
+  let dist, suggs = List.fold_left add (max_int, []) candidates in
+  if dist < 3 (* suggest only if not too far *) then suggs else []
+
 (* Invalid argument strings *)
 
 let err_empty_list = "empty list"

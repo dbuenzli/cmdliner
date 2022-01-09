@@ -81,7 +81,7 @@ let hint_matching_opt optidx s =
   let short_opt, _ = parse_opt_arg short_opt in
   let long_opt, _ = parse_opt_arg long_opt in
   let all = Cmdliner_trie.ambiguities optidx "-" in
-  match List.mem short_opt all, Cmdliner_suggest.value long_opt all with
+  match List.mem short_opt all, Cmdliner_base.suggest long_opt all with
   | false, [] -> []
   | false, l -> l
   | true, [] -> [short_opt]
