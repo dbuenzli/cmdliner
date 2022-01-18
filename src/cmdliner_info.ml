@@ -213,7 +213,6 @@ module Eval = struct
   let parents e = e.parents
   let env_var e v = e.env v
   let main e = match List.rev e.parents with [] -> e.cmd | m :: _ -> m
-  let cmd_names e = List.rev_map Cmd.name (e.cmd :: e.parents)
   let with_cmd ei cmd = { ei with cmd }
 end
 

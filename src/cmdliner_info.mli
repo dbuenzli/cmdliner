@@ -125,7 +125,6 @@ module Eval : sig
   val main : t -> Cmd.t
   val parents : t -> Cmd.t list
   val env_var : t -> string -> string option
-  val cmd_names : t -> string list
   val with_cmd : t -> Cmd.t -> t
 end
 

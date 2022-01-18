@@ -76,12 +76,15 @@ let pp_version ppf ei =
   | None -> assert false
   | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 
-let pp_try_help ppf ei = match Cmdliner_info.Eval.cmd_names ei with
-| [] -> assert false
-| [n] -> pp ppf "@[<2>Try '%s --help' for more information.@]" n
-| n :: _ as cmds ->
-    let cmds = String.concat " " cmds in
-    pp ppf "@[<2>Try '%s --help' or '%s --help' for more information.@]" cmds n
+let pp_try_help ppf ei =
+  let rcmds = Cmdliner_info.Eval.(cmd ei :: parents ei) in
+  match List.rev_map Cmdliner_info.Cmd.name rcmds with
+  | [] -> assert false
+  | [n] -> pp ppf "@[<2>Try '%s --help' for more information.@]" n
+  | n :: _ as cmds ->
+      let cmds = String.concat " " cmds in
+      pp ppf "@[<2>Try '%s --help' or '%s --help' for more information.@]"
+        cmds n
 
 let pp_err ppf ei ~err = pp ppf "%s: @[%a@]@." (exec_name ei) pp_lines err
 

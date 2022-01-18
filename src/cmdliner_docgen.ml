@@ -57,8 +57,9 @@ let cmd_info_subst ei = function
 
 (* Command docs *)
 
-let invocation ?(sep = " ") ei =
-  esc @@ String.concat sep (Cmdliner_info.Eval.cmd_names ei)
+let invocation ?(sep = " ") ?(parents = []) cmd =
+  let names = List.rev_map Cmdliner_info.Cmd.name (cmd :: parents) in
+  esc @@ String.concat sep names
 
 let synopsis_pos_arg a =
   let v = match Cmdliner_info.Arg.docv a with "" -> "ARG" | v -> v in
@@ -71,34 +72,32 @@ let synopsis_pos_arg a =
       let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
       String.concat " " (loop n [])
 
-let synopsis ei =
-  let cmd = Cmdliner_info.Eval.cmd ei in
-  match Cmdliner_info.Cmd.children cmd with
-  | [] ->
-      let rev_cli_order (a0, _) (a1, _) =
-        Cmdliner_info.Arg.rev_pos_cli_order a0 a1
-      in
-      let add_pos a acc = match Cmdliner_info.Arg.is_opt a with
-      | true -> acc
-      | false -> (a, synopsis_pos_arg a) :: acc
-      in
-      let args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
-      let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
-      let pargs = List.sort rev_cli_order pargs in
-      let pargs = String.concat " " (List.rev_map snd pargs) in
-      strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
-  | cmds ->
-      let cmd = match Cmdliner_info.Cmd.has_args cmd with
-      | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
-      in
-      strf "$(b,%s) %s ..." (invocation ei) cmd
+let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
+| [] ->
+    let rev_cli_order (a0, _) (a1, _) =
+      Cmdliner_info.Arg.rev_pos_cli_order a0 a1
+    in
+    let add_pos a acc = match Cmdliner_info.Arg.is_opt a with
+    | true -> acc
+    | false -> (a, synopsis_pos_arg a) :: acc
+    in
+    let args = Cmdliner_info.Cmd.args cmd in
+    let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
+    let pargs = List.sort rev_cli_order pargs in
+    let pargs = String.concat " " (List.rev_map snd pargs) in
+    strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ?parents cmd) pargs
+| _cmds ->
+    let subcmd = match Cmdliner_info.Cmd.has_args cmd with
+    | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
+    in
+    strf "$(b,%s) %s ..." (invocation ?parents cmd) subcmd
 
 let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
 | [] -> []
 | cmds ->
-    let add_cmd acc t =
-      let cmd = strf "$(b,%s)" @@ cmd_name t in
-      (Cmdliner_info.Cmd.docs t, `I (cmd, Cmdliner_info.Cmd.doc t)) :: acc
+    let add_cmd acc cmd =
+      let syn = synopsis cmd in
+      (Cmdliner_info.Cmd.docs cmd, `I (syn, Cmdliner_info.Cmd.doc cmd)) :: acc
     in
     let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
       let c = compare s0 s1 in
@@ -282,15 +281,19 @@ let xref_docs ~errs ei =
 
 let ensure_s_name ei sm =
   if Cmdliner_manpage.(smap_has_section sm s_name) then sm else
-  let tname = invocation ~sep:"-" ei in
-  let tdoc = Cmdliner_info.Cmd.doc @@ Cmdliner_info.Eval.cmd ei in
+  let cmd = Cmdliner_info.Eval.cmd ei in
+  let parents = Cmdliner_info.Eval.parents ei in
+  let tname = invocation ~sep:"-" ~parents cmd in
+  let tdoc = Cmdliner_info.Cmd.doc cmd in
   let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
   let tagline = `P (strf "%s%s" tname tagline) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_name tagline)
 
 let ensure_s_synopsis ei sm =
   if Cmdliner_manpage.(smap_has_section sm ~sec:s_synopsis) then sm else
-  let synopsis = `P (synopsis ei) in
+  let cmd = Cmdliner_info.Eval.cmd ei in
+  let parents = Cmdliner_info.Eval.parents ei in
+  let synopsis = `P (synopsis ~parents cmd) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_synopsis synopsis)
 
 let insert_cmd_man_docs ~errs ei sm =
@@ -317,7 +320,9 @@ let text ~errs ei =
 let title ei =
   let main = Cmdliner_info.Eval.main ei in
   let exec = String.capitalize_ascii (Cmdliner_info.Cmd.name main) in
-  let name = String.uppercase_ascii (invocation ~sep:"-" ei) in
+  let cmd = Cmdliner_info.Eval.cmd ei in
+  let parents = Cmdliner_info.Eval.parents ei in
+  let name = String.uppercase_ascii (invocation ~sep:"-" ~parents cmd) in
   let center_header = esc @@ strf "%s Manual" exec in
   let left_footer =
     let version = match Cmdliner_info.Cmd.version main with
@@ -338,7 +343,10 @@ let pp_man ~errs fmt ppf ei =
 let pp_plain_synopsis ~errs ppf ei =
   let buf = Buffer.create 100 in
   let subst = cmd_info_subst ei in
-  let syn = Cmdliner_manpage.doc_to_plain ~errs ~subst buf (synopsis ei) in
+  let cmd = Cmdliner_info.Eval.cmd ei in
+  let parents = Cmdliner_info.Eval.parents ei in
+  let synopsis = synopsis ~parents cmd in
+  let syn = Cmdliner_manpage.doc_to_plain ~errs ~subst buf synopsis in
   Format.fprintf ppf "@[%s@]" syn
 
 (*---------------------------------------------------------------------------
