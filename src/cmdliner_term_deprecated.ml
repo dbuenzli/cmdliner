@@ -28,7 +28,12 @@ type env_info = Cmdliner_info.Env.info
 let env_info = Cmdliner_info.Env.info
 
 type info = Cmdliner_info.Cmd.t
-let info = Cmdliner_info.Cmd.v
+let info
+    ?(man_xrefs = []) ?man ?envs ?(exits = []) ?sdocs ?docs ?doc ?version name
+  =
+  Cmdliner_info.Cmd.v
+    ~man_xrefs ?man ?envs ~exits ?sdocs ?docs ?doc ?version name
+
 let name ti = Cmdliner_info.Cmd.name ti
 
 (* Evaluation *)
