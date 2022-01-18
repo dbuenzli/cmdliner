@@ -156,6 +156,7 @@ module Cmd = struct
   type t =
     { name : string; (* name of the cmd. *)
       version : string option; (* version (for --version). *)
+      deprecated : string option; (* deprecation message *)
       doc : string; (* one line description of cmd. *)
       docs : string; (* title of man section where listed (commands). *)
       sdocs : string; (* standard options, title of section where listed. *)
@@ -168,18 +169,17 @@ module Cmd = struct
       children : t list; } (* Children, if any. *)
 
   let v
-      ?man_xrefs:(man_xrefs = [`Main]) ?man:(man = []) ?envs:(envs = [])
-      ?exits:(exits = Exit.defaults)
-      ?sdocs:(sdocs = Cmdliner_manpage.s_options)
-      ?docs:(docs = "COMMANDS") ?doc:(doc = "") ?version:version
-      name
+      ?deprecated ?(man_xrefs = [`Main]) ?(man = []) ?(envs = [])
+      ?(exits = Exit.defaults) ?(sdocs = Cmdliner_manpage.s_options)
+      ?(docs = Cmdliner_manpage.s_commands) ?(doc = "") ?version name
     =
-    { name; version; doc; docs; sdocs; exits;
+    { name; version; deprecated; doc; docs; sdocs; exits;
       envs; man; man_xrefs; args = Arg.Set.empty;
       has_args = true; children = [] }
 
   let name t = t.name
   let version t = t.version
+  let deprecated t = t.deprecated
   let doc t = t.doc
   let docs t = t.docs
   let stdopts_docs t = t.sdocs

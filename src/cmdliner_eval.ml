@@ -177,7 +177,12 @@ let eval_value
       | Ok cl ->
           match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
-          | None -> run_parser ~catch ei cl f
+          | None ->
+              begin match Cmdliner_info.(Cmd.deprecated (Eval.cmd ei)) with
+              | None -> ()
+              | Some err -> Cmdliner_msg.pp_err err_ppf ei ~err
+              end;
+              run_parser ~catch ei cl f
   in
   do_result help_ppf err_ppf ei res
 

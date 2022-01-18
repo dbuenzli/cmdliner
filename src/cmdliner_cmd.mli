@@ -8,6 +8,7 @@
 type info = Cmdliner_info.Cmd.t
 
 val info :
+  ?deprecated:string ->
   ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->
   ?envs:Cmdliner_info.Env.info list -> ?exits:Cmdliner_info.Exit.info list ->
   ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->

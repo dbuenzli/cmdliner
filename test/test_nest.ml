@@ -38,8 +38,15 @@ let fishs =
   let info = Cmd.info "fishs" ~doc:"Operate on fishs." in
   Cmd.v info Term.(const (fun n -> ()) $ name')
 
+let camels =
+  let deprecated =
+    "The 'camels' function is deprecated use 'mammals' instead."
+  in
+  let info = Cmd.info "camels" ~deprecated ~doc:"Operate on camels." in
+  Cmd.v info Term.(const (fun n -> ()) $ const ())
+
 let cmd =
   let info = Cmd.info "test_nest" ~version:"X.Y.Z" in
-  Cmd.group info [birds; mammals; fishs]
+  Cmd.group info [birds; mammals; fishs; camels]
 
 let () = exit (Cmd.eval cmd)

@@ -72,6 +72,9 @@ let synopsis_pos_arg a =
       let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
       String.concat " " (loop n [])
 
+let deprecated cmd = match Cmdliner_info.Cmd.deprecated cmd with
+| None -> "" | Some _ -> "(Deprecated) "
+
 let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
 | [] ->
     let rev_cli_order (a0, _) (a1, _) =
@@ -85,12 +88,13 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
     let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
     let pargs = List.sort rev_cli_order pargs in
     let pargs = String.concat " " (List.rev_map snd pargs) in
-    strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ?parents cmd) pargs
+    strf "%s$(b,%s) [$(i,OPTION)]... %s"
+      (deprecated cmd) (invocation ?parents cmd) pargs
 | _cmds ->
     let subcmd = match Cmdliner_info.Cmd.has_args cmd with
     | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
     in
-    strf "$(b,%s) %s ..." (invocation ?parents cmd) subcmd
+    strf "%s$(b,%s) %s ..." (deprecated cmd) (invocation ?parents cmd) subcmd
 
 let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
 | [] -> []

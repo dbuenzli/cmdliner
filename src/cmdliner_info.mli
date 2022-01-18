@@ -96,6 +96,7 @@ end
 module Cmd : sig
   type t
   val v :
+    ?deprecated:string ->
     ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->
     ?envs:Env.info list -> ?exits:Exit.info list ->
     ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
@@ -103,6 +104,7 @@ module Cmd : sig
 
   val name : t -> string
   val version : t -> string option
+  val deprecated : t -> string option
   val doc : t -> string
   val docs : t -> string
   val stdopts_docs : t -> string

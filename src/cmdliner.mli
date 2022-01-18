@@ -588,8 +588,8 @@ module Cmd : sig
   (** The type for information about commands. *)
 
   val info :
-    ?man_xrefs:Manpage.xref list -> ?man:Manpage.block list ->
-    ?envs:Env.info list -> ?exits:Exit.info list ->
+    ?deprecated:string -> ?man_xrefs:Manpage.xref list ->
+    ?man:Manpage.block list -> ?envs:Env.info list -> ?exits:Exit.info list ->
     ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
     string -> info
   (** [info name ?sdocs ?man ?docs ?doc ?version] is a term information
@@ -598,6 +598,9 @@ module Cmd : sig
       {- [name] is the name of the command.}
       {- [version] is the version string of the command line tool, this
          is only relevant for the main command and ignored otherwise.}
+      {- [deprecated], if specified the command is deprecated and the
+         string is a message output on standard error when the command
+         is used.}
       {- [doc] is a one line description of the command used
          for the [NAME] section of the command's man page and in command
          group listings.}
