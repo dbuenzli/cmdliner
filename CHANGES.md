@@ -31,6 +31,11 @@
   were not properly escaped. Also they are now rendered in
   bold. Thanks to David Allsopp for the patch (#111).
   
+- Support for deprecating commands (#66).
+
+- Add `Manpage.s_none` a special section name to use whenever you 
+  want something not to be listed in a command's manpage.
+
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 
 This version of cmdliner deprecates the `Term.eval*` evaluation

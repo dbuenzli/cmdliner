@@ -132,6 +132,10 @@ module Manpage : sig
   val s_see_also : string
   (** The [SEE ALSO] section. *)
 
+  val s_none : string
+  (** [s_none] is a special section named ["cmdliner-none"] that can be used
+      whenever you do not want something to be listed. *)
+
   (** {1:output Output}
 
     The {!print} function can be useful if the client wants to define

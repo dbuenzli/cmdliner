@@ -37,6 +37,7 @@ val s_bugs : string
 val s_examples : string
 val s_authors : string
 val s_see_also : string
+val s_none : string
 
 (** {1 Section maps}
 

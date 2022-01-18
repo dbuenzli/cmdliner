@@ -38,6 +38,7 @@ let s_examples = "EXAMPLES"
 let s_bugs = "BUGS"
 let s_authors = "AUTHORS"
 let s_see_also = "SEE ALSO"
+let s_none = "cmdliner-none"
 
 (* Section order *)
 
@@ -45,7 +46,8 @@ let s_created = ""
 let order =
   [| s_name; s_synopsis; s_description; s_created; s_commands;
      s_arguments; s_options; s_common_options; s_exit_status;
-     s_environment; s_files; s_examples; s_bugs; s_authors; s_see_also; |]
+     s_environment; s_files; s_examples; s_bugs; s_authors; s_see_also;
+     s_none; |]
 
 let order_synopsis = 1
 let order_created = 3
@@ -95,8 +97,11 @@ let smap_to_blocks smap = (* N.B. this leaves `Blocks content untouched. *)
   | [] ->
       let acc = if s = "" then acc else `S s :: acc in
       match smap with
-      | (s, (_, rbs)) :: smap -> loop acc smap s rbs
       | [] -> acc
+      | (s, (_, rbs)) :: smap ->
+          if s = s_none
+          then loop acc smap "" [] (* skip *)
+          else loop acc smap s rbs
   in
   loop [] smap "" []
 
