@@ -24,6 +24,8 @@
 - `Term.exit` and `Term.exit_status_of_result` now require a `unit`
   result.  This avoids various errors to go undetected. Thanks to
   Thomas Leonard for the patch (#124).
+  
+- Add `Term.{term,cli_parse}_result'` functions.
 
 - Fix absent and default option values rendering in manpages. They
   were not properly escaped. Also they are now rendered in

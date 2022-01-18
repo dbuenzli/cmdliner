@@ -181,10 +181,50 @@ module Term : sig
 
   (** {1 Interacting with Cmdliner's evaluation} *)
 
+  val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t
+  (** [term_result ~usage t] evaluates to
+      {ul
+      {- [`Ok v] if [t] evaluates to [Ok v]}
+      {- [`Error `Term] with the error message [e] and usage shown according
+         to [usage] (defaults to [false]), if [t] evaluates to
+         [Error (`Msg e)].}}
+
+      See also {!term_result'}. *)
+
+  val term_result' : ?usage:bool -> ('a, string) result t -> 'a t
+  (** [term_result'] is like {!term_result} but with a [string]
+      error case. *)
+
+  val cli_parse_result : ('a, [`Msg of string]) result t -> 'a t
+  (** [cli_parse_result t] is a term that evaluates to:
+      {ul
+      {- [`Ok v] if [t] evaluates to [Ok v].}
+      {- [`Error `Parse] with the error message [e]
+         if [t] evaluates to [Error (`Msg e)].}}
+
+      See also {!cli_parse_result'}. *)
+
+  val cli_parse_result' : ('a, string) result t -> 'a t
+  (** [cli_parse_result'] is like {!cli_parse_result} but with a [string]
+      error case. *)
+
+  val main_name : string t
+  (** [main_name] is a term that evaluates to the main command name;
+      that is the name of the tool. *)
+
+  val choice_names : string list t
+  (** [choice_names] is a term that evaluates to the names of the commands
+      that are children of the main command. *)
+
+  val with_used_args : 'a t -> ('a * string list) t
+  (** [with_used_args t] is a term that evaluates to [t] tupled
+      with the arguments from the command line that where used to
+      evaluate [t]. *)
+
   type 'a ret =
-    [ `Help of Manpage.format * string option
-    | `Error of (bool * string)
-    | `Ok of 'a ]
+  [ `Help of Manpage.format * string option
+  | `Error of (bool * string)
+  | `Ok of 'a ]
   (** The type for command return values. See {!val-ret}. *)
 
   val ret : 'a ret t -> 'a t
@@ -194,36 +234,12 @@ module Term : sig
       {- [`Ok v], it evaluates to [v].}
       {- [`Error (usage, e)], the evaluation fails and [Cmdliner] prints
          the error [e] and the term's usage if [usage] is [true].}
-      {- [`Help (format, name)], the evaluation fails and [Cmdliner] prints the
-         term's man page in the given [format] (or the man page for a
-         specific [name] term in case of multiple term evaluation).}}   *)
+      {- [`Help (format, name)], the evaluation fails and [Cmdliner] prints
+         a manpage in format [format]. If [name] is [None] this is the
+         the main command's manpage. If [name] is [Some c] this is
+         the man page of the sub command [c] of the main command.}}
 
-  val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t
-  (** [term_result ~usage t] evaluates to
-      {ul
-      {- [`Ok v] if [t] evaluates to [Ok v]}
-      {- [`Error `Term] with the error message [e] and usage shown according
-         to [usage] (defaults to [false]), if [t] evaluates to
-         [Error (`Msg e)].}} *)
-
-  val cli_parse_result : ('a, [`Msg of string]) result t -> 'a t
-  (** [cli_parse_result t] is a term that evaluates to:
-      {ul
-      {- [`Ok v] if [t] evaluates to [Ok v].}
-      {- [`Error `Parse] with the error message [e]
-         if [t] evaluates to [Error (`Msg e)].}} *)
-
-  val main_name : string t
-  (** [main_name] is a term that evaluates to the "main" term's name. *)
-
-  val choice_names : string list t
-  (** [choice_names] is a term that evaluates to the names of the terms
-      to choose from. *)
-
-  val with_used_args : 'a t -> ('a * string list) t
-  (** [with_used_args t] is a term that evaluates to [t] tupled
-      with the arguments from the command line that where used to
-      evaluate [t]. *)
+      {b Note.} While not deprecated you are encouraged not use this API. *)
 
   (** {1:deprecated Deprecated Term evaluation interface}
 
@@ -628,7 +644,7 @@ module Cmd : sig
   (** {1:eval Evaluation}
 
       These functions are meant to be composed with {!Stdlib.exit}.
-      The following exit codes can be returned by all these functions:
+      The following exit codes may be returned by all these functions:
       {ul
       {- {!Exit.cli_error} in case of parsing errors.}
       {- {!Exit.internal_error} if the [~catch] is [true] (default)

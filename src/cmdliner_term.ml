@@ -42,11 +42,19 @@ let term_result ?(usage = false) (al, v) =
   | Ok (Error (`Msg e)) -> Error (`Error (usage, e))
   | Error _ as e -> e
 
+let term_result' ?usage t =
+  let wrap = app (const (Result.map_error (fun e -> `Msg e))) t in
+  term_result ?usage wrap
+
 let cli_parse_result (al, v) =
   al, fun ei cl -> match v ei cl with
   | Ok (Ok _ as ok) -> ok
   | Ok (Error (`Msg e)) -> Error (`Parse e)
   | Error _ as e -> e
+
+let cli_parse_result' t =
+  let wrap = app (const (Result.map_error (fun e -> `Msg e))) t in
+  cli_parse_result wrap
 
 let main_name =
   Cmdliner_info.Arg.Set.empty,
@@ -55,8 +63,8 @@ let main_name =
 let choice_names =
   Cmdliner_info.Arg.Set.empty,
   (fun ei _ ->
-     (* N.B. this keeps everything backward compatible. We basically
-        return the command names of main's children *)
+     (* N.B. this keeps everything backward compatible. We return the command
+        names of main's children *)
      let name t = Cmdliner_info.Cmd.name t in
      let choices = Cmdliner_info.Cmd.children (Cmdliner_info.Eval.main ei) in
      Ok (List.rev_map name choices))

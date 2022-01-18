@@ -27,7 +27,9 @@ type 'a ret = [ `Ok of 'a | term_escape ]
 
 val ret : 'a ret t -> 'a t
 val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t
+val term_result' : ?usage:bool -> ('a, string) result t -> 'a t
 val cli_parse_result : ('a, [`Msg of string]) result t -> 'a t
+val cli_parse_result' : ('a, string) result t -> 'a t
 val main_name : string t
 val choice_names : string list t
 val with_used_args : 'a t -> ('a * string list) t
