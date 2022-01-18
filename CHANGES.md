@@ -66,8 +66,8 @@ However in this transition the following things are changed or added:
 
 * If you relied on `?term_err` defaulting to `1` in the various
   `Term.exit*` function, note that the new `Cmd.eval*` function use
-  Exit.cli_error` as a default. You may want to explicitely specify
-  1` instead if you use `Term.ret` with the ``Error` case 
+  `Exit.cli_error` as a default. You may want to explicitely specify
+  `1` instead if you use `Term.ret` with the `` `Error`` case 
   or `Term.term_result`.
   
 Finally be aware that if you replace, in an existing tool, an encoding

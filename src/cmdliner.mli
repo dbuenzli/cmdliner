@@ -646,14 +646,14 @@ module Cmd : sig
       These functions are meant to be composed with {!Stdlib.exit}.
       The following exit codes may be returned by all these functions:
       {ul
-      {- {!Exit.cli_error} in case of parsing errors.}
-      {- {!Exit.internal_error} if the [~catch] is [true] (default)
+      {- {!Exit.cli_error} if a parse error occurs.}
+      {- {!Exit.internal_error} if the [~catch] argument is [true] (default)
          and an uncaught exception is raised.}
-      {- The value of [~term_err] (defaults to {!Exit.cli_error}) in case
+      {- The value of [~term_err] (defaults to {!Exit.cli_error}) if
          a term error occurs.}}
 
-      These exit codes are described in {!Exit.defaults} and are added
-      by default to command {!type-info} values. *)
+      These exit codes are described in {!Exit.defaults} which is the
+      default value of the [?exits] argument of function {!info}. *)
 
   val eval :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
