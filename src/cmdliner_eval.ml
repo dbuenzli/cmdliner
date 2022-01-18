@@ -70,8 +70,10 @@ let do_result help_ppf err_ppf ei = function
 | Ok v -> Ok (`Ok v)
 | Error res ->
     match res with
-    | `Std_help fmt -> Cmdliner_docgen.pp_man err_ppf fmt help_ppf ei; Ok `Help
-    | `Std_version -> Cmdliner_msg.pp_version help_ppf ei; Ok `Version
+    | `Std_help fmt ->
+        Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei; Ok `Help
+    | `Std_version ->
+        Cmdliner_msg.pp_version help_ppf ei; Ok `Version
     | `Parse err ->
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         Error `Parse

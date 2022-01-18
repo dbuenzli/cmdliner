@@ -280,7 +280,7 @@ let xref_docs ~errs ei =
 (* Man page construction *)
 
 let ensure_s_name ei sm =
-  if Cmdliner_manpage.(smap_has_section sm s_name) then sm else
+  if Cmdliner_manpage.(smap_has_section sm ~sec:s_name) then sm else
   let cmd = Cmdliner_info.Eval.cmd ei in
   let parents = Cmdliner_info.Eval.parents ei in
   let tname = invocation ~sep:"-" ~parents cmd in
@@ -299,9 +299,9 @@ let ensure_s_synopsis ei sm =
 let insert_cmd_man_docs ~errs ei sm =
   let buf = Buffer.create 200 in
   let subst = cmd_info_subst ei in
-  let ins sm (s, b) = Cmdliner_manpage.smap_append_block sm s b in
-  let has_senv = Cmdliner_manpage.(smap_has_section sm s_environment) in
-  let has_sexit = Cmdliner_manpage.(smap_has_section sm s_exit_status) in
+  let ins sm (sec, b) = Cmdliner_manpage.smap_append_block sm ~sec b in
+  let has_senv = Cmdliner_manpage.(smap_has_section sm ~sec:s_environment) in
+  let has_sexit = Cmdliner_manpage.(smap_has_section sm ~sec:s_exit_status) in
   let sm = List.fold_left ins sm (cmd_docs ei) in
   let sm = List.fold_left ins sm (arg_docs ~errs ~subst ~buf ei) in
   let sm = List.fold_left ins sm (exit_docs ~errs ~subst ~buf ~has_sexit ei)in

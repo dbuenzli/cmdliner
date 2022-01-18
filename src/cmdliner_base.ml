@@ -203,7 +203,7 @@ let enum sl =
   | `Ok _ as r -> r
   | `Ambiguous ->
       let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
-      `Error (err_ambiguous "enum value" s ambs)
+      `Error (err_ambiguous ~kind:"enum value" s ~ambs)
   | `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
         `Error (err_invalid_val s ("expected " ^ (alts_str ~quoted:true alts)))
