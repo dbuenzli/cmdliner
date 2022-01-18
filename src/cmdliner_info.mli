@@ -95,7 +95,6 @@ end
 (** Commands. *)
 module Cmd : sig
   type t
-
   val v :
     ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->
     ?envs:Env.info list -> ?exits:Exit.info list ->
@@ -112,6 +111,8 @@ module Cmd : sig
   val man : t -> Cmdliner_manpage.block list
   val man_xrefs : t -> Cmdliner_manpage.xref list
   val args : t -> Arg.Set.t
+  val has_args : t -> bool
+  val children : t -> t list
   val add_args : t -> Arg.Set.t -> t
   val with_children : t -> args:Arg.Set.t option -> children:t list -> t
 end
@@ -119,20 +120,13 @@ end
 (** Evaluation. *)
 module Eval : sig
   type t
-
-  val v :
-    cmd:Cmd.t -> only_grouping:bool -> parents:Cmd.t list ->
-    children:Cmd.t list -> env:(string -> string option) -> t
-
+  val v : cmd:Cmd.t -> parents:Cmd.t list -> env:(string -> string option) -> t
   val cmd : t -> Cmd.t
-  val only_grouping : t -> bool
   val main : t -> Cmd.t
-  val children : t -> Cmd.t list
   val parents : t -> Cmd.t list
   val env_var : t -> string -> string option
   val cmd_names : t -> string list
   val with_cmd : t -> Cmd.t -> t
-  val has_choice : t -> string -> bool
 end
 
 (*---------------------------------------------------------------------------

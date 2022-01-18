@@ -53,9 +53,13 @@ let main_name =
   (fun ei _ -> Ok (Cmdliner_info.Cmd.name @@ Cmdliner_info.Eval.main ei))
 
 let choice_names =
-  let choice_name t = Cmdliner_info.Cmd.name t in
   Cmdliner_info.Arg.Set.empty,
-  (fun ei _ -> Ok (List.rev_map choice_name (Cmdliner_info.Eval.children ei)))
+  (fun ei _ ->
+     (* N.B. this keeps everything backward compatible. We basically
+        return the command names of main's children *)
+     let name t = Cmdliner_info.Cmd.name t in
+     let choices = Cmdliner_info.Cmd.children (Cmdliner_info.Eval.main ei) in
+     Ok (List.rev_map name choices))
 
 let with_used_args (al, v) : (_ * string list) t =
   al, fun ei cl ->

@@ -71,27 +71,29 @@ let synopsis_pos_arg a =
       let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
       String.concat " " (loop n [])
 
-let synopsis ei = match Cmdliner_info.Eval.children ei with
-| [] ->
-    let rev_cli_order (a0, _) (a1, _) =
-      Cmdliner_info.Arg.rev_pos_cli_order a0 a1
-    in
-    let add_pos a acc = match Cmdliner_info.Arg.is_opt a with
-    | true -> acc
-    | false -> (a, synopsis_pos_arg a) :: acc
-    in
-    let args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
-    let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
-    let pargs = List.sort rev_cli_order pargs in
-    let pargs = String.concat " " (List.rev_map snd pargs) in
-    strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
-| cmds ->
-    let cmd = match Cmdliner_info.Eval.only_grouping ei with
-    | true -> "$(i,COMMAND)" | false -> "[$(i,COMMAND)]"
-    in
-    strf "$(b,%s) %s ..." (invocation ei) cmd
+let synopsis ei =
+  let cmd = Cmdliner_info.Eval.cmd ei in
+  match Cmdliner_info.Cmd.children cmd with
+  | [] ->
+      let rev_cli_order (a0, _) (a1, _) =
+        Cmdliner_info.Arg.rev_pos_cli_order a0 a1
+      in
+      let add_pos a acc = match Cmdliner_info.Arg.is_opt a with
+      | true -> acc
+      | false -> (a, synopsis_pos_arg a) :: acc
+      in
+      let args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
+      let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
+      let pargs = List.sort rev_cli_order pargs in
+      let pargs = String.concat " " (List.rev_map snd pargs) in
+      strf "$(b,%s) [$(i,OPTION)]... %s" (invocation ei) pargs
+  | cmds ->
+      let cmd = match Cmdliner_info.Cmd.has_args cmd with
+      | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
+      in
+      strf "$(b,%s) %s ..." (invocation ei) cmd
 
-let cmd_docs ei = match Cmdliner_info.Eval.children ei with
+let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
 | [] -> []
 | cmds ->
     let add_cmd acc t =
@@ -252,14 +254,18 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
 (* xref doc *)
 
 let xref_docs ~errs ei =
-  let main = Cmdliner_info.Cmd.name @@ Cmdliner_info.Eval.main ei in
+  let main = Cmdliner_info.Eval.main ei in
   let to_xref = function
-  | `Main -> main, 1
+  | `Main -> Cmdliner_info.Cmd.name main, 1
   | `Tool tool -> tool, 1
   | `Page (name, sec) -> name, sec
   | `Cmd c ->
-      if Cmdliner_info.Eval.has_choice ei c then strf "%s-%s" main c, 1 else
-      (Format.fprintf errs "xref %s: no such term name@." c; "doc-err", 0)
+      (* N.B. we are handling only the first subcommand level here *)
+      let cmds = Cmdliner_info.Cmd.children main in
+      let mname = Cmdliner_info.Cmd.name main in
+      let is_cmd cmd = Cmdliner_info.Cmd.name cmd = c in
+      if List.exists is_cmd cmds then strf "%s-%s" mname c, 1 else
+      (Format.fprintf errs "xref %s: no such command name@." c; "doc-err", 0)
   in
   let xref_str (name, sec) = strf "%s(%d)" (esc name) sec in
   let xrefs = Cmdliner_info.Cmd.man_xrefs @@ Cmdliner_info.Eval.main ei in

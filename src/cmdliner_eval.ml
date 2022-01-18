@@ -54,8 +54,12 @@ let do_help help_ppf err_ppf ei fmt cmd =
   | None -> Cmdliner_info.Eval.(with_cmd ei @@ main ei)
   | Some cmd ->
       try
+        (* For now we simply keep backward compat. [cmd] should be
+           a name from main's children. *)
+        let main = Cmdliner_info.Eval.main ei in
         let is_cmd t = Cmdliner_info.Cmd.name t = cmd in
-        let cmd = List.find is_cmd (Cmdliner_info.Eval.children ei) in
+        let children = Cmdliner_info.Cmd.children main in
+        let cmd = List.find is_cmd children in
         Cmdliner_info.Eval.with_cmd ei cmd
       with Not_found -> invalid_arg (err_help cmd)
   in
@@ -102,12 +106,12 @@ let find_term args cmd =
     let args = List.rev_append args_rev args_rest in
     match (cmd : 'a Cmdliner_cmd.t) with
     | Cmd (i, t) ->
-        args, t, i, false, parents, [], Ok ()
+        args, t, i, parents, Ok ()
     | Group (i, (Some t, children)) ->
-        args, t, i, false, parents, children, Ok ()
+        args, t, i, parents, Ok ()
     | Group (i, (None, children)) ->
         let err = Cmdliner_msg.err_cmd_missing in
-        args, never_term, i, true, parents, children, Error err
+        args, never_term, i, parents, Error err
   in
   let rec loop args_rev parents cmd = function
   | ("--" :: _ | [] as rest) -> stop rest args_rev parents cmd
@@ -117,27 +121,25 @@ let find_term args cmd =
       match cmd with
       | Cmd (i, t) ->
           let args = List.rev_append args_rev (arg :: args) in
-          args, t, i, false, parents, [], Ok ()
+          args, t, i, parents, Ok ()
       | Group (i, (t, children)) ->
           let index = cmd_name_trie children in
           match Cmdliner_trie.find index arg with
           | `Ok cmd -> loop args_rev (i :: parents) cmd args
           | `Not_found ->
               let args = List.rev_append args_rev (arg :: args) in
-              let only_grouping = Option.is_none t in
               let all = Cmdliner_trie.ambiguities index "" in
               let hints = Cmdliner_base.suggest arg all in
               let dom = cmd_name_dom children in
               let kind = "command" in
               let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
-              args, never_term, i, only_grouping, parents, children, Error err
+              args, never_term, i, parents, Error err
           | `Ambiguous ->
               let args = List.rev_append args_rev (arg :: args) in
-              let only_grouping = Option.is_none t in
               let ambs = Cmdliner_trie.ambiguities index arg in
               let ambs = List.sort compare ambs in
               let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
-              args, never_term, i, only_grouping, parents, children, Error err
+              args, never_term, i, parents, Error err
   in
   loop [] [] cmd args
 
@@ -150,11 +152,8 @@ let eval_value
     ?err:(err_ppf = Format.err_formatter)
     ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
   =
-  let args, f, i, only_grouping, parents, children, res =
-    find_term (remove_exec argv) cmd
-  in
-  let children = List.map Cmdliner_cmd.get_info children in
-  let ei = Cmdliner_info.Eval.v ~cmd:i ~only_grouping ~parents ~children ~env in
+  let args, f, i, parents, res = find_term (remove_exec argv) cmd in
+  let ei = Cmdliner_info.Eval.v ~cmd:i ~parents ~env in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let res = match res with
@@ -188,10 +187,7 @@ let eval_peek_opts
   let version = if version_opt then Some "dummy" else None in
   let cmd = Cmdliner_info.Cmd.v ?version "dummy" in
   let cmd = Cmdliner_info.Cmd.add_args cmd args in
-  let ei =
-    Cmdliner_info.Eval.v ~cmd ~only_grouping:false ~parents:[] ~children:[]
-      ~env
-  in
+  let ei = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let cli_args =  remove_exec argv in

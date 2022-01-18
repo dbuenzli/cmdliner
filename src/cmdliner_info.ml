@@ -188,10 +188,10 @@ module Cmd = struct
   let man t = t.man
   let man_xrefs t = t.man_xrefs
   let args t = t.args
-  let add_args t args =
-    { t with args = Arg.Set.union args t.args }
-
-  let with_children cmd ~args ~children=
+  let has_args t = t.has_args
+  let children t = t.children
+  let add_args t args = { t with args = Arg.Set.union args t.args }
+  let with_children cmd ~args ~children =
     let has_args, args = match args with
     | None -> false, cmd.args
     | Some args -> true, Arg.Set.union args cmd.args
@@ -204,25 +204,17 @@ end
 module Eval = struct
   type t = (* information about the evaluation context. *)
     { cmd : Cmd.t; (* cmd being evaluated. *)
-      only_grouping : bool; (* cmd groups, has no cli on its own. *)
       parents : Cmd.t list; (* parents of cmd, root is last. *)
-      children : Cmd.t list; (* children if cmd is grouping. *)
       env : string -> string option } (* environment variable lookup. *)
 
-  let v ~cmd ~only_grouping ~parents ~children ~env =
-    { cmd; only_grouping; parents; children; env }
+  let v ~cmd ~parents ~env = { cmd; parents; env }
 
   let cmd e = e.cmd
-  let only_grouping e = e.only_grouping
   let parents e = e.parents
-  let children e = e.children
   let env_var e v = e.env v
   let main e = match List.rev e.parents with [] -> e.cmd | m :: _ -> m
   let cmd_names e = List.rev_map Cmd.name (e.cmd :: e.parents)
   let with_cmd ei cmd = { ei with cmd }
-  let has_choice e cmd =
-    let is_cmd t = Cmd.name t = cmd in
-    List.exists is_cmd e.children
 end
 
 (*---------------------------------------------------------------------------
