@@ -269,6 +269,10 @@ let xref_docs ~errs ei =
   in
   let xref_str (name, sec) = strf "%s(%d)" (esc name) sec in
   let xrefs = Cmdliner_info.Cmd.man_xrefs @@ Cmdliner_info.Eval.cmd ei in
+  let xrefs = match main == Cmdliner_info.Eval.cmd ei with
+  | true -> List.filter (fun x -> x <> `Main) xrefs  (* filter out default *)
+  | false -> xrefs
+  in
   let xrefs = List.fold_left (fun acc x -> to_xref x :: acc) [] xrefs in
   let xrefs = List.(rev_map xref_str (sort rev_compare xrefs)) in
   if xrefs = [] then [] else

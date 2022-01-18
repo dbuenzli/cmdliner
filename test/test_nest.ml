@@ -26,7 +26,8 @@ let birds =
   Cmd.group ~default:Term.(const (fun k -> ()) $ kind) info [fly; land']
 
 let mammals =
-  let info = Cmd.info "mammals" ~doc:"Operate on mammals." in
+  let man_xrefs = [`Main; `Cmd "birds" ] in
+  let info = Cmd.info "mammals" ~doc:"Operate on mammals." ~man_xrefs in
   Cmd.v info Term.(const (fun () -> ()) $ const ())
 
 let fishs =

@@ -49,8 +49,12 @@ command information with a term.
 However in this transition the following things are changed or added:
 
 * All default values of `Cmd.info` match those of `Term.info` except
-  for the `?exits` argument which default to `Cmd.Exit.defaults`
-  rather than the empty list.
+  for:
+  * The `?exits` argument which defaults to `Cmd.Exit.defaults`
+    rather than the empty list.
+  * The `?man_xrefs` which defaults to the list ``[`Main]`` rather
+    than the empty list (this means that by default sub commands 
+    at any level automatically cross-reference the main command).
 
 * The `Cmd.Exit.some_error` code is added to `Cmd.Exit.defaults`
   (which in turn is the default for command infos see above).  This is

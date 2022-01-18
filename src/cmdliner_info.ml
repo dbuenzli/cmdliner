@@ -168,7 +168,7 @@ module Cmd = struct
       children : t list; } (* Children, if any. *)
 
   let v
-      ?man_xrefs:(man_xrefs = []) ?man:(man = []) ?envs:(envs = [])
+      ?man_xrefs:(man_xrefs = [`Main]) ?man:(man = []) ?envs:(envs = [])
       ?exits:(exits = Exit.defaults)
       ?sdocs:(sdocs = Cmdliner_manpage.s_options)
       ?docs:(docs = "COMMANDS") ?doc:(doc = "") ?version:version
