@@ -268,7 +268,7 @@ let xref_docs ~errs ei =
       (Format.fprintf errs "xref %s: no such command name@." c; "doc-err", 0)
   in
   let xref_str (name, sec) = strf "%s(%d)" (esc name) sec in
-  let xrefs = Cmdliner_info.Cmd.man_xrefs @@ Cmdliner_info.Eval.main ei in
+  let xrefs = Cmdliner_info.Cmd.man_xrefs @@ Cmdliner_info.Eval.cmd ei in
   let xrefs = List.fold_left (fun acc x -> to_xref x :: acc) [] xrefs in
   let xrefs = List.(rev_map xref_str (sort rev_compare xrefs)) in
   if xrefs = [] then [] else
