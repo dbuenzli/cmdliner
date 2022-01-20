@@ -17,6 +17,8 @@ val actual_args : t -> Cmdliner_info.Arg.t -> string list
 (** Actual command line arguments from the command line *)
 
 val is_opt : string -> bool
+val deprecated_msgs : t -> string list
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers
 

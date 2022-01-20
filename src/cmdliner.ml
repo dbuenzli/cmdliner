@@ -3,8 +3,6 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-(* Deprecated functionality from Term module *)
-
 module Manpage = Cmdliner_manpage
 module Term = struct
   include Cmdliner_term

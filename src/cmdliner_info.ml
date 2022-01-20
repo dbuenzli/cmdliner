@@ -80,6 +80,7 @@ module Arg = struct
 
   type t = (* information about a command line argument. *)
     { id : int; (* unique id for the argument. *)
+      deprecated : string option; (* deprecation message *)
       absent : absence; (* behaviour if absent. *)
       env : Env.info option; (* environment variable for default value. *)
       doc : string; (* help. *)
@@ -92,7 +93,7 @@ module Arg = struct
 
   let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
-  let v ?docs ?(docv = "") ?(doc = "") ?env names =
+  let v ?deprecated ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let opt_names = List.map dash names in
     let docs = match docs with
@@ -102,10 +103,12 @@ module Arg = struct
         | [] -> Cmdliner_manpage.s_arguments
         | _ -> Cmdliner_manpage.s_options
     in
-    { id = Cmdliner_base.uid (); absent = Val (lazy ""); env; doc; docv; docs;
-      pos = dumb_pos; opt_kind = Flag; opt_names; opt_all = false; }
+    { id = Cmdliner_base.uid (); deprecated; absent = Val (lazy "");
+      env; doc; docv; docs; pos = dumb_pos; opt_kind = Flag; opt_names;
+      opt_all = false; }
 
   let id a = a.id
+  let deprecated a = a.deprecated
   let absent a = a.absent
   let env a = a.env
   let doc a = a.doc

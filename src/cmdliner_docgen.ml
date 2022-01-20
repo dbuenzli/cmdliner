@@ -115,25 +115,28 @@ let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
 (* Argument docs *)
 
 let arg_man_item_label a =
-  if Cmdliner_info.Arg.is_pos a
-  then strf "$(i,%s)" (esc @@ Cmdliner_info.Arg.docv a) else
-  let fmt_name var = match Cmdliner_info.Arg.opt_kind a with
-  | Cmdliner_info.Arg.Flag -> fun n -> strf "$(b,%s)" (esc n)
-  | Cmdliner_info.Arg.Opt ->
-      fun n ->
-        if String.length n > 2
-        then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
-        else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
-  | Cmdliner_info.Arg.Opt_vopt _ ->
-      fun n ->
-        if String.length n > 2
-        then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
-        else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
+  let s = match Cmdliner_info.Arg.is_pos a with
+  | true -> strf "$(i,%s)" (esc @@ Cmdliner_info.Arg.docv a)
+  | false ->
+      let fmt_name var = match Cmdliner_info.Arg.opt_kind a with
+      | Cmdliner_info.Arg.Flag -> fun n -> strf "$(b,%s)" (esc n)
+      | Cmdliner_info.Arg.Opt ->
+          fun n ->
+            if String.length n > 2
+            then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
+            else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
+      | Cmdliner_info.Arg.Opt_vopt _ ->
+          fun n ->
+            if String.length n > 2
+            then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
+            else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
+      in
+      let var = match Cmdliner_info.Arg.docv a with "" -> "VAL" | v -> v in
+      let names = List.sort compare (Cmdliner_info.Arg.opt_names a) in
+      String.concat ", " (List.rev_map (fmt_name var) names)
   in
-  let var = match Cmdliner_info.Arg.docv a with "" -> "VAL" | v -> v in
-  let names = List.sort compare (Cmdliner_info.Arg.opt_names a) in
-  let s = String.concat ", " (List.rev_map (fmt_name var) names) in
-  s
+  match Cmdliner_info.Arg.deprecated a with
+  | None -> s | Some _ -> "(Deprecated) " ^ s
 
 let arg_to_man_item ~errs ~subst ~buf a =
   let or_env ~value a = match Cmdliner_info.Arg.env a with
@@ -166,6 +169,13 @@ let arg_to_man_item ~errs ~subst ~buf a =
 let arg_docs ~errs ~subst ~buf ei =
   let by_sec_by_arg a0 a1 =
     let c = compare (Cmdliner_info.Arg.docs a0) (Cmdliner_info.Arg.docs a1) in
+    if c <> 0 then c else
+    let c =
+      match Cmdliner_info.Arg.deprecated a0, Cmdliner_info.Arg.deprecated a1
+      with
+      | None, None | Some _, Some _ -> 0
+      | None, Some _ -> -1 | Some _, None -> 1
+    in
     if c <> 0 then c else
     match Cmdliner_info.Arg.is_opt a0, Cmdliner_info.Arg.is_opt a1 with
     | true, true -> (* optional by name *)
@@ -287,7 +297,7 @@ let ensure_s_name ei sm =
   if Cmdliner_manpage.(smap_has_section sm ~sec:s_name) then sm else
   let cmd = Cmdliner_info.Eval.cmd ei in
   let parents = Cmdliner_info.Eval.parents ei in
-  let tname = invocation ~sep:"-" ~parents cmd in
+  let tname = (deprecated cmd) ^ invocation ~sep:"-" ~parents cmd in
   let tdoc = Cmdliner_info.Cmd.doc cmd in
   let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
   let tagline = `P (strf "%s%s" tname tagline) in

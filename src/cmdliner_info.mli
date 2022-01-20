@@ -60,10 +60,11 @@ module Arg : sig
 
   type t
   val v :
-    ?docs:string -> ?docv:string -> ?doc:string ->
+    ?deprecated:string -> ?docs:string -> ?docv:string -> ?doc:string ->
     ?env:Env.info -> string list -> t
 
   val id : t -> int
+  val deprecated : t -> string option
   val absent : t -> absence
   val env : t -> Env.info option
   val doc : t -> string

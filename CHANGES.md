@@ -31,7 +31,8 @@
   were not properly escaped. Also they are now rendered in
   bold. Thanks to David Allsopp for the patch (#111).
   
-- Support for deprecating commands (#66).
+- Support for deprecating commands and arguments (#66). See the
+  `?deprecated` argument of `Cmd.info` and `Arg.info`.
 
 - Add `Manpage.s_none` a special section name to use whenever you 
   want something not to be listed in a command's manpage.

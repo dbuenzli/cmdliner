@@ -39,11 +39,20 @@ let fishs =
   Cmd.v info Term.(const (fun n -> ()) $ name')
 
 let camels =
-  let deprecated =
-    "The 'camels' function is deprecated use 'mammals' instead."
+  let herd =
+    let doc = "Find in herd $(docv)." and docv = "HERD" in
+    let deprecated = "deprecated, herds are ignored." in
+    Arg.(value & pos 0 (some string) None & info [] ~deprecated ~doc ~docv)
+  in
+  let bactrian =
+    let doc = "Specify a bactrian camel." in
+    let deprecated = "deprecated, use nothing instead." in
+    Arg.(value & flag & info ["bactrian"; "b"] ~deprecated ~doc)
+  in
+  let deprecated = "deprecated, use 'mammals' instead."
   in
   let info = Cmd.info "camels" ~deprecated ~doc:"Operate on camels." in
-  Cmd.v info Term.(const (fun n -> ()) $ const ())
+  Cmd.v info Term.(const (fun n h -> ()) $ bactrian $ herd)
 
 let cmd =
   let info = Cmd.info "test_nest" ~version:"X.Y.Z" in

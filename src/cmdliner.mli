@@ -873,8 +873,8 @@ module Arg : sig
   (** The type for information about command line arguments. *)
 
   val info :
-    ?docs:string -> ?docv:string -> ?doc:string -> ?env:env -> string list ->
-    info
+    ?deprecated:string -> ?docs:string -> ?docv:string ->
+    ?doc:string -> ?env:env -> string list -> info
   (** [info docs docv doc env names] defines information for
       an argument.
       {ul
@@ -903,7 +903,11 @@ module Arg : sig
          will be listed. For optional arguments this defaults
          to {!Manpage.s_options}. For positional arguments this defaults
          to {!Manpage.s_arguments}. However a positional argument is only
-         listed if it has both a [doc] and [docv] specified.}} *)
+         listed if it has both a [doc] and [docv] specified.}
+      {- [deprecated], if specified the argument is deprecated and the
+         string is a message output on standard error when the argument
+         is used.}} *)
+
 
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for

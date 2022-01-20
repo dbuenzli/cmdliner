@@ -181,6 +181,27 @@ let create ?(peek_opts = false) al args =
   | Ok (cl, pargs) -> process_pos_args posidx cl pargs
   | Error (errs, cl, _) -> Error (errs, cl)
 
+let deprecated_msgs cl =
+  let add i arg acc = match Cmdliner_info.Arg.deprecated i with
+  | None -> acc
+  | Some msg ->
+      let plural l = if List.length l > 1 then "s " else " " in
+      match arg with
+      | O [] | P [] -> acc (* Should not happen *)
+      | O os ->
+          let plural = plural os in
+          let names = List.map (fun (_, n, _) -> n) os in
+          let names = String.concat " " (List.map Cmdliner_base.quote names) in
+          let msg = "option" :: plural :: names :: ": " :: msg :: [] in
+          String.concat "" msg :: acc
+      | P args ->
+          let plural = plural args in
+          let args = String.concat " " (List.map Cmdliner_base.quote args) in
+          let msg = "argument" :: plural :: args :: ": " :: msg :: [] in
+          String.concat "" msg :: acc
+  in
+  Amap.fold add cl []
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers
 
