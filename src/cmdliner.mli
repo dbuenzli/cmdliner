@@ -787,24 +787,21 @@ module Arg : sig
     are provided for many types of the standard library. *)
 
   type 'a parser = string -> [ `Ok of 'a | `Error of string ]
+  [@@ocaml.deprecated "Use Arg.conv or Arg.conv' instead."]
   (** The type for argument parsers.
 
-      @deprecated Use a parser with [('a, [ `Msg of string]) result] results
-      and {!conv}. *)
+      {b Deprecated.} Use parser signatures of {!val-conv} or {!val-conv'}. *)
 
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
 
+  [@@@alert "-deprecated"] (* Need to be able to mention them ! *)
   type 'a conv = 'a parser * 'a printer
   (** The type for argument converters.
 
-      {b WARNING.} This type will become abstract in the next
-      major version of cmdliner, use {!val:conv} or {!pconv}
-      to construct values of this type. *)
-
-  type 'a converter = 'a conv
-  (** @deprecated Use the {!type:conv} type via the {!val:conv} and {!pconv}
-      functions. *)
+      {b Warning.} Do not use directly, use {!val-conv} or {!val-conv'}.
+      This type will become abstract in the next major version of cmdliner. *)
+  [@@@alert "+deprecated"] (* Need to be able to mention them ! *)
 
   val conv :
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
@@ -821,22 +818,17 @@ module Arg : sig
   (** [conv'] is like {!val-conv} but the [Error] case has an unlabelled
       string. *)
 
-  val pconv :
-    ?docv:string -> 'a parser * 'a printer -> 'a conv
-  (** [pconv] is like {!converter}, but uses a deprecated {!parser}
-      signature. *)
-
   val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
-  (** [conv_parser c] 's [c]'s parser. *)
+  (** [conv_parser c] is the parser of [c]. *)
 
   val conv_printer : 'a conv -> 'a printer
-  (** [conv_printer c] is [c]'s printer. *)
+  (** [conv_printer c] is the printer of [c]. *)
 
   val conv_docv : 'a conv -> string
   (** [conv_docv c] is [c]'s documentation meta-variable.
 
-      {b WARNING.} Currently always returns ["VALUE"] in the future
-      will return the value given to {!val-conv} or {!val-pconv}. *)
+      {b Warning.} Currently always returns ["VALUE"] in the future
+      will return the value given to {!val-conv} or {!val-conv'}. *)
 
   val parser_of_kind_of_string :
     kind:string -> (string -> 'a option) ->
@@ -859,13 +851,6 @@ module Arg : sig
     if the argument is absent from the command line and the variable
     is defined. *)
 
-  type env = Cmd.Env.info
-  (** The type for environment variables and their documentation. *)
-
-  val env_var :
-    ?deprecated:string -> ?docs:string -> ?doc:string -> Cmd.Env.var -> env
-  (** See {!Cmd.Env.info}. *)
-
   type 'a t
   (** The type for arguments holding data of type ['a]. *)
 
@@ -874,7 +859,7 @@ module Arg : sig
 
   val info :
     ?deprecated:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:env -> string list -> info
+    ?doc:string -> ?env:Cmd.Env.info -> string list -> info
   (** [info docs docv doc env names] defines information for
       an argument.
       {ul
@@ -907,7 +892,6 @@ module Arg : sig
       {- [deprecated], if specified the argument is deprecated and the
          string is a message output on standard error when the argument
          is used.}} *)
-
 
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for
@@ -1135,8 +1119,32 @@ module Arg : sig
 
   val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
   (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
-end
 
+  (** {1:deprecated Deprecated} *)
+
+  [@@@alert "-deprecated"]
+
+  type 'a converter = 'a conv
+  [@@ocaml.deprecated "Use Arg.conv' function instead."]
+  (** See {!Cmd.Env.conv'}. *)
+
+  val pconv :
+    ?docv:string -> 'a parser * 'a printer -> 'a conv
+  [@@ocaml.deprecated "Use Arg.conv or Arg.conv' function instead."]
+  (** [pconv] is like {!val-conv} or {!val-conv'}, but uses a
+      deprecated {!parser} signature. *)
+
+
+  type env = Cmd.Env.info
+  [@@ocaml.deprecated "Use Cmd.Env.info instead."]
+  (** See {!Cmd.Env.type-info} *)
+
+  val env_var :
+    ?deprecated:string -> ?docs:string -> ?doc:string -> Cmd.Env.var ->
+    Cmd.Env.info
+  [@@ocaml.deprecated "Use Cmd.Env.info instead."]
+  (** See {!Cmd.Env.val-info}. *)
+end
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers

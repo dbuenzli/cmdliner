@@ -15,7 +15,7 @@ let count =
 let msg =
   let env =
     let doc = "Overrides the default message to print." in
-    Arg.env_var "CHORUS_MSG" ~doc
+    Cmd.Env.info "CHORUS_MSG" ~doc
   in
   let doc = "The message to print." in
   Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
