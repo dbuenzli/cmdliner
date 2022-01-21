@@ -158,7 +158,8 @@ let do_deprecated_msgs err_ppf cl ei =
       let name = Cmdliner_base.quote (Cmdliner_info.Cmd.name cmd) in
       String.concat "" ("command " :: name :: ": " :: msg :: []) :: msgs
   in
-  Cmdliner_msg.pp_err err_ppf ei ~err:(String.concat "\n" msgs)
+  if msgs <> []
+  then Cmdliner_msg.pp_err err_ppf ei ~err:(String.concat "\n" msgs)
 
 let eval_value
     ?help:(help_ppf = Format.std_formatter)
