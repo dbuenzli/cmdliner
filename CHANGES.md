@@ -1,10 +1,20 @@
 
 - Require OCaml 4.08.
 
+- Support for deprecating commands, arguments and environment variables (#66).
+  See the `?deprecated` argument of `Cmd.info`, `Cmd.Env.info` and `Arg.info`.
+
+- Add `Manpage.s_none` a special section name to use whenever you 
+  want something not to be listed in a command's manpage.
+
 - Add `Arg.conv'` like `Arg.conv` but with a parser signature that returns 
   untagged string errors.
-  
+
+- Add `Term.{term,cli_parse}_result'` functions.
+
 - Add deprecation alerts on what is already deprecated.
+
+- On unices, use `command -v` rather than `type` to find commands.
 
 - Stop using backticks for left quotes. Use apostrophes everywhere. 
   Thanks to Ryan Moore for reporting a typo that prompted the change (#128).
@@ -19,24 +29,14 @@
   `~quoted:true` (the optional argument is available on earlier
   versions).
 
-- On unices, use `command -v` rather than `type` to find commands.
-
-- `Term.exit` and `Term.exit_status_of_result` now require a `unit`
-  result.  This avoids various errors to go undetected. Thanks to
-  Thomas Leonard for the patch (#124).
+- The deprecated `Term.exit` and `Term.exit_status_of_result` now 
+  require a `unit` result.  This avoids various errors to go undetected. 
+  Thanks to Thomas Leonard for the patch (#124).
   
-- Add `Term.{term,cli_parse}_result'` functions.
-
 - Fix absent and default option values rendering in manpages. They
   were not properly escaped. Also they are now rendered in
   bold. Thanks to David Allsopp for the patch (#111).
   
-- Support for deprecating commands and arguments (#66). See the
-  `?deprecated` argument of `Cmd.info` and `Arg.info`.
-
-- Add `Manpage.s_none` a special section name to use whenever you 
-  want something not to be listed in a command's manpage.
-
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 
 This version of cmdliner deprecates the `Term.eval*` evaluation
@@ -88,6 +88,8 @@ to
 ```
 tool cmd SUBCMD [OPTION]... [ARG]...
 ```
+
+Thanks to Rudi Grinberg for prototyping the feature in #123.
 
 ### UTF-8 manpage support 
 
