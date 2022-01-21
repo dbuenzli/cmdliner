@@ -574,18 +574,23 @@ module Cmd : sig
     type info
     (** The type for environment variable information. *)
 
-    val info : ?docs:string -> ?doc:string -> var -> info
+    val info : ?deprecated:string -> ?docs:string -> ?doc:string -> var -> info
     (** [env_info ~docs ~doc var] describes an environment variable
-        [var]. [doc] is the man page information of the environment
-        variable, defaults to ["undocumented"]. [docs] is the title of
-        the man page section in which the environment variable will be
-        listed, it defaults to {!Cmdliner.Manpage.s_environment}.
-
+        [var] such that:
+        {ul
+        {- [doc] is the man page information of the environment
+            variable, defaults to ["undocumented"].}
+        {- [docs] is the title of the man page section in which the environment
+          variable will be listed, it defaults to
+          {!Cmdliner.Manpage.s_environment}.}
+        {- [deprecated], if specified the environment is deprecated and the
+           string is a message output on standard error when the environment
+           variable gets used to lookup the default value of an argument.}}
         In [doc] the {{!page-tool_man.doclang}documentation markup language}
         can be used with following variables:
         {ul
         {- [$(env)], the value of [var].}
-        {- The variables mentioned in {!val-info}}} *)
+        {- The variables mentioned in {!val-info}.}} *)
   end
 
   type info
@@ -857,14 +862,9 @@ module Arg : sig
   type env = Cmd.Env.info
   (** The type for environment variables and their documentation. *)
 
-  val env_var : ?docs:string -> ?doc:string -> Cmd.Env.var -> env
-  (** [env_var docs doc var] is an environment variables [var]. [doc]
-      is the man page information of the environment variable, the
-      {{!page-tool_man.doclang}documentation markup language} with the variables
-      mentioned in {!val-info} be used; it defaults to ["See option
-      $(opt)."].  [docs] is the title of the man page section in which
-      the environment variable will be listed, it defaults to
-      {!Manpage.s_environment}. *)
+  val env_var :
+    ?deprecated:string -> ?docs:string -> ?doc:string -> Cmd.Env.var -> env
+  (** See {!Cmd.Env.info}. *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)

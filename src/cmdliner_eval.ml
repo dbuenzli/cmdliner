@@ -166,7 +166,7 @@ let eval_value
     ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
   =
   let args, f, cmd, parents, res = find_term (remove_exec argv) cmd in
-  let ei = Cmdliner_info.Eval.v ~cmd ~parents ~env in
+  let ei = Cmdliner_info.Eval.v ~cmd ~parents ~env ~err_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let res = match res with
@@ -202,7 +202,8 @@ let eval_peek_opts
   let version = if version_opt then Some "dummy" else None in
   let cmd = Cmdliner_info.Cmd.v ?version "dummy" in
   let cmd = Cmdliner_info.Cmd.add_args cmd args in
-  let ei = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env in
+  let null_ppf = Format.make_formatter (fun _ _ _ -> ()) (fun () -> ()) in
+  let ei = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env ~err_ppf:null_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let cli_args =  remove_exec argv in

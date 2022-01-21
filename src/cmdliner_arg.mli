@@ -29,7 +29,7 @@ val parser_of_kind_of_string :
 val some : ?none:string -> 'a converter -> 'a option converter
 
 type env = Cmdliner_info.Env.info
-val env_var : ?docs:string -> ?doc:string -> string -> env
+val env_var : ?deprecated:string -> ?docs:string -> ?doc:string -> string -> env
 
 type 'a t = 'a Cmdliner_term.t
 

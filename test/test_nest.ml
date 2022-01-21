@@ -45,9 +45,10 @@ let camels =
     Arg.(value & pos 0 (some string) None & info [] ~deprecated ~doc ~docv)
   in
   let bactrian =
-    let doc = "Specify a bactrian camel." in
     let deprecated = "deprecated, use nothing instead." in
-    Arg.(value & flag & info ["bactrian"; "b"] ~deprecated ~doc)
+    let doc = "Specify a bactrian camel." in
+    let env = Cmd.Env.info "BACTRIAN" ~deprecated in
+    Arg.(value & flag & info ["bactrian"; "b"] ~deprecated ~env ~doc)
   in
   let deprecated = "deprecated, use 'mammals' instead."
   in

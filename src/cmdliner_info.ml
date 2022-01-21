@@ -43,15 +43,18 @@ module Env = struct
   type var = string
   type info = (* information about an environment variable. *)
     { id : int; (* unique id for the env var. *)
+      deprecated : string option;
       var : string; (* the variable. *)
       doc : string; (* help. *)
       docs : string; } (* title of help section where listed. *)
 
   let info
+      ?deprecated
       ?(docs = Cmdliner_manpage.s_environment) ?(doc = "See option $(opt).") var
     =
-    { id = Cmdliner_base.uid (); var; doc; docs }
+    { id = Cmdliner_base.uid (); deprecated; var; doc; docs }
 
+  let info_deprecated i = i.deprecated
   let info_var i = i.var
   let info_doc i = i.doc
   let info_docs i = i.docs
@@ -208,13 +211,15 @@ module Eval = struct
   type t = (* information about the evaluation context. *)
     { cmd : Cmd.t; (* cmd being evaluated. *)
       parents : Cmd.t list; (* parents of cmd, root is last. *)
-      env : string -> string option } (* environment variable lookup. *)
+      env : string -> string option; (* environment variable lookup. *)
+      err_ppf : Format.formatter (* error formatter *) }
 
-  let v ~cmd ~parents ~env = { cmd; parents; env }
+  let v ~cmd ~parents ~env ~err_ppf = { cmd; parents; env; err_ppf }
 
   let cmd e = e.cmd
   let parents e = e.parents
   let env_var e v = e.env v
+  let err_ppf e = e.err_ppf
   let main e = match List.rev e.parents with [] -> e.cmd | m :: _ -> m
   let with_cmd ei cmd = { ei with cmd }
 end

@@ -25,7 +25,7 @@ let default_exits =
   (exit_info exit_status_success ~doc:"on success.") :: default_error_exits
 
 type env_info = Cmdliner_info.Env.info
-let env_info = Cmdliner_info.Env.info
+let env_info = Cmdliner_info.Env.info ?deprecated:None
 
 type info = Cmdliner_info.Cmd.t
 let info

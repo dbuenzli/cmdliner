@@ -238,6 +238,8 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
     if Cmdliner_info.Env.Set.mem e seen then acc else
     let seen = Cmdliner_info.Env.Set.add e seen in
     let var = strf "$(b,%s)" @@ esc (Cmdliner_info.Env.info_var e) in
+    let var = match Cmdliner_info.Env.info_deprecated e with
+    | None -> var | Some _ -> "(Deprecated) " ^ var in
     let doc = Cmdliner_info.Env.info_doc e in
     let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
     let envs = (Cmdliner_info.Env.info_docs e, `I (var, doc)) :: envs in

@@ -30,10 +30,11 @@ end
 module Env : sig
   type var = string
   type info
-  val info : ?docs:string -> ?doc:string -> var -> info
+  val info : ?deprecated:string -> ?docs:string -> ?doc:string -> var -> info
   val info_var : info -> string
   val info_doc : info -> string
   val info_docs : info -> string
+  val info_deprecated : info -> string option
 
   module Set : Set.S with type elt = info
 end
@@ -123,11 +124,15 @@ end
 (** Evaluation. *)
 module Eval : sig
   type t
-  val v : cmd:Cmd.t -> parents:Cmd.t list -> env:(string -> string option) -> t
+  val v :
+    cmd:Cmd.t -> parents:Cmd.t list -> env:(string -> string option) ->
+    err_ppf:Format.formatter -> t
+
   val cmd : t -> Cmd.t
   val main : t -> Cmd.t
   val parents : t -> Cmd.t list
   val env_var : t -> string -> string option
+  val err_ppf : t -> Format.formatter
   val with_cmd : t -> Cmd.t -> t
 end
 

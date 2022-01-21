@@ -71,6 +71,14 @@ let parse_to_list parser s = match parser s with
 | `Ok v -> `Ok [v]
 | `Error _ as e -> e
 
+let report_deprecated_env ei e = match Cmdliner_info.Env.info_deprecated e with
+| None -> ()
+| Some msg ->
+    let var = Cmdliner_info.Env.info_var e in
+    let msg = String.concat "" ["environment variable "; var; ": "; msg ] in
+    let err_fmt = Cmdliner_info.Eval.err_ppf ei in
+    Cmdliner_msg.pp_err err_fmt ei ~err:msg
+
 let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
 | None -> Ok absent
 | Some env ->
@@ -79,8 +87,8 @@ let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
     | None -> Ok absent
     | Some v ->
         match parse v with
-        | `Ok v -> Ok v
         | `Error e -> err (Cmdliner_msg.err_env_parse env ~err:e)
+        | `Ok v -> report_deprecated_env ei env; Ok v
 
 let arg_to_args = Cmdliner_info.Arg.Set.singleton
 let list_to_args f l =
