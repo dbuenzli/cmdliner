@@ -571,8 +571,10 @@ module Cmd : sig
 
     (** {1:info Environment variable information} *)
 
-    type info
+    [@@@alert "-deprecated"]
+    type info = Term.env_info (* because of Arg. *)
     (** The type for environment variable information. *)
+    [@@@alert "+deprecated"]
 
     val info : ?deprecated:string -> ?docs:string -> ?doc:string -> var -> info
     (** [env_info ~docs ~doc var] describes an environment variable
