@@ -202,7 +202,7 @@ module Cmd = struct
     | None -> false, cmd.args
     | Some args -> true, Arg.Set.union args cmd.args
     in
-    { cmd with has_args; children }
+    { cmd with has_args; args; children }
 end
 
 (* Evaluation *)
