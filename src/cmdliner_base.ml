@@ -149,12 +149,17 @@ type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv = 'a parser * 'a printer
 
 let some ?(none = "") (parse, print) =
-  let parse s = match parse s with
-  | `Ok v -> `Ok (Some v)
-  | `Error _ as e -> e
-  in
+  let parse s = match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e in
   let print ppf v = match v with
   | None -> Format.pp_print_string ppf none
+  | Some v -> print ppf v
+  in
+  parse, print
+
+let some' ?none (parse, print) =
+  let parse s = match parse s with `Ok v -> `Ok (Some v) | `Error _ as e -> e in
+  let print ppf = function
+  | None -> (match none with None -> () | Some v -> print ppf v)
   | Some v -> print ppf v
   in
   parse, print

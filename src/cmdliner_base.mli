@@ -35,6 +35,7 @@ type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv = 'a parser * 'a printer
 
 val some : ?none:string -> 'a conv -> 'a option conv
+val some' : ?none:'a -> 'a conv -> 'a option conv
 val bool : bool conv
 val char : char conv
 val int : int conv

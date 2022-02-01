@@ -27,6 +27,7 @@ val parser_of_kind_of_string :
   (string -> ('a, [`Msg of string]) result)
 
 val some : ?none:string -> 'a converter -> 'a option converter
+val some' : ?none:'a -> 'a converter -> 'a option converter
 
 type env = Cmdliner_info.Env.info
 val env_var : ?deprecated:string -> ?docs:string -> ?doc:string -> string -> env

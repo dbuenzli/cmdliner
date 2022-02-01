@@ -51,6 +51,7 @@ let parser_of_kind_of_string ~kind k_of_string =
   | Some v -> Ok v
 
 let some = Cmdliner_base.some
+let some' = Cmdliner_base.some'
 
 (* Argument information *)
 

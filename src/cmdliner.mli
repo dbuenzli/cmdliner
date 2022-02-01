@@ -839,12 +839,16 @@ module Arg : sig
       parser using the [kind_of_string] function for parsing and [kind]
       to report errors (e.g. could be ["an integer"] for an [int] parser.). *)
 
+  val some' : ?none:'a -> 'a conv -> 'a option conv
+  (** [some' ?none c] is like the converter [c] except it returns
+      [Some] value. It is used for command line arguments that default
+      to [None] when absent. If provided, [none] is used with [conv]'s
+      printer to document the value taken on absence; to document
+      a more complex behaviour use the [absent] argument of {!info}. *)
+
   val some : ?none:string -> 'a conv -> 'a option conv
-  (** [some none c] is like the converter [c] except it returns
-      [Some] value. It is used for command line arguments
-      that default to [None] when absent. [none] is used to document
-      the absence as a value, if you want to use a sentence use
-      the [absent] argument of {!info}. *)
+  (** [some ?none c] is like [some'] but [none] is described as a
+      string that will be rendered in bold. *)
 
 (** {1:arginfo Arguments and their information}
 
