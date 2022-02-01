@@ -33,9 +33,13 @@
   require a `unit` result.  This avoids various errors to go undetected. 
   Thanks to Thomas Leonard for the patch (#124).
   
-- Fix absent and default option values rendering in manpages. They
-  were not properly escaped. Also they are now rendered in
-  bold. Thanks to David Allsopp for the patch (#111).
+- Fix absent and default option values (`none` argument of `Arg.some`)
+  rendering in manpages. They were not escaped.  Also they are now
+  rendered in bold. Previously the documentation markup would be
+  interpreted here, if you were relying on this, specify the new
+  `?absent` optional argument of `Arg.info` instead. Thanks to David
+  Allsopp for the patch (#111).
+  
   
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 

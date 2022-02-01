@@ -176,7 +176,10 @@ let parse_opt_value parse f v = match parse v with
 
 let opt ?vopt (parse, print) v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
-  let absent = Cmdliner_info.Arg.Val (lazy (str_of_pp print v)) in
+  let absent = match Cmdliner_info.Arg.absent a with
+  | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
+  | _ -> Cmdliner_info.Arg.Val (lazy (str_of_pp print v))
+  in
   let kind = match vopt with
   | None -> Cmdliner_info.Arg.Opt
   | Some dv -> Cmdliner_info.Arg.Opt_vopt (str_of_pp print dv)
@@ -197,7 +200,10 @@ let opt ?vopt (parse, print) v a =
 
 let opt_all ?vopt (parse, print) v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
-  let absent = Cmdliner_info.Arg.Val (lazy "") in
+  let absent = match Cmdliner_info.Arg.absent a with
+  | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
+  | _ -> Cmdliner_info.Arg.Val (lazy "")
+  in
   let kind = match vopt with
   | None -> Cmdliner_info.Arg.Opt
   | Some dv -> Cmdliner_info.Arg.Opt_vopt (str_of_pp print dv)
@@ -226,7 +232,10 @@ let parse_pos_value parse a v = match parse v with
 
 let pos ?(rev = false) k (parse, print) v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
-  let absent = Cmdliner_info.Arg.Val (lazy (str_of_pp print v)) in
+  let absent = match Cmdliner_info.Arg.absent a with
+  | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
+  | _ -> Cmdliner_info.Arg.Val (lazy (str_of_pp print v))
+  in
   let pos = Cmdliner_info.Arg.pos ~rev ~start:k ~len:(Some 1) in
   let a = Cmdliner_info.Arg.make_pos_abs ~absent ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with

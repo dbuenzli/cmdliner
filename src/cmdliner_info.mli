@@ -45,6 +45,8 @@ module Arg : sig
   type absence =
   | Err  (** an error is reported. *)
   | Val of string Lazy.t (** if <> "", takes the given default value. *)
+  | Doc of string
+    (** if <> "", a doc string interpreted in the doc markup language. *)
   (** The type for what happens if the argument is absent from the cli. *)
 
   type opt_kind =
@@ -61,8 +63,8 @@ module Arg : sig
 
   type t
   val v :
-    ?deprecated:string -> ?docs:string -> ?docv:string -> ?doc:string ->
-    ?env:Env.info -> string list -> t
+    ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
+    ?doc:string -> ?env:Env.info -> string list -> t
 
   val id : t -> int
   val deprecated : t -> string option

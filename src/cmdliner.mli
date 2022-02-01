@@ -842,8 +842,9 @@ module Arg : sig
   val some : ?none:string -> 'a conv -> 'a option conv
   (** [some none c] is like the converter [c] except it returns
       [Some] value. It is used for command line arguments
-      that default to [None] when absent. [none] is what to print to
-      document the absence (defaults to [""]). *)
+      that default to [None] when absent. [none] is used to document
+      the absence as a value, if you want to use a sentence use
+      the [absent] argument of {!info}. *)
 
 (** {1:arginfo Arguments and their information}
 
@@ -860,7 +861,7 @@ module Arg : sig
   (** The type for information about command line arguments. *)
 
   val info :
-    ?deprecated:string -> ?docs:string -> ?docv:string ->
+    ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
     ?doc:string -> ?env:Cmd.Env.info -> string list -> info
   (** [info docs docv doc env names] defines information for
       an argument.
@@ -893,7 +894,11 @@ module Arg : sig
          listed if it has both a [doc] and [docv] specified.}
       {- [deprecated], if specified the argument is deprecated and the
          string is a message output on standard error when the argument
-         is used.}} *)
+         is used.}
+      {- [absent], if specified a documentation string that indicates
+         what happens when the argument is absent. The document language
+         can be used like in [doc]. This overrides the automatic default
+         value rendering that is performed by the combinators.} *)
 
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for

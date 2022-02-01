@@ -66,7 +66,7 @@ end
 (* Arguments *)
 
 module Arg = struct
-  type absence = Err | Val of string Lazy.t
+  type absence = Err | Val of string Lazy.t | Doc of string
   type opt_kind = Flag | Opt | Opt_vopt of string
 
   type pos_kind = (* information about a positional argument. *)
@@ -96,7 +96,7 @@ module Arg = struct
 
   let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
-  let v ?deprecated ?docs ?(docv = "") ?(doc = "") ?env names =
+  let v ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let opt_names = List.map dash names in
     let docs = match docs with
@@ -106,7 +106,7 @@ module Arg = struct
         | [] -> Cmdliner_manpage.s_arguments
         | _ -> Cmdliner_manpage.s_options
     in
-    { id = Cmdliner_base.uid (); deprecated; absent = Val (lazy "");
+    { id = Cmdliner_base.uid (); deprecated; absent = Doc absent;
       env; doc; docv; docs; pos = dumb_pos; opt_kind = Flag; opt_names;
       opt_all = false; }
 

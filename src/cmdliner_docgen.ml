@@ -139,6 +139,7 @@ let arg_man_item_label a =
   | None -> s | Some _ -> "(Deprecated) " ^ s
 
 let arg_to_man_item ~errs ~subst ~buf a =
+  let subst = arg_info_subst ~subst a in
   let or_env ~value a = match Cmdliner_info.Arg.env a with
   | None -> ""
   | Some e ->
@@ -147,6 +148,10 @@ let arg_to_man_item ~errs ~subst ~buf a =
   in
   let absent = match Cmdliner_info.Arg.absent a with
   | Cmdliner_info.Arg.Err -> "required"
+  | Cmdliner_info.Arg.Doc "" -> strf "%s" (or_env ~value:false a)
+  | Cmdliner_info.Arg.Doc s ->
+      let s = Cmdliner_manpage.subst_vars ~errs ~subst buf s in
+      strf "absent=%s%s" s (or_env ~value:true a)
   | Cmdliner_info.Arg.Val v ->
       match Lazy.force v with
       | "" -> strf "%s" (or_env ~value:false a)
@@ -161,7 +166,6 @@ let arg_to_man_item ~errs ~subst ~buf a =
   | s, "" | "", s -> strf " (%s)" s
   | s, s' -> strf " (%s) (%s)" s s'
   in
-  let subst = arg_info_subst ~subst a in
   let doc = Cmdliner_info.Arg.doc a in
   let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
   (Cmdliner_info.Arg.docs a, `I (arg_man_item_label a ^ argvdoc, doc))
