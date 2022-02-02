@@ -85,7 +85,7 @@ let initialize_cmd =
   let man = [
     `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
-       existing files and subdirectories become ...";
+       existing files and subdirectories become …";
     `Blocks help_secs; ]
   in
   let info = Cmd.info "initialize" ~doc ~sdocs ~man in
@@ -115,7 +115,7 @@ let record_cmd =
   let man =
     [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
-         a set of files ...";
+         a set of files…";
      `Blocks help_secs; ]
   in
   let info = Cmd.info "record" ~doc ~sdocs ~man in
@@ -130,7 +130,7 @@ let help_cmd =
   let doc = "display help about darcs and darcs commands" in
   let man =
     [`S Manpage.s_description;
-     `P "Prints help about darcs commands and other subjects...";
+     `P "Prints help about darcs commands and other subjects…";
      `Blocks help_secs; ]
   in
   let info = Cmd.info "help" ~doc ~man in

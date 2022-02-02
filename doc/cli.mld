@@ -4,7 +4,7 @@ For tools evaluating a command without sub commands the most general
 form of invocation is:
 
 {[
-tool [OPTION]... [ARG]...
+tool [OPTION]… [ARG]…
 ]}
 
 The tool automatically reponds to the [--help] option by printing the
@@ -23,7 +23,7 @@ argument.
 Tools evaluating commands with sub commands have this form of invocation
 
 {[
-tool [COMMAND]... [OPTION]... [ARG]...
+tool [COMMAND]… [OPTION]… [ARG]…
 ]}
 
 Commands automatically respond to the [--help] option by printing

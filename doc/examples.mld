@@ -9,7 +9,7 @@ We define the command line interface of an [rm] command with the
 synopsis:
 
 {v
-rm [OPTION]... FILE...
+rm [OPTION]… FILE…
 v}
 
 The [-f], [-i] and [-I] flags define the prompt behaviour of [rm].  It
@@ -90,7 +90,7 @@ let () = main ()
 
 We define the command line interface of a [cp] command with the synopsis:
 {v
-cp [OPTION]... SOURCE... DEST
+cp [OPTION]… SOURCE… DEST
 v}
 
 The [DEST] argument must be a directory if there is more than one
@@ -163,7 +163,7 @@ We define the command line interface of a [tail] command with the
 synopsis:
 
 {v
-tail [OPTION]... [FILE]...
+tail [OPTION]… [FILE]…
 v}
 
 The [--lines] option whose value specifies the number of last lines to
@@ -272,7 +272,7 @@ We define the command line interface of a [darcs] command with the
 synopsis:
 
 {v
-darcs [COMMAND] ...
+darcs [COMMAND] …
 v}
 
 The [--debug], [-q], [-v] and [--prehook] options are available in
@@ -379,7 +379,7 @@ let initialize_cmd =
   let man = [
     `S Manpage.s_description;
     `P "Turns the current directory into a Darcs repository. Any
-       existing files and subdirectories become ...";
+       existing files and subdirectories become …";
     `Blocks help_secs; ]
   in
   let info = Cmd.info "initialize" ~doc ~sdocs ~man in
@@ -409,7 +409,7 @@ let record_cmd =
   let man =
     [`S Manpage.s_description;
      `P "Creates a patch from changes in the working tree. If you specify
-         a set of files ...";
+         a set of files …";
      `Blocks help_secs; ]
   in
   let info = Cmd.info "record" ~doc ~sdocs ~man in
@@ -424,7 +424,7 @@ let help_cmd =
   let doc = "display help about darcs and darcs commands" in
   let man =
     [`S Manpage.s_description;
-     `P "Prints help about darcs commands and other subjects...";
+     `P "Prints help about darcs commands and other subjects…";
      `Blocks help_secs; ]
   in
   let info = Cmd.info "help" ~doc ~man in

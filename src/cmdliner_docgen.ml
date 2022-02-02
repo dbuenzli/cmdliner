@@ -66,7 +66,7 @@ let synopsis_pos_arg a =
   let v = strf "$(i,%s)" (esc v) in
   let v = (if Cmdliner_info.Arg.is_req a then strf "%s" else strf "[%s]") v in
   match Cmdliner_info.Arg.(pos_len @@ pos_kind a) with
-  | None -> v ^ "..."
+  | None -> v ^ "…"
   | Some 1 -> v
   | Some n ->
       let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
@@ -88,13 +88,13 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
     let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
     let pargs = List.sort rev_cli_order pargs in
     let pargs = String.concat " " (List.rev_map snd pargs) in
-    strf "%s$(b,%s) [$(i,OPTION)]... %s"
+    strf "%s$(b,%s) [$(i,OPTION)]… %s"
       (deprecated cmd) (invocation ?parents cmd) pargs
 | _cmds ->
     let subcmd = match Cmdliner_info.Cmd.has_args cmd with
     | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
     in
-    strf "%s$(b,%s) %s ..." (deprecated cmd) (invocation ?parents cmd) subcmd
+    strf "%s$(b,%s) %s …" (deprecated cmd) (invocation ?parents cmd) subcmd
 
 let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
 | [] -> []

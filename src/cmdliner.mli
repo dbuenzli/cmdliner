@@ -926,7 +926,7 @@ module Arg : sig
       is absent from the command line. *)
 
   val vflag : 'a -> ('a * info) list -> 'a t
-  (** [vflag v \[v]{_0}[,i]{_0}[;...\]] is an ['a] argument defined
+  (** [vflag v \[v]{_0}[,i]{_0}[;…\]] is an ['a] argument defined
       by an optional flag that may appear {e at most} once on
       the command line under one of the names specified in the [i]{_k}
       values. The argument holds [v] if the flag is absent from the

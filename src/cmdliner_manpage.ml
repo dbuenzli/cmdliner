@@ -146,12 +146,12 @@ let pp_tokens = Cmdliner_base.pp_tokens
 
 let err e fmt = pf e ("cmdliner error: " ^^ fmt ^^ "@.")
 let err_unescaped ~errs c s = err errs "unescaped %C in %S" c s
-let err_malformed ~errs s = err errs "Malformed $(...) in %S" s
-let err_unclosed ~errs s = err errs "Unclosed $(...) in %S" s
+let err_malformed ~errs s = err errs "Malformed $(…) in %S" s
+let err_unclosed ~errs s = err errs "Unclosed $(…) in %S" s
 let err_undef ~errs id s = err errs "Undefined variable $(%s) in %S" id s
 let err_illegal_esc ~errs c s = err errs "Illegal escape char %C in %S" c s
 let err_markup ~errs dir s =
-  err errs "Unknown cmdliner markup $(%c,...) in %S" dir s
+  err errs "Unknown cmdliner markup $(%c,…) in %S" dir s
 
 let is_markup_dir = function 'i' | 'b' -> true | _ -> false
 let is_markup_esc = function '$' | '\\' | '(' | ')' -> true | _ -> false

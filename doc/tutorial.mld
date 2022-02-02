@@ -143,7 +143,7 @@ NAME
        chorus - Print a customizable message repeatedly
 
 SYNOPSIS
-       chorus [OPTION]... [MSG]
+       chorus [OPTION]… [MSG]
 
 ARGUMENTS
        MSG (absent=Revolt! or CHORUS_MSG env)
@@ -196,7 +196,7 @@ the {{!page-examples}examples}.
 [Cmdliner] also provides support for programs like [git] that have sub
 commands each with their own command line syntax and manual:
 
-{[tool [COMMAND]... [OPTION]... ARG...]}
+{[tool [COMMAND]… [OPTION]… ARG…]}
 
 These sub commands are defined by grouping them under a parent command
 via the {!Cmdliner.Cmd.group} function.

@@ -45,6 +45,8 @@
   `Arg.some'` function is added to specify a value for `?none` instead
   of a string.  Thanks to David Allsopp for the patch (#111).
   
+- Documentation generation use: `…` (U+2026) instead of `...` for 
+  ellipsis. See also UTF-8 manpage support below.
   
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 
@@ -91,11 +93,11 @@ command line compatibility of your tool since options can no longer be
 specified before the sub commands, i.e. your tool synopsis moves from:
 
 ```
-tool cmd [OPTION]... SUBCMD [ARG]...
+tool cmd [OPTION]… SUBCMD [ARG]…
 ```
 to 
 ```
-tool cmd SUBCMD [OPTION]... [ARG]...
+tool cmd SUBCMD [OPTION]… [ARG]…
 ```
 
 Thanks to Rudi Grinberg for prototyping the feature in #123.

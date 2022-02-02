@@ -44,7 +44,7 @@ let err_pos_parse a ~err = match Cmdliner_info.Arg.docv a with
 | argv ->
     match Cmdliner_info.Arg.(pos_len @@ pos_kind a) with
     | Some 1 -> strf "%s argument: %s" argv err
-    | None | Some _ -> strf "%s... arguments: %s" argv err
+    | None | Some _ -> strf "%s… arguments: %s" argv err
 
 (* Optional argument errors *)
 

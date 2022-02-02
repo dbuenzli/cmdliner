@@ -70,7 +70,7 @@ val subst_vars :
   string -> string
 (** [subst b ~subst s], using [b], substitutes in [s] variables of the form
     "$(doc)" by their [subst] definition. This leaves escapes and markup
-    directives $(markup,...) intact.
+    directives $(markup,…) intact.
 
     @raise Invalid_argument in case of illegal syntax. *)
 
