@@ -667,7 +667,7 @@ module Cmd : sig
          a term error occurs.}}
 
       These exit codes are described in {!Exit.defaults} which is the
-      default value of the [?exits] argument of function {!info}. *)
+      default value of the [?exits] argument of function {!val-info}. *)
 
   val eval :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
@@ -844,7 +844,7 @@ module Arg : sig
       [Some] value. It is used for command line arguments that default
       to [None] when absent. If provided, [none] is used with [conv]'s
       printer to document the value taken on absence; to document
-      a more complex behaviour use the [absent] argument of {!info}. *)
+      a more complex behaviour use the [absent] argument of {!val-info}. *)
 
   val some : ?none:string -> 'a conv -> 'a option conv
   (** [some ?none c] is like [some'] but [none] is described as a
@@ -902,7 +902,7 @@ module Arg : sig
       {- [absent], if specified a documentation string that indicates
          what happens when the argument is absent. The document language
          can be used like in [doc]. This overrides the automatic default
-         value rendering that is performed by the combinators.} *)
+         value rendering that is performed by the combinators.}} *)
 
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for
@@ -1137,7 +1137,7 @@ module Arg : sig
 
   type 'a converter = 'a conv
   [@@ocaml.deprecated "Use Arg.conv' function instead."]
-  (** See {!Cmd.Env.conv'}. *)
+  (** See {!Arg.conv'}. *)
 
   val pconv :
     ?docv:string -> 'a parser * 'a printer -> 'a conv
