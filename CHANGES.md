@@ -75,14 +75,16 @@ However in this transition the following things are changed or added:
   * The `?man_xrefs` which defaults to the list ``[`Main]`` rather
     than the empty list (this means that by default sub commands 
     at any level automatically cross-reference the main command).
-
+  * The `?sdocs` argument which defaults to `Manpage.s_common_options`
+    rather than `Manpage.s_options`.
+    
 * The `Cmd.Exit.some_error` code is added to `Cmd.Exit.defaults`
-  (which in turn is the default for command infos see above).  This is
-  an error code clients can use when they don't want to bother about
-  having precise exit codes.  It is high so that low, application
-  specific, codes can later be used without breaking the
-  compatibility. In particular the convenience evaluation functions
-  `Cmd.eval_result*` use this code when they evaluate to an error.
+  (which in turn is the default for `Cmd.info` see above).  This is an
+  error code clients can use when they don't want to bother about
+  having precise exit codes.  It is high so that low, meaningful,
+  codes can later be added without breaking a tool's compatibility. In
+  particular the convenience evaluation functions `Cmd.eval_result*`
+  use this code when they evaluate to an error.
 
 * If you relied on `?term_err` defaulting to `1` in the various
   `Term.exit*` function, note that the new `Cmd.eval*` function use

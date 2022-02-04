@@ -135,15 +135,11 @@ example:
 
 {v
 > ./chorus --help
-CHORUS(1)                        Chorus Manual                       CHORUS(1)
-
-
-
 NAME
        chorus - Print a customizable message repeatedly
 
 SYNOPSIS
-       chorus [OPTION]… [MSG]
+       chorus [--count=COUNT] [OPTION]… [MSG]
 
 ARGUMENTS
        MSG (absent=Revolt! or CHORUS_MSG env)
@@ -153,6 +149,7 @@ OPTIONS
        -c COUNT, --count=COUNT (absent=10)
            Repeat the message COUNT times.
 
+COMMON OPTIONS
        --help[=FMT] (default=auto)
            Show this help in format FMT. The value FMT must be one of auto,
            pager, groff or plain. With auto, the format is pager or plain
@@ -166,7 +163,7 @@ EXIT STATUS
 
        0   on success.
 
-       123 on indiscriminate errors reported on stderr.
+       123 on indiscriminate errors reported on standard error.
 
        124 on command line parsing errors.
 

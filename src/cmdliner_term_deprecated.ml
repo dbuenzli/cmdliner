@@ -29,10 +29,11 @@ let env_info = Cmdliner_info.Env.info ?deprecated:None
 
 type info = Cmdliner_info.Cmd.t
 let info
-    ?(man_xrefs = []) ?man ?envs ?(exits = []) ?sdocs ?docs ?doc ?version name
+    ?(man_xrefs = []) ?man ?envs ?(exits = [])
+    ?(sdocs = Cmdliner_manpage.s_options) ?docs ?doc ?version name
   =
   Cmdliner_info.Cmd.v
-    ~man_xrefs ?man ?envs ~exits ?sdocs ?docs ?doc ?version name
+    ~man_xrefs ?man ?envs ~exits ~sdocs ?docs ?doc ?version name
 
 let name ti = Cmdliner_info.Cmd.name ti
 

@@ -176,7 +176,7 @@ module Cmd = struct
 
   let v
       ?deprecated ?(man_xrefs = [`Main]) ?(man = []) ?(envs = [])
-      ?(exits = Exit.defaults) ?(sdocs = Cmdliner_manpage.s_options)
+      ?(exits = Exit.defaults) ?(sdocs = Cmdliner_manpage.s_common_options)
       ?(docs = Cmdliner_manpage.s_commands) ?(doc = "") ?version name
     =
     { name; version; deprecated; doc; docs; sdocs; exits;
