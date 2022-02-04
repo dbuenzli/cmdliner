@@ -51,6 +51,9 @@
 - Documentation generation, improve command synopsis rendering on 
   commands with few options (i.e. mention them).
   
+- Documentation generation, drop section heading in the output if the section 
+  is empty.
+
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 
 This version of cmdliner deprecates the `Term.eval*` evaluation

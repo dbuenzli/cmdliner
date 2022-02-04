@@ -44,6 +44,11 @@ If the created section is:
     you should declare manually your non standard section in the command's
     manual page.}}
 
+Finally note that the header of empty sections are dropped from the
+output.  This allows you to share section placements among many
+commands and render them only if something actually gets inserted in
+it.
+
 {1:doclang Documentation markup language}
 
 Manpage {{!Cmdliner.Manpage.block}blocks} and doc strings support the

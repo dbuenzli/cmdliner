@@ -98,6 +98,7 @@ let smap_to_blocks smap = (* N.B. this leaves `Blocks content untouched. *)
       let acc = if s = "" then acc else `S s :: acc in
       match smap with
       | [] -> acc
+      | (_, (_, [])) :: smap -> loop acc smap "" [] (* skip empty section *)
       | (s, (_, rbs)) :: smap ->
           if s = s_none
           then loop acc smap "" [] (* skip *)
