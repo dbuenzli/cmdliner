@@ -48,6 +48,9 @@
 - Documentation generation use: `…` (U+2026) instead of `...` for 
   ellipsis. See also UTF-8 manpage support below.
   
+- Documentation generation, improve command synopsis rendering on 
+  commands with few options (i.e. mention them).
+  
 ### New `Cmd` module and deprecation of the `Term` evaluation interface
 
 This version of cmdliner deprecates the `Term.eval*` evaluation

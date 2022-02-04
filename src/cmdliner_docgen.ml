@@ -6,6 +6,24 @@
 let rev_compare n0 n1 = compare n1 n0
 let strf = Printf.sprintf
 
+let order_args a0 a1 =
+  match Cmdliner_info.Arg.is_opt a0, Cmdliner_info.Arg.is_opt a1 with
+  | true, true -> (* optional by name *)
+      let key names =
+        let k = List.hd (List.sort rev_compare names) in
+        let k = String.lowercase_ascii k in
+        if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
+      in
+      compare
+        (key @@ Cmdliner_info.Arg.opt_names a0)
+        (key @@ Cmdliner_info.Arg.opt_names a1)
+  | false, false -> (* positional by variable *)
+      compare
+        (String.lowercase_ascii @@ Cmdliner_info.Arg.docv a0)
+        (String.lowercase_ascii @@ Cmdliner_info.Arg.docv a1)
+  | true, false -> -1 (* positional first *)
+  | false, true -> 1  (* optional after *)
+
 let esc = Cmdliner_manpage.escape
 let cmd_name t = esc @@ Cmdliner_info.Cmd.name t
 
@@ -72,6 +90,19 @@ let synopsis_pos_arg a =
       let rec loop n acc = if n <= 0 then acc else loop (n - 1) (v :: acc) in
       String.concat " " (loop n [])
 
+let synopsis_opt_arg a n =
+  let var = match Cmdliner_info.Arg.docv a with "" -> "VAL" | v -> v in
+  match Cmdliner_info.Arg.opt_kind a with
+  | Cmdliner_info.Arg.Flag -> strf "$(b,%s)" (esc n)
+  | Cmdliner_info.Arg.Opt ->
+        if String.length n > 2
+        then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
+        else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
+  | Cmdliner_info.Arg.Opt_vopt _ ->
+      if String.length n > 2
+      then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
+      else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
+
 let deprecated cmd = match Cmdliner_info.Cmd.deprecated cmd with
 | None -> "" | Some _ -> "(Deprecated) "
 
@@ -80,16 +111,35 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
     let rev_cli_order (a0, _) (a1, _) =
       Cmdliner_info.Arg.rev_pos_cli_order a0 a1
     in
-    let add_pos a acc = match Cmdliner_info.Arg.is_opt a with
-    | true -> acc
-    | false -> (a, synopsis_pos_arg a) :: acc
-    in
     let args = Cmdliner_info.Cmd.args cmd in
-    let pargs = Cmdliner_info.Arg.Set.fold add_pos args [] in
-    let pargs = List.sort rev_cli_order pargs in
-    let pargs = String.concat " " (List.rev_map snd pargs) in
-    strf "%s$(b,%s) [$(i,OPTION)]… %s"
-      (deprecated cmd) (invocation ?parents cmd) pargs
+    let oargs, pargs = Cmdliner_info.Arg.(Set.partition is_opt args) in
+    let oargs =
+      (* Keep only those that are listed in the s_options section and
+         that are not [--version] or [--help]. * *)
+      let keep a =
+          let drop_names n = n = "--help" || n = "--version" in
+          Cmdliner_info.Arg.docs a = Cmdliner_manpage.s_options &&
+          not (List.exists drop_names (Cmdliner_info.Arg.opt_names a))
+      in
+      let oargs = Cmdliner_info.Arg.Set.(elements (filter keep oargs)) in
+      let count = List.length oargs in
+      let any_option = "[$(i,OPTION)]…" in
+      if count = 0 || count > 3 then any_option else
+      let syn a =
+        strf "[%s]" (synopsis_opt_arg a (Cmdliner_info.Arg.opt_name_sample a))
+      in
+      let oargs = List.sort order_args oargs in
+      let oargs = String.concat " " (List.map syn oargs) in
+      String.concat " " [oargs; any_option]
+    in
+    let pargs =
+      let pargs = Cmdliner_info.Arg.Set.elements pargs in
+      let pargs = List.map (fun a -> a, synopsis_pos_arg a) pargs in
+      let pargs = List.sort rev_cli_order pargs in
+      String.concat " " (List.rev_map snd pargs)
+    in
+    strf "%s$(b,%s) %s %s"
+      (deprecated cmd) (invocation ?parents cmd) oargs pargs
 | _cmds ->
     let subcmd = match Cmdliner_info.Cmd.has_args cmd with
     | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
@@ -118,22 +168,8 @@ let arg_man_item_label a =
   let s = match Cmdliner_info.Arg.is_pos a with
   | true -> strf "$(i,%s)" (esc @@ Cmdliner_info.Arg.docv a)
   | false ->
-      let fmt_name var = match Cmdliner_info.Arg.opt_kind a with
-      | Cmdliner_info.Arg.Flag -> fun n -> strf "$(b,%s)" (esc n)
-      | Cmdliner_info.Arg.Opt ->
-          fun n ->
-            if String.length n > 2
-            then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
-            else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
-      | Cmdliner_info.Arg.Opt_vopt _ ->
-          fun n ->
-            if String.length n > 2
-            then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
-            else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
-      in
-      let var = match Cmdliner_info.Arg.docv a with "" -> "VAL" | v -> v in
       let names = List.sort compare (Cmdliner_info.Arg.opt_names a) in
-      String.concat ", " (List.rev_map (fmt_name var) names)
+      String.concat ", " (List.rev_map (synopsis_opt_arg a) names)
   in
   match Cmdliner_info.Arg.deprecated a with
   | None -> s | Some _ -> "(Deprecated) " ^ s
@@ -180,23 +216,7 @@ let arg_docs ~errs ~subst ~buf ei =
       | None, None | Some _, Some _ -> 0
       | None, Some _ -> -1 | Some _, None -> 1
     in
-    if c <> 0 then c else
-    match Cmdliner_info.Arg.is_opt a0, Cmdliner_info.Arg.is_opt a1 with
-    | true, true -> (* optional by name *)
-        let key names =
-          let k = List.hd (List.sort rev_compare names) in
-          let k = String.lowercase_ascii k in
-          if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
-        in
-        compare
-          (key @@ Cmdliner_info.Arg.opt_names a0)
-          (key @@ Cmdliner_info.Arg.opt_names a1)
-    | false, false -> (* positional by variable *)
-        compare
-          (String.lowercase_ascii @@ Cmdliner_info.Arg.docv a0)
-          (String.lowercase_ascii @@ Cmdliner_info.Arg.docv a1)
-    | true, false -> -1 (* positional first *)
-    | false, true -> 1  (* optional after *)
+    if c <> 0 then c else order_args a0 a1
   in
   let keep_arg a acc =
     if not Cmdliner_info.Arg.(is_pos a && (docv a = "" || doc a = ""))
