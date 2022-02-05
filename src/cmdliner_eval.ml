@@ -112,7 +112,8 @@ let find_term args cmd =
     | Group (i, (Some t, children)) ->
         args, t, i, parents, Ok ()
     | Group (i, (None, children)) ->
-        let err = Cmdliner_msg.err_cmd_missing in
+        let dom = cmd_name_dom children in
+        let err = Cmdliner_msg.err_cmd_missing ~dom in
         args, never_term, i, parents, Error err
   in
   let rec loop args_rev parents cmd = function

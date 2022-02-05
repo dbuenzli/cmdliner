@@ -65,7 +65,9 @@ let err_arg_missing a =
   if Cmdliner_info.Arg.is_pos a then err_pos_miss a else
   strf "required option %s is missing" (Cmdliner_info.Arg.opt_name_sample a)
 
-let err_cmd_missing = "required COMMAND name is missing"
+let err_cmd_missing ~dom =
+  strf "required COMMAND name is missing, must be %s."
+    (Cmdliner_base.alts_str ~quoted:true dom)
 
 (* Other messages *)
 
