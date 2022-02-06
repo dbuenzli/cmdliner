@@ -53,7 +53,7 @@ let default =
     |> add description_tags ["cli"; "system"; "declarative"; "org:erratique"]
     |> tag B0_opam.tag
     |> add B0_opam.Meta.depends
-      [ "ocaml", {|>= "4.03.0"|}; ]
+      [ "ocaml", {|>= "4.08.0"|}; ]
     |> add B0_opam.Meta.build
       {|[[ make "all" "PREFIX=%{prefix}%" ]]|}
     |> add B0_opam.Meta.install
