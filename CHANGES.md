@@ -1,3 +1,5 @@
+v1.1.0 2022-02-06 La Forclaz (VS)
+---------------------------------
 
 - Require OCaml 4.08.
 
@@ -40,7 +42,7 @@
   2. They where not rendered in bold, they now are.
   3. The documentation language was interpreted, it is no longer the case.
   
-  If you were relying on 3. via `?none` of `Arg.some`, use the new
+  If you were relying on the third point via `?none` of `Arg.some`, use the new
   `?absent` optional argument of `Arg.info` instead. Besides a new
   `Arg.some'` function is added to specify a value for `?none` instead
   of a string.  Thanks to David Allsopp for the patch (#111).
