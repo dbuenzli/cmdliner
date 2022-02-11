@@ -51,7 +51,14 @@ let try_eval_stdopts ~catch ei cl help version =
 
 let do_help help_ppf err_ppf ei fmt cmd =
   let ei = match cmd with
-  | None -> Cmdliner_info.Eval.(with_cmd ei @@ main ei)
+  | None (* help of main command requested *)  ->
+      let env _ = assert false in
+      let cmd = Cmdliner_info.Eval.main ei in
+      let ei' = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env ~err_ppf in
+      begin match Cmdliner_info.Eval.parents ei with
+      | [] -> (* [ei] is an evaluation of main, [cmd] has stdopts *) ei'
+      | _ -> let _, _, ei = add_stdopts ei' in ei
+      end
   | Some cmd ->
       try
         (* For now we simply keep backward compat. [cmd] should be
