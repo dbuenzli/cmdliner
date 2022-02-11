@@ -1,3 +1,6 @@
+
+- Fix duplicate rendering of standard options when using `Term.ret` (#135).
+
 v1.1.0 2022-02-06 La Forclaz (VS)
 ---------------------------------
 

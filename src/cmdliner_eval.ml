@@ -60,10 +60,10 @@ let do_help help_ppf err_ppf ei fmt cmd =
         let is_cmd t = Cmdliner_info.Cmd.name t = cmd in
         let children = Cmdliner_info.Cmd.children main in
         let cmd = List.find is_cmd children in
-        Cmdliner_info.Eval.with_cmd ei cmd
+        let _, _, ei = add_stdopts (Cmdliner_info.Eval.with_cmd ei cmd) in
+        ei
       with Not_found -> invalid_arg (err_help cmd)
   in
-  let _, _, ei = add_stdopts ei (* may not be the originally eval'd term *) in
   Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei
 
 let do_result help_ppf err_ppf ei = function
