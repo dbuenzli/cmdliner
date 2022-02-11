@@ -134,11 +134,12 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
     in
     let pargs =
       let pargs = Cmdliner_info.Arg.Set.elements pargs in
+      if pargs = [] then "" else
       let pargs = List.map (fun a -> a, synopsis_pos_arg a) pargs in
       let pargs = List.sort rev_cli_order pargs in
-      String.concat " " (List.rev_map snd pargs)
+      String.concat " " ("" (* add a space *) :: List.rev_map snd pargs)
     in
-    strf "%s$(b,%s) %s %s"
+    strf "%s$(b,%s) %s%s"
       (deprecated cmd) (invocation ?parents cmd) oargs pargs
 | _cmds ->
     let subcmd = match Cmdliner_info.Cmd.has_args cmd with
