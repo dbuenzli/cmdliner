@@ -808,7 +808,7 @@ module Arg : sig
   val conv :
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
     'a conv
-  (** [converter ~docv (parse, print)] is an argument converter
+  (** [conv ~docv (parse, print)] is an argument converter
       parsing values with [parse] and printing them with
       [print]. [docv] is a documentation meta-variable used in the
       documentation to stand for the argument value, defaults to
