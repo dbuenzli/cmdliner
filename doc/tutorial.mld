@@ -31,7 +31,7 @@ is a term that evaluates to the result (and effect) of the [revolt]
 function. This term can be attached to a command:
 
 {[
-let cmd = Cmd.v (Cmd.info "revolt") revolt_t
+let revolt_cmd = Cmd.v (Cmd.info "revolt") revolt_t
 ]}
 
 and evaluated with {!Cmdliner.Cmd.val-eval}:
