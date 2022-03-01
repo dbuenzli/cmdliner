@@ -36,7 +36,7 @@ let cmd = Cmd.v (Cmd.info "revolt") revolt_t
 
 and evaluated with {!Cmdliner.Cmd.val-eval}:
 {[
-let () = exit (Cmd.eval revolt_cmd)
+let () = exit (Cmd.eval cmd)
 ]}
 
 This defines a command line tool named ["revolt"], without command
