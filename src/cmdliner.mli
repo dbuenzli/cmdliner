@@ -577,7 +577,7 @@ module Cmd : sig
     [@@@alert "+deprecated"]
 
     val info : ?deprecated:string -> ?docs:string -> ?doc:string -> var -> info
-    (** [env_info ~docs ~doc var] describes an environment variable
+    (** [info ~docs ~doc var] describes an environment variable
         [var] such that:
         {ul
         {- [doc] is the man page information of the environment
