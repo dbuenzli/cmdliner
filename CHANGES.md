@@ -1,5 +1,11 @@
+v1.1.1 2022-03-23 La Forclaz (VS)
+---------------------------------
 
-- Fix duplicate rendering of standard options when using `Term.ret` (#135).
+- General documentation fixes, tweaks and improvements.
+- Docgen: suppress trailing whitespace in synopsis rendering.
+- Docgen: fix duplicate rendering of standard options when using `Term.ret` (#135).
+- Docgen: fix duplicate rendering of command name on ``Term.ret (`Help (fmt, None)`` 
+  (#135).
 
 v1.1.0 2022-02-06 La Forclaz (VS)
 ---------------------------------
