@@ -98,12 +98,13 @@ module Manpage : sig
       listed here. *)
 
   val s_options : string
-  (** The [OPTIONS] section. By default options and flag arguments get
+  (** The [OPTIONS] section. By default optional arguments get
       listed here. *)
 
   val s_common_options : string
-  (** The [COMMON OPTIONS] section. For programs with multiple commands
-      a section that can be used to gather options common to all commands. *)
+  (** The [COMMON OPTIONS] section. By default help and version options get
+      listed here. For programs with multiple commands, optional arguments
+      common to all commands can be added here. *)
 
   val s_exit_status : string
   (** The [EXIT STATUS] section. By default term status exit codes
@@ -620,7 +621,7 @@ module Cmd : sig
          (defaults to {!Manpage.s_commands}).}
       {- [sdocs] defines the title of the section in which the
          standard [--help] and [--version] arguments are listed
-         (defaults to {!Manpage.s_options}).}
+         (defaults to {!Manpage.s_common_options}).}
       {- [exits] is a list of exit statuses that the command evaluation
          may produce, defaults to {!Exit.defaults}.}
       {- [envs] is a list of environment variables that influence
