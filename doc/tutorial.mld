@@ -13,7 +13,7 @@ One way to create terms is by lifting regular OCaml values with
 {!Cmdliner.Term.const}. Terms can be applied to terms evaluating to
 functional values with {!Cmdliner.Term.($)}.
 
-For example for the function:
+For example, in a [revolt.ml] file, for the function:
 
 {[
 let revolt () = print_endline "Revolt!"
@@ -39,10 +39,12 @@ and evaluated with {!Cmdliner.Cmd.val-eval}:
 let () = exit (Cmd.eval cmd)
 ]}
 
-This defines a command line tool named ["revolt"], without command
-line arguments, that just prints ["Revolt!"] on [stdout].
+This defines a command line tool named ["revolt"] (this name will be
+used in error reporting), without command line arguments, that just
+prints ["Revolt!"] on [stdout].
 
 {[
+> ocamlfind ocamlopt -linkpkg -package cmdliner -o revolt revolt.ml
 > ./revolt
 Revolt!
 ]}
@@ -55,7 +57,8 @@ Terms corresponding to command line argument data that are part of a
 term evaluation implicitly define a command line syntax.  We show this
 on an concrete example.
 
-Consider the [chorus] function that prints repeatedly a given message :
+In a [chorus.ml] file, consider the [chorus] function that prints
+repeatedly a given message :
 
 {[
 let chorus count msg = for i = 1 to count do print_endline msg done
@@ -134,6 +137,7 @@ you provided with {!Cmdliner.Cmd.val-info} and
 example:
 
 {v
+> ocamlfind ocamlopt -linkpkg -package cmdliner -o chorus chorus.ml
 > ./chorus --help
 NAME
        chorus - Print a customizable message repeatedly
