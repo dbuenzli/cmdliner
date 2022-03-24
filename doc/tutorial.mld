@@ -40,8 +40,8 @@ let () = exit (Cmd.eval cmd)
 ]}
 
 This defines a command line tool named ["revolt"] (this name will be
-used in error reporting), without command line arguments, that just
-prints ["Revolt!"] on [stdout].
+used in error reporting and documentation generation), without command
+line arguments, that just prints ["Revolt!"] on [stdout].
 
 {[
 > ocamlfind ocamlopt -linkpkg -package cmdliner -o revolt revolt.ml
