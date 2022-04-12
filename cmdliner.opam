@@ -11,8 +11,22 @@ license: ["ISC"]
 tags: ["cli" "system" "declarative" "org:erratique"]
 depends: ["ocaml" {>= "4.08.0"}]
 build: [[ make "all" "PREFIX=%{prefix}%" ]]
-install: [[make "install" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
-         [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]]
+install: [
+  [
+    make
+    "install"
+    "LIBDIR=%{_:lib}%" { os-distribution != "nixos"}
+    "LIBDIR=%{_:lib}%/%{name}%" { os-distribution = "nixos"}
+    "DOCDIR=%{_:doc}%"
+  ]
+  [
+    make
+    "install-doc"
+    "LIBDIR=%{_:lib}%" { os-distribution != "nixos"}
+    "LIBDIR=%{_:lib}%/%{name}%" { os-distribution = "nixos"}
+    "DOCDIR=%{_:doc}%"
+  ]
+]
 description: """
 Cmdliner allows the declarative definition of command line interfaces
 for OCaml.
