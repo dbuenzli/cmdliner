@@ -604,7 +604,7 @@ module Cmd : sig
     ?man:Manpage.block list -> ?envs:Env.info list -> ?exits:Exit.info list ->
     ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
     string -> info
-  (** [info name ?sdocs ?man ?docs ?doc ?version] is a term information
+  (** [info ?sdocs ?man ?docs ?doc ?version name] is a term information
       such that:
       {ul
       {- [name] is the name of the command.}
