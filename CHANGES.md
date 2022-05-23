@@ -102,7 +102,7 @@ However in this transition the following things are changed or added:
 
 * If you relied on `?term_err` defaulting to `1` in the various
   `Term.exit*` function, note that the new `Cmd.eval*` function use
-  `Exit.cli_error` as a default. You may want to explicitely specify
+  `Exit.cli_error` as a default. You may want to explicitly specify
   `1` instead if you use `Term.ret` with the `` `Error`` case 
   or `Term.term_result`.
   
@@ -258,7 +258,7 @@ cmdliner.
   whenever unspecified in the man page.
 - Better automatic insertions of man page sections (#73). See the API
   docs about manual specification. As a side effect the `NAME` section
-  can now also be overriden manually.
+  can now also be overridden manually.
 - Fix repeated environment variable printing for flags (#64). Thanks to
   Thomas Gazagnaire for the report.
 - Fix rendering of env vars in man pages, bold is standard (#71).
@@ -310,7 +310,7 @@ v0.9.8 2015-10-11 Cambridge (UK)
 - Deprecate `Term.pure` in favor of `Term.const`.
 - Man page generation. Keep undefined variables untouched. Previously
   a `$(undef)` would be turned into `undef`.
-- Turn a few misterious and spurious `Not_found` exceptions into
+- Turn a few mysterious and spurious `Not_found` exceptions into
   `Invalid_arg`. These can be triggered by client programming errors
   (e.g. an unclosed variable in a documentation string).
 - Positional arguments. Invoke the printer on the default (absent)
@@ -363,7 +363,7 @@ v0.9.4 2014-02-09 La Forclaz (VS)
 - Remove temporary files created for paged help. Thanks to Kaustuv Chaudhuri
   for the suggestion.
 - Avoid linking against `Oo` (was used to get program uuid).
-- Check the environment for `$MANPAGER` aswell. Thanks to Raphaël Proust
+- Check the environment for `$MANPAGER` as well. Thanks to Raphaël Proust
   for the patch.
 - OPAM friendly workflow and drop OASIS support.
 

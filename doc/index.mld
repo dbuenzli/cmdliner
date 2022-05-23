@@ -23,7 +23,7 @@ The following manuals are available.
    lines and environment variables are parsed by Cmdliner.}
 {- {{!page-tool_man}Tool man pages} describes how Cmdliner generates
    man pages for your tools and how you can format them.}
-{- The {{!page-examples}examples page} has a few annoted examples that
+{- The {{!page-examples}examples page} has a few annotated examples that
    show to express the command line interface of a few classic tools with
    Cmdliner}}
 
