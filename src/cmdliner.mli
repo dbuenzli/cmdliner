@@ -575,6 +575,7 @@ module Cmd : sig
     [@@@alert "-deprecated"]
     type info = Term.env_info (* because of Arg. *)
     (** The type for environment variable information. *)
+
     [@@@alert "+deprecated"]
 
     val info : ?deprecated:string -> ?docs:string -> ?doc:string -> var -> info
@@ -804,6 +805,7 @@ module Arg : sig
 
       {b Warning.} Do not use directly, use {!val-conv} or {!val-conv'}.
       This type will become abstract in the next major version of cmdliner. *)
+
   [@@@alert "+deprecated"] (* Need to be able to mention them ! *)
 
   val conv :
