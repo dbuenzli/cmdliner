@@ -347,7 +347,7 @@ module Term : sig
       {- [$(mname)] the main term's name.}} *)
 
   val name : info -> string
-  [@@ocaml.deprecated "Use Cmd.info_name instead."]
+  [@@ocaml.deprecated "Use Cmd.name instead."]
   (** [name ti] is the name of the term information. *)
 
  (** {2:evaluation Evaluation} *)
