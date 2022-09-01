@@ -656,6 +656,9 @@ module Cmd : sig
   val name : 'a t -> string
   (** [name c] is the name of [c]. *)
 
+  val alias : info -> 'a t -> 'a t
+  (** [alias i cmd] creates an alias of [cmd] with information [i] *)
+
   (** {1:eval Evaluation}
 
       These functions are meant to be composed with {!Stdlib.exit}.
