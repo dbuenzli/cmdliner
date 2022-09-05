@@ -71,7 +71,11 @@ let err_cmd_missing ~dom =
 
 (* Other messages *)
 
-let exec_name ei = Cmdliner_info.Cmd.name @@ Cmdliner_info.Eval.main ei
+let cmds ei =
+  let rcmds = Cmdliner_info.Eval.(cmd ei :: parents ei) in
+  List.rev_map Cmdliner_info.Cmd.name rcmds
+
+let exec_name ei = String.concat " " (cmds ei)
 
 let pp_version ppf ei =
   match Cmdliner_info.Cmd.version @@ Cmdliner_info.Eval.main ei with
@@ -79,8 +83,7 @@ let pp_version ppf ei =
   | Some v -> pp ppf "@[%a@]@." Cmdliner_base.pp_text v
 
 let pp_try_help ppf ei =
-  let rcmds = Cmdliner_info.Eval.(cmd ei :: parents ei) in
-  match List.rev_map Cmdliner_info.Cmd.name rcmds with
+  match cmds ei with
   | [] -> assert false
   | [n] -> pp ppf "@[<2>Try '%s --help' for more information.@]" n
   | n :: _ as cmds ->
