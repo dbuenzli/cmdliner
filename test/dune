@@ -1,5 +1,11 @@
 (executables
- (names test_man
+ (names chorus
+        cp_ex
+        darcs_ex
+        revolt
+        rm_ex
+        tail_ex
+        test_man
         test_man_utf8
         test_pos
         test_nest
