@@ -2,7 +2,7 @@
 
 (* Implementation of the command *)
 
-let chorus count msg = for i = 1 to count do print_endline msg done
+let chorus count msg = for _i = 1 to count do print_endline msg done
 
 (* Command line interface *)
 

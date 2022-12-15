@@ -16,14 +16,14 @@ let birds =
   in
   let fly =
     let info = Cmd.info "fly" ~doc:"Fly birds." in
-    Cmd.v info Term.(const (fun n v -> ()) $ bird $ speed)
+    Cmd.v info Term.(const (fun _n _v -> ()) $ bird $ speed)
   in
   let land' =
     let info = Cmd.info "land" ~doc:"Land birds." in
-    Cmd.v info Term.(const (fun n -> ()) $ bird)
+    Cmd.v info Term.(const (fun _n -> ()) $ bird)
   in
   let info = Cmd.info "birds" ~doc:"Operate on birds." in
-  Cmd.group ~default:Term.(const (fun k -> ()) $ kind) info [fly; land']
+  Cmd.group ~default:Term.(const (fun _k -> ()) $ kind) info [fly; land']
 
 let mammals =
   let man_xrefs = [`Main; `Cmd "birds" ] in
@@ -36,7 +36,7 @@ let fishs =
     Arg.(value & pos 0 (some string) None & info [] ~doc ~docv:"NAME")
   in
   let info = Cmd.info "fishs" ~doc:"Operate on fishs." in
-  Cmd.v info Term.(const (fun n -> ()) $ name')
+  Cmd.v info Term.(const (fun _n -> ()) $ name')
 
 let camels =
   let herd =
@@ -53,7 +53,7 @@ let camels =
   let deprecated = "deprecated, use 'mammals' instead."
   in
   let info = Cmd.info "camels" ~deprecated ~doc:"Operate on camels." in
-  Cmd.v info Term.(const (fun n h -> ()) $ bactrian $ herd)
+  Cmd.v info Term.(const (fun _n _h -> ()) $ bactrian $ herd)
 
 let cmd =
   let info = Cmd.info "test_nest" ~version:"X.Y.Z" in

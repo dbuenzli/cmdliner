@@ -23,7 +23,7 @@ let record copts name email all ask_deps files = Printf.printf
     pr_copts copts (opt_str_str name) (opt_str_str email) all ask_deps
     (String.concat ", " files)
 
-let help copts man_format cmds topic = match topic with
+let help _copts man_format cmds topic = match topic with
 | None -> `Help (`Pager, None) (* help about the program. *)
 | Some topic ->
     let topics = "topics" :: "patterns" :: "environment" :: cmds in
@@ -32,7 +32,7 @@ let help copts man_format cmds topic = match topic with
     | `Error e -> `Error (false, e)
     | `Ok t when t = "topics" -> List.iter print_endline topics; `Ok ()
     | `Ok t when List.mem t cmds -> `Help (man_format, Some t)
-    | `Ok t ->
+    | `Ok _t ->
         let page = (topic, 7, "", "", ""), [`S topic; `P "Say something";] in
         `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
