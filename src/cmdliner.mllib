@@ -6,6 +6,7 @@ Cmdliner_docgen
 Cmdliner_msg
 Cmdliner_cline
 Cmdliner_arg
+Cmdliner_term_deprecated
 Cmdliner_term
 Cmdliner_cmd
 Cmdliner_eval
