@@ -81,7 +81,7 @@ let info =
     `P "() does not need to be escaped outside directives.";
     `Blocks [
       `P "The following to paragraphs are spliced in.";
-      `P "This dollar needs escape \\$(var) this one aswell $(b,\\$(bla\\))";
+      `P "This dollar needs escape \\$(var) this one as well $(b,\\$(bla\\))";
       `P "This is another paragraph \\$(bla) $(i,\\$(bla\\)) $(b,\\$\\(bla\\))";
     ];
     `Noblank;
