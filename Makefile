@@ -40,10 +40,10 @@ all: $(BUILD-TARGETS)
 install: $(INSTALL-TARGETS)
 
 install-doc:
-	$(INSTALL) -d $(DOCDIR)/odoc-pages
-	$(INSTALL) CHANGES.md LICENSE.md README.md $(DOCDIR)
+	$(INSTALL) -d "$(DOCDIR)/odoc-pages"
+	$(INSTALL) CHANGES.md LICENSE.md README.md "$(DOCDIR)"
 	$(INSTALL) doc/index.mld doc/cli.mld doc/examples.mld doc/tutorial.mld \
-	           doc/tool_man.mld $(DOCDIR)/odoc-pages
+	           doc/tool_man.mld "$(DOCDIR)/odoc-pages"
 
 clean:
 	ocaml build.ml clean
@@ -58,21 +58,21 @@ build-native-dynlink:
 	ocaml build.ml cmxs
 
 create-libdir:
-	$(INSTALL) -d $(LIBDIR)
+	$(INSTALL) -d "$(LIBDIR)"
 
 install-common: create-libdir
-	$(INSTALL) pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti $(LIBDIR)
-	$(INSTALL) cmdliner.opam $(LIBDIR)/opam
+	$(INSTALL) pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
+	$(INSTALL) cmdliner.opam "$(LIBDIR)/opam"
 
 install-byte: create-libdir
-	$(INSTALL) $(BASE).cma $(LIBDIR)
+	$(INSTALL) $(BASE).cma "$(LIBDIR)"
 
 install-native: create-libdir
 	$(INSTALL) $(BASE).cmxa $(BASE)$(EXT_LIB) $(wildcard $(B)/cmdliner*.cmx) \
-  $(LIBDIR)
+  "$(LIBDIR)"
 
 install-native-dynlink: create-libdir
-	$(INSTALL) $(BASE).cmxs $(LIBDIR)
+	$(INSTALL) $(BASE).cmxs "$(LIBDIR)"
 
 .PHONY: all install install-doc clean build-byte build-native \
 	build-native-dynlink create-libdir install-common install-byte \
