@@ -314,34 +314,35 @@ let pp_plain_blocks ~errs subst ppf ts =
   let b = Buffer.create 1024 in
   let markup t = doc_to_plain ~errs b ~subst t in
   let pp_tokens ppf t = pp_tokens ~spaces:true ppf t in
-  let rec loop = function
+  let rec blank_line = function
+  | `Noblank :: ts -> loop ts
+  | ts -> Format.pp_print_cut ppf (); loop ts
+  and loop = function
   | [] -> ()
   | t :: ts ->
-      begin match t with
-      | `Noblank -> ()
-      | `Blocks bs -> loop bs (* not T.R. *)
-      | `P s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_tokens (markup s)
-      | `S s -> pf ppf "@[%a@]" pp_tokens (markup s)
-      | `Pre s -> pf ppf "%a@[%a@]@," pp_indent p_indent pp_lines (markup s)
+      match t with
+      | `Noblank -> loop ts
+      | `Blocks bs -> loop (bs @ ts)
+      | `P s ->
+          pf ppf "%a@[%a@]@," pp_indent p_indent pp_tokens (markup s);
+          blank_line ts
+      | `S s -> pf ppf "@[%a@]@," pp_tokens (markup s); loop ts
+      | `Pre s ->
+          pf ppf "%a@[%a@]@," pp_indent p_indent pp_lines (markup s);
+          blank_line ts
       | `I (label, s) ->
-          let label = markup label in
-          let s = markup s in
+          let label = markup label and s = markup s in
           pf ppf "@[%a@[%a@]" pp_indent p_indent pp_tokens label;
-          if s = "" then pf ppf "@]@," else
-          let ll = String.length label in
-          begin match ll < l_indent with
-          | true ->
-              pf ppf "%a@[%a@]@]" pp_indent (l_indent - ll) pp_tokens s
-          | false ->
-              pf ppf "@\n%a@[%a@]@]"
-                pp_indent (p_indent + l_indent) pp_tokens s
+          begin match s with
+          | "" -> pf ppf "@]@,"
+          | s ->
+              let ll = String.length label in
+              if ll < l_indent
+              then (pf ppf "%a@[%a@]@]@," pp_indent (l_indent - ll) pp_tokens s)
+              else (pf ppf "@\n%a@[%a@]@]@,"
+                      pp_indent (p_indent + l_indent) pp_tokens s)
           end;
-          match ts with `I _ :: _ -> pf ppf "@," | _ -> ()
-      end;
-      begin match ts with
-      | `Noblank :: ts -> loop ts
-      | ts -> Format.pp_print_cut ppf (); loop ts
-      end
+          blank_line ts
   in
   loop ts
 

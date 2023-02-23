@@ -1,8 +1,8 @@
 
-
+- Plain text manpage rendering: fix broken handling of `` `Noblank ``.
+  Thanks to Michael Richards and Reynir Björnsson for the report (#176).
 - Fix install to directory with spaces (#172). Thanks to 
   @ZSFactory for reporting and suggesting the fix.
-
 
 v1.1.1 2022-03-23 La Forclaz (VS)
 ---------------------------------
