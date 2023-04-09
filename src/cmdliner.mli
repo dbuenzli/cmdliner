@@ -634,7 +634,10 @@ module Cmd : sig
       markup language} in which the following variables are recognized:
       {ul
       {- [$(tname)] the (term's) command's name.}
-      {- [$(mname)] the main command name.}} *)
+      {- [$(mname)] the main command name.}
+      {- [$(iname)] the command invocation from main command to the
+         command name.}}
+  *)
 
   (** {1:cmds Commands} *)
 

@@ -26,7 +26,7 @@ let s_arguments = "ARGUMENTS"
 let s_options = "OPTIONS"
 let s_common_options = "COMMON OPTIONS"
 let s_exit_status = "EXIT STATUS"
-let s_exit_status_intro = `P "$(tname) exits with:"
+let s_exit_status_intro = `P "$(iname) exits with:"
 
 let s_environment = "ENVIRONMENT"
 let s_environment_intro =

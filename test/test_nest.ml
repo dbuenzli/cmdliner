@@ -1,6 +1,8 @@
 
 open Cmdliner
 
+let man = [ `P "Use $(iname) to invoke." ]
+
 let kind =
   let doc = "Kind of entity" in
   Arg.(value & opt (some string) None & info ["k";"kind"] ~doc)
@@ -15,19 +17,19 @@ let birds =
     Arg.(value & pos 0 string "pigeon" & info [] ~doc ~docv:"BIRD")
   in
   let fly =
-    let info = Cmd.info "fly" ~doc:"Fly birds." in
+    let info = Cmd.info "fly" ~doc:"Fly birds." ~man in
     Cmd.v info Term.(const (fun n v -> ()) $ bird $ speed)
   in
   let land' =
-    let info = Cmd.info "land" ~doc:"Land birds." in
+    let info = Cmd.info "land" ~doc:"Land birds." ~man in
     Cmd.v info Term.(const (fun n -> ()) $ bird)
   in
-  let info = Cmd.info "birds" ~doc:"Operate on birds." in
+  let info = Cmd.info "birds" ~doc:"Operate on birds." ~man in
   Cmd.group ~default:Term.(const (fun k -> ()) $ kind) info [fly; land']
 
 let mammals =
   let man_xrefs = [`Main; `Cmd "birds" ] in
-  let info = Cmd.info "mammals" ~doc:"Operate on mammals." ~man_xrefs in
+  let info = Cmd.info "mammals" ~doc:"Operate on mammals." ~man_xrefs ~man in
   Cmd.v info Term.(const (fun () -> ()) $ const ())
 
 let fishs =
@@ -35,7 +37,7 @@ let fishs =
     let doc = "Use fish named $(docv)." in
     Arg.(value & pos 0 (some string) None & info [] ~doc ~docv:"NAME")
   in
-  let info = Cmd.info "fishs" ~doc:"Operate on fishs." in
+  let info = Cmd.info "fishs" ~doc:"Operate on fishs." ~man in
   Cmd.v info Term.(const (fun n -> ()) $ name')
 
 let camels =
@@ -52,11 +54,11 @@ let camels =
   in
   let deprecated = "deprecated, use 'mammals' instead."
   in
-  let info = Cmd.info "camels" ~deprecated ~doc:"Operate on camels." in
+  let info = Cmd.info "camels" ~deprecated ~doc:"Operate on camels." ~man in
   Cmd.v info Term.(const (fun n h -> ()) $ bactrian $ herd)
 
 let cmd =
-  let info = Cmd.info "test_nest" ~version:"X.Y.Z" in
+  let info = Cmd.info "test_nest" ~version:"X.Y.Z" ~man in
   Cmd.group info [birds; mammals; fishs; camels]
 
 let () = exit (Cmd.eval cmd)
