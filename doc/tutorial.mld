@@ -5,9 +5,9 @@
 With [Cmdliner] your tool's [main] function evaluates a command.
 
 A command is a value of type {!Cmdliner.Cmd.t} which gathers a command
-name with a term of type {!Cmdliner.Term.t}.  The type parameter of
-the term (and the command) indicates the type of the result of the
-evaluation.
+name and a term of type {!Cmdliner.Term.t}. A term is an expression to
+be evaluated. The type parameter of the term (and the command)
+indicates the type of the result of the evaluation.
 
 One way to create terms is by lifting regular OCaml values with
 {!Cmdliner.Term.const}. Terms can be applied to terms evaluating to
