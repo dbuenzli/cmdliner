@@ -435,6 +435,14 @@ let pp_to_temp_file pp_v v =
     Some file
   with Sys_error _ -> None
 
+let tmp_file_for_pager () =
+  try
+    let exec = Filename.basename Sys.argv.(0) in
+    let file = Filename.temp_file exec "tty" in
+    at_exit (fun () -> try Sys.remove file with Sys_error e -> ());
+    Some file
+  with Sys_error _ -> None
+
 let find_cmd cmds =
   let test, null = match Sys.os_type with
   | "Win32" -> "where", " NUL"
@@ -475,7 +483,17 @@ let pp_to_pager print ppf v =
           let groffer = groffer ^ opts in
           begin match pp_to_temp_file (print `Groff) v with
           | None -> None
-          | Some f -> Some (strf "%s < %s | %s" groffer f pager)
+          | Some f when Sys.win32 ->
+              (* For some obscure reason the pipe below does not
+                 work. We need to use a temporary file.
+                 https://github.com/dbuenzli/cmdliner/issues/166 *)
+              begin match tmp_file_for_pager () with
+              | None -> None
+              | Some tmp ->
+                  Some (strf "%s <%s >%s %s <%s" groffer f tmp pager tmp)
+              end
+          | Some f ->
+              Some (strf "%s < %s | %s" groffer f pager)
           end
       in
       match cmd with
