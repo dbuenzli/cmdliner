@@ -490,7 +490,7 @@ let pp_to_pager print ppf v =
               begin match tmp_file_for_pager () with
               | None -> None
               | Some tmp ->
-                  Some (strf "%s <%s >%s %s <%s" groffer f tmp pager tmp)
+                  Some (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
               end
           | Some f ->
               Some (strf "%s < %s | %s" groffer f pager)
