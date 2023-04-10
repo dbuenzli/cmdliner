@@ -1,8 +1,11 @@
+v1.2.0 2023-04-10 La Forclaz (VS)
+---------------------------------
 
 - In manpage specification the new variable `$(iname)` substitutes the 
   command invocation (from program name to subcommand) in bold (#168). 
   This variable is now used in the default introduction of the `EXIT STATUS` 
   section. Thanks to Ali Caglayan for suggesting.
+- Fix manpage rendering when `PAGER=less` is set (#167).
 - Plain text manpage rendering: fix broken handling of `` `Noblank ``.
   Thanks to Michael Richards and Reynir Björnsson for the report (#176).
 - Fix install to directory with spaces (#172). Thanks to 
