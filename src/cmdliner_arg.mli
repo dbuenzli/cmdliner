@@ -62,9 +62,11 @@ val last : 'a list t -> 'a Cmdliner_term.t
 
 (** {1 Predefined arguments} *)
 
+type help_format = [ `Commands | Cmdliner_manpage.format ]
+
 val man_format : Cmdliner_manpage.format Cmdliner_term.t
 val stdopt_version : docs:string -> bool Cmdliner_term.t
-val stdopt_help : docs:string -> Cmdliner_manpage.format option Cmdliner_term.t
+val stdopt_help : docs:string -> help_format option Cmdliner_term.t
 
 (** {1 Converters} *)
 

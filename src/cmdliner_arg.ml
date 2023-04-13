@@ -317,26 +317,35 @@ let man_fmts =
   ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
 
 let man_fmt_docv = "FMT"
-let man_fmts_enum = Cmdliner_base.enum man_fmts
-let man_fmts_alts = doc_alts_enum man_fmts
-let man_fmts_doc kind =
-  strf "Show %s in format $(docv). The value $(docv) must be %s. \
-        With $(b,auto), the format is $(b,pager) or $(b,plain) whenever \
-        the $(b,TERM) env var is $(b,dumb) or undefined."
-    kind man_fmts_alts
+
+let mk_man_format man_fmts doc_kind =
+  let man_fmts_enum = Cmdliner_base.enum man_fmts in
+  let man_fmts_alts = doc_alts_enum man_fmts in
+  let man_fmts_doc =
+    strf
+      "Show %s in format $(docv). The value $(docv) must be %s. With \
+       $(b,auto), the format is $(b,pager) or $(b,plain) whenever the \
+       $(b,TERM) env var is $(b,dumb) or undefined. With $(b,commands), \
+       outputs the list of commands, separated by newlines."
+      doc_kind man_fmts_alts
+  in
+  (man_fmts_enum, man_fmts_doc)
 
 let man_format =
-  let doc = man_fmts_doc "output" in
+  let arg, doc = mk_man_format man_fmts "output" in
   let docv = man_fmt_docv in
-  value & opt man_fmts_enum `Pager & info ["man-format"] ~docv ~doc
+  value & opt arg `Pager & info ["man-format"] ~docv ~doc
 
 let stdopt_version ~docs =
   value & flag & info ["version"] ~docs ~doc:"Show version information."
 
+type help_format = [ `Commands | Cmdliner_manpage.format ]
+
 let stdopt_help ~docs =
-  let doc = man_fmts_doc "this help" in
+  let help_fmts = man_fmts @ [ "commands", `Commands ] in
+  let arg, doc = mk_man_format help_fmts "this help" in
   let docv = man_fmt_docv in
-  value & opt ~vopt:(Some `Auto) (some man_fmts_enum) None &
+  value & opt ~vopt:(Some `Auto) (some arg) None &
   info ["help"] ~docv ~docs ~doc
 
 (* Predefined converters. *)
