@@ -1,3 +1,9 @@
+
+
+- In manpage specifications use `$(iname)` in the default 
+  introduction of the `ENVIRONMENT` section. Follow up to 
+  #168.
+
 v1.2.0 2023-04-10 La Forclaz (VS)
 ---------------------------------
 
