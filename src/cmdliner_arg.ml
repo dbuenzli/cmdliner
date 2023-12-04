@@ -81,11 +81,11 @@ let report_deprecated_env ei e = match Cmdliner_info.Env.info_deprecated e with
     Cmdliner_msg.pp_err err_fmt ei ~err:msg
 
 let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
-| None -> Ok absent
+| None -> Ok (absent ())
 | Some env ->
     let var = Cmdliner_info.Env.info_var env in
     match Cmdliner_info.Eval.env_var ei var with
-    | None -> Ok absent
+    | None -> Ok (absent ())
     | Some v ->
         match parse v with
         | `Error e -> err (Cmdliner_msg.err_env_parse env ~err:e)
@@ -99,7 +99,7 @@ let list_to_args f l =
 let flag a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
-  | [] -> try_env ei a Cmdliner_base.env_bool_parse ~absent:false
+  | [] -> try_env ei a Cmdliner_base.env_bool_parse ~absent:(fun () -> false)
   | [_, _, None] -> Ok true
   | [_, f, Some v] -> err (Cmdliner_msg.err_flag_value f v)
   | (_, f, _) :: (_ ,g, _) :: _  -> err (Cmdliner_msg.err_opt_repeated f g)
@@ -111,7 +111,7 @@ let flag_all a =
   let a = Cmdliner_info.Arg.make_all_opts a in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] ->
-      try_env ei a (parse_to_list Cmdliner_base.env_bool_parse) ~absent:[]
+      try_env ei a (parse_to_list Cmdliner_base.env_bool_parse) ~absent:(fun () -> [])
   | l ->
       try
         let truth (_, f, v) = match v with
@@ -124,14 +124,25 @@ let flag_all a =
   arg_to_args a, convert
 
 let vflag v l =
-  let convert _ cl =
+  let convert ei cl =
     let rec aux fv = function
     | (v, a) :: rest ->
         begin match Cmdliner_cline.opt_arg cl a with
-        | [] -> aux fv rest
+        | [] ->
+          begin match try_env ei a Cmdliner_base.env_bool_parse ~absent:(fun () -> (aux [@tailcall]) fv rest) with
+          | Ok false ->
+            (* Env variable being false is equivalent to not setting it *)
+            (aux [@tailcall]) fv rest
+          | Ok true ->
+            let opt_name = Cmdliner_info.Arg.opt_name_sample a in
+            begin match fv with
+            | None -> (aux [@tailcall]) (Some (Cmdliner_info.Arg.opt_name_sample a, v)) rest
+            | Some (g, _) -> failwith (Cmdliner_msg.err_opt_repeated g opt_name)
+            end
+          | Error `Parse e ->  failwith e end
         | [_, f, None] ->
             begin match fv with
-            | None -> aux (Some (f, v)) rest
+            | None -> (aux [@tailcall]) (Some (f, v)) rest
             | Some (g, _) -> failwith (Cmdliner_msg.err_opt_repeated g f)
             end
         | [_, f, Some v] -> failwith (Cmdliner_msg.err_flag_value f v)
