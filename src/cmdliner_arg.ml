@@ -136,7 +136,7 @@ let vflag v l =
           | Ok true ->
             let opt_name = Cmdliner_info.Arg.opt_name_sample a in
             begin match fv with
-            | None -> (aux [@tailcall]) (Some (Cmdliner_info.Arg.opt_name_sample a, v)) rest
+            | None -> aux (Some (Cmdliner_info.Arg.opt_name_sample a, v)) rest
             | Some (g, _) -> failwith (Cmdliner_msg.err_opt_repeated g opt_name)
             end
           | Error `Parse e ->  failwith e end
