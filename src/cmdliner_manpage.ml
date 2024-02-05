@@ -444,12 +444,17 @@ let tmp_file_for_pager () =
   with Sys_error _ -> None
 
 let find_cmd cmds =
-  let test, null = match Sys.os_type with
-  | "Win32" -> "where", " NUL"
-  | _ -> "command -v", "/dev/null"
+  let find_win32 (cmd, _args) =
+    (* `where` does not support full path lookups *)
+    if String.equal (Filename.basename cmd) cmd
+    then (Sys.command (strf "where %s 1> NUL 2> NUL" cmd) = 0)
+    else Sys.file_exists cmd
   in
-  let cmd (c, _) = Sys.command (strf "%s %s 1>%s 2>%s" test c null null) = 0 in
-  try Some (List.find cmd cmds) with Not_found -> None
+  let find_posix (cmd, _args) =
+    Sys.command (strf "command -v %s 1>/dev/null 2>/dev/null" cmd) = 0
+  in
+  let find = if Sys.win32 then find_win32 else find_posix in
+  try Some (List.find find cmds) with Not_found -> None
 
 let pp_to_pager print ppf v =
   let pager =

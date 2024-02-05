@@ -1,5 +1,6 @@
 
-
+- Pager. Support full path command lookups on Windows.
+  (#185). Thanks to @kit-ty-kate for the report.
 - In manpage specifications use `$(iname)` in the default 
   introduction of the `ENVIRONMENT` section. Follow up to 
   #168.
