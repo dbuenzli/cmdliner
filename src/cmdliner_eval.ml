@@ -29,7 +29,7 @@ type 'a eval_result =
   ('a, [ Cmdliner_term.term_escape
        | `Exn of exn * Printexc.raw_backtrace
        | `Parse of string
-       | `Std_help of Cmdliner_manpage.format | `Std_version ]) result
+       | `Std_help of Cmdliner_arg.help_format | `Std_version ]) result
 
 let run_parser ~catch ei cl f = try (f ei cl :> 'a eval_result) with
 | exn when catch ->
@@ -73,12 +73,15 @@ let do_help help_ppf err_ppf ei fmt cmd =
   in
   Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei
 
-let do_result help_ppf err_ppf ei = function
+(** [std_ppf] is used for machine output. *)
+let do_result help_ppf ?(std_ppf = Format.std_formatter) err_ppf ei = function
 | Ok v -> Ok (`Ok v)
 | Error res ->
     match res with
-    | `Std_help fmt ->
+    | `Std_help (#Cmdliner_manpage.format as fmt) ->
         Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei; Ok `Help
+    | `Std_help `Commands ->
+        Cmdliner_msg.pp_commands std_ppf ei; Ok `Help
     | `Std_version ->
         Cmdliner_msg.pp_version help_ppf ei; Ok `Version
     | `Parse err ->

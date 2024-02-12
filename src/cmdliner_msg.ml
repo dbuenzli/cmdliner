@@ -96,6 +96,19 @@ let pp_err_usage ppf ei ~err_lines ~err =
     (exec_name ei) pp_err err (Cmdliner_docgen.pp_plain_synopsis ~errs:ppf) ei
     pp_try_help ei
 
+let pp_commands ppf ei =
+  let open Cmdliner_info in
+  let rec find_sub_commands path cmd =
+    let path = Cmd.name cmd :: path in
+    List.rev path :: List.concat_map (find_sub_commands path) (Cmd.children cmd)
+  in
+  let pp_segs =
+    let pp_sep ppf () = pp ppf " " in
+    Format.(pp_print_list ~pp_sep pp_print_string)
+  in
+  find_sub_commands [] (Eval.main ei)
+  |> List.iter (pp ppf "%a@." pp_segs)
+
 let pp_backtrace ppf ei e bt =
   let bt = Printexc.raw_backtrace_to_string bt in
   let bt =

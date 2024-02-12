@@ -35,6 +35,9 @@ val pp_err : Format.formatter -> Cmdliner_info.Eval.t -> err:string -> unit
 val pp_err_usage :
   Format.formatter -> Cmdliner_info.Eval.t -> err_lines:bool -> err:string -> unit
 
+(** The output of [--help=commands]. *)
+val pp_commands : Format.formatter -> Cmdliner_info.Eval.t -> unit
+
 val pp_backtrace :
   Format.formatter ->
   Cmdliner_info.Eval.t -> exn -> Printexc.raw_backtrace -> unit
