@@ -518,8 +518,8 @@ let rec print
   | `Groff -> pp_groff_page ~errs subst ppf page
   | `Auto ->
       let fmt =
-        if Sys.win32 then `Pager else
         match Sys.getenv "TERM" with
+        | exception Not_found when Sys.win32 -> `Pager
         | exception Not_found -> `Plain
         | "dumb" -> `Plain
         | _ -> `Pager
