@@ -510,16 +510,21 @@ let pp_to_pager print ppf v =
 type format = [ `Auto | `Pager | `Plain | `Groff ]
 
 let rec print
-    ?(errs = Format.err_formatter)
-    ?(subst = fun x -> None) fmt ppf page =
+    ?(errs = Format.err_formatter) ?(subst = fun x -> None) fmt ppf page
+  =
   match fmt with
   | `Pager -> pp_to_pager (print ~errs ~subst) ppf page
   | `Plain -> pp_plain_page ~errs subst ppf page
   | `Groff -> pp_groff_page ~errs subst ppf page
   | `Auto ->
-      match try (Some (Sys.getenv "TERM")) with Not_found -> None with
-      | None | Some "dumb" -> print ~errs ~subst `Plain ppf page
-      | Some _ -> print ~errs ~subst `Pager ppf page
+      let fmt =
+        if Sys.win32 then `Pager else
+        match Sys.getenv "TERM" with
+        | exception Not_found -> `Plain
+        | "dumb" -> `Plain
+        | _ -> `Pager
+      in
+      print ~errs ~subst fmt ppf page
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2011 The cmdliner programmers
