@@ -29,6 +29,10 @@ let group ?default i cmds =
 
 let name c = Cmdliner_info.Cmd.name (get_info c)
 
+let alias i = function
+| Cmd (_, p) -> Cmd (i, p)
+| Group (_, grp) -> Group (i, grp)
+
 (*---------------------------------------------------------------------------
    Copyright (c) 2022 The cmdliner programmers
 
