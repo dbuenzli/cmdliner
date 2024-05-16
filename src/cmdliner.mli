@@ -184,6 +184,21 @@ module Term : sig
   val app : ('a -> 'b) t -> 'a t -> 'b t
   (** [app] is {!($)}. *)
 
+  val map : ('a -> 'b) -> 'a t -> 'b t
+  (** [map f t] is [app (const f) t]. *)
+
+  val product : 'a t -> 'b t  -> ('a * 'b) t
+  (** [product t0 t1] is [app (app (map (fun x y -> (x, y)) t0) t1)] *)
+
+  (** [let] operators. *)
+  module Syntax : sig
+    val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
+    (** [( let+ )] is {!map}. *)
+
+    val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
+    (** [( and* )] is {!product}. *)
+  end
+
   (** {1 Interacting with Cmdliner's evaluation} *)
 
   val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t

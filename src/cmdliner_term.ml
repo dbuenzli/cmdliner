@@ -23,6 +23,14 @@ let app (args_f, f) (args_v, v) =
       | Error _ as e -> e
       | Ok v -> Ok (f v)
 
+let map f v = app (const f) v
+let product v0 v1 = app (app (const (fun x y -> (x, y))) v0) v1
+
+module Syntax = struct
+  let ( let+ ) v f = map f v
+  let ( and+ ) = product
+end
+
 (* Terms *)
 
 let ( $ ) = app
