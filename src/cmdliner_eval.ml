@@ -5,6 +5,7 @@
 
 type 'a eval_ok = [ `Ok of 'a | `Version | `Help ]
 type eval_error = [ `Parse | `Term | `Exn ]
+type 'a eval_exit = [ `Ok of 'a  | `Exit of Cmdliner_info.Exit.code ]
 
 let err_help s = "Term error, help requested for unknown command " ^ s
 let err_argv = "argv array must have at least one element"
@@ -246,6 +247,11 @@ let exit_status_of_result ?(term_err = Cmdliner_info.Exit.cli_error) = function
 | Error `Term -> term_err
 | Error `Parse -> Cmdliner_info.Exit.cli_error
 | Error `Exn -> Cmdliner_info.Exit.internal_error
+
+let eval_value' ?help ?err ?catch ?env ?argv ?term_err cmd =
+  match eval_value ?help ?err ?catch ?env ?argv cmd with
+  | Ok (`Ok _ as v) -> v
+  | ret -> `Exit (exit_status_of_result ?term_err ret)
 
 let eval ?help ?err ?catch ?env ?argv ?term_err cmd =
   exit_status_of_result ?term_err @@

@@ -741,6 +741,10 @@ module Cmd : sig
   | `Exn (** An uncaught exception occurred. *) ]
   (** The type for erroring evaluation results. *)
 
+  type 'a eval_exit =
+  [ `Ok of 'a (** The term of the command evaluated to this value. *)
+  | `Exit of Exit.code (** The evaluation wants to exit with this code. *) ]
+
   val eval_value :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
     ?env:(string -> string option) -> ?argv:string array -> 'a t ->
@@ -758,6 +762,15 @@ module Cmd : sig
          (defaults to {!Format.std_formatter})}
       {- [err] is the formatter used to print error messages
          (defaults to {!Format.err_formatter}).}} *)
+
+  val eval_value' :
+    ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
+    ?env:(string -> string option) -> ?argv:string array -> ?term_err:int ->
+    'a t -> 'a eval_exit
+  (** [eval_value'] is like {!eval_value}, but if the command term
+      does not evaluate, returns an exit code like the
+      {{!eval}evaluation} function do (which can be {!Exit.ok} in case
+      help or version was requested). *)
 
   val eval_peek_opts :
     ?version_opt:bool -> ?env:(string -> string option) ->
