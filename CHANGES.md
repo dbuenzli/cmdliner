@@ -1,3 +1,5 @@
+v1.3.0 2024-05-23 La Forclaz (VS)
+---------------------------------
 
 - Add let operators in `Cmdliner.Term.Syntax` (#173). Thanks to Benoit
   Montagu for suggesting, Gabriel Scherer for reminding us of language
