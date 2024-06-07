@@ -153,7 +153,26 @@ module Arg = struct
   let rev_pos_cli_order a0 a1 = pos_cli_order a1 a0
 
   let compare a0 a1 = Int.compare a0.id a1.id
-  module Set = Set.Make (struct type nonrec t = t let compare = compare end)
+
+  module Set = struct
+    type arg = t
+    type complete = Cmdliner_base.complete
+
+    module Map = Map.Make (struct type t = arg let compare = compare end)
+    include Map
+
+    type t = Cmdliner_base.complete Map.t
+
+    let find_opt k m = try Some (Map.find k m) with Not_found -> None
+
+    let elements m = List.map fst (bindings m)
+
+    let union a b =
+      Map.merge (fun k v v' ->
+        match v, v' with
+        | Some v, _ | _, Some v -> Some v
+        | None, None -> assert false) a b
+  end
 end
 
 (* Commands *)

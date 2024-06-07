@@ -28,11 +28,27 @@ val err_unknown :
 val err_multi_def :
   kind:string -> string -> ('b -> string) -> 'b -> 'b -> string
 
+(** {1:complete Completion strategies} *)
+
+type complete = {
+  complete_file : bool;
+  complete_dir : bool;
+  complete : (string -> (string * string) list);
+}
+
+val no_complete : complete
+
+val complete :
+  ?file:bool ->
+  ?dir:bool ->
+  ?complete:(string -> (string * string) list) ->
+  unit -> complete
+
 (** {1:conv Textual OCaml value converters} *)
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv = {parse: 'a parser; print: 'a printer}
+type 'a conv = {parse: 'a parser; print: 'a printer; complete: complete}
 
 val some : ?none:string -> 'a conv -> 'a option conv
 val some' : ?none:'a -> 'a conv -> 'a option conv
@@ -58,3 +74,8 @@ val t4 :
   ('a * 'b * 'c * 'd) conv
 
 val env_bool_parse : bool parser
+
+val is_space : char -> bool
+
+val string_has_prefix : prefix:string -> string -> bool
+val string_drop_prefix : prefix:string -> string -> string option

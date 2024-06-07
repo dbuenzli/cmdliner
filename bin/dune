@@ -1,0 +1,26 @@
+(executable
+  (name main)
+  (public_name cmdliner)
+  (package cmdliner)
+  (libraries cmdliner))
+
+(rule
+ (target cmdliner_completion.ml)
+ (deps ../completion/zsh-completion.sh)
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (echo "let zsh_completion name = Printf.sprintf {|")
+    (pipe-stdout
+     (cat ../completion/zsh-completion.sh)
+     (run sed "s/NAME/%s/g"))
+    (echo "|} name name name;;") ; number of NAME token occurrences
+    (echo "let bash_completion name = Printf.sprintf {|")
+    (pipe-stdout
+     (cat ../completion/bash-completion.sh)
+     (run sed "s/NAME/%s/g"))
+    (echo "|} name name name;;") ; number of NAME token occurrences
+    ))))
+

@@ -10,14 +10,21 @@ type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv = 'a Cmdliner_base.conv = {
   parse: 'a parser;
   print: 'a printer;
+  complete: Cmdliner_base.complete;
 }
 type 'a converter = 'a conv
 
 val conv :
+  ?complete:(string -> (string * string) list) ->
+  ?complete_file:bool ->
+  ?complete_dir:bool ->
   ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
   'a conv
 
 val conv' :
+  ?complete:(string -> (string * string) list) ->
+  ?complete_file:bool ->
+  ?complete_dir:bool ->
   ?docv:string -> (string -> ('a, string) result) * 'a printer -> 'a conv
 
 val pconv : ?docv:string -> 'a parser * 'a printer -> 'a conv
@@ -40,7 +47,8 @@ type 'a t = 'a Cmdliner_term.t
 type info
 val info :
   ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-  ?doc:string -> ?env:env -> string list -> info
+  ?doc:string -> ?env:env -> 
+  string list -> info
 
 val ( & ) : ('a -> 'b) -> 'a -> 'b
 
