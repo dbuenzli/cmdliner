@@ -87,6 +87,18 @@ let hint_matching_opt optidx s =
   | true, [] -> [short_opt]
   | true, l -> if List.mem short_opt l then l else short_opt :: l
 
+let complete_prefix = "+cmdliner_complete:"
+
+let maybe_complete_token s =
+  if String.starts_with ~prefix:complete_prefix s
+  then
+    let drop = String.length complete_prefix in
+    Some (String.sub s drop (String.length s - drop))
+  else None
+
+exception Completion_requested of 
+  string * [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
+
 let parse_opt_args ~peek_opts optidx cl args =
   (* returns an updated [cl] cmdline according to the options found in [args]
      with the trie index [optidx]. Positional arguments are returned in order
@@ -109,8 +121,11 @@ let parse_opt_args ~peek_opts optidx cl args =
               | [] -> None, args
               | v :: rest -> if is_opt v then None, args else Some v, rest
           in
+          (match Option.bind value maybe_complete_token with
+          | Some prefix -> raise (Completion_requested (prefix, `Opt a))
+          | None ->
           let arg = O ((k, name, value) :: opt_arg cl a) in
-          loop errs (k + 1) (Amap.add a arg cl) pargs args
+          loop errs (k + 1) (Amap.add a arg cl) pargs args)
       | `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
       | `Not_found ->
           let hints = hint_matching_opt optidx s in
@@ -129,11 +144,14 @@ let parse_opt_args ~peek_opts optidx cl args =
 
 let take_range start stop l =
   let rec loop i acc = function
-  | [] -> List.rev acc
+  | [] -> `Range (List.rev acc)
   | v :: vs ->
+      match maybe_complete_token v with
+      | Some prefix -> `Complete prefix
+      | None ->
       if i < start then loop (i + 1) acc vs else
       if i <= stop then loop (i + 1) (v :: acc) vs else
-      List.rev acc
+      `Range (List.rev acc)
   in
   loop 0 [] l
 
@@ -159,7 +177,11 @@ let process_pos_args posidx cl pargs =
       | Some n -> pos rev (Cmdliner_info.Arg.pos_start apos + n - 1)
       in
       let start, stop = if rev then stop, start else start, stop in
-      let args = take_range start stop pargs in
+      let args = 
+        match take_range start stop pargs with
+        | `Range args -> args
+        | `Complete prefix -> raise (Completion_requested (prefix, `Arg a))
+      in
       let max_spec = max stop max_spec in
       let cl = Amap.add a (P args) cl in
       let misses = match Cmdliner_info.Arg.is_req a && args = [] with
@@ -169,17 +191,30 @@ let process_pos_args posidx cl pargs =
       loop misses cl max_spec al
   in
   let misses, cl, max_spec = loop [] cl (-1) posidx in
-  if misses <> [] then Error (Cmdliner_msg.err_pos_misses misses, cl) else
+  let consume_excess () =
+    match take_range (max_spec + 1) last pargs with
+    | `Range args -> args
+    | `Complete prefix -> raise (Completion_requested (prefix, `Any))
+  in
+  if misses <> [] then (
+    let _ : string list = consume_excess () in
+    Error (Cmdliner_msg.err_pos_misses misses, cl)) else
   if last <= max_spec then Ok cl else
-  let excess = take_range (max_spec + 1) last pargs in
-  Error (Cmdliner_msg.err_pos_excess excess, cl)
+  Error (Cmdliner_msg.err_pos_excess (consume_excess ()), cl)
 
 let create ?(peek_opts = false) al args =
   let optidx, posidx, cl = arg_info_indexes al in
+  try
   match parse_opt_args ~peek_opts optidx cl args with
-  | Ok (cl, _) when peek_opts -> Ok cl
-  | Ok (cl, pargs) -> process_pos_args posidx cl pargs
-  | Error (errs, cl, _) -> Error (errs, cl)
+  | Ok (cl, _) when peek_opts -> `Ok cl
+  | Ok (cl, pargs) -> 
+    (match process_pos_args posidx cl pargs with 
+    | Ok v -> `Ok v 
+    | Error v -> `Error v)
+  | Error (errs, cl, pargs) ->
+    let _ : _ result = process_pos_args posidx cl pargs in
+    `Error (errs, cl)
+  with Completion_requested (prefix, kind) -> `Completion (prefix, kind)
 
 let deprecated_msgs cl =
   let add i arg acc = match Cmdliner_info.Arg.deprecated i with

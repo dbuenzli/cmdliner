@@ -89,6 +89,7 @@ module Arg = struct
       doc : string; (* help. *)
       docv : string; (* variable name for the argument in help. *)
       docs : string; (* title of help section where listed. *)
+      complete : [ `Complete_file | `Complete_dir | `Complete_custom of unit -> (string * string) list ] option;
       pos : pos_kind; (* positional arg kind. *)
       opt_kind : opt_kind; (* optional arg kind. *)
       opt_names : string list; (* names (for opt args). *)
@@ -96,7 +97,7 @@ module Arg = struct
 
   let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
-  let v ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env names =
+  let v ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env ?complete names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let opt_names = List.map dash names in
     let docs = match docs with
@@ -108,12 +109,13 @@ module Arg = struct
     in
     { id = Cmdliner_base.uid (); deprecated; absent = Doc absent;
       env; doc; docv; docs; pos = dumb_pos; opt_kind = Flag; opt_names;
-      opt_all = false; }
+      opt_all = false; complete; }
 
   let id a = a.id
   let deprecated a = a.deprecated
   let absent a = a.absent
   let env a = a.env
+  let complete a = a.complete
   let doc a = a.doc
   let docv a = a.docv
   let docs a = a.docs

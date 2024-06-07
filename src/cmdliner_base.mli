@@ -58,3 +58,4 @@ val t4 :
   ('a * 'b * 'c * 'd) conv
 
 val env_bool_parse : bool parser
+val is_space : char -> bool

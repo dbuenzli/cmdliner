@@ -116,13 +116,13 @@ let find_term args cmd =
     let args = List.rev_append args_rev args_rest in
     match (cmd : 'a Cmdliner_cmd.t) with
     | Cmd (i, t) ->
-        args, t, i, parents, Ok ()
+        args, t, i, parents, [], Ok ()
     | Group (i, (Some t, children)) ->
-        args, t, i, parents, Ok ()
+        args, t, i, parents, children, Ok ()
     | Group (i, (None, children)) ->
         let dom = cmd_name_dom children in
         let err = Cmdliner_msg.err_cmd_missing ~dom in
-        args, never_term, i, parents, Error err
+        args, never_term, i, parents, children, Error err
   in
   let rec loop args_rev parents cmd = function
   | ("--" :: _ | [] as rest) -> stop rest args_rev parents cmd
@@ -132,7 +132,7 @@ let find_term args cmd =
       match cmd with
       | Cmd (i, t) ->
           let args = List.rev_append args_rev (arg :: args) in
-          args, t, i, parents, Ok ()
+          args, t, i, parents, [], Ok ()
       | Group (i, (t, children)) ->
           let index = cmd_name_trie children in
           match Cmdliner_trie.find index arg with
@@ -144,13 +144,13 @@ let find_term args cmd =
               let dom = cmd_name_dom children in
               let kind = "command" in
               let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
-              args, never_term, i, parents, Error err
+              args, never_term, i, parents, children, Error err
           | `Ambiguous ->
               let args = List.rev_append args_rev (arg :: args) in
               let ambs = Cmdliner_trie.ambiguities index arg in
               let ambs = List.sort compare ambs in
               let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
-              args, never_term, i, parents, Error err
+              args, never_term, i, parents, children, Error err
   in
   loop [] [] cmd args
 
@@ -170,19 +170,103 @@ let do_deprecated_msgs err_ppf cl ei =
   if msgs <> []
   then Cmdliner_msg.pp_err err_ppf ei ~err:(String.concat "\n" msgs)
 
+module Complete = struct
+
+  let file () = print_endline "file"
+  let dir () = print_endline "dir"
+
+  let group fmt =
+    print_endline "group";
+    Printf.ksprintf print_endline fmt
+
+  let item ~prefix (name, doc) =
+    if String.starts_with ~prefix name then (
+      print_endline "item";
+      print_endline name;
+      let doc = String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc in
+      print_endline doc)
+end
+
+let handle_completion cmd cmd_children (prefix, kind) =
+  let complete_arg_names () =
+    Complete.group "Options";
+    let args = Cmdliner_info.Cmd.args cmd in
+    Cmdliner_info.Arg.Set.iter (fun arg ->
+      let names = Cmdliner_info.Arg.opt_names arg in
+      let doc = Cmdliner_info.Arg.doc arg in
+      List.iter (fun name ->
+        Complete.item ~prefix (name, doc)) names)
+      args;
+  in
+  let complete_arg_values arg =
+    Complete.group "Values";
+    match Cmdliner_info.Arg.complete arg with
+    | None -> ()
+    | Some `Complete_file -> Complete.file ()
+    | Some `Complete_dir -> Complete.dir ()
+    | Some `Complete_custom f ->
+      let items = f () in
+      List.iter (Complete.item ~prefix) items
+  in
+  let complete_subcommands () =
+    Complete.group "Subcommands";
+    List.iter (fun cmd ->
+      let info = Cmdliner_cmd.get_info cmd in
+      let name = Cmdliner_info.Cmd.name info in
+      let doc = Cmdliner_info.Cmd.doc info in
+      Complete.item ~prefix (name, doc))
+      cmd_children
+  in
+  (match kind with
+  | `Opt a ->
+    complete_arg_values a
+  | `Arg a ->
+    complete_arg_names ();
+    complete_subcommands ();
+    complete_arg_values a
+  | `Any ->
+    complete_arg_names ();
+    complete_subcommands ());
+  exit 0
+
+let eval_mode () =
+    match Sys.getenv_opt "COMP_INSTALL" with
+    | Some shell -> `Completion_install shell
+    | _ ->
+    match Sys.getenv_opt "COMP_RUN" with
+    | Some _ ->
+      `Completion
+    | _ -> `Run
+
 let eval_value
     ?help:(help_ppf = Format.std_formatter)
     ?err:(err_ppf = Format.err_formatter)
     ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
   =
-  let args, f, cmd, parents, res = find_term (remove_exec argv) cmd in
+  let _is_completion =
+    match eval_mode () with
+    | `Run -> false
+    | `Completion -> true
+    | `Completion_install "zsh" ->
+      print_endline (Cmdliner_completion.zsh_completion argv.(0));
+      exit 0
+    | `Completion_install "bash" ->
+      print_endline (Cmdliner_completion.bash_completion argv.(0));
+      exit 0
+    | `Completion_install shell ->
+      prerr_endline (Printf.sprintf "completion for %s shell is not supported" shell);
+      exit 1
+  in
+  let args, f, cmd, parents, children, res = find_term (remove_exec argv) cmd in
   let ei = Cmdliner_info.Eval.v ~cmd ~parents ~env ~err_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let res = match res with
   | Error msg -> (* Command lookup error, we still prioritize stdargs *)
       let cl = match Cmdliner_cline.create term_args args with
-      | Error (_, cl) -> cl | Ok cl -> cl
+      | `Completion compl -> handle_completion cmd children compl
+      | `Error (_, cl) -> cl
+      | `Ok cl -> cl
       in
       begin match try_eval_stdopts ~catch ei cl help version with
       | Some e -> e
@@ -190,12 +274,13 @@ let eval_value
       end
   | Ok () ->
       match Cmdliner_cline.create term_args args with
-      | Error (e, cl) ->
+      | `Completion compl -> handle_completion cmd children compl
+      | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
           | None -> Error (`Error (true, e))
           end
-      | Ok cl ->
+      | `Ok cl ->
           match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
           | None ->
@@ -219,12 +304,13 @@ let eval_peek_opts
   let cli_args =  remove_exec argv in
   let v, ret =
     match Cmdliner_cline.create ~peek_opts:true term_args cli_args with
-    | Error (e, cl) ->
+    | `Completion arg -> failwith "TODO: eval_peek_opts"
+    | `Error (e, cl) ->
         begin match try_eval_stdopts ~catch:true ei cl help version with
         | Some e -> None, e
         | None -> None, Error (`Error (true, e))
         end
-    | Ok cl ->
+    | `Ok cl ->
         let ret = run_parser ~catch:true ei cl f in
         let v = match ret with Ok v -> Some v | Error _ -> None in
         match try_eval_stdopts ~catch:true ei cl help version with

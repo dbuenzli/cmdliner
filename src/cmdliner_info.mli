@@ -64,7 +64,9 @@ module Arg : sig
   type t
   val v :
     ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:Env.info -> string list -> t
+    ?doc:string -> ?env:Env.info ->
+    ?complete:[ `Complete_custom of unit -> (string * string) list | `Complete_dir | `Complete_file ] ->
+    string list -> t
 
   val id : t -> int
   val deprecated : t -> string option
@@ -77,6 +79,7 @@ module Arg : sig
   val opt_name_sample : t -> string (* warning must be an opt arg *)
   val opt_kind : t -> opt_kind
   val pos_kind : t -> pos_kind
+  val complete : t -> [ `Complete_custom of unit -> (string * string) list | `Complete_dir | `Complete_file ] option
 
   val make_req : t -> t
   val make_all_opts : t -> t

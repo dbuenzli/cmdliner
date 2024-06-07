@@ -37,7 +37,9 @@ type 'a t = 'a Cmdliner_term.t
 type info
 val info :
   ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-  ?doc:string -> ?env:env -> string list -> info
+  ?doc:string -> ?env:env -> 
+  ?complete:[ `Complete_custom of unit -> (string * string) list | `Complete_dir | `Complete_file ] ->
+  string list -> info
 
 val ( & ) : ('a -> 'b) -> 'a -> 'b
 

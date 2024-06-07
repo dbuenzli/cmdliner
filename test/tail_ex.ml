@@ -44,9 +44,11 @@ let follow =
              the file should be tracked, by its $(b,name) or by its \
              $(b,descriptor)."
   in
-  let follow = Arg.enum ["name", Name; "descriptor", Descriptor] in
+  let values = ["name", Name; "descriptor", Descriptor] in
+  let follow = Arg.enum values in
+  let complete = `Complete_custom (fun () -> List.map (fun (v, _) -> v, v) values) in
   Arg.(value & opt (some follow) ~vopt:(Some Descriptor) None &
-       info ["f"; "follow"] ~docv:"ID" ~doc)
+       info ["f"; "follow"] ~complete ~docv:"ID" ~doc)
 
 let verb =
   let quiet =

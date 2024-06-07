@@ -80,8 +80,9 @@ let pp_lines ppf s =
   in
   loop 0 s
 
+let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false
+
 let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
-  let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false in
   let i_max = String.length s - 1 in
   let flush start stop = pp_str ppf (String.sub s start (stop - start + 1)) in
   let rec skip_white i =
