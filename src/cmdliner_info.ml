@@ -89,7 +89,6 @@ module Arg = struct
       doc : string; (* help. *)
       docv : string; (* variable name for the argument in help. *)
       docs : string; (* title of help section where listed. *)
-      complete : [ `Complete_file | `Complete_dir | `Complete_custom of unit -> (string * string) list ] option;
       pos : pos_kind; (* positional arg kind. *)
       opt_kind : opt_kind; (* optional arg kind. *)
       opt_names : string list; (* names (for opt args). *)
@@ -97,7 +96,7 @@ module Arg = struct
 
   let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
-  let v ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env ?complete names =
+  let v ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env names =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let opt_names = List.map dash names in
     let docs = match docs with
@@ -109,13 +108,12 @@ module Arg = struct
     in
     { id = Cmdliner_base.uid (); deprecated; absent = Doc absent;
       env; doc; docv; docs; pos = dumb_pos; opt_kind = Flag; opt_names;
-      opt_all = false; complete; }
+      opt_all = false; }
 
   let id a = a.id
   let deprecated a = a.deprecated
   let absent a = a.absent
   let env a = a.env
-  let complete a = a.complete
   let doc a = a.doc
   let docv a = a.docv
   let docs a = a.docs
@@ -155,7 +153,26 @@ module Arg = struct
   let rev_pos_cli_order a0 a1 = pos_cli_order a1 a0
 
   let compare a0 a1 = Int.compare a0.id a1.id
-  module Set = Set.Make (struct type nonrec t = t let compare = compare end)
+
+  module Set = struct
+    type arg = t
+    type complete = Cmdliner_base.complete
+
+    module Map = Map.Make (struct type t = arg let compare = compare end)
+    include Map
+
+    type t = Cmdliner_base.complete Map.t
+
+    let find_opt k m = try Some (Map.find k m) with Not_found -> None
+
+    let elements m = List.map fst (bindings m)
+
+    let union a b =
+      Map.merge (fun k v v' ->
+        match v, v' with
+        | Some v, _ | _, Some v -> Some v
+        | None, None -> assert false) a b
+  end
 end
 
 (* Commands *)

@@ -65,7 +65,6 @@ module Arg : sig
   val v :
     ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
     ?doc:string -> ?env:Env.info ->
-    ?complete:[ `Complete_custom of unit -> (string * string) list | `Complete_dir | `Complete_file ] ->
     string list -> t
 
   val id : t -> int
@@ -79,7 +78,6 @@ module Arg : sig
   val opt_name_sample : t -> string (* warning must be an opt arg *)
   val opt_kind : t -> opt_kind
   val pos_kind : t -> pos_kind
-  val complete : t -> [ `Complete_custom of unit -> (string * string) list | `Complete_dir | `Complete_file ] option
 
   val make_req : t -> t
   val make_all_opts : t -> t
@@ -96,7 +94,25 @@ module Arg : sig
   val rev_pos_cli_order : t -> t -> int
 
   val compare : t -> t -> int
-  module Set : Set.S with type elt = t
+
+  module Set : sig
+    type arg = t
+    type complete = Cmdliner_base.complete
+
+    type t
+
+    val empty : t
+    val add : arg -> complete -> t -> t
+    val choose : t -> arg * complete
+    val partition : (arg -> complete -> bool) -> t -> t * t
+    val filter : (arg -> complete -> bool) -> t -> t
+    val iter : (arg -> complete -> unit) -> t -> unit
+    val singleton : arg -> complete -> t
+    val fold : (arg -> complete -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val elements : t -> arg list
+    val union : t -> t -> t
+    val find_opt : arg -> t -> complete option
+  end
 end
 
 (** Commands. *)

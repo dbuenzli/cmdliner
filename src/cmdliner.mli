@@ -833,6 +833,9 @@ module Arg : sig
   (** The type for argument converters. *)
 
   val conv :
+    ?complete:(string -> (string * string) list) ->
+    ?complete_file:bool ->
+    ?complete_dir:bool ->
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
     'a conv
   (** [conv ~docv (parse, print)] is an argument converter
@@ -842,6 +845,9 @@ module Arg : sig
       ["VALUE"]. *)
 
   val conv' :
+    ?complete:(string -> (string * string) list) ->
+    ?complete_file:bool ->
+    ?complete_dir:bool ->
     ?docv:string -> (string -> ('a, string) result) * 'a printer ->
     'a conv
   (** [conv'] is like {!val-conv} but the [Error] case has an unlabelled
@@ -893,9 +899,7 @@ module Arg : sig
 
   val info :
     ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:Cmd.Env.info -> 
-    ?complete:[ `Complete_custom of unit -> (string * string) list | `Complete_dir | `Complete_file ] ->
-    string list -> info
+    ?doc:string -> ?env:Cmd.Env.info -> string list -> info
   (** [info docs docv doc env names] defines information for
       an argument.
       {ul

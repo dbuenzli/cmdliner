@@ -187,11 +187,11 @@ module Complete = struct
       print_endline doc)
 end
 
-let handle_completion cmd cmd_children (prefix, kind) =
+let handle_completion args cmd cmd_children (prefix, kind) =
   let complete_arg_names () =
     Complete.group "Options";
     let args = Cmdliner_info.Cmd.args cmd in
-    Cmdliner_info.Arg.Set.iter (fun arg ->
+    Cmdliner_info.Arg.Set.iter (fun arg _ ->
       let names = Cmdliner_info.Arg.opt_names arg in
       let doc = Cmdliner_info.Arg.doc arg in
       List.iter (fun name ->
@@ -199,14 +199,13 @@ let handle_completion cmd cmd_children (prefix, kind) =
       args;
   in
   let complete_arg_values arg =
-    Complete.group "Values";
-    match Cmdliner_info.Arg.complete arg with
+    match Cmdliner_info.Arg.Set.find_opt arg args with
     | None -> ()
-    | Some `Complete_file -> Complete.file ()
-    | Some `Complete_dir -> Complete.dir ()
-    | Some `Complete_custom f ->
-      let items = f () in
-      List.iter (Complete.item ~prefix) items
+    | Some { complete_file; complete_dir; complete } ->
+      Complete.group "Values";
+      List.iter (Complete.item ~prefix) (complete prefix);
+      if complete_file then Complete.file ();
+      if complete_dir then Complete.dir ()
   in
   let complete_subcommands () =
     Complete.group "Subcommands";
@@ -221,12 +220,12 @@ let handle_completion cmd cmd_children (prefix, kind) =
   | `Opt a ->
     complete_arg_values a
   | `Arg a ->
-    complete_arg_names ();
-    complete_subcommands ();
-    complete_arg_values a
+    complete_arg_values a;
+    complete_arg_names ()
   | `Any ->
-    complete_arg_names ();
-    complete_subcommands ());
+    (match cmd_children with
+     | [] ->  complete_arg_names ()
+     | _  -> complete_subcommands ()));
   exit 0
 
 let eval_value
@@ -241,7 +240,7 @@ let eval_value
   let res = match res with
   | Error msg -> (* Command lookup error, we still prioritize stdargs *)
       let cl = match Cmdliner_cline.create term_args args with
-      | `Completion compl -> handle_completion cmd children compl
+      | `Completion compl -> handle_completion term_args cmd children compl
       | `Error (_, cl) -> cl
       | `Ok cl -> cl
       in
@@ -251,7 +250,7 @@ let eval_value
       end
   | Ok () ->
       match Cmdliner_cline.create term_args args with
-      | `Completion compl -> handle_completion cmd children compl
+      | `Completion compl -> handle_completion term_args cmd children compl
       | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e

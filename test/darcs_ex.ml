@@ -79,7 +79,7 @@ let sdocs = Manpage.s_common_options
 let initialize_cmd =
   let repodir =
     let doc = "Run the program in repository directory $(docv)." in
-    Arg.(value & opt file Filename.current_dir_name & info ~complete:`Complete_dir ["repodir"]
+    Arg.(value & opt file Filename.current_dir_name & info ["repodir"]
            ~docv:"DIR" ~doc)
   in
   let doc = "make the current directory a repository" in

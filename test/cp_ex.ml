@@ -28,13 +28,13 @@ let force =
 
 let srcs =
   let doc = "Source file(s) to copy." in
-  Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] ~complete:`Complete_file ~docv:"SOURCE" ~doc)
+  Arg.(non_empty & pos_left ~rev:true 0 file [] & info [] ~docv:"SOURCE" ~doc)
 
 let dest =
   let doc = "Destination of the copy. Must be a directory if there is more \
              than one $(i,SOURCE)." in
   let docv = "DEST" in
-  Arg.(required & pos ~rev:true 0 (some string) None & info ~complete:`Complete_file [] ~docv ~doc)
+  Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv ~doc)
 
 let cmd =
   let doc = "Copy files" in
