@@ -1,5 +1,7 @@
 
 
+* Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for 
+  the patch (#206).
 
 - Add `Cmdliner.Cmd.make` which should be preferred to `Cmdliner.Cmd.v`
   (`M.v` is nice for simulating literals, not for heavy constructor).

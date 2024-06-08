@@ -835,13 +835,8 @@ module Arg : sig
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
 
-  [@@@alert "-deprecated"] (* Need to be able to mention them ! *)
-  type 'a conv = 'a parser * 'a printer
-  (** The type for argument converters.
-
-      {b Warning.} Do not use directly, use {!val-conv} or {!val-conv'}.
-      This type will become abstract in the next major version of cmdliner. *)
-  [@@@alert "+deprecated"] (* Need to be able to mention them ! *)
+  type 'a conv
+  (** The type for argument converters. *)
 
   val conv :
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
