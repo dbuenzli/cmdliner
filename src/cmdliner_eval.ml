@@ -229,34 +229,11 @@ let handle_completion cmd cmd_children (prefix, kind) =
     complete_subcommands ());
   exit 0
 
-let eval_mode () =
-    match Sys.getenv_opt "COMP_INSTALL" with
-    | Some shell -> `Completion_install shell
-    | _ ->
-    match Sys.getenv_opt "COMP_RUN" with
-    | Some _ ->
-      `Completion
-    | _ -> `Run
-
 let eval_value
     ?help:(help_ppf = Format.std_formatter)
     ?err:(err_ppf = Format.err_formatter)
     ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
   =
-  let _is_completion =
-    match eval_mode () with
-    | `Run -> false
-    | `Completion -> true
-    | `Completion_install "zsh" ->
-      print_endline (Cmdliner_completion.zsh_completion argv.(0));
-      exit 0
-    | `Completion_install "bash" ->
-      print_endline (Cmdliner_completion.bash_completion argv.(0));
-      exit 0
-    | `Completion_install shell ->
-      prerr_endline (Printf.sprintf "completion for %s shell is not supported" shell);
-      exit 1
-  in
   let args, f, cmd, parents, children, res = find_term (remove_exec argv) cmd in
   let ei = Cmdliner_info.Eval.v ~cmd ~parents ~env ~err_ppf in
   let help, version, ei = add_stdopts ei in
