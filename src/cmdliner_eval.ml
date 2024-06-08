@@ -180,7 +180,7 @@ module Complete = struct
     Printf.ksprintf print_endline fmt
 
   let item ~prefix (name, doc) =
-    if String.starts_with ~prefix name then (
+    if Cmdliner_base.string_has_prefix ~prefix name then (
       print_endline "item";
       print_endline name;
       let doc = String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc in

@@ -90,11 +90,7 @@ let hint_matching_opt optidx s =
 let complete_prefix = "+cmdliner_complete:"
 
 let maybe_complete_token s =
-  if String.starts_with ~prefix:complete_prefix s
-  then
-    let drop = String.length complete_prefix in
-    Some (String.sub s drop (String.length s - drop))
-  else None
+  Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
 
 exception Completion_requested of 
   string * [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]

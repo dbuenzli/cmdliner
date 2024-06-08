@@ -58,4 +58,8 @@ val t4 :
   ('a * 'b * 'c * 'd) conv
 
 val env_bool_parse : bool parser
+
 val is_space : char -> bool
+
+val string_has_prefix : prefix:string -> string -> bool
+val string_drop_prefix : prefix:string -> string -> string option

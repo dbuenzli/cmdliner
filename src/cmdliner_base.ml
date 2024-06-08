@@ -340,3 +340,20 @@ let env_bool_parse s = match String.lowercase_ascii s with
 | s ->
     let alts = alts_str ~quoted:true ["true"; "yes"; "false"; "no" ] in
     `Error (err_invalid_val s alts)
+
+let string_has_prefix ~prefix s =
+  let prefix_len = String.length prefix in
+  let s_len = String.length s in
+  if prefix_len > s_len then false else
+  let rec loop i =
+    if i = prefix_len then true
+    else if String.get prefix i = String.get s i then loop (i + 1)
+    else false
+  in
+  loop 0
+
+let string_drop_prefix ~prefix s =
+  if string_has_prefix ~prefix s then
+    let drop = String.length prefix in
+    Some (String.sub s drop (String.length s - drop))
+  else None
