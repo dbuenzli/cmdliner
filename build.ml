@@ -3,8 +3,13 @@
 (* Usage: ocaml build.ml [cma|cmxa|cmxs|clean] *)
 
 let root_dir = Sys.getcwd ()
-let build_dir = "_build"
+let root_build_dir = Filename.concat root_dir "_build"
 let src_dir = "src"
+
+type unit = Lib | Bin
+
+let unit_dir = function Lib -> "src" | Bin -> "bin"
+let build_dir u = Filename.concat root_build_dir (unit_dir u)
 
 let base_ocaml_opts =
   [ "-g"; "-bin-annot";
@@ -89,18 +94,26 @@ let read_cmd args =
 
 (* Create and delete directories *)
 
-let mkdir dir =
+let rec mkdir dir =
+  let parent = Filename.dirname dir in
+  if String.equal dir parent then ()
+  else mkdir (Filename.dirname dir);
   try match Sys.file_exists dir with
   | true -> ()
   | false -> run_cmd ["mkdir"; dir]
   with
   | Sys_error e -> err "%s: %s" dir e
 
-let rmdir dir =
+let rec rmdir dir =
   try match Sys.file_exists dir with
   | false -> ()
   | true ->
-      let rm f = Sys.remove (fpath ~dir f) in
+      let rm f = 
+        let p = fpath ~dir f in
+        if Sys.is_directory p 
+        then rmdir p 
+        else Sys.remove (fpath ~dir f) 
+      in
       Array.iter rm (Sys.readdir dir);
       run_cmd ["rmdir"; dir]
   with
@@ -125,6 +138,13 @@ let sort_srcs srcs =
 
 let common srcs = base_ocaml_opts @ sort_srcs srcs
 
+let exe src = 
+  let lib = build_dir Lib in
+  ["-I"; lib; "cmdliner.cmxa"] @ common src
+
+let build_exe srcs =
+  run_cmd ([ocamlopt ()] @ exe srcs @ ["-o"; "cmdliner.exe"])
+
 let build_cma srcs =
   run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
 
@@ -134,9 +154,11 @@ let build_cmxa srcs =
 let build_cmxs srcs =
   run_cmd ([ocamlopt ()] @ common srcs @ ["-shared"; "-o"; "cmdliner.cmxs"])
 
-let clean () = rmdir build_dir
+let clean () = rmdir root_build_dir
 
-let in_build_dir f =
+let in_build_dir u f =
+  let src_dir = unit_dir u in
+  let build_dir = build_dir u in
   let srcs = ml_srcs src_dir in
   let cp src = cp (fpath ~dir:src_dir src) (fpath ~dir:build_dir src) in
   mkdir build_dir;
@@ -144,9 +166,10 @@ let in_build_dir f =
   Sys.chdir build_dir; f srcs; Sys.chdir root_dir
 
 let main () = match Array.to_list Sys.argv with
-| _ :: [ "cma" ] -> in_build_dir build_cma
-| _ :: [ "cmxa" ] -> in_build_dir build_cmxa
-| _ :: [ "cmxs" ] -> in_build_dir build_cmxs
+| _ :: [ "exe" ] -> in_build_dir Bin build_exe
+| _ :: [ "cma" ] -> in_build_dir Lib build_cma
+| _ :: [ "cmxa" ] -> in_build_dir Lib build_cmxa
+| _ :: [ "cmxs" ] -> in_build_dir Lib build_cmxs
 | _ :: [ "clean" ] -> clean ()
 | [] | [_] -> err "Missing argument: cma, cmxa, cmxs or clean\n";
 | cmd :: args ->

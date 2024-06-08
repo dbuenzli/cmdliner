@@ -13,6 +13,7 @@
 -include $(shell ocamlc -where)/Makefile.config
 
 PREFIX=/usr
+BINDIR=$(DESTDIR)$(PREFIX)/bin
 LIBDIR=$(DESTDIR)$(PREFIX)/lib/ocaml/cmdliner
 DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/cmdliner
 NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
@@ -21,7 +22,7 @@ NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
 
 INSTALL=install
 B=_build
-BASE=$(B)/cmdliner
+BASE=$(B)/src/cmdliner
 
 ifeq ($(NATIVE),true)
 	BUILD-TARGETS=build-byte build-native
@@ -53,27 +54,29 @@ build-byte:
 
 build-native:
 	ocaml build.ml cmxa
+	ocaml build.ml exe
 
 build-native-dynlink:
 	ocaml build.ml cmxs
 
-create-libdir:
-	$(INSTALL) -d "$(LIBDIR)"
+prepare-prefix:
+	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
 
-install-common: create-libdir
+install-common: prepare-prefix
 	$(INSTALL) pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
 	$(INSTALL) cmdliner.opam "$(LIBDIR)/opam"
 
-install-byte: create-libdir
+install-byte: prepare-prefix
 	$(INSTALL) $(BASE).cma "$(LIBDIR)"
 
-install-native: create-libdir
+install-native: prepare-prefix
 	$(INSTALL) $(BASE).cmxa $(BASE)$(EXT_LIB) $(wildcard $(B)/cmdliner*.cmx) \
   "$(LIBDIR)"
+	$(INSTALL) -m 755 $(B)/bin/cmdliner.exe "$(BINDIR)/cmdliner"
 
-install-native-dynlink: create-libdir
+install-native-dynlink: prepare-prefix
 	$(INSTALL) $(BASE).cmxs "$(LIBDIR)"
 
 .PHONY: all install install-doc clean build-byte build-native \
-	build-native-dynlink create-libdir install-common install-byte \
+	build-native-dynlink prepare-prefix install-common install-byte \
   install-native install-dynlink

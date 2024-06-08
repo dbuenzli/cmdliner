@@ -29,7 +29,7 @@ depends: [
 ]
 build: [make "all" "PREFIX=%{prefix}%"]
 install: [
-  [make "install" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
+  [make "install" "BINDIR=%{_:bin}%" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
 ]
 dev-repo: "git+https://erratique.ch/repos/cmdliner.git"
