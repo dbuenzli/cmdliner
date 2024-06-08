@@ -7,7 +7,10 @@
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv = 'a parser * 'a printer
+type 'a conv = 'a Cmdliner_base.conv = {
+  parse: 'a parser;
+  print: 'a printer;
+}
 type 'a converter = 'a conv
 
 val conv :

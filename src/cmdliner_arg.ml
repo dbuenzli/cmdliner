@@ -24,24 +24,27 @@ let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
 
-type 'a conv = 'a parser * 'a printer
+type 'a conv = 'a Cmdliner_base.conv = {
+  parse: 'a parser;
+  print: 'a printer;
+}
 type 'a converter = 'a conv
 
 let default_docv = "VALUE"
 let conv ?docv (parse, print) =
   let parse s = match parse s with Ok v -> `Ok v | Error (`Msg e) -> `Error e in
-  parse, print
+  {parse; print}
 
 let conv' ?docv (parse, print) =
   let parse s = match parse s with Ok v -> `Ok v | Error e -> `Error e in
-  parse, print
+  {parse; print}
 
-let pconv ?docv conv = conv
+let pconv ?docv (parse, print) = {parse; print}
 
-let conv_parser (parse, _) =
+let conv_parser {parse; _} =
   fun s -> match parse s with `Ok v -> Ok v | `Error e -> Error (`Msg e)
 
-let conv_printer (_, print) = print
+let conv_printer {print; _} = print
 let conv_docv _ = default_docv
 
 let err_invalid s kind = `Msg (strf "invalid value '%s', expected %s" s kind)
@@ -175,7 +178,7 @@ let parse_opt_value parse f v = match parse v with
 | `Ok v -> v
 | `Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
 
-let opt ?vopt (parse, print) v a =
+let opt ?vopt {parse; print} v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
   let absent = match Cmdliner_info.Arg.absent a with
   | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
@@ -199,7 +202,7 @@ let opt ?vopt (parse, print) v a =
   in
   arg_to_args a, convert
 
-let opt_all ?vopt (parse, print) v a =
+let opt_all ?vopt {parse; print} v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
   let absent = match Cmdliner_info.Arg.absent a with
   | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
@@ -231,7 +234,7 @@ let parse_pos_value parse a v = match parse v with
 | `Ok v -> v
 | `Error err -> failwith (Cmdliner_msg.err_pos_parse a ~err)
 
-let pos ?(rev = false) k (parse, print) v a =
+let pos ?(rev = false) k {parse; print} v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
   let absent = match Cmdliner_info.Arg.absent a with
   | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
@@ -247,7 +250,7 @@ let pos ?(rev = false) k (parse, print) v a =
   in
   arg_to_args a, convert
 
-let pos_list pos (parse, _) v a =
+let pos_list pos {parse; _} v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
   let a = Cmdliner_info.Arg.make_pos ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with
