@@ -1,6 +1,6 @@
 let zsh_completion name = Printf.sprintf {|function _%s {
   words[CURRENT]="+cmdliner_complete:${words[CURRENT]}"
-  local line="env COMP_RUN=1 ${(@)words}"
+  local line="${(@)words}"
   local -a completions
   local type group item item_doc
   eval $line | while IFS= read -r type; do
@@ -28,9 +28,9 @@ compdef _%s %s
 |} name name name;;let bash_completion name = Printf.sprintf {|_%s() {
   local prefix="${COMP_WORDS[COMP_CWORD]}"
   COMP_WORDS[COMP_CWORD]="+cmdliner_complete:${COMP_WORDS[COMP_CWORD]}"
-  local line="env COMP_RUN=1 ${COMP_WORDS[@]}"
+  local line="${COMP_WORDS[@]}"
   local type group item item_doc
-  eval $line | while read type; do
+  while read type; do
     if [[ $type == "group" ]]; then
       read group
     elif [[ $type == "dir" ]] && (type compopt &> /dev/null); then
@@ -46,7 +46,7 @@ compdef _%s %s
       read item_doc;
       COMPREPLY+=($item)
     fi
-  done
+  done < <(eval $line)
   return 0
 }
 complete -F _%s %s

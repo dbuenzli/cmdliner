@@ -1,6 +1,6 @@
 function _NAME {
   words[CURRENT]="+cmdliner_complete:${words[CURRENT]}"
-  local line="env COMP_RUN=1 ${(@)words}"
+  local line="${(@)words}"
   local -a completions
   local type group item item_doc
   eval $line | while IFS= read -r type; do
