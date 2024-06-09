@@ -64,7 +64,8 @@ module Arg : sig
   type t
   val v :
     ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:Env.info -> string list -> t
+    ?doc:string -> ?env:Env.info ->
+    string list -> t
 
   val id : t -> int
   val deprecated : t -> string option
@@ -93,7 +94,25 @@ module Arg : sig
   val rev_pos_cli_order : t -> t -> int
 
   val compare : t -> t -> int
-  module Set : Set.S with type elt = t
+
+  module Set : sig
+    type arg = t
+    type complete = Cmdliner_base.complete
+
+    type t
+
+    val empty : t
+    val add : arg -> complete -> t -> t
+    val choose : t -> arg * complete
+    val partition : (arg -> complete -> bool) -> t -> t * t
+    val filter : (arg -> complete -> bool) -> t -> t
+    val iter : (arg -> complete -> unit) -> t -> unit
+    val singleton : arg -> complete -> t
+    val fold : (arg -> complete -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val elements : t -> arg list
+    val union : t -> t -> t
+    val find_opt : arg -> t -> complete option
+  end
 end
 
 (** Commands. *)

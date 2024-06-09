@@ -1,0 +1,7 @@
+(copy_files
+  (files ../test/*_ex.ml))
+
+
+(executables
+ (names cp_ex rm_ex darcs_ex tail_ex)
+ (libraries cmdliner))

@@ -116,11 +116,11 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
       Cmdliner_info.Arg.rev_pos_cli_order a0 a1
     in
     let args = Cmdliner_info.Cmd.args cmd in
-    let oargs, pargs = Cmdliner_info.Arg.(Set.partition is_opt args) in
+    let oargs, pargs = Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args) in
     let oargs =
       (* Keep only those that are listed in the s_options section and
          that are not [--version] or [--help]. * *)
-      let keep a =
+      let keep a _ =
           let drop_names n = n = "--help" || n = "--version" in
           Cmdliner_info.Arg.docs a = Cmdliner_manpage.s_options &&
           not (List.exists drop_names (Cmdliner_info.Arg.opt_names a))
@@ -223,7 +223,7 @@ let arg_docs ~errs ~subst ~buf ei =
     in
     if c <> 0 then c else order_args a0 a1
   in
-  let keep_arg a acc =
+  let keep_arg a _ acc =
     if not Cmdliner_info.Arg.(is_pos a && (docv a = "" || doc a = ""))
     then (a :: acc) else acc
   in
@@ -274,7 +274,7 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
     let envs = (Cmdliner_info.Env.info_docs e, `I (var, doc)) :: envs in
     seen, envs
   in
-  let add_arg_env a acc = match Cmdliner_info.Arg.env a with
+  let add_arg_env a _ acc = match Cmdliner_info.Arg.env a with
   | None -> acc
   | Some e -> add_env_item ~subst:(arg_info_subst ~subst a) acc e
   in
