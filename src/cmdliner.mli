@@ -5,11 +5,13 @@
 
 (** Declarative definition of command line interfaces.
 
-    Consult the {{!page-tutorial}tutorial}, details about the supported
+    Consult the {{!page-tutorial}tutorial},
+    {{!page-cookbook.blueprints}blueprints},
+    details about the supported
     {{!page-cli}command line syntax} and {{!page-examples}examples} of
     use.
 
-    Open the module to use it, it defines only three modules in your
+    Open the module to use it, it defines only these modules in your
     scope. *)
 
 (** Man page specification.

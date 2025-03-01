@@ -17,7 +17,7 @@ Command line arguments are either {{!optargs}{e optional}} or
 {{!posargs}{e positional}}. Both can be freely interleaved but since
 [Cmdliner] accepts many optional forms this may result in
 ambiguities. The special {{!posargs} token [--]} can be used to
-resolve them; anything that follows it is treated as a positional
+resolve them: anything that follows it is treated as a positional
 argument.
 
 Tools evaluating commands with sub commands have this form of invocation
@@ -30,7 +30,7 @@ Commands automatically respond to the [--help] option by printing
 their help. The sequence of [COMMAND] strings must be the first
 strings following the tool name – as soon as an optional argument is
 seen the search for a sub command stops. Command names may be specified by
-a prefixe as long as they are not ambiguous.
+a prefix as long as they are not ambiguous.
 
 {1:optargs Optional arguments}
 
@@ -86,7 +86,7 @@ that follows the special token ["--"] on the command line is
 considered to be a positional argument:
 
 {[
-tool --option -- we -are --all positional --argu=ments
+tool --option -- but --now we -are --all positional --argu=ments
 ]}
 
 {1:envlookup Environment variables}
@@ -105,8 +105,8 @@ as follows:
 {- ["true"], ["yes"], ["y"] or ["1"] is [true].}
 {- Any other string is an error.}}
 
-Note that environment variables are not supported for {!Cmdliner.Arg.vflag} and
-{!Cmdliner.Arg.vflag_all}.
+Note that environment variables are not supported for
+{!Cmdliner.Arg.vflag} and {!Cmdliner.Arg.vflag_all}.
 
 {1:reserved Reserved option names}
 

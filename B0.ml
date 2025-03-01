@@ -32,6 +32,10 @@ let test_pos_rev = test ~/"test/test_pos_rev.ml"
 let test_term_dups = test ~/"test/test_term_dups.ml"
 let test_with_used_args = test ~/"test/test_with_used_args.ml"
 
+let blueprint_min = test ~/"test/blueprint_min.ml"
+let blueprint_tool = test ~/"test/blueprint_tool.ml"
+let blueprint_cmds = test ~/"test/blueprint_cmds.ml"
+
 (* Packs *)
 
 let default =

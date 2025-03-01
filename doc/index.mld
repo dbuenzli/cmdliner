@@ -1,6 +1,6 @@
 {0 Cmdliner {%html: <span class="version">%%VERSION%%</span>%}}
 
-[Cmdliner] provides a simple and compositional mechanism
+Cmdliner provides a simple and compositional mechanism
 to convert command line arguments to OCaml values and pass them to
 your functions.
 
@@ -20,17 +20,23 @@ The following manuals are available.
 {- The {{!page-tutorial}tutorial} gets you through the steps to write
    your first command line interface with Cmdliner.}
 {- The {{!page-cookbook}cookbook} has a few off-the-shelf recipes
-   and blueprints to define your command lines with {!Cmdliner}}
+   and {{!page-cookbook.blueprints}blueprints} to define your command lines
+   with Cmdliner.}
 {- The {{!page-cli}Command line interface manual} describes how command
-   lines and environment variables are parsed by Cmdliner.}
-{- {{!page-tool_man}Tool man pages} describes how Cmdliner generates
-   man pages for your tools and how you can format them.}
-{- The {{!page-examples}examples page} has a few annoted examples that
-   show to express the command line interface of a few classic tools with
-   Cmdliner}}
+   lines and environment variables are parsed by Cmdliner. This can be
+   communicated to the users of your tools.}
+{- The {{!page-tool_man}Tool man pages} manual describes how
+   Cmdliner generates man pages for your tools and how you can format them.}
+{- The {{!page-examples}examples page} has a annoted examples that
+   show how to express the command line interface of a few classic tools with
+   Cmdliner.}}
 
-{1:api API}
+{1:library Library [cmdliner]}
 
+{!modules: Cmdliner}
 {!modules:
-Cmdliner
+Cmdliner.Arg
+Cmdliner.Cmd
+Cmdliner.Term
+Cmdliner.Manpage
 }

@@ -1,13 +1,73 @@
 {0 [Cmdliner] cookbook}
 
-A few conventions and recipes to describe your command lines
-with {!Cmdliner}.
+A few recipes and starting {{!blueprints}blueprints} to describe your
+command lines with {!Cmdliner}.
+
+{1:tips Tips and pitfalls}
+
+Command line interfaces are a rather crude an inexpressive user
+interaction medium. It is tempting to try to be nice to users in
+various ways but this often backfires in confusing context sensitive
+behaviours. Here are a few tips and Cmdliner features you {b should
+rather not use}.
+
+{2:avoid_defaultsubs Avoid default commands in groups}
+
+Command {{!Cmdliner.Cmd.group}groups} can have a default command, that
+is be of the form [tool [CMD]]. Except perhaps at the top level of
+your tool, it's better to avoid them. They increase command line
+parsing ambiguities.
+
+In particular if the default command has positional arguments, users
+are forced to use the {{!cli.posargs}disambiguation token [--]} to
+specify them so that they can be distinguished from command
+names. For example:
+
+{@sh[
+tool -- file …
+]}
+
+{2:avoid_defaultoptionvalues Avoid default option values}
+
+Optional arguments {{!Cmdliner.Arg.opt}with values} can have a default
+value, that is be of the form [--opt[=VALUE]]. In general it is generally better
+to avoid them as they lead to context sensitive command lines
+specification and surprises when user refine invocations. For examples
+suppose you have the synopsis
+
+{@sh[
+tool --opt[=VALUE] [FILE]
+]}
+
+Trying to refine the follwing invocation to add a [FILE] parameter is painful:
+
+{@sh[
+tool --opt
+]}
+
+There's more than one way but the easiest is to specify it as [tool
+--opt -- FILE] but that's something you could have avoided by not
+having a default option value.
+
+{2:avoid_requiredoption Avoid required optional arguments}
+
+Cmdliner allows to define required optional arguments. Avoid doing
+this, it's a contradiction in the terms. Optional arguments are made
+to be omitted by users. Use required positional arguments if arguments
+are required by your cli.
 
 {1:conventions Conventions}
 
+By the simple fact of using Cmdliner you are already abiding to a
+great deal of command line interface conventions. Here are a few other
+ones that are not necessarily enforced by the library but that are
+good to adopt.
+
+{2:use_dash Use ["-"] to specify [stdin]}
+
 {1:args Arguments}
 
-{2:absent How do provide default values for absent argument ?}
+{2:absent How do I provide default values for absent argument ?}
 
 {2:argument How do I document the behaviour of absent arguments ?}
 
@@ -25,7 +85,107 @@ unspecified on the command line.
 {- If you want to describe a more, but short, complex behaviour use
    the {!absent} parameter of [info].}}
 
+{1:exit_codes Exit codes}
+
+{2:exit_codes How to I document exit codes ?}
+
 
 {1:migrating Migrating from other conventions}
 
+
+
 {1:blueprints Blueprints}
+
+These blueprints when copied to a [src.ml] file can be compiled and run with:
+
+{@sh[
+ocamlfind ocamlopt -package cmdliner -linkgpkg src.ml
+./a.out --help
+]}
+
+More concrete examples can be found on the {{!page-examples}examples page}
+and the {{!page-tutorial}tutorial} may help too.
+
+{2:blueprint_min Minimal}
+
+A minimal example.
+
+{[
+let tool () = Cmdliner.Cmd.Exit.ok
+
+open Cmdliner
+open Cmdliner.Term.Syntax
+
+let tool =
+  let doc = "The tool synopsis is TODO" in
+  Cmd.make (Cmd.info "TODO-toolname" ~doc) @@
+  let+ unit = Term.const () in
+  tool unit
+
+let main () = Cmd.eval' tool
+let () = if !Sys.interactive then () else exit (main ())
+]}
+
+{2:blueprint_tool A simple tool}
+
+This is a tool that has a flag, an optional positional argument
+specifying and input file. It also responds to the [--version] option.
+
+{[
+let tool ~flag ~infile = Cmdliner.Cmd.Exit.ok
+
+open Cmdliner
+open Cmdliner.Term.Syntax
+
+let flag = Arg.(value & flag & info ["flag"] ~doc:"The flag")
+let infile =
+  let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
+  Arg.(value & pos 0 file "-" & info [] ~doc ~docv:"FILE")
+
+let tool =
+  let doc = "The tool synopsis is TODO" in
+  Cmd.make (Cmd.info "TODO-toolname" ~version:"%%VERSION%%" ~doc) @@
+  let+ flag and+ infile in
+  tool ~flag ~infile
+
+let main () = Cmd.eval' tool
+let () = if !Sys.interactive then () else exit (main ())
+]}
+
+
+{2:blueprint_tool A tool with subcommands}
+
+This is a tool with two subcommands [hey] and [ho].
+
+{[
+let hey () = Cmdliner.Cmd.Exit.ok
+let ho () = Cmdliner.Cmd.Exit.ok
+
+open Cmdliner
+open Cmdliner.Term.Syntax
+
+let flag = Arg.(value & flag & info ["flag"] ~doc:"The flag")
+let infile =
+  let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
+  Arg.(value & pos 0 file "-" & info [] ~doc ~docv:"FILE")
+
+let hey_cmd =
+  let doc = "The hey command synopsis is TODO" in
+  Cmd.make (Cmd.info "hey" ~doc) @@
+  let+ unit = Term.const () in
+  ho ()
+
+let ho_cmd =
+  let doc = "The ho command synopsis is TODO" in
+  Cmd.make (Cmd.info "ho" ~doc) @@
+  let+ unit = Term.const () in
+  ho unit
+
+let tool =
+  let doc = "The tool synopsis is TODO" in
+  Cmd.group (Cmd.info "TODO-toolname" ~version:"%%VERSION%%" ~doc) @@
+  [hey_cmd; ho_cmd]
+
+let main () = Cmd.eval' tool
+let () = if !Sys.interactive then () else exit (main ())
+]}
