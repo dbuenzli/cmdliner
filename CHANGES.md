@@ -1,3 +1,11 @@
+
+
+
+- Fix lack of output whenever `PAGER` or `MANPAGER` is set but empty;
+  fallback to pager discovery (#194). For example this prevented to
+  see manpages in `emacs`'s compilation mode which unhelpfully
+  hardcodes `PAGER=""`.
+
 v1.3.0 2024-05-23 La Forclaz (VS)
 ---------------------------------
 

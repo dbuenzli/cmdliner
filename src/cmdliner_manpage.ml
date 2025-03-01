@@ -456,54 +456,61 @@ let find_cmd cmds =
   let find = if Sys.win32 then find_win32 else find_posix in
   try Some (List.find find cmds) with Not_found -> None
 
-let pp_to_pager print ppf v =
-  let pager =
-    let cmds = ["less", ""; "more", ""] in
-    let cmds = try (Sys.getenv "PAGER", "") :: cmds with Not_found -> cmds in
-    let cmds = try (Sys.getenv "MANPAGER", "") :: cmds with Not_found -> cmds in
-    find_cmd cmds
+let getenv_empty_is_none env = match Sys.getenv_opt env with
+| None | Some "" -> None
+| Some _ as v -> v
+
+let find_pager () =
+  let cmds = ["less", ""; "more", ""] in
+  let cmds = match getenv_empty_is_none "PAGER" with
+  | Some pager -> (pager, "") :: cmds | None -> cmds
   in
-  match pager with
-  | None -> print `Plain ppf v
-  | Some (pager, opts) ->
-      let pager = match Sys.win32 with
-      | false -> "LESS=FRX " ^ pager ^ opts
-      | true -> "set LESS=FRX && " ^ pager ^ opts
+  let cmds = match getenv_empty_is_none "MANPAGER" with
+  | Some manpager -> (manpager, "") :: cmds | None -> cmds
+  in
+  find_cmd cmds
+
+let pp_to_pager print ppf v = match find_pager () with
+| None -> print `Plain ppf v
+| Some (pager, opts) ->
+    let pager = match Sys.win32 with
+    | false -> "LESS=FRX " ^ pager ^ opts
+    | true -> "set LESS=FRX && " ^ pager ^ opts
+    in
+    let groffer =
+      let cmds =
+        ["mandoc", " -m man -K utf-8 -T utf8";
+         "groff", " -m man -K utf8 -T utf8";
+         "nroff", ""]
       in
-      let groffer =
-        let cmds =
-          ["mandoc", " -m man -K utf-8 -T utf8";
-           "groff", " -m man -K utf8 -T utf8";
-           "nroff", ""]
-        in
-        find_cmd cmds
-      in
-      let cmd = match groffer with
-      | None ->
-          begin match pp_to_temp_file (print `Plain) v with
-          | None -> None
-          | Some f -> Some (strf "%s < %s" pager f)
-          end
-      | Some (groffer, opts) ->
-          let groffer = groffer ^ opts in
-          begin match pp_to_temp_file (print `Groff) v with
-          | None -> None
-          | Some f when Sys.win32 ->
-              (* For some obscure reason the pipe below does not
+      find_cmd cmds
+    in
+    let cmd = match groffer with
+    | None ->
+        begin match pp_to_temp_file (print `Plain) v with
+        | None -> None
+        | Some f -> Some (strf "%s < %s" pager f)
+        end
+    | Some (groffer, opts) ->
+        let groffer = groffer ^ opts in
+        begin match pp_to_temp_file (print `Groff) v with
+        | None -> None
+        | Some f when Sys.win32 ->
+            (* For some obscure reason the pipe below does not
                  work. We need to use a temporary file.
                  https://github.com/dbuenzli/cmdliner/issues/166 *)
-              begin match tmp_file_for_pager () with
-              | None -> None
-              | Some tmp ->
-                  Some (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
-              end
-          | Some f ->
-              Some (strf "%s < %s | %s" groffer f pager)
-          end
-      in
-      match cmd with
-      | None -> print `Plain ppf v
-      | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
+            begin match tmp_file_for_pager () with
+            | None -> None
+            | Some tmp ->
+                Some (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
+            end
+        | Some f ->
+            Some (strf "%s < %s | %s" groffer f pager)
+        end
+    in
+    match cmd with
+    | None -> print `Plain ppf v
+    | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
 
 (* Output *)
 
