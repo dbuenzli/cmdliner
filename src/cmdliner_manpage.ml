@@ -473,9 +473,12 @@ let find_pager () =
 let pp_to_pager print ppf v = match find_pager () with
 | None -> print `Plain ppf v
 | Some (pager, opts) ->
-    let pager = match Sys.win32 with
-    | false -> "LESS=FRX " ^ pager ^ opts
-    | true -> "set LESS=FRX && " ^ pager ^ opts
+    let pager =
+      let set_less_env = match Sys.getenv_opt "LESS" with
+      | None -> if Sys.win32 then "set LESS=FRX && " else "LESS=FRX "
+      | Some _ -> "" (* Sys.command will pass it *)
+      in
+      set_less_env ^ pager ^ opts
     in
     let groffer =
       let cmds =
