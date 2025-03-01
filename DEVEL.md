@@ -4,3 +4,7 @@ perform common development tasks.
 
 [`b0`]: https://erratique.ch/software/b0
 [b0 occasionally]: https://erratique.ch/software/b0/doc/occasionally.html
+
+# Build system for distribution
+
+The build system used for distribution is in the  `Makefile`.
