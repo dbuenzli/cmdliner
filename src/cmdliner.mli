@@ -660,9 +660,13 @@ module Cmd : sig
   (** The type for commands whose evaluation result in a value of
       type ['a]. *)
 
-  val v : info -> 'a Term.t -> 'a t
-  (** [v i t] is a command with information [i] and command line syntax
+  val make : info -> 'a Term.t -> 'a t
+  (** [make i t] is a command with information [i] and command line syntax
       parsed by [t]. *)
+
+  val v : info -> 'a Term.t -> 'a t
+  (** [v] is {!make} which should be preferred. [v] will be deprecated in
+      the future. *)
 
   val group : ?default:'a Term.t -> info -> 'a t list -> 'a t
   (** [group i ?default cmds] is a command with information [i] that

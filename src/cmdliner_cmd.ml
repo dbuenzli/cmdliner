@@ -18,7 +18,8 @@ let get_info = function Cmd (i, _) | Group (i, _) -> i
 let children_infos = function
 | Cmd _ -> [] | Group (_, (_, cs)) -> List.map get_info cs
 
-let v i (args, p) = Cmd (Cmdliner_info.Cmd.add_args i args, p)
+let make i (args, p) = Cmd (Cmdliner_info.Cmd.add_args i args, p)
+let v = make
 let group ?default i cmds =
   let args, parser = match default with
   | None -> None, None | Some (args, p) -> Some args, Some p

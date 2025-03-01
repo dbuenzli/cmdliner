@@ -1,6 +1,9 @@
 
 
 
+- Add `Cmdliner.Cmd.make` which should be preferred to `Cmdliner.Cmd.v`
+  (`M.v` is nice for simulating literals, not for heavy constructor).
+
 - Pager. If set, respect the user's `LESS` environment variable
   (otherwise the default `LESS=FRX` is left unchanged).  Note however
   that you likely need at least `R` specified if you define it
