@@ -2,7 +2,7 @@
 
 
 - Pager. If set, respect the user's `LESS` environment variable
-  (otherwise the default `LESS=FRX` is left unchaged).  Note however
+  (otherwise the default `LESS=FRX` is left unchanged).  Note however
   that you likely need at least `R` specified if you define it
   yourself, otherwise the manpage may look garbled (#191). Thanks to
   Yukai Chou for suggesting.
