@@ -19,6 +19,8 @@ The following manuals are available.
 {ul
 {- The {{!page-tutorial}tutorial} gets you through the steps to write
    your first command line interface with Cmdliner.}
+{- The {{!page-cookbook}cookbook} has a few off-the-shelf recipes
+   and blueprints to define your command lines with {!Cmdliner}}
 {- The {{!page-cli}Command line interface manual} describes how command
    lines and environment variables are parsed by Cmdliner.}
 {- {{!page-tool_man}Tool man pages} describes how Cmdliner generates

@@ -1,0 +1,31 @@
+{0 [Cmdliner] cookbook}
+
+A few conventions and recipes to describe your command lines
+with {!Cmdliner}.
+
+{1:conventions Conventions}
+
+{1:args Arguments}
+
+{2:absent How do provide default values for absent argument ?}
+
+{2:argument How do I document the behaviour of absent arguments ?}
+
+TODO first need to clarify why you may want an option.
+
+There are three ways to document the behaviour when an argument is
+unspecified on the command line.
+
+{ul
+{- If you use a particular OCaml value and can construct it at the
+   point of definition use the [none] argument of {!Cmdliner.Arg.some'}}
+{- If you use a prticular OCaml value but cannot construct it at
+   the poiht of definition use the [none] string optional argument
+   of {!Cmdliner.Arg.some'}. This string will be rendered in bold.}
+{- If you want to describe a more, but short, complex behaviour use
+   the {!absent} parameter of [info].}}
+
+
+{1:migrating Migrating from other conventions}
+
+{1:blueprints Blueprints}
