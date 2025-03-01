@@ -9,14 +9,14 @@ It provides a simple and compositional mechanism to convert command
 line arguments to OCaml values and pass them to your functions. The
 module automatically handles syntax errors, help messages and UNIX man
 page generation. It supports programs with single or multiple commands
-and respects most of the [POSIX][1] and [GNU][2] conventions.
+and respects most of the [POSIX] and [GNU] conventions.
 
 Cmdliner has no dependencies and is distributed under the ISC license.
 
-[1]: http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html
-[2]: http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
+Homepage: <http://erratique.ch/software/cmdliner>
 
-Home page: http://erratique.ch/software/cmdliner"""
+[POSIX]: http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html
+[GNU]: http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html"""
 maintainer: "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
 authors: "The cmdliner programmers"
 license: "ISC"
@@ -33,3 +33,4 @@ install: [
   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
 ]
 dev-repo: "git+https://erratique.ch/repos/cmdliner.git"
+x-maintenance-intent: ["(latest)"]
