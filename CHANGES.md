@@ -15,6 +15,10 @@
   see manpages in `emacs`'s compilation mode which unhelpfully
   hardcodes `PAGER=""`.
 
+- Added a proper test suite to the library to check for regressions.
+  Replaces most of the test executables that had to be run and inspected
+  manually (#205).
+
 v1.3.0 2024-05-23 La Forclaz (VS)
 ---------------------------------
 

@@ -1,6 +1,7 @@
 _build
 _b0
 tmp
+test/b0
 *.byte
 *.native
 cmdliner.install
