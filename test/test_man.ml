@@ -388,7 +388,7 @@ let main () =
       ["auto", "=auto"; "pager", "=pager"; "groff", "=groff";
        "plain", "=plain"; "", ""]
     in
-    let help_enum = Cmdliner_base.enum help_fmts and docv = "FMT" in
+    let help_enum = Cmdliner.Arg.enum help_fmts and docv = "FMT" in
     Arg.(value & opt ~vopt:(Some "") (some help_enum) None &
          info ["test-help"] ~docv ~doc)
   in
