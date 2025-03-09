@@ -63,19 +63,19 @@ prepare-prefix:
 	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
 
 install-common: prepare-prefix
-	$(INSTALL) pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
-	$(INSTALL) cmdliner.opam "$(LIBDIR)/opam"
+	$(INSTALL) -m 644 pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
+	$(INSTALL) -m 644 cmdliner.opam "$(LIBDIR)/opam"
 
 install-byte: prepare-prefix
-	$(INSTALL) $(BASE).cma "$(LIBDIR)"
+	$(INSTALL) -m 644 $(BASE).cma "$(LIBDIR)"
 
 install-native: prepare-prefix
-	$(INSTALL) $(BASE).cmxa $(BASE)$(EXT_LIB) $(wildcard $(B)/cmdliner*.cmx) \
-  "$(LIBDIR)"
+	$(INSTALL) -m 644 $(BASE).cmxa $(BASE)$(EXT_LIB) \
+	  $(wildcard -m 644 $(BASE)*.cmx) "$(LIBDIR)"
 	$(INSTALL) -m 755 $(B)/bin/cmdliner.exe "$(BINDIR)/cmdliner"
 
 install-native-dynlink: prepare-prefix
-	$(INSTALL) $(BASE).cmxs "$(LIBDIR)"
+	$(INSTALL) -m 644 $(BASE).cmxs "$(LIBDIR)"
 
 .PHONY: all install install-doc clean build-byte build-native \
 	build-native-dynlink prepare-prefix install-common install-byte \
