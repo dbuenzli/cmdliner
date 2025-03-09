@@ -579,12 +579,6 @@ module Arg : sig
     line to an OCaml value. {{!converters}Predefined converters}
     are provided for many types of the standard library. *)
 
-  type 'a parser = string -> [ `Ok of 'a | `Error of string ]
-  [@@ocaml.deprecated "Use Arg.conv or Arg.conv' instead."]
-  (** The type for argument parsers.
-
-      {b Deprecated.} Use parser signatures of {!val-conv} or {!val-conv'}. *)
-
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
 
@@ -922,18 +916,4 @@ module Arg : sig
 
   val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
   (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
-
-  (** {1:deprecated Deprecated} *)
-
-  [@@@alert "-deprecated"]
-
-  type 'a converter = 'a conv
-  [@@ocaml.deprecated "Use Arg.conv' function instead."]
-  (** See {!Arg.conv'}. *)
-
-  val pconv :
-    ?docv:string -> 'a parser * 'a printer -> 'a conv
-  [@@ocaml.deprecated "Use Arg.conv or Arg.conv' function instead."]
-  (** [pconv] is like {!val-conv} or {!val-conv'}, but uses a
-      deprecated {!parser} signature. *)
 end

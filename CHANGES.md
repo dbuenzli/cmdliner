@@ -1,4 +1,5 @@
 
+* Remove deprecated `Arg.{converter,parser,pconv}` (#206).
 * Remove deprecated `Arg.{env,env_var}` (#206).
 * Remove deprecated `Term.{pure,man_format}` (#206).
 * Remove deprecated `Term` evaluation interface (#206).

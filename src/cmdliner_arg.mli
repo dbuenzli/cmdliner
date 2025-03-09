@@ -12,7 +12,6 @@ type 'a conv = 'a Cmdliner_base.conv = {
   print: 'a printer;
   complete: Cmdliner_base.complete;
 }
-type 'a converter = 'a conv
 
 val conv :
   ?complete:(string -> (string * string) list) ->
@@ -27,7 +26,6 @@ val conv' :
   ?complete_dir:bool ->
   ?docv:string -> (string -> ('a, string) result) * 'a printer -> 'a conv
 
-val pconv : ?docv:string -> 'a parser * 'a printer -> 'a conv
 val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
 val conv_printer : 'a conv -> 'a printer
 val conv_docv : 'a conv -> string
@@ -36,8 +34,8 @@ val parser_of_kind_of_string :
   kind:string -> (string -> 'a option) ->
   (string -> ('a, [`Msg of string]) result)
 
-val some : ?none:string -> 'a converter -> 'a option converter
-val some' : ?none:'a -> 'a converter -> 'a option converter
+val some : ?none:string -> 'a conv -> 'a option conv
+val some' : ?none:'a -> 'a conv -> 'a option conv
 
 type 'a t = 'a Cmdliner_term.t
 
@@ -53,13 +51,13 @@ val flag : info -> bool t
 val flag_all : info -> bool list t
 val vflag : 'a -> ('a * info) list -> 'a t
 val vflag_all : 'a list -> ('a * info) list -> 'a list t
-val opt : ?vopt:'a -> 'a converter -> 'a -> info -> 'a t
-val opt_all : ?vopt:'a -> 'a converter -> 'a list -> info -> 'a list t
+val opt : ?vopt:'a -> 'a conv -> 'a -> info -> 'a t
+val opt_all : ?vopt:'a -> 'a conv -> 'a list -> info -> 'a list t
 
-val pos : ?rev:bool -> int -> 'a converter -> 'a -> info -> 'a t
-val pos_all : 'a converter -> 'a list -> info -> 'a list t
-val pos_left : ?rev:bool -> int -> 'a converter -> 'a list -> info -> 'a list t
-val pos_right : ?rev:bool -> int -> 'a converter -> 'a list -> info -> 'a list t
+val pos : ?rev:bool -> int -> 'a conv -> 'a -> info -> 'a t
+val pos_all : 'a conv -> 'a list -> info -> 'a list t
+val pos_left : ?rev:bool -> int -> 'a conv -> 'a list -> info -> 'a list t
+val pos_right : ?rev:bool -> int -> 'a conv -> 'a list -> info -> 'a list t
 
 (** {1 As terms} *)
 
@@ -76,30 +74,30 @@ val stdopt_help : docs:string -> Cmdliner_manpage.format option Cmdliner_term.t
 
 (** {1 Converters} *)
 
-val bool : bool converter
-val char : char converter
-val int : int converter
-val nativeint : nativeint converter
-val int32 : int32 converter
-val int64 : int64 converter
-val float : float converter
-val string : string converter
-val enum : (string * 'a) list -> 'a converter
-val file : string converter
-val dir : string converter
-val non_dir_file : string converter
-val list : ?sep:char -> 'a converter -> 'a list converter
-val array : ?sep:char -> 'a converter -> 'a array converter
-val pair : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
-val t2 : ?sep:char -> 'a converter -> 'b converter -> ('a * 'b) converter
+val bool : bool conv
+val char : char conv
+val int : int conv
+val nativeint : nativeint conv
+val int32 : int32 conv
+val int64 : int64 conv
+val float : float conv
+val string : string conv
+val enum : (string * 'a) list -> 'a conv
+val file : string conv
+val dir : string conv
+val non_dir_file : string conv
+val list : ?sep:char -> 'a conv -> 'a list conv
+val array : ?sep:char -> 'a conv -> 'a array conv
+val pair : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
+val t2 : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
 
 val t3 :
-  ?sep:char -> 'a converter ->'b converter -> 'c converter ->
-  ('a * 'b * 'c) converter
+  ?sep:char -> 'a conv ->'b conv -> 'c conv ->
+  ('a * 'b * 'c) conv
 
 val t4 :
-  ?sep:char -> 'a converter ->'b converter -> 'c converter -> 'd converter ->
-  ('a * 'b * 'c * 'd) converter
+  ?sep:char -> 'a conv ->'b conv -> 'c conv -> 'd conv ->
+  ('a * 'b * 'c * 'd) conv
 
 val doc_quote : string -> string
 val doc_alts : ?quoted:bool -> string list -> string

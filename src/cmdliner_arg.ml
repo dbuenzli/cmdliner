@@ -29,7 +29,6 @@ type 'a conv = 'a Cmdliner_base.conv = {
   print: 'a printer;
   complete: Cmdliner_base.complete;
 }
-type 'a converter = 'a conv
 
 let default_docv = "VALUE"
 let conv ?complete ?complete_file ?complete_dir ?docv (parse, print) =
