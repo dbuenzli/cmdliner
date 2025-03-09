@@ -6,7 +6,6 @@
 module Manpage = Cmdliner_manpage
 module Term = struct
   include Cmdliner_term
-  include Cmdliner_term_deprecated
 end
 module Cmd = struct
   module Exit = Cmdliner_info.Exit

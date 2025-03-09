@@ -1,4 +1,6 @@
 
+* Remove deprecated `Term.{pure,man_format}` (#206).
+* Remove deprecated `Term` evaluation interface (#206).
 
 * Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for 
   the patch (#206).
