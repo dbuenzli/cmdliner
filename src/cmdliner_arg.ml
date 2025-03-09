@@ -61,9 +61,6 @@ let some' = Cmdliner_base.some'
 
 (* Argument information *)
 
-type env = Cmdliner_info.Env.info
-let env_var = Cmdliner_info.Env.info
-
 type 'a t = 'a Cmdliner_term.t
 type info = Cmdliner_info.Arg.t
 let info = Cmdliner_info.Arg.v

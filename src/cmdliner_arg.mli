@@ -39,15 +39,12 @@ val parser_of_kind_of_string :
 val some : ?none:string -> 'a converter -> 'a option converter
 val some' : ?none:'a -> 'a converter -> 'a option converter
 
-type env = Cmdliner_info.Env.info
-val env_var : ?deprecated:string -> ?docs:string -> ?doc:string -> string -> env
-
 type 'a t = 'a Cmdliner_term.t
 
 type info
 val info :
   ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-  ?doc:string -> ?env:env -> 
+  ?doc:string -> ?env:Cmdliner_info.Env.info ->
   string list -> info
 
 val ( & ) : ('a -> 'b) -> 'a -> 'b

@@ -936,15 +936,4 @@ module Arg : sig
   [@@ocaml.deprecated "Use Arg.conv or Arg.conv' function instead."]
   (** [pconv] is like {!val-conv} or {!val-conv'}, but uses a
       deprecated {!parser} signature. *)
-
-
-  type env = Cmd.Env.info
-  [@@ocaml.deprecated "Use Cmd.Env.info instead."]
-  (** See {!Cmd.Env.type-info} *)
-
-  val env_var :
-    ?deprecated:string -> ?docs:string -> ?doc:string -> Cmd.Env.var ->
-    Cmd.Env.info
-  [@@ocaml.deprecated "Use Cmd.Env.info instead."]
-  (** See {!Cmd.Env.val-info}. *)
 end
