@@ -21,14 +21,17 @@ by `git`).
     cd test
     git clone https://erratique.ch/repos/b0.git
 
-The [`B0.ml`][B0.ml] file of cmdliner includes `test/b0/B0.ml` and the
-the `default` pack of `B0.ml` is unlocked so that when a test executable
-requires `b0.std` it looked up and built againt the development version of
-cmdliner. After that testing remains [as usual].
+The [`B0.ml`](B0.ml) file of cmdliner includes `test/b0/B0.ml` and the
+`default` pack of `B0.ml` is unlocked so that when a test executable
+requires `b0.std` it is looked up and built againt the development
+version of cmdliner. After that testing remains [as usual].
 
 [as usual]: https://erratique.ch/software/b0/doc/occasionally.html#test
 
 ## Manual renderings
+
+Various manual renderings are snapshot tested in the test executables,
+mostly in plain text.
 
 The `test_man` test can be invoked with `--test-help[=FMT]` to interactively
 test the various `--help[=FMT]` invocations, including paging.

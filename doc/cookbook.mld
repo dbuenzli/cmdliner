@@ -5,7 +5,7 @@ command lines with {!Cmdliner}.
 
 {1:tips Tips and pitfalls}
 
-Command line interfaces are a rather crude an inexpressive user
+Command line interfaces are a rather crude and inexpressive user
 interaction medium. It is tempting to try to be nice to users in
 various ways but this often backfires in confusing context sensitive
 behaviours. Here are a few tips and Cmdliner features you {b should
@@ -32,14 +32,14 @@ tool -- file …
 Optional arguments {{!Cmdliner.Arg.opt}with values} can have a default
 value, that is be of the form [--opt[=VALUE]]. In general it is generally better
 to avoid them as they lead to context sensitive command lines
-specification and surprises when user refine invocations. For examples
+specification and surprises when users refine invocations. For examples
 suppose you have the synopsis
 
 {@sh[
 tool --opt[=VALUE] [FILE]
 ]}
 
-Trying to refine the follwing invocation to add a [FILE] parameter is painful:
+Trying to refine the following invocation to add a [FILE] parameter is painful:
 
 {@sh[
 tool --opt
@@ -52,9 +52,30 @@ having a default option value.
 {2:avoid_requiredoption Avoid required optional arguments}
 
 Cmdliner allows to define required optional arguments. Avoid doing
-this, it's a contradiction in the terms. Optional arguments are made
-to be omitted by users. Use required positional arguments if arguments
-are required by your cli.
+this, it's a contradiction in the terms. In command line interfaces
+optional arguments are made to be omitted by users. Use required
+positional arguments if arguments are required by your cli.
+
+{2:migrating Migrating from other conventions}
+
+If you are porting your command line parsing to [Cmdliner] and that
+you have conventions that clash with [Cmdliner]'s ones but you need to
+preserve backward compatibility, one way of proceeding is to
+pre-process {!Sys.argv} into the right shape before giving to command
+{{!Cmdliner.Cmd.section-eval}evaluation functions} via the [?argv]
+optional argument.
+
+These are two common cases:
+
+{ul
+{- Long option names with a single dash like [-warn-error]. In this
+   case simply prefix an additional [-] to these arguments when they
+   occur in {!Sys.argv} before the [--] argument (after which all arguments are
+   positional and to be treated literally).}
+{- Long option names with a single letter like [--X]. In this
+   case simply chop the first [-] to make it a short option when they
+   occur in {!Sys.argv} before the [--] argument (after which all arguments are
+   positional and to be treated literally).}}
 
 {1:conventions Conventions}
 
@@ -67,7 +88,9 @@ good to adopt.
 
 {1:args Arguments}
 
-{2:absent How do I provide default values for absent argument ?}
+{2:absent How do I provide default values for absent arguments ?}
+
+{2:positional How do I define a positional argument ?}
 
 {2:argument How do I document the behaviour of absent arguments ?}
 
@@ -89,11 +112,6 @@ unspecified on the command line.
 
 {2:exit_codes How to I document exit codes ?}
 
-
-{1:migrating Migrating from other conventions}
-
-
-
 {1:blueprints Blueprints}
 
 These blueprints when copied to a [src.ml] file can be compiled and run with:
@@ -110,7 +128,7 @@ and the {{!page-tutorial}tutorial} may help too.
 
 A minimal example.
 
-{[
+{@ocaml name=blueprint_min.ml[
 let tool () = Cmdliner.Cmd.Exit.ok
 
 open Cmdliner
@@ -131,7 +149,7 @@ let () = if !Sys.interactive then () else exit (main ())
 This is a tool that has a flag, an optional positional argument
 specifying and input file. It also responds to the [--version] option.
 
-{[
+{@ocaml name=blueprint_tool.ml[
 let tool ~flag ~infile = Cmdliner.Cmd.Exit.ok
 
 open Cmdliner
@@ -157,7 +175,7 @@ let () = if !Sys.interactive then () else exit (main ())
 
 This is a tool with two subcommands [hey] and [ho].
 
-{[
+{@ocaml name=blueprint_cmds.ml[
 let hey () = Cmdliner.Cmd.Exit.ok
 let ho () = Cmdliner.Cmd.Exit.ok
 
