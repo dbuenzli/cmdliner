@@ -3,7 +3,9 @@
    SPDX-License-Identifier: CC0-1.0
   ---------------------------------------------------------------------------*)
 
-let tool ~flag ~infile = Cmdliner.Cmd.Exit.ok
+let exit_todo = 1
+
+let tool ~flag ~infile = exit_todo
 
 open Cmdliner
 open Cmdliner.Term.Syntax
@@ -15,7 +17,15 @@ let infile =
 
 let tool =
   let doc = "The tool synopsis is TODO" in
-  Cmd.make (Cmd.info "TODO-toolname" ~version:"%%VERSION%%" ~doc) @@
+  let man = [
+    `S Manpage.s_description;
+    `P "$(iname) does TODO" ]
+  in
+  let exits =
+    Cmd.Exit.info exit_todo ~doc:"When there is stuff todo" ::
+    Cmd.Exit.defaults
+  in
+  Cmd.make (Cmd.info "TODO" ~version:"%%VERSION%%" ~doc ~man ~exits) @@
   let+ flag and+ infile in
   tool ~flag ~infile
 

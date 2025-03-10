@@ -3,6 +3,12 @@
 A few recipes and starting {{!blueprints}blueprints} to describe your
 command lines with {!Cmdliner}.
 
+{b Note.} Some of the code snippets here assume they are done after a:
+{[
+open Cmdliner
+open Cmdliner.Term.Syntax
+]}
+
 {1:tips Tips and pitfalls}
 
 Command line interfaces are a rather crude and inexpressive user
@@ -53,17 +59,18 @@ having a default option value.
 
 Cmdliner allows to define required optional arguments. Avoid doing
 this, it's a contradiction in the terms. In command line interfaces
-optional arguments are made to be omitted by users. Use required
-positional arguments if arguments are required by your cli.
+optional arguments are defined to be… optional, not doing so is
+surprising. Use required positional arguments if arguments are
+required by your cli.
 
 {2:migrating Migrating from other conventions}
 
 If you are porting your command line parsing to [Cmdliner] and that
 you have conventions that clash with [Cmdliner]'s ones but you need to
 preserve backward compatibility, one way of proceeding is to
-pre-process {!Sys.argv} into the right shape before giving to command
-{{!Cmdliner.Cmd.section-eval}evaluation functions} via the [?argv]
-optional argument.
+pre-process {!Sys.argv} into a new array of the right shape before
+giving it to command {{!Cmdliner.Cmd.section-eval}evaluation
+functions} via the [?argv] optional argument.
 
 These are two common cases:
 
@@ -77,12 +84,40 @@ These are two common cases:
    occur in {!Sys.argv} before the [--] argument (after which all arguments are
    positional and to be treated literally).}}
 
+{2:program_structure Source program structure}
+
+In general Cmdliner wants you to see tools as regular OCaml functions
+that you make available to the shell. This mans adopting the following
+source structure:
+
+{[
+(* Implementation, except for exit codes does not deal with
+   command line interface releated matters. *)
+
+let exit_ok = 0
+let tool … = …; exit_ok
+
+(* Command line interface *)
+
+open Cmdliner
+open Cmdliner.Term.Syntax
+
+let arg = …
+let tool_cmd = … (* Has a term that uses [tool] *)
+let main () = Cmd.eval' tool_cmd
+let () = if !Sys.interactive then () else exit (main ())
+]}
+
+In particular it's nice for understanding the control flow that your
+program has a single point where it {!Stdlib.exit}s; this is also
+useful for playing with your program in the OCaml toplevel (REPL).
+
 {1:conventions Conventions}
 
-By the simple fact of using Cmdliner you are already abiding to a
-great deal of command line interface conventions. Here are a few other
-ones that are not necessarily enforced by the library but that are
-good to adopt.
+By the simply using Cmdliner you are already abiding to a great deal
+of command line interface conventions. Here are a few other ones that
+are not necessarily enforced by the library but that are good to
+adopt for your users.
 
 {2:use_dash Use ["-"] to specify [stdin]}
 
@@ -108,9 +143,56 @@ unspecified on the command line.
 {- If you want to describe a more, but short, complex behaviour use
    the {!absent} parameter of [info].}}
 
-{1:exit_codes Exit codes}
+{1:commands Commands}
 
-{2:exit_codes How to I document exit codes ?}
+{2:exit_code_docs How do I document command exit codes ?}
+
+Exit codes are documentd by {!Cmdliner.Cmd.Exit.type-info} values. You
+need to specify them and provide them to the {!Cmdliner.Cmd.type-info}
+value of the command you are defining via the [exits] optional
+arguments. For example:
+
+{[
+let conf_not_found = 1
+
+let exits =
+  Cmd.Exit.info conf_not_found "if no configuration could be found." ::
+  Cmd.Exit.defaults
+
+let cmd =
+  Cmd.make (Cmd.info "mycmd" ~exits) @@
+  …
+]}
+
+{2:which_cmd_eval Which [Cmd] evaluation function should I use ?}
+
+There are (too) many {{!Cmdliner.Cmd.section-eval}command evaluation}
+functions. They have grown organically in a rather ad-hoc manner. Some
+of these are there for backwards compatibility reasons and advanced
+usage for complex tools.
+
+Here are the main ones to use and why you may want to use them which
+essentially depends on how you want to handle errors and exit codes.
+
+{ul
+{- {!Cmdliner.Cmd.val-eval}. This forces your function to return [()].
+   The evaluation function always returns an exit code of [0] unless a
+   command line parsing error occurs.}
+{- {!Cmdliner.Cmd.eval'}. {b Recommended}. This forces your function to return
+   an exit code [exit] which is returned by the evaluation function unless a
+   command line parsing error occurs. This is the recommended function to use
+   as it forces you to think about how to report errors and design
+   useful exit codes for users.}
+{- {!Cmdliner.Cmd.eval_result} is akin to {!Cmdliner.Cmd.val-eval} except
+   it forces your function to return either [Ok ()] or [Error msg].
+   The evaluation function returns with exit code [0] unless [Error msg] is
+   computed in which case [msg] is printed on the error stream prefixed by the
+   executable name and the evaluation function returns with
+   exit code {!Cmdliner.Cmd.Exit.some_error}.}
+{- {!Cmdliner.Cmd.eval_result'} is akin to {!Cmdliner.Cmd.eval_result}, except
+   the [Ok] case carries an exit code which is returned by the evaluation
+   function.}}
+
 
 {1:blueprints Blueprints}
 
@@ -123,6 +205,10 @@ ocamlfind ocamlopt -package cmdliner -linkgpkg src.ml
 
 More concrete examples can be found on the {{!page-examples}examples page}
 and the {{!page-tutorial}tutorial} may help too.
+
+These eample follow a conventional {!program_structure}.
+
+
 
 {2:blueprint_min Minimal}
 
@@ -150,7 +236,9 @@ This is a tool that has a flag, an optional positional argument
 specifying and input file. It also responds to the [--version] option.
 
 {@ocaml name=blueprint_tool.ml[
-let tool ~flag ~infile = Cmdliner.Cmd.Exit.ok
+let exit_todo = 1
+
+let tool ~flag ~infile = exit_todo
 
 open Cmdliner
 open Cmdliner.Term.Syntax
@@ -160,16 +248,23 @@ let infile =
   let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
   Arg.(value & pos 0 file "-" & info [] ~doc ~docv:"FILE")
 
-let tool =
+let tool_cmd =
   let doc = "The tool synopsis is TODO" in
-  Cmd.make (Cmd.info "TODO-toolname" ~version:"%%VERSION%%" ~doc) @@
+  let man = [
+    `S Manpage.s_description;
+    `P "$(iname) does TODO" ]
+  in
+  let exits =
+    Cmd.Exit.info exit_todo ~doc:"When there is stuff todo" ::
+    Cmd.Exit.defaults
+  in
+  Cmd.make (Cmd.info "TODO" ~version:"%%VERSION%%" ~doc ~man ~exits) @@
   let+ flag and+ infile in
   tool ~flag ~infile
 
-let main () = Cmd.eval' tool
+let main () = Cmd.eval' tool_cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
-
 
 {2:blueprint_tool A tool with subcommands}
 

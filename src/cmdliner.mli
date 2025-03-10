@@ -435,6 +435,10 @@ module Cmd : sig
 
   (** {1:eval Evaluation}
 
+      Read {!page-cookbook.which_cmd_eval} in the cookbook if you
+      struggle to choose between this menagerie of evaluation
+      functions.
+
       These functions are meant to be composed with {!Stdlib.exit}.
       The following exit codes may be returned by all these functions:
       {ul
