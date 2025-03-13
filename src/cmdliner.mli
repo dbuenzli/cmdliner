@@ -31,8 +31,11 @@ module Manpage : sig
 
   (** {1:man Man pages} *)
 
+  type section_name = string
+  (** The type for section names. This is the actual section title. *)
+
   type block =
-    [ `S of string | `P of string | `Pre of string | `I of string * string
+    [ `S of section_name | `P of string | `Pre of string | `I of string * string
     | `Noblank | `Blocks of block list ]
   (** The type for a block of man page text.
 
@@ -78,41 +81,41 @@ module Manpage : sig
       {{:http://man7.org/linux/man-pages/man7/man-pages.7.html}[man man-pages]}
       for more elaborations about what sections should contain. *)
 
-  val s_name : string
+  val s_name : section_name
   (** The [NAME] section. This section is automatically created by
       [Cmdliner] for your. *)
 
-  val s_synopsis : string
+  val s_synopsis : section_name
   (** The [SYNOPSIS] section. By default this section is automatically
       created by [Cmdliner] for you, unless it is the first section of
       your term's man page, in which case it will replace it with yours. *)
 
-  val s_description : string
+  val s_description : section_name
   (** The [DESCRIPTION] section. This should be a description of what
       the tool does and provide a little bit of usage and
       documentation guidance. *)
 
-  val s_commands : string
+  val s_commands : section_name
   (** The [COMMANDS] section. By default subcommands get listed here. *)
 
-  val s_arguments : string
+  val s_arguments : section_name
   (** The [ARGUMENTS] section. By default positional arguments get
       listed here. *)
 
-  val s_options : string
+  val s_options : section_name
   (** The [OPTIONS] section. By default optional arguments get
       listed here. *)
 
-  val s_common_options : string
+  val s_common_options : section_name
   (** The [COMMON OPTIONS] section. By default help and version options get
       listed here. For programs with multiple commands, optional arguments
       common to all commands can be added here. *)
 
-  val s_exit_status : string
+  val s_exit_status : section_name
   (** The [EXIT STATUS] section. By default term status exit codes
       get listed here. *)
 
-  val s_environment : string
+  val s_environment : section_name
   (** The [ENVIRONMENT] section. By default environment variables get
       listed here. *)
 
@@ -120,22 +123,22 @@ module Manpage : sig
   (** [s_environment_intro] is the introduction content used by cmdliner
       when it creates the {!s_environment} section. *)
 
-  val s_files : string
+  val s_files : section_name
   (** The [FILES] section. *)
 
-  val s_bugs : string
+  val s_bugs : section_name
   (** The [BUGS] section. *)
 
-  val s_examples : string
+  val s_examples : section_name
   (** The [EXAMPLES] section. *)
 
-  val s_authors : string
+  val s_authors : section_name
   (** The [AUTHORS] section. *)
 
-  val s_see_also : string
+  val s_see_also : section_name
   (** The [SEE ALSO] section. *)
 
-  val s_none : string
+  val s_none : section_name
   (** [s_none] is a special section named ["cmdliner-none"] that can be used
       whenever you do not want something to be listed. *)
 
@@ -312,7 +315,8 @@ module Cmd : sig
     type info
     (** The type for exit code information. *)
 
-    val info : ?docs:string -> ?doc:string -> ?max:code -> code -> info
+    val info :
+      ?docs:Manpage.section_name -> ?doc:string -> ?max:code -> code -> info
     (** [exit_info ~docs ~doc min ~max] describe the range of exit
       statuses from [min] to [max] (defaults to [min]). [doc] is the
       man page information for the statuses, defaults to ["undocumented"].
@@ -347,7 +351,9 @@ module Cmd : sig
     type info
     (** The type for environment variable information. *)
 
-    val info : ?deprecated:string -> ?docs:string -> ?doc:string -> var -> info
+    val info :
+      ?deprecated:string -> ?docs:Manpage.section_name -> ?doc:string -> var ->
+      info
     (** [info ~docs ~doc var] describes an environment variable
         [var] such that:
         {ul
@@ -372,8 +378,8 @@ module Cmd : sig
   val info :
     ?deprecated:string -> ?man_xrefs:Manpage.xref list ->
     ?man:Manpage.block list -> ?envs:Env.info list -> ?exits:Exit.info list ->
-    ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
-    string -> info
+    ?sdocs:Manpage.section_name -> ?docs:Manpage.section_name -> ?doc:string ->
+    ?version:string ->string -> info
   (** [info ?sdocs ?man ?docs ?doc ?version name] is a term information
       such that:
       {ul
@@ -655,8 +661,8 @@ module Arg : sig
   (** The type for information about command line arguments. *)
 
   val info :
-    ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:Cmd.Env.info -> string list -> info
+    ?deprecated:string -> ?absent:string -> ?docs:Manpage.section_name ->
+    ?docv:string -> ?doc:string -> ?env:Cmd.Env.info -> string list -> info
   (** [info docs docv doc env names] defines information for
       an argument.
       {ul

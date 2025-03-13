@@ -5,8 +5,10 @@
 
 (* Manpages *)
 
+type section_name = string
+
 type block =
-  [ `S of string | `P of string | `Pre of string | `I of string * string
+  [ `S of section_name | `P of string | `Pre of string | `I of string * string
   | `Noblank | `Blocks of block list ]
 
 type title = string * int * string * string * string
