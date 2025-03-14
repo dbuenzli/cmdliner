@@ -6,4 +6,5 @@ open Cmdliner
 
 let revolt_t = Term.(const revolt $ const ())
 let cmd = Cmd.v (Cmd.info "revolt") revolt_t
-let () = exit (Cmd.eval cmd)
+let main () = Cmd.eval cmd
+let () = if !Sys.interactive then () else exit (main ())

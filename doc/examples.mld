@@ -4,7 +4,7 @@ The examples are self-contained, cut and paste them in a file to play
 with them. See also the {{!page-cookbook.blueprints}cookbook blueprints}.
 
 
-{1:exrm A [rm] command}
+{1:example_rm A [rm] command}
 
 We define the command line interface of an [rm] command with the
 synopsis:
@@ -26,7 +26,7 @@ line and we just take the {!Cmdliner.Arg.last} one to define our term
 value. If there is no occurrence the last value of the default list
 [[Always]] is taken. This means the default prompt behaviour is [Always].
 
-{[
+{@ocaml name=example_rm.ml[
 (* Implementation of the command, we just print the args. *)
 
 type prompt = Always | Once | Never
@@ -87,7 +87,7 @@ let main () = exit (Cmd.eval cmd)
 let () = main ()
 ]}
 
-{1:excp A [cp] command}
+{1:example_cp A [cp] command}
 
 We define the command line interface of a [cp] command with the synopsis:
 {v
@@ -104,7 +104,7 @@ constraint is unsatisfied we return an [`Error] result. By using
 {!Cmdliner.Term.val-ret} on the lifted result [cp_t] of [cp],
 [Cmdliner] handles the error reporting.
 
-{[
+{@ocaml name=example_cp.ml[
 (* Implementation, we check the dest argument and print the args *)
 
 let cp verbose recurse force srcs dest =
@@ -158,7 +158,7 @@ let main () = exit (Cmd.eval cmd)
 let () = main ()
 ]}
 
-{1:extail A [tail] command}
+{1:example_tail A [tail] command}
 
 We define the command line interface of a [tail] command with the
 synopsis:
@@ -181,7 +181,7 @@ the option [--follow] evaluates to [None] if [--follow] is absent from
 the command line, to [Some Descriptor] if present but without a value
 and to [Some v] if present with a value [v] specified.
 
-{[
+{@ocaml name=example_tail.ml[
 (* Implementation of the command, we just print the args. *)
 
 type loc = bool * int
@@ -267,7 +267,7 @@ let main () = exit (Cmd.eval cmd)
 let () = main ()
 ]}
 
-{1:exdarcs A [darcs] command}
+{1:example_darcs A [darcs] command}
 
 We define the command line interface of a [darcs] command with the
 synopsis:
@@ -294,7 +294,7 @@ If the program is invoked without a command we just want to show the
 help of the program as printed by [Cmdliner] with [--help]. This is
 done by the [default_cmd] term.
 
-{[
+{@ocaml name=example_darcs.ml[
 (* Implementations, just print the args. *)
 
 type verb = Normal | Quiet | Verbose

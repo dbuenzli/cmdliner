@@ -38,5 +38,5 @@ issue tracker.
 
 ## Sample programs
 
-A few examples can be found in the [documentation][online] and
-in the [test](test/) directory.
+A few examples and blueprints can be found in the
+[documentation][online] and in the [test](test/) directory.

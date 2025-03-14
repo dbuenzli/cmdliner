@@ -92,7 +92,8 @@ source structure:
 
 {[
 (* Implementation, except for exit codes does not deal with
-   command line interface releated matters. *)
+   command line interface related matters and is independent from
+   Cmdliner. *)
 
 let exit_ok = 0
 let tool … = …; exit_ok
@@ -102,14 +103,13 @@ let tool … = …; exit_ok
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-let arg = …
-let tool_cmd = … (* Has a term that uses [tool] *)
+let tool_cmd = … (* Has a term that invokes [tool] *)
 let main () = Cmd.eval' tool_cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
-In particular it's nice for understanding the control flow that your
-program has a single point where it {!Stdlib.exit}s; this is also
+In particular it's good for your readers' understanding that your
+program has a single point where it {!Stdlib.exit}s. This is also
 useful for playing with your program in the OCaml toplevel (REPL).
 
 {1:conventions Conventions}
@@ -206,9 +206,7 @@ ocamlfind ocamlopt -package cmdliner -linkgpkg src.ml
 More concrete examples can be found on the {{!page-examples}examples page}
 and the {{!page-tutorial}tutorial} may help too.
 
-These eample follow a conventional {!program_structure}.
-
-
+These examples follow a conventional {!program_structure}.
 
 {2:blueprint_min Minimal}
 
@@ -266,7 +264,7 @@ let main () = Cmd.eval' tool_cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
-{2:blueprint_tool A tool with subcommands}
+{2:blueprint_cmds A tool with subcommands}
 
 This is a tool with two subcommands [hey] and [ho].
 

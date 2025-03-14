@@ -20,12 +20,12 @@ let blueprint_min = test ~/"test/blueprint_min.ml" ~run:false
 let blueprint_tool = test ~/"test/blueprint_tool.ml" ~run:false
 let blueprint_cmds = test ~/"test/blueprint_cmds.ml" ~run:false
 
-let chorus = test ~/"test/chorus.ml" ~run:false
-let cp_ex = test ~/"test/cp_ex.ml" ~run:false
-let darcs_ex = test ~/"test/darcs_ex.ml" ~run:false
-let revolt = test ~/"test/revolt.ml" ~run:false
-let rm_ex = test ~/"test/rm_ex.ml" ~run:false
-let tail_ex = test ~/"test/tail_ex.ml" ~run:false
+let example_chorus = test ~/"test/example_chorus.ml" ~run:false
+let example_cp = test ~/"test/example_cp.ml" ~run:false
+let example_darcs = test ~/"test/example_darcs.ml" ~run:false
+let example_revolt = test ~/"test/example_revolt.ml" ~run:false
+let example_rm = test ~/"test/example_rm.ml" ~run:false
+let example_tail = test ~/"test/example_tail.ml" ~run:false
 
 let testing = `File ~/"test/testing_cmdliner.ml"
 let test_arg = test ~/"test/test_arg.ml" ~requires:[b0_std] ~srcs:[testing]

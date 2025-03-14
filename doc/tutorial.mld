@@ -20,13 +20,13 @@ functional values with {!Cmdliner.Term.($)}.
 
 For example, in a [revolt.ml] file, for the function:
 
-{[
+{@ocaml name=example_revolt.ml[
 let revolt () = print_endline "Revolt!"
 ]}
 
 the term :
 
-{[
+{@ocaml name=example_revolt.ml[
 open Cmdliner
 
 let revolt_t = Term.(const revolt $ const ())
@@ -35,13 +35,14 @@ let revolt_t = Term.(const revolt $ const ())
 is a term that evaluates to the result (and effect) of the [revolt]
 function. This term can be attached to a command:
 
-{[
+{@ocaml name=example_revolt.ml[
 let cmd = Cmd.v (Cmd.info "revolt") revolt_t
 ]}
 
 and evaluated with {!Cmdliner.Cmd.val-eval}:
-{[
-let () = exit (Cmd.eval cmd)
+{@ocaml name=example_revolt.ml[
+let main () = Cmd.eval cmd
+let () = if !Sys.interactive then () else exit (main ())
 ]}
 
 This defines a command line tool named ["revolt"] (this name will be
@@ -125,8 +126,8 @@ let cmd =
   let info = Cmd.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man in
   Cmd.v info chorus_t
 
-let main () = exit (Cmd.eval cmd)
-let () = main ()
+let main () = Cmd.eval cmd
+let () = if !Sys.interactive then () else exit (main ())
 ]}
 
 The [info] value created with {!Cmdliner.Cmd.val-info} gives more
@@ -195,7 +196,8 @@ by invoking the program with the option [--help=plain] or
 [--help=groff].
 
 For examples of more complex command line definitions look and run
-the {{!page-examples}examples}.
+the {{!page-examples}examples}. For more tips and conventions have
+look at the {{!page-cookbook}cookbook}.
 
 {1:subcommands Sub commands}
 
@@ -205,4 +207,6 @@ commands each with their own command line syntax and manual:
 {[tool [COMMAND]… [OPTION]… ARG…]}
 
 These sub commands are defined by grouping them under a parent command
-via the {!Cmdliner.Cmd.group} function.
+via the {!Cmdliner.Cmd.group} function. See this
+{{!page-cookbook.blueprint_cmds}blueprint} or the
+{{!examples.example_darcs}[darcs]} example.
