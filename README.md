@@ -6,9 +6,10 @@ for OCaml.
 
 It provides a simple and compositional mechanism to convert command
 line arguments to OCaml values and pass them to your functions. The
-module automatically handles syntax errors, help messages and UNIX man
-page generation. It supports programs with single or multiple commands
-and respects most of the [POSIX] and [GNU] conventions.
+module automatically handles command line completion, syntax errors,
+help messages and UNIX man page generation. It supports programs with
+single or multiple commands and respects most of the [POSIX] and [GNU]
+conventions.
 
 Cmdliner has no dependencies and is distributed under the ISC license.
 

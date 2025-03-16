@@ -15,7 +15,7 @@ let infile =
   let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
   Arg.(value & pos 0 file "-" & info [] ~doc ~docv:"FILE")
 
-let tool =
+let tool_cmd =
   let doc = "The tool synopsis is TODO" in
   let man = [
     `S Manpage.s_description;
@@ -29,5 +29,5 @@ let tool =
   let+ flag and+ infile in
   tool ~flag ~infile
 
-let main () = Cmd.eval' tool
+let main () = Cmd.eval' tool_cmd
 let () = if !Sys.interactive then () else exit (main ())

@@ -83,4 +83,4 @@ val doc_to_plain :
     their [subst] definition and renders cmdliner directives to plain
     text.
 
-    @raise Invalid_argument in case of illegal syntax. *)
+    Raises Invalid_argument in case of illegal syntax. *)

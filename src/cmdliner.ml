@@ -4,9 +4,7 @@
   ---------------------------------------------------------------------------*)
 
 module Manpage = Cmdliner_manpage
-module Term = struct
-  include Cmdliner_term
-end
+module Term = Cmdliner_term
 module Cmd = struct
   module Exit = Cmdliner_info.Exit
   module Env = Cmdliner_info.Env

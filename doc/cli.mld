@@ -1,5 +1,10 @@
 {0:cmdline Command line interface}
 
+This manual describes how your tool ends up interacting
+with shells when you use Cmdliner.
+
+{1:invocation Tool invocation}
+
 For tools evaluating a command without sub commands the most general
 form of invocation is:
 
@@ -7,8 +12,8 @@ form of invocation is:
 tool [OPTION]… [ARG]…
 ]}
 
-The tool automatically reponds to the [--help] option by printing the
-help. If a version string is provided in the
+The tool automatically reponds to the [--help] option by printing
+{{!help}the help}. If a version string is provided in the
 {{!Cmdliner.Cmd.val-info}command information}, it also automatically
 responds to the [--version] option by printing this string on standard
 output.
@@ -27,12 +32,14 @@ tool [COMMAND]… [OPTION]… [ARG]…
 ]}
 
 Commands automatically respond to the [--help] option by printing
-their help. The sequence of [COMMAND] strings must be the first
+{{!help}their help}. The sequence of [COMMAND] strings must be the first
 strings following the tool name – as soon as an optional argument is
 seen the search for a sub command stops. Command names may be specified by
 a prefix as long as they are not ambiguous.
 
-{1:optargs Optional arguments}
+{1:args Arguments}
+
+{2:optargs Optional arguments}
 
 An optional argument is specified on the command line by a {e name}
 possibly followed by a {e value}.
@@ -74,7 +81,7 @@ group can end with a short option. For example assuming [-v] and
 {- [-vxf opt] will be parsed as [-v -x -fopt].}
 {- [-fvx] will be parsed as [-f=vx].}}
 
-{1:posargs Positional arguments}
+{2:posargs Positional arguments}
 
 Positional arguments are tokens on the command line that are not
 option names and are not the value of an optional argument. They are
@@ -108,9 +115,41 @@ as follows:
 Note that environment variables are not supported for
 {!Cmdliner.Arg.vflag} and {!Cmdliner.Arg.vflag_all}.
 
+{1:help Help and man pages}
+
+Help and man pages are are generated when you call your tool or a sub
+command with [--help]. By default, if the [TERM] environment variable
+is not [dumb] or unset, the tool tries to {{!paging}page} the manual
+so that you can directly search it. Otherwise it outputs the manual
+as plain text.
+
+Alternative help formats can be specified with the optional argument
+of [--help], see your own [tool --help] for more information.
+
+{[
+tool --help
+tool cmd --help
+tool --help=groff > tool.1
+]}
+
+{2:paging Paging}
+
+The pager is selected by looking up, in order:
+
+{ol
+{- The [MANPAGER] variable.}
+{- The [PAGER] variable.}
+{- The tool [less].}
+{- The tool [more].}}
+
+Regardless of the pager, it is invoked with [LESS=FRX] set in the
+environment unless, the [LESS] environment variable is set in your
+environment.
+
 {1:reserved Reserved option names}
 
-Using the cmdliner library puts the following constraints o
+Using the cmdliner library puts the following constraints on your
+command line interface:
 
 {ul
 {- The option name [--cmdliner] is reserved by the library.}

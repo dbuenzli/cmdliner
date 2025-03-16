@@ -1,16 +1,20 @@
-(* Example from the documentation, this code is in public domain. *)
+(*---------------------------------------------------------------------------
+   Copyright (c) 2011 The cmdliner programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
 (* Implementation of the command *)
 
-let chorus count msg = for i = 1 to count do print_endline msg done
+let chorus ~count msg = for i = 1 to count do print_endline msg done
 
 (* Command line interface *)
 
 open Cmdliner
+open Cmdliner.Term.Syntax
 
 let count =
   let doc = "Repeat the message $(docv) times." in
-  Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
+  Arg.(value & opt int 10 & info ["c"; "count"] ~doc ~docv:"COUNT")
 
 let msg =
   let env =
@@ -18,18 +22,17 @@ let msg =
     Cmd.Env.info "CHORUS_MSG" ~doc
   in
   let doc = "The message to print." in
-  Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
+  Arg.(value & pos 0 string "Revolt!" & info [] ~env ~doc ~docv:"MSG")
 
-let chorus_t = Term.(const chorus $ count $ msg)
-
-let cmd =
+let chorus_cmd =
   let doc = "Print a customizable message repeatedly" in
   let man = [
     `S Manpage.s_bugs;
     `P "Email bug reports to <bugs@example.org>." ]
   in
-  let info = Cmd.info "chorus" ~version:"%%VERSION%%" ~doc ~man in
-  Cmd.v info chorus_t
+  Cmd.make (Cmd.info "chorus" ~version:"%%VERSION%%" ~doc ~man) @@
+  let+ count and+ msg in
+  chorus ~count msg
 
-let main () = exit (Cmd.eval cmd)
-let () = main ()
+let main () = Cmd.eval chorus_cmd
+let () = if !Sys.interactive then () else exit (main ())

@@ -1,8 +1,11 @@
-(* Example from the documentation, this code is in public domain. *)
+(*---------------------------------------------------------------------------
+   Copyright (c) 2011 The cmdliner programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
 (* Implementation, we check the dest argument and print the args *)
 
-let cp verbose recurse force srcs dest =
+let cp ~verbose ~recurse ~force srcs dest =
   let many = List.length srcs > 1 in
   if many && (not (Sys.file_exists dest) || not (Sys.is_directory dest))
   then `Error (false, dest ^ ": not a directory") else
@@ -13,6 +16,7 @@ let cp verbose recurse force srcs dest =
 (* Command line interface *)
 
 open Cmdliner
+open Cmdliner.Term.Syntax
 
 let verbose =
   let doc = "Print file names as they are copied." in
@@ -36,18 +40,19 @@ let dest =
   let docv = "DEST" in
   Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv ~doc)
 
-let cmd =
+let cp_cmd =
   let doc = "Copy files" in
   let man_xrefs =
-    [ `Tool "mv"; `Tool "scp"; `Page ("umask", 2); `Page ("symlink", 7) ]
+    [`Tool "mv"; `Tool "scp"; `Page ("umask", 2); `Page ("symlink", 7)]
   in
-  let man =
-    [ `S Manpage.s_bugs;
-      `P "Email them to <bugs@example.org>."; ]
+  let man = [
+    `S Manpage.s_bugs;
+    `P "Email them to <bugs@example.org>."; ]
   in
-  let info = Cmd.info "cp" ~version:"%%VERSION%%" ~doc ~man ~man_xrefs in
-  Cmd.v info Term.(ret (const cp $ verbose $ recurse $ force $ srcs $ dest))
+  Cmd.make (Cmd.info "cp" ~version:"%%VERSION%%" ~doc ~man ~man_xrefs) @@
+  Term.ret @@
+  let+ verbose and+ recurse and+ force and+ srcs and+ dest in
+  cp ~verbose ~recurse ~force srcs dest
 
-
-let main () = exit (Cmd.eval cmd)
-let () = main ()
+let main () = Cmd.eval cp_cmd
+let () = if !Sys.interactive then () else exit (main ())

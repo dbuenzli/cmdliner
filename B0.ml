@@ -10,7 +10,14 @@ let cmdliner = B0_ocaml.libname "cmdliner"
 
 (* Units *)
 
-let cmdliner_lib = B0_ocaml.lib cmdliner ~srcs:[`Dir ~/"src"]
+let cmdliner_lib =
+  B0_ocaml.lib cmdliner ~name:"cmdliner-lib" ~srcs:[`Dir ~/"src"]
+
+(* Tool *)
+
+let cmdliner_tool =
+  let srcs = [`Dir ~/"bin"] in
+  B0_ocaml.exe "cmdliner" ~public:true ~srcs ~requires:[cmdliner]
 
 (* Tests *)
 
@@ -23,7 +30,8 @@ let blueprint_cmds = test ~/"test/blueprint_cmds.ml" ~run:false
 let example_chorus = test ~/"test/example_chorus.ml" ~run:false
 let example_cp = test ~/"test/example_cp.ml" ~run:false
 let example_darcs = test ~/"test/example_darcs.ml" ~run:false
-let example_revolt = test ~/"test/example_revolt.ml" ~run:false
+let example_revolt1 = test ~/"test/example_revolt1.ml" ~run:false
+let example_revolt2 = test ~/"test/example_revolt2.ml" ~run:false
 let example_rm = test ~/"test/example_rm.ml" ~run:false
 let example_tail = test ~/"test/example_tail.ml" ~run:false
 
@@ -32,6 +40,7 @@ let test_arg = test ~/"test/test_arg.ml" ~requires:[b0_std] ~srcs:[testing]
 let test_term = test ~/"test/test_term.ml" ~requires:[b0_std] ~srcs:[testing]
 let test_cmd = test ~/"test/test_cmd.ml" ~requires:[b0_std] ~srcs:[testing]
 let test_man = test ~/"test/test_man.ml" ~requires:[b0_std] ~srcs:[testing]
+
 
 (* Packs *)
 

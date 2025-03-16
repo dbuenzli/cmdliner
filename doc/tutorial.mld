@@ -1,47 +1,47 @@
 {0:tutorial Tutorial}
 
-See also the {{!page-cookbook}cookbook} and
-{{!page-cookbook.blueprints}blueprints}.
+See also the {{!page-cookbook}cookbook},
+{{!page-cookbook.blueprints}blueprints} and
+{{!page-examples}examples}.
 
-{1:started Getting started}
+{1:terms Commands and terms}
 
 With [Cmdliner] your tool's [main] function evaluates a command.
 
 A command is a value of type {!Cmdliner.Cmd.t} which gathers a command
-name and a term of type {!Cmdliner.Term.t}.
-
-A term is an expression to be evaluated. The type parameter of the
-term (and the command) indicates the type of the result of the
-evaluation.
+name and a term of type {!Cmdliner.Term.t}. A term represents both a
+command line syntax fragment and an expression to be evaluated that
+implements your tool. The type parameter of the term (and the command)
+indicates the type of the result of the evaluation.
 
 One way to create terms is by lifting regular OCaml values with
 {!Cmdliner.Term.const}. Terms can be applied to terms evaluating to
-functional values with {!Cmdliner.Term.($)}.
+functional values with {!Cmdliner.Term.app}.
 
 For example, in a [revolt.ml] file, for the function:
 
-{@ocaml name=example_revolt.ml[
+{@ocaml name=example_revolt1.ml[
 let revolt () = print_endline "Revolt!"
 ]}
 
 the term :
 
-{@ocaml name=example_revolt.ml[
+{@ocaml name=example_revolt1.ml[
 open Cmdliner
 
-let revolt_t = Term.(const revolt $ const ())
+let revolt_term = Term.app (Term.const revolt) (Term.const ())
 ]}
 
 is a term that evaluates to the result (and effect) of the [revolt]
-function. This term can be attached to a command:
+function. This term can be associated to a command:
 
-{@ocaml name=example_revolt.ml[
-let cmd = Cmd.v (Cmd.info "revolt") revolt_t
+{@ocaml name=example_revolt1.ml[
+let cmd_revolt = Cmd.make (Cmd.info "revolt") revolt_term
 ]}
 
 and evaluated with {!Cmdliner.Cmd.val-eval}:
-{@ocaml name=example_revolt.ml[
-let main () = Cmd.eval cmd
+{@ocaml name=example_revolt1.ml[
+let main () = Cmd.eval cmd_revolt
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
@@ -49,40 +49,69 @@ This defines a command line tool named ["revolt"] (this name will be
 used in error reporting and documentation generation), without command
 line arguments, that just prints ["Revolt!"] on [stdout].
 
-{[
+{@sh[
 > ocamlfind ocamlopt -linkpkg -package cmdliner -o revolt revolt.ml
 > ./revolt
 Revolt!
 ]}
 
+{1:term_syntax Term syntax}
+
+There is a special syntax that uses OCaml's
+{{:https://ocaml.org/manual/5.3/bindingops.html}binding operators} for
+writing terms which is less error prone when the number of arguments
+you want to give to your function grows. In particular it allows you to
+easily lift functions which have labels.
+
+So in fact the program we have just shown above is usually rather
+written this way:
+
+{@ocaml name=example_revolt2.ml[
+let revolt () = print_endline "Revolt!"
+
+open Cmdliner
+open Cmdliner.Term.Syntax
+
+let cmd_revolt =
+  Cmd.make (Cmd.info "revolt") @@
+  let+ () = Term.const () in
+  revolt ()
+
+let main () = Cmd.eval cmd_revolt
+let () = if !Sys.interactive then () else exit (main ())
+]}
+
+{1:args_as_terms Command line arguments as terms}
+
 The combinators in the {!Cmdliner.Arg} module allow to extract command
 line arguments as terms. These terms can then be applied to lifted
-OCaml functions to be evaluated.
-
-Terms corresponding to command line argument data that are part of a
-term evaluation implicitly define a command line syntax.  We show this
-on an concrete example.
+OCaml functions to be evaluated. A term that uses terms that correspond
+to command line argument implicitely defines a command line syntax
+fragment. We show this on an concrete example.
 
 In a [chorus.ml] file, consider the [chorus] function that prints
 repeatedly a given message :
 
-{[
-let chorus count msg = for i = 1 to count do print_endline msg done
+{@ocaml name=example_chorus.ml[
+let chorus ~count msg = for i = 1 to count do print_endline msg done
 ]}
 
 we want to make it available from the command line with the synopsis:
 
-{[
+{@sh[
 chorus [-c COUNT | --count=COUNT] [MSG]
 ]}
 
 where [COUNT] defaults to [10] and [MSG] defaults to ["Revolt!"]. We
 first define a term corresponding to the [--count] option:
 
-{[
+{@ocaml name=example_chorus.ml[
+open Cmdliner
+open Cmdliner.Term.Syntax
+
 let count =
   let doc = "Repeat the message $(docv) times." in
-  Arg.(value & opt int 10 & info ["c"; "count"] ~docv:"COUNT" ~doc)
+  Arg.(value & opt int 10 & info ["c"; "count"] ~doc ~docv:"COUNT")
 ]}
 
 This says that [count] is a term that evaluates to the value of an
@@ -92,14 +121,14 @@ and [docv] are used to generate the option's man page information.
 
 The term for the positional argument [MSG] is:
 
-{[
+{@ocaml name=example_chorus.ml[
 let msg =
   let env =
     let doc = "Overrides the default message to print." in
     Cmd.Env.info "CHORUS_MSG" ~doc
   in
   let doc = "The message to print." in
-  Arg.(value & pos 0 string "Revolt!" & info [] ~env ~docv:"MSG" ~doc)
+  Arg.(value & pos 0 string "Revolt!" & info [] ~env ~doc ~docv:"MSG")
 ]}
 
 which says that [msg] is a term whose value is the positional argument
@@ -108,39 +137,37 @@ value of the environment variable [CHORUS_MSG] if the argument is
 unspecified on the command line. Here again [doc] and [docv] are used
 for the man page information.
 
-The term for executing [chorus] with these command line arguments is :
+We can now define a term and command for invoking the [chorus] function
+using the {{!term_syntax}term syntax} and the obscure but handy
+{{:https://ocaml.org/manual/5.2/bindingops.html#ss%3Aletops-punning}
+let-punning} OCaml notation. This also shows that the
+value {!Cmdliner.Cmd.val-info} can be given more
+information about the term we execute which is notably used to
+to generate the tool's man page.
 
-{[
-let chorus_t = Term.(const chorus $ count $ msg)
-]}
-
-We are now ready to define the [main] function of our tool:
-
-{[
-let cmd =
-  let doc = "print a customizable message repeatedly" in
+{@ocaml name=example_chorus.ml[
+let chorus_cmd =
+  let doc = "Print a customizable message repeatedly" in
   let man = [
     `S Manpage.s_bugs;
     `P "Email bug reports to <bugs@example.org>." ]
   in
-  let info = Cmd.info "chorus" ~version:"%‌%VERSION%%" ~doc ~man in
-  Cmd.v info chorus_t
+  Cmd.make (Cmd.info "chorus" ~version:"%%VERSION%%" ~doc ~man) @@
+  let+ count and+ msg in
+  chorus ~count msg
 
-let main () = Cmd.eval cmd
+let main () = Cmd.eval chorus_cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
-The [info] value created with {!Cmdliner.Cmd.val-info} gives more
-information about the term we execute and is used to generate the
-tool's man page. Since we provided a [~version] string, the tool
-will automatically respond to the [--version] option by printing this
-string.
+Since we provided a [~version] string, the tool will automatically
+respond to the [--version] option by printing this string.
 
-A tool using {!Cmdliner.Cmd.val-eval} always responds to the [--help]
-option by showing the tool's man page generated using the information
-you provided with {!Cmdliner.Cmd.val-info} and
-{!Cmdliner.Arg.val-info}.  Here is the output generated by our
-example:
+Besides a tool using {!Cmdliner.Cmd.val-eval} always responds to the
+[--help] option by showing the tool's man page
+{{!page-tool_man.manual}generated} using the information you provided
+with {!Cmdliner.Cmd.val-info} and {!Cmdliner.Arg.val-info}. Here is
+the manual generated by our example:
 
 {v
 > ocamlfind ocamlopt -linkpkg -package cmdliner -o chorus chorus.ml
@@ -195,18 +222,7 @@ is also available in plain text or in the
 by invoking the program with the option [--help=plain] or
 [--help=groff].
 
-For examples of more complex command line definitions look and run
-the {{!page-examples}examples}. For more tips and conventions have
-look at the {{!page-cookbook}cookbook}.
-
-{1:subcommands Sub commands}
-
-[Cmdliner] also provides support for programs like [git] that have sub
-commands each with their own command line syntax and manual:
-
-{[tool [COMMAND]… [OPTION]… ARG…]}
-
-These sub commands are defined by grouping them under a parent command
-via the {!Cmdliner.Cmd.group} function. See this
-{{!page-cookbook.blueprint_cmds}blueprint} or the
-{{!examples.example_darcs}[darcs]} example.
+And with this you should master the basics of Cmdliner, for examples
+of more complex command line definitions consult the
+{{!page-examples}examples}. For more tips, off-the-shelf recipes and
+conventions have look at the {{!page-cookbook}cookbook}.

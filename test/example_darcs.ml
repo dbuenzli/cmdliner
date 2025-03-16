@@ -1,4 +1,7 @@
-(* Example from the documentation, this code is in public domain. *)
+(*---------------------------------------------------------------------------
+   Copyright (c) 2011 The cmdliner programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
 (* Implementations, just print the args. *)
 
@@ -38,6 +41,7 @@ let help copts man_format cmds topic = match topic with
         `Ok (Cmdliner.Manpage.print man_format Format.std_formatter page)
 
 open Cmdliner
+open Cmdliner.Term.Syntax
 
 (* Help sections common to all commands *)
 
@@ -89,8 +93,9 @@ let initialize_cmd =
        existing files and subdirectories become …";
     `Blocks help_secs; ]
   in
-  let info = Cmd.info "initialize" ~doc ~sdocs ~man in
-  Cmd.v info Term.(const initialize $ copts_t $ repodir)
+  Cmd.make (Cmd.info "initialize" ~doc ~sdocs ~man) @@
+  let+ copts_t and+ repodir in
+  initialize copts_t repodir
 
 let record_cmd =
   let pname =
@@ -119,9 +124,9 @@ let record_cmd =
          a set of files…";
      `Blocks help_secs; ]
   in
-  let info = Cmd.info "record" ~doc ~sdocs ~man in
-  Cmd.v info
-    Term.(const record $ copts_t $ pname $ author $ all $ ask_deps $ files)
+  Cmd.make (Cmd.info "record" ~doc ~sdocs ~man) @@
+  let+ copts_t and+ pname and+ author and+ all and+ ask_deps and+ files in
+  record copts_t pname author all ask_deps files
 
 let help_cmd =
   let topic =
@@ -134,10 +139,11 @@ let help_cmd =
      `P "Prints help about darcs commands and other subjects…";
      `Blocks help_secs; ]
   in
-  let info = Cmd.info "help" ~doc ~man in
-  Cmd.v info
-    Term.(ret (const help $ copts_t $ Arg.man_format $ Term.choice_names $
-               topic))
+  Cmd.make (Cmd.info "help" ~doc ~man) @@
+  Term.ret @@
+  let+ copts_t and+ man_format = Arg.man_format
+  and+ choice_names = Term.choice_names and+ topic in
+  help copts_t man_format choice_names topic
 
 let main_cmd =
   let doc = "a revision control system" in
@@ -146,4 +152,5 @@ let main_cmd =
   let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ copts_t)) in
   Cmd.group info ~default [initialize_cmd; record_cmd; help_cmd]
 
-let () = exit (Cmd.eval main_cmd)
+let main () = Cmd.eval main_cmd
+let () = if !Sys.interactive then () else exit (main ())

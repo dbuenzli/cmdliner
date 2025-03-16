@@ -5,23 +5,22 @@
 
 (** Declarative definition of command line interfaces.
 
-    Consult the {{!page-tutorial}tutorial},
-    {{!page-cookbook.blueprints}blueprints},
-    details about the supported
-    {{!page-cli}command line syntax} and {{!page-examples}examples} of
-    use.
+    Consult the {{!page-tutorial}tutorial}, the
+    {{!page-cookbook}cookbook}, program
+    {{!page-cookbook.blueprints}blueprints} and
+    {{!page-cookbook.tip_src_structure}source structure}, details about the
+    supported {{!page-cli}command line syntax} and
+    {{!page-examples}examples} of use.
 
     Open the module to use it, it defines only these modules in your
     scope. *)
 
-(** Man page specification.
+(** Man pages.
 
-    Man page generation is automatically handled by [Cmdliner],
-    consult the {{!page-tool_man.manual}details}.
-
-    The {!Manpage.block} type is used to define a man page's
-    content. It's a good idea to follow the
-    {{!Manpage.standard_sections}standard} manual page structure.
+    Man page generation is automatically handled by [Cmdliner], see
+    the {{!page-tool_man.manual}details}. The {!Manpage.block} type is
+    used to define a man page's content. It's a good idea to follow
+    the {{!Manpage.standard_sections}standard} manual page structure.
 
    {b References.}
    {ul
@@ -83,16 +82,17 @@ module Manpage : sig
 
   val s_name : section_name
   (** The [NAME] section. This section is automatically created by
-      [Cmdliner] for your. *)
+      [Cmdliner] for your command. *)
 
   val s_synopsis : section_name
   (** The [SYNOPSIS] section. By default this section is automatically
-      created by [Cmdliner] for you, unless it is the first section of
-      your term's man page, in which case it will replace it with yours. *)
+      created by [Cmdliner] for your command, unless it is the first
+      section of your term's man page, in which case it will replace
+      it with yours. *)
 
   val s_description : section_name
   (** The [DESCRIPTION] section. This should be a description of what
-      the tool does and provide a little bit of usage and
+      the tool does and provide a little bit of command line usage and
       documentation guidance. *)
 
   val s_commands : section_name
@@ -168,26 +168,27 @@ end
 
 (** Terms.
 
-    A term is evaluated by a program to produce a {{!Term.result}result},
-    which can be turned into an {{!Term.exits}exit status}. A term made of terms
-    referring to {{!Arg}command line arguments} implicitly defines a
-    command line syntax. *)
+    A term made of terms referring to {{!Arg.argterms}command line arguments}
+    implicitly defines a command line syntax fragment. Terms are associated
+    to command values {!Cmd.t} which are
+    {{!Cmd.section-eval}evaluated} to eventually produce an
+    {{!Cmd.Exit.code}exit code}.
+
+    Nowadays terms are best defined using the {!Cmdliner.Term.Syntax}.
+    See examples in the {{!page-cookbook.blueprints}blueprints}. *)
 module Term : sig
 
   (** {1:terms Terms} *)
 
   type +'a t
-  (** The type for terms evaluating to values of type 'a. *)
+  (** The type for terms evaluating to values of type ['a]. *)
 
   val const : 'a -> 'a t
   (** [const v] is a term that evaluates to [v]. *)
 
-  val ( $ ) : ('a -> 'b) t -> 'a t -> 'b t
-  (** [f $ v] is a term that evaluates to the result of applying
-      the evaluation of [v] to the one of [f]. *)
-
   val app : ('a -> 'b) t -> 'a t -> 'b t
-  (** [app] is {!($)}. *)
+  (** [app f v] is a term that evaluates to the result applying
+      the evaluation of [v] to the one of [f]. *)
 
   val map : ('a -> 'b) -> 'a t -> 'b t
   (** [map f t] is [app (const f) t]. *)
@@ -195,7 +196,12 @@ module Term : sig
   val product : 'a t -> 'b t  -> ('a * 'b) t
   (** [product t0 t1] is [app (app (map (fun x y -> (x, y)) t0) t1)] *)
 
-  (** [let] operators. *)
+  val ( $ ) : ('a -> 'b) t -> 'a t -> 'b t
+  (** [f $ v] is {!app}[ f v]. *)
+
+  (** [let] operators.
+
+      See how to use them in the {{!page-cookbook.blueprints}blueprints}. *)
   module Syntax : sig
     val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
     (** [( let+ )] is {!map}. *)
@@ -204,15 +210,20 @@ module Term : sig
     (** [( and* )] is {!product}. *)
   end
 
-  (** {1 Interacting with Cmdliner's evaluation} *)
+  (** {1 Interacting with {!Cmd.t} evaluation}
+
+      These special terms allow to interact with the
+      {{!Cmd.section-eval_low}low-level evaluation process} performed
+      on commands. *)
 
   val term_result : ?usage:bool -> ('a, [`Msg of string]) result t -> 'a t
-  (** [term_result ~usage t] evaluates to
+  (** [term_result] is such that:
       {ul
-      {- [`Ok v] if [t] evaluates to [Ok v]}
-      {- [`Error `Term] with the error message [e] and usage shown according
-         to [usage] (defaults to [false]), if [t] evaluates to
-         [Error (`Msg e)].}}
+      {- [term_result ~usage (Ok v)] {{!Cmd.eval_value}evaluates}
+         to [Ok (`Ok v)].}
+      {- [term_result ~usage (Error (`Msg e))]
+         {{!Cmd.eval_value}evaluates} to [Error `Term] with the error message
+         [e] and usage shown according to [usage] (defaults to [false])}}
 
       See also {!term_result'}. *)
 
@@ -221,17 +232,17 @@ module Term : sig
       error case. *)
 
   val cli_parse_result : ('a, [`Msg of string]) result t -> 'a t
-  (** [cli_parse_result t] is a term that evaluates to:
+  (** [cli_parse_result] is such that:
       {ul
-      {- [`Ok v] if [t] evaluates to [Ok v].}
-      {- [`Error `Parse] with the error message [e]
-         if [t] evaluates to [Error (`Msg e)].}}
-
+      {- [cli_parse_result (Ok v)] {{!Cmd.eval_value}evaluates}
+         [Ok (`Ok v)).}
+      {- [cli_parse_result (Error (`Msg e))]] {{!Cmd.eval_value}evaluates}
+         [Error `Parse].}}
       See also {!cli_parse_result'}. *)
 
   val cli_parse_result' : ('a, string) result t -> 'a t
-  (** [cli_parse_result'] is like {!cli_parse_result} but with a [string]
-      error case. *)
+  (** [cli_parse_result'] is like {!cli_parse_result} but with a
+      [string] error case. *)
 
   val main_name : string t
   (** [main_name] is a term that evaluates to the main command name;
@@ -262,15 +273,14 @@ module Term : sig
       {- [`Help (format, name)], the evaluation fails and [Cmdliner] prints
          a manpage in format [format]. If [name] is [None] this is the
          the main command's manpage. If [name] is [Some c] this is
-         the man page of the sub command [c] of the main command.}}
-
-      {b Note.} While not deprecated you are encouraged not use this API. *)
+         the man page of the sub command [c] of the main command.}} *)
 end
 
 (** Commands.
 
-    Command line syntaxes are implicitely defined by {!Term}s. A command
-    value binds a syntax and its documentation to a command name.
+    Command line syntaxes are implicitely defined by {!Term.t}
+    values. A command value binds a term and its documentation to a
+    command name.
 
     A command can group a list of sub commands (and recursively). In this
     case your tool defines a tree of commands, each with its own command
@@ -295,12 +305,16 @@ module Cmd : sig
         {{:https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html}
         some} shells. *)
 
+    (** {2:predefined Predefined codes}
+
+        These are documented by {!defaults}. *)
+
     val ok : code
     (** [ok] is [0], the exit status for success. *)
 
     val some_error : code
-    (** [some_error] is [123], an exit status for indisciminate errors
-        reported on stderr. *)
+    (** [some_error] is [123], an exit status for indiscriminate errors
+        reported on [stderr]. *)
 
     val cli_error : code
     (** [cli_error] is [124], an exit status for command line parsing
@@ -317,24 +331,26 @@ module Cmd : sig
 
     val info :
       ?docs:Manpage.section_name -> ?doc:string -> ?max:code -> code -> info
-    (** [exit_info ~docs ~doc min ~max] describe the range of exit
-      statuses from [min] to [max] (defaults to [min]). [doc] is the
-      man page information for the statuses, defaults to ["undocumented"].
-      [docs] is the title of the man page section in which the statuses
-      will be listed, it defaults to {!Manpage.s_exit_status}.
-
-      In [doc] the {{!page-tool_man.doclang}documentation markup language}
-      can be used with following variables:
-      {ul
-      {- [$(status)], the value of [min].}
-      {- [$(status_max)], the value of [max].}
-      {- The variables mentioned in the {!Cmd.val-info}}} *)
+    (** [info ~docs ~doc min ~max] describe the range of exit
+        statuses from [min] to [max] (defaults to [min]).
+        {ul
+        {- [doc] is the man page information for the statuses,
+           defaults to ["undocumented"]. The
+           {{!page-tool_man.doclang}documentation markup language}
+           can be used with following variables:
+           {ul
+           {- [$(status)], the value of [min].}
+           {- [$(status_max)], the value of [max].}
+           {- The variables mentioned in the documentation of
+              {!Cmd.val-info}}}}
+        {- [docs] is the title of the man page section in which the statuses
+           will be listed, it defaults to {!Manpage.s_exit_status}.}} *)
 
     val info_code : info -> code
     (** [info_code i] is the minimal code of [i]. *)
 
     val defaults : info list
-    (** [defaults] are exit code information for {!ok}, {!some_error}
+    (** [defaults] are exit code information for {!ok}, {!some_error},
         {!cli_error} and {!internal_error}. *)
   end
 
@@ -344,7 +360,7 @@ module Cmd : sig
     (** {1:envvars Environment variables} *)
 
     type var = string
-    (** The type for environment names. *)
+    (** The type for environment variable names. *)
 
     (** {1:info Environment variable information} *)
 
@@ -358,18 +374,18 @@ module Cmd : sig
         [var] such that:
         {ul
         {- [doc] is the man page information of the environment
-            variable, defaults to ["undocumented"].}
+            variable, defaults to ["undocumented"].
+            The {{!page-tool_man.doclang}documentation markup language}
+            can be used with following variables:
+            {ul
+            {- [$(env)], the value of [var].}
+            {- The variables mentioned in the doc string of {!Cmd.val-info}.}}}
         {- [docs] is the title of the man page section in which the environment
           variable will be listed, it defaults to
           {!Cmdliner.Manpage.s_environment}.}
         {- [deprecated], if specified the environment is deprecated and the
            string is a message output on standard error when the environment
-           variable gets used to lookup the default value of an argument.}}
-        In [doc] the {{!page-tool_man.doclang}documentation markup language}
-        can be used with following variables:
-        {ul
-        {- [$(env)], the value of [var].}
-        {- The variables mentioned in {!val-info}.}} *)
+           variable gets used to lookup the default value of an argument.}} *)
   end
 
   type info
@@ -406,8 +422,9 @@ module Cmd : sig
       {- [man_xrefs] are cross-references to other manual pages. These
          are used to generate a {!Manpage.s_see_also} section.}}
 
-      [doc], [man], [envs] support the {{!page-tool_man.doclang}documentation
-      markup language} in which the following variables are recognized:
+      [doc], [man], [envs], [exits] support the {{!page-tool_man.doclang}
+      documentation markup language} in which the following variables are
+      recognized:
       {ul
       {- [$(tname)] the (term's) command's name.}
       {- [$(mname)] the main command name.}
@@ -426,8 +443,7 @@ module Cmd : sig
       parsed by [t]. *)
 
   val v : info -> 'a Term.t -> 'a t
-  (** [v] is {!make} which should be preferred. [v] will be deprecated in
-      the future. *)
+  (** [v] is {!make} which should be preferred. *)
 
   val group : ?default:'a Term.t -> info -> 'a t list -> 'a t
   (** [group i ?default cmds] is a command with information [i] that
@@ -441,7 +457,7 @@ module Cmd : sig
 
   (** {1:eval Evaluation}
 
-      Read {!page-cookbook.which_cmd_eval} in the cookbook if you
+      Read {!page-cookbook.cmds_which_eval} in the cookbook if you
       struggle to choose between this menagerie of evaluation
       functions.
 
@@ -455,7 +471,7 @@ module Cmd : sig
          a term error occurs.}}
 
       These exit codes are described in {!Exit.defaults} which is the
-      default value of the [?exits] argument of function {!val-info}. *)
+      default value of the [?exits] argument of the function {!val-info}. *)
 
   val eval :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
@@ -496,7 +512,8 @@ module Cmd : sig
   (** {2:eval_low Low level evaluation}
 
       This interface gives more information on command evaluation results
-      and lets you choose how to map evaluation results to exit codes. *)
+      and lets you choose how to map evaluation results to exit codes.
+      All evaluation functions are wrappers around {!eval_value}. *)
 
   type 'a eval_ok =
   [ `Ok of 'a (** The term of the command evaluated to this value. *)
@@ -509,10 +526,6 @@ module Cmd : sig
   | `Term (** A term evaluation error occurred. *)
   | `Exn (** An uncaught exception occurred. *) ]
   (** The type for erroring evaluation results. *)
-
-  type 'a eval_exit =
-  [ `Ok of 'a (** The term of the command evaluated to this value. *)
-  | `Exit of Exit.code (** The evaluation wants to exit with this code. *) ]
 
   val eval_value :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
@@ -532,20 +545,28 @@ module Cmd : sig
       {- [err] is the formatter used to print error messages
          (defaults to {!Format.err_formatter}).}} *)
 
+  type 'a eval_exit =
+  [ `Ok of 'a (** The term of the command evaluated to this value. *)
+  | `Exit of Exit.code (** The evaluation wants to exit with this code. *) ]
+  (** The type for evaluation exits. *)
+
   val eval_value' :
     ?help:Format.formatter -> ?err:Format.formatter -> ?catch:bool ->
     ?env:(string -> string option) -> ?argv:string array -> ?term_err:int ->
     'a t -> 'a eval_exit
   (** [eval_value'] is like {!eval_value}, but if the command term
-      does not evaluate, returns an exit code like the
-      {{!eval}evaluation} function do (which can be {!Exit.ok} in case
-      help or version was requested). *)
+      does not evaluate to [Ok (`Ok v)], returns an exit code like the
+      higher-level {{!val-eval}evaluation} functions do (which can be
+      {!Exit.ok} in case help or version was requested). *)
 
   val eval_peek_opts :
     ?version_opt:bool -> ?env:(string -> string option) ->
     ?argv:string array -> 'a Term.t ->
     'a option * ('a eval_ok, eval_error) result
-  (** [eval_peek_opts version_opt argv t] evaluates [t], a term made
+  (** {b WARNING.} You are highly encouraged not to use this
+      function it may be removed in the future.
+
+      [eval_peek_opts version_opt argv t] evaluates [t], a term made
       of optional arguments only, with the command line [argv]
       (defaults to {!Sys.argv}). In this evaluation, unknown optional
       arguments and positional arguments are ignored.
@@ -570,7 +591,7 @@ module Cmd : sig
       {b Note.} Positional arguments can't be peeked without the full
       specification of the command line: we can't tell apart a
       positional argument from the value of an unknown optional
-      argument.  *)
+      argument. *)
 end
 
 (** Terms for command line arguments.
@@ -601,11 +622,15 @@ module Arg : sig
     ?complete_dir:bool ->
     ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
     'a conv
-  (** [conv ~docv (parse, print)] is an argument converter
-      parsing values with [parse] and printing them with
-      [print]. [docv] is a documentation meta-variable used in the
-      documentation to stand for the argument value, defaults to
-      ["VALUE"]. *)
+  (** [conv ~docv (parse, print)] is an argument converter with:
+      {ul
+      {- [parse] the function for parsing arguments.}
+      {- [print] the function for printing parsed arguments.}
+      {- [docv] the meta-variable used in the documentation
+         to stand for the argument value, defaults to ["VALUE"].
+         This value can be referred to as [$(docv)] in the doc string
+         of arguments and can be overriden by the {!val-info} value of an
+         argument.}} *)
 
   val conv' :
     ?complete:(string -> (string * string) list) ->
@@ -640,25 +665,27 @@ module Arg : sig
       [Some] value. It is used for command line arguments that default
       to [None] when absent. If provided, [none] is used with [conv]'s
       printer to document the value taken on absence; to document
-      a more complex behaviour use the [absent] argument of {!val-info}. *)
+      a more complex behaviour use the [absent] argument of {!val-info}.
+      If you cannot construct an ['a] value use {!some}. *)
 
   val some : ?none:string -> 'a conv -> 'a option conv
   (** [some ?none c] is like [some'] but [none] is described as a
-      string that will be rendered in bold. *)
+      string that will be rendered in bold. Use the [absent] argument
+      of {!val-info} to document more complex behaviours. *)
 
-(** {1:arginfo Arguments and their information}
-
-    Argument information defines the man page information of an
-    argument and, for optional arguments, its names. An environment
-    variable can also be specified to read the argument value from
-    if the argument is absent from the command line and the variable
-    is defined. *)
+  (** {1:arginfo Arguments} *)
 
   type 'a t
   (** The type for arguments holding data of type ['a]. *)
 
   type info
-  (** The type for information about command line arguments. *)
+  (** The type for information about command line arguments.
+
+      Argument information defines the man page information of an
+      argument and, for optional arguments, its names. An environment
+      variable can also be specified to read get the argument value from
+      if the argument is absent from the command line and the variable
+      is defined. *)
 
   val info :
     ?deprecated:string -> ?absent:string -> ?docs:Manpage.section_name ->
@@ -667,9 +694,9 @@ module Arg : sig
       an argument.
       {ul
       {- [names] defines the names under which an optional argument
-         can be referred to. Strings of length [1] (["c"]) define
-         short option names (["-c"]), longer strings (["count"])
-         define long option names (["--count"]). [names] must be empty
+         can be referred to. Strings of length [1] like ["c"]) define
+         short option names ["-c"], longer strings like ["count"])
+         define long option names ["--count"]. [names] must be empty
          for positional arguments.}
       {- [env] defines the name of an environment variable which is
          looked up for defining the argument if it is absent from the
@@ -704,9 +731,9 @@ module Arg : sig
   (** [f & v] is [f v], a right associative composition operator for
       specifying argument terms. *)
 
-(** {1:optargs Optional arguments}
+(** {2:optargs Optional arguments}
 
-    The information of an optional argument must have at least
+    The {{!type-info}information} of an optional argument must have at least
     one name or [Invalid_argument] is raised. *)
 
   val flag : info -> bool t
@@ -749,8 +776,11 @@ module Arg : sig
       [v] if the option is absent from the command line. Otherwise
       it has the value of the option as converted by [c].
 
-      If [vopt] is provided the value of the optional argument is itself
-      optional, taking the value [vopt] if unspecified on the command line. *)
+      If [vopt] is provided the value of the optional argument is
+      itself optional, taking the value [vopt] if unspecified on the
+      command line.  {b Warning} using [vopt] is
+      {{!page-cookbook.tip_avoid_default_option_values}not
+      recommended}. *)
 
   val opt_all : ?vopt:'a -> 'a conv -> 'a list -> info -> 'a list t
   (** [opt_all vopt c v i] is like {!opt} except the optional argument may
@@ -758,9 +788,9 @@ module Arg : sig
       per occurrence of the flag in the order found on the command line.
       It holds the list [v] if the flag is absent from the command line. *)
 
-  (** {1:posargs Positional arguments}
+  (** {2:posargs Positional arguments}
 
-      The information of a positional argument must have no name
+      The {{!type-info}information} of a positional argument must have no name
       or [Invalid_argument] is raised. Positional arguments indexing
       is zero-based.
 
@@ -801,17 +831,17 @@ module Arg : sig
   (** [pos_right] is like {!pos_left} except it holds all the positional
       arguments found on the right of the specified positional argument. *)
 
-  (** {1:argterms Arguments as terms} *)
+  (** {2:argterms Converting to terms} *)
 
   val value : 'a t -> 'a Term.t
   (** [value a] is a term that evaluates to [a]'s value. *)
 
   val required : 'a option t -> 'a Term.t
   (** [required a] is a term that fails if [a]'s value is [None] and
-      evaluates to the value of [Some] otherwise. Use this for required
-      positional arguments (it can also be used for defining required
-      optional arguments, but from a user interface perspective this
-      shouldn't be done, it is a contradiction in terms). *)
+      evaluates to the value of [Some] otherwise. Use this in combination
+      with {!Arg.some'} for required
+      positional arguments. {b Warning} using this on optional arguments
+      is {{!page-cookbook.tip_avoid_required_opt}not recommended}. *)
 
   val non_empty : 'a list t -> 'a list Term.t
   (** [non_empty a] is term that fails if [a]'s list is empty and
@@ -824,7 +854,7 @@ module Arg : sig
       for lists of flags or options where the last occurrence takes precedence
       over the others. *)
 
-  (** {1:predef Predefined arguments} *)
+  (** {2:predef Predefined arguments} *)
 
   val man_format : Manpage.format Term.t
   (** [man_format] is a term that defines a [--man-format] option and
@@ -864,20 +894,6 @@ module Arg : sig
 
       @raise Invalid_argument if [l] is empty. *)
 
-  val file : string conv
-  (** [file] converts a value with the identity function and
-      checks with {!Sys.file_exists} that a file with that name exists. *)
-
-  val dir : string conv
-  (** [dir] converts a value with the identity function and checks
-      with {!Sys.file_exists} and {!Sys.is_directory}
-      that a directory with that name exists. *)
-
-  val non_dir_file : string conv
-  (** [non_dir_file] converts a value with the identity function and checks
-      with {!Sys.file_exists} and {!Sys.is_directory}
-      that a non directory file with that name exists. *)
-
   val list : ?sep:char -> 'a conv -> 'a list conv
   (** [list sep c] splits the argument at each [sep] (defaults to [','])
       character and converts each substrings with [c]. *)
@@ -905,6 +921,30 @@ module Arg : sig
   (** [t4 sep c0 c1 c2 c3] splits the argument at the {e first} three [sep]
       characters (defaults to [',']) respectively converts the substrings
       with [c0], [c1], [c2] and [c3]. *)
+
+  (** {2:files Files and directories}
+
+      {b Warning.} These converter report errors whenever the requested
+      file system object does not exist. However nothing guarantees
+      you it will still exist at the time you act upon them. So they
+      are only mildly useful and using a {!string} and/or an argument
+      converter with your own file path data structure is often
+      equally useful as you will anyways have to treat these error cases
+      in your tool function. *)
+
+  val file : string conv
+  (** [file] converts a value with the identity function and checks
+      with {!Sys.file_exists} that a file with that name exists. *)
+
+  val dir : string conv
+  (** [dir] converts a value with the identity function and checks
+      with {!Sys.file_exists} and {!Sys.is_directory}
+      that a directory with that name exists. *)
+
+  val non_dir_file : string conv
+  (** [non_dir_file] converts a value with the identity function and checks
+      with {!Sys.file_exists} and {!Sys.is_directory}
+      that a non directory file with that name exists. *)
 
   (** {1:doc_helpers Documentation formatting helpers} *)
 
