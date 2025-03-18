@@ -5,13 +5,19 @@
 
 (** Command line arguments as terms. *)
 
-type 'a parser = string -> [ `Ok of 'a | `Error of string ]
+type 'a parser = string -> ('a, string) result
 type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv = 'a Cmdliner_base.conv =
   { docv : string;
     parse : 'a parser;
     print : 'a printer;
     complete : Cmdliner_base.complete; }
+
+val conv' :
+  ?complete:(string -> (string * string) list) ->
+  ?complete_file:bool ->
+  ?complete_dir:bool ->
+  ?docv:string -> 'a parser * 'a printer -> 'a conv
 
 val conv :
   ?complete:(string -> (string * string) list) ->
@@ -20,12 +26,7 @@ val conv :
   ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
   'a conv
 
-val conv' :
-  ?complete:(string -> (string * string) list) ->
-  ?complete_file:bool ->
-  ?complete_dir:bool ->
-  ?docv:string -> (string -> ('a, string) result) * 'a printer -> 'a conv
-
+val conv_parser' : 'a conv -> string -> ('a, string) result
 val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
 val conv_printer : 'a conv -> 'a printer
 val conv_docv : 'a conv -> string
@@ -90,11 +91,7 @@ val list : ?sep:char -> 'a conv -> 'a list conv
 val array : ?sep:char -> 'a conv -> 'a array conv
 val pair : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
 val t2 : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
-
-val t3 :
-  ?sep:char -> 'a conv ->'b conv -> 'c conv ->
-  ('a * 'b * 'c) conv
-
+val t3 : ?sep:char -> 'a conv ->'b conv -> 'c conv -> ('a * 'b * 'c) conv
 val t4 :
   ?sep:char -> 'a conv ->'b conv -> 'c conv -> 'd conv ->
   ('a * 'b * 'c * 'd) conv

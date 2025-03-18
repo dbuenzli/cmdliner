@@ -40,19 +40,19 @@ let conv ?complete ?complete_file ?complete_dir ?docv (parse, print) =
   let complete =
     Cmdliner_base.complete ?complete ?file:complete_file ?dir:complete_dir ()
   in
-  let parse s = match parse s with Ok v -> `Ok v | Error (`Msg e) -> `Error e in
+  let parse s = match parse s with Ok _ as v -> v | Error (`Msg e) -> Error e in
   _conv ?docv parse print complete
 
 let conv' ?complete ?complete_file ?complete_dir ?docv (parse, print) =
   let complete =
     Cmdliner_base.complete ?complete ?file:complete_file ?dir:complete_dir ()
   in
-  let parse s = match parse s with Ok v -> `Ok v | Error e -> `Error e in
   _conv ?docv parse print complete
 
 let conv_parser {parse; _} =
-  fun s -> match parse s with `Ok v -> Ok v | `Error e -> Error (`Msg e)
+  fun s -> match parse s with Ok _ as v -> v | Error e -> Error (`Msg e)
 
+let conv_parser' {parse; _} = parse
 let conv_printer {print; _} = print
 let conv_docv {docv; _} = docv
 
@@ -78,8 +78,7 @@ let ( & ) f x = f x
 let err e = Error (`Parse e)
 
 let parse_to_list parser s = match parser s with
-| `Ok v -> `Ok [v]
-| `Error _ as e -> e
+| Ok v -> Ok [v] | Error _ as e -> e
 
 let report_deprecated_env ei e = match Cmdliner_info.Env.info_deprecated e with
 | None -> ()
@@ -97,8 +96,8 @@ let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
     | None -> Ok absent
     | Some v ->
         match parse v with
-        | `Error e -> err (Cmdliner_msg.err_env_parse env ~err:e)
-        | `Ok v -> report_deprecated_env ei env; Ok v
+        | Error e -> err (Cmdliner_msg.err_env_parse env ~err:e)
+        | Ok _ as v -> report_deprecated_env ei env; v
 
 let arg_to_args a complete = Cmdliner_info.Arg.Set.singleton a complete
 let list_to_args f l complete =
@@ -181,8 +180,7 @@ let vflag_all v l =
   list_to_args flag l Cmdliner_base.no_complete, convert
 
 let parse_opt_value parse f v = match parse v with
-| `Ok v -> v
-| `Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
+| Ok v -> v | Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
 
 let opt ?vopt {parse; print; complete} v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -237,8 +235,8 @@ let opt_all ?vopt {parse; print; complete} v a =
 (* Positional arguments *)
 
 let parse_pos_value parse a v = match parse v with
-| `Ok v -> v
-| `Error err -> failwith (Cmdliner_msg.err_pos_parse a ~err)
+| Ok v -> v
+| Error err -> failwith (Cmdliner_msg.err_pos_parse a ~err)
 
 let pos ?(rev = false) k {parse; print; complete} v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else

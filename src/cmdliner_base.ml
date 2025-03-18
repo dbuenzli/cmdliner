@@ -162,7 +162,7 @@ let no_complete = complete ()
 
 (* Converters *)
 
-type 'a parser = string -> [ `Ok of 'a | `Error of string ]
+type 'a parser = string -> ('a, string) result
 type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv =
   { docv : string;
@@ -172,8 +172,8 @@ type 'a conv =
 
 let some ?(none = "") conv =
   let parse s = match conv.parse s with
-  | `Ok v -> `Ok (Some v)
-  | `Error _ as e -> e
+  | Ok v -> Ok (Some v)
+  | Error _ as e -> e
   in
   let print ppf v = match v with
   | None -> Format.pp_print_string ppf none
@@ -183,8 +183,8 @@ let some ?(none = "") conv =
 
 let some' ?none conv =
   let parse s = match conv.parse s with
-  | `Ok v -> `Ok (Some v)
-  | `Error _ as e -> e
+  | Ok v -> Ok (Some v)
+  | Error _ as e -> e
   in
   let print ppf = function
   | None -> (match none with None -> () | Some v -> conv.print ppf v)
@@ -193,21 +193,21 @@ let some' ?none conv =
   { conv with parse; print; }
 
 let bool =
-  let parse s = try `Ok (bool_of_string s) with
+  let parse s = try Ok (bool_of_string s) with
   | Invalid_argument _ ->
-      `Error (err_invalid_val s (alts_str ~quoted:true ["true"; "false"]))
+      Error (err_invalid_val s (alts_str ~quoted:true ["true"; "false"]))
   in
   {docv = "BOOL"; parse; print = Format.pp_print_bool; complete = no_complete}
 
 let char =
   let parse s = match String.length s = 1 with
-  | true -> `Ok s.[0]
-  | false -> `Error (err_invalid_val s "expected a character")
+  | true -> Ok s.[0]
+  | false -> Error (err_invalid_val s "expected a character")
   in
   {docv = "CHAR"; parse; print = pp_char; complete = no_complete}
 
 let parse_with t_of_str exp s =
-  try `Ok (t_of_str s) with Failure _ -> `Error (err_invalid_val s exp)
+  try Ok (t_of_str s) with Failure _ -> Error (err_invalid_val s exp)
 
 let int =
   let parse = parse_with int_of_string "expected an integer" in
@@ -235,21 +235,19 @@ let float =
   {docv = "DBL"; parse; print = Format.pp_print_float; complete = no_complete}
 
 let string =
-  { docv = "VALUE"; parse = (fun s -> `Ok s); print = pp_str;
-    complete = no_complete}
-
+  { docv = "VALUE"; parse = Result.ok; print = pp_str; complete = no_complete}
 
 let enum sl =
   if sl = [] then invalid_arg err_empty_list else
   let t = Cmdliner_trie.of_list sl in
   let parse s = match Cmdliner_trie.find t s with
-  | `Ok _ as r -> r
+  | `Ok v -> Ok v
   | `Ambiguous ->
       let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
-      `Error (err_ambiguous ~kind:"enum value" s ~ambs)
+      Error (err_ambiguous ~kind:"enum value" s ~ambs)
   | `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
-        `Error (err_invalid_val s ("expected " ^ (alts_str ~quoted:true alts)))
+        Error (err_invalid_val s ("expected " ^ (alts_str ~quoted:true alts)))
   in
   let print ppf v =
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
@@ -263,29 +261,29 @@ let enum sl =
 
 let file =
   let parse s = match Sys.file_exists s with
-  | true -> `Ok s
-  | false -> `Error (err_no "file or directory" s)
+  | true -> Ok s
+  | false -> Error (err_no "file or directory" s)
   in
   {docv = "PATH"; parse; print = pp_str;
    complete = complete ~dir:true ~file:true ()}
 
 let dir =
   let parse s = match Sys.file_exists s with
-  | true -> if Sys.is_directory s then `Ok s else `Error (err_not_dir s)
-  | false -> `Error (err_no "directory" s)
+  | true -> if Sys.is_directory s then Ok s else Error (err_not_dir s)
+  | false -> Error (err_no "directory" s)
   in
   {docv = "DIR"; parse; print= pp_str; complete = complete ~dir:true ()}
 
 let non_dir_file =
   let parse s = match Sys.file_exists s with
-  | true -> if not (Sys.is_directory s) then `Ok s else `Error (err_is_dir s)
-  | false -> `Error (err_no "file" s)
+  | true -> if not (Sys.is_directory s) then Ok s else Error (err_is_dir s)
+  | false -> Error (err_no "file" s)
   in
   {docv = "FILE"; parse; print = pp_str; complete = complete ~file:true ()}
 
 let split_and_parse sep parse s = (* raises [Failure] *)
   let parse sub = match parse sub with
-  | `Error e -> failwith e | `Ok v -> v
+  | Error e -> failwith e | Ok v -> v
   in
   let rec split accum j =
     let i = try String.rindex_from s j sep with Not_found -> -1 in
@@ -300,8 +298,8 @@ let split_and_parse sep parse s = (* raises [Failure] *)
   split [] (String.length s - 1)
 
 let list ?(sep = ',') conv =
-  let parse s = try `Ok (split_and_parse sep conv.parse s) with
-  | Failure e -> `Error (err_element "list" s e)
+  let parse s = try Ok (split_and_parse sep conv.parse s) with
+  | Failure e -> Error (err_element "list" s e)
   in
   let rec print ppf = function
   | v :: l -> conv.print ppf v; if (l <> []) then (pp_char ppf sep; print ppf l)
@@ -311,8 +309,8 @@ let list ?(sep = ',') conv =
   {docv; parse; print; complete = no_complete}
 
 let array ?(sep = ',') conv =
-  let parse s = try `Ok (Array.of_list (split_and_parse sep conv.parse s)) with
-  | Failure e -> `Error (err_element "array" s e)
+  let parse s = try Ok (Array.of_list (split_and_parse sep conv.parse s)) with
+  | Failure e -> Error (err_element "array" s e)
   in
   let print ppf v =
     let max = Array.length v - 1 in
@@ -332,11 +330,11 @@ let split_left sep s =
 
 let pair ?(sep = ',') conv0 conv1 =
   let parse s = match split_left sep s with
-  | None -> `Error (err_sep_miss sep s)
+  | None -> Error (err_sep_miss sep s)
   | Some (v0, v1) ->
       match conv0.parse v0, conv1.parse v1 with
-      | `Ok v0, `Ok v1 -> `Ok (v0, v1)
-      | `Error e, _ | _, `Error e -> `Error (err_element "pair" s e)
+      | Ok v0, Ok v1 -> Ok (v0, v1)
+      | Error e, _ | _, Error e -> Error (err_element "pair" s e)
   in
   let print ppf (v0, v1) = pp ppf "%a%c%a" conv0.print v0 sep conv1.print v1 in
   let docv = strf "%s%c%s" conv0.docv sep conv1.docv in
@@ -345,15 +343,15 @@ let pair ?(sep = ',') conv0 conv1 =
 let t2 = pair
 let t3 ?(sep = ',') conv0 conv1 conv2 =
   let parse s = match split_left sep s with
-  | None -> `Error (err_sep_miss sep s)
+  | None -> Error (err_sep_miss sep s)
   | Some (v0, s) ->
       match split_left sep s with
-      | None -> `Error (err_sep_miss sep s)
+      | None -> Error (err_sep_miss sep s)
       | Some (v1, v2) ->
           match conv0.parse v0, conv1.parse v1, conv2.parse v2 with
-          | `Ok v0, `Ok v1, `Ok v2 -> `Ok (v0, v1, v2)
-          | `Error e, _, _ | _, `Error e, _ | _, _, `Error e ->
-              `Error (err_element "triple" s e)
+          | Ok v0, Ok v1, Ok v2 -> Ok (v0, v1, v2)
+          | Error e, _, _ | _, Error e, _ | _, _, Error e ->
+              Error (err_element "triple" s e)
   in
   let print ppf (v0, v1, v2) =
     pp ppf "%a%c%a%c%a" conv0.print v0 sep conv1.print v1 sep conv2.print v2
@@ -363,19 +361,19 @@ let t3 ?(sep = ',') conv0 conv1 conv2 =
 
 let t4 ?(sep = ',') conv0 conv1 conv2 conv3 =
   let parse s = match split_left sep s with
-  | None -> `Error (err_sep_miss sep s)
+  | None -> Error (err_sep_miss sep s)
   | Some(v0, s) ->
       match split_left sep s with
-      | None -> `Error (err_sep_miss sep s)
+      | None -> Error (err_sep_miss sep s)
       | Some (v1, s) ->
           match split_left sep s with
-          | None -> `Error (err_sep_miss sep s)
+          | None -> Error (err_sep_miss sep s)
           | Some (v2, v3) ->
               match conv0.parse v0, conv1.parse v1, conv2.parse v2,
                     conv3.parse v3 with
-              | `Ok v1, `Ok v2, `Ok v3, `Ok v4 -> `Ok (v1, v2, v3, v4)
-              | `Error e, _, _, _ | _, `Error e, _, _ | _, _, `Error e, _
-              | _, _, _, `Error e -> `Error (err_element "quadruple" s e)
+              | Ok v1, Ok v2, Ok v3, Ok v4 -> Ok (v1, v2, v3, v4)
+              | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _
+              | _, _, _, Error e -> Error (err_element "quadruple" s e)
   in
   let print ppf (v0, v1, v2, v3) =
     pp ppf "%a%c%a%c%a%c%a" conv0.print v0 sep conv1.print v1 sep conv2.print
@@ -388,11 +386,11 @@ let t4 ?(sep = ',') conv0 conv1 conv2 conv3 =
   {docv; parse; print; complete = no_complete}
 
 let env_bool_parse s = match String.lowercase_ascii s with
-| "" | "false" | "no" | "n" | "0" -> `Ok false
-| "true" | "yes" | "y" | "1" -> `Ok true
+| "" | "false" | "no" | "n" | "0" -> Ok false
+| "true" | "yes" | "y" | "1" -> Ok true
 | s ->
     let alts = alts_str ~quoted:true ["true"; "yes"; "false"; "no" ] in
-    `Error (err_invalid_val s alts)
+    Error (err_invalid_val s alts)
 
 let string_has_prefix ~prefix s =
   let prefix_len = String.length prefix in

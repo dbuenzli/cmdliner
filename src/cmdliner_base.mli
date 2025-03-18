@@ -46,7 +46,7 @@ val complete :
 
 (** {1:conv Textual OCaml value converters} *)
 
-type 'a parser = string -> [ `Ok of 'a | `Error of string ]
+type 'a parser = string -> ('a, string) result
 type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv =
   { docv : string;

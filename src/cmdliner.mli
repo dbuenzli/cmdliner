@@ -610,19 +610,21 @@ module Arg : sig
     line to an OCaml value. {{!converters}Predefined converters}
     are provided for many types of the standard library. *)
 
+  type 'a parser = string -> ('a, string) result
+  (** The type for argument parsers. *)
+
   type 'a printer = Format.formatter -> 'a -> unit
   (** The type for converted argument printers. *)
 
   type 'a conv
   (** The type for argument converters. *)
 
-  val conv :
+  val conv' :
     ?complete:(string -> (string * string) list) ->
     ?complete_file:bool ->
     ?complete_dir:bool ->
-    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
-    'a conv
-  (** [conv ~docv (parse, print)] is an argument converter with:
+    ?docv:string -> 'a parser * 'a printer -> 'a conv
+  (** [conv' ~docv (parse, print)] is an argument converter with:
       {ul
       {- [parse] the function for parsing arguments.}
       {- [print] the function for printing parsed arguments.}
@@ -632,14 +634,16 @@ module Arg : sig
          of arguments and can be overriden by the {!val-info} value of an
          argument.}} *)
 
-  val conv' :
+  val conv :
     ?complete:(string -> (string * string) list) ->
     ?complete_file:bool ->
     ?complete_dir:bool ->
-    ?docv:string -> (string -> ('a, string) result) * 'a printer ->
+    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
     'a conv
-  (** [conv'] is like {!val-conv} but the [Error] case has an unlabelled
-      string. *)
+  (** [conv] is like {!val-conv'} but the [Error] case has [`Msg] label. *)
+
+  val conv_parser' : 'a conv -> 'a parser
+  (** [conv_parser' c] is the parser of [c]. *)
 
   val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
   (** [conv_parser c] is the parser of [c]. *)
