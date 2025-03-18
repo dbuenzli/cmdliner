@@ -23,6 +23,7 @@
   see manpages in `emacs`'s compilation mode which unhelpfully
   hardcodes `PAGER=""`.
 
+- Fix synopsis rendering of required optional arguments (#203).
 - Added a proper test suite to the library to check for regressions.
   Replaces most of the test executables that had to be run and inspected
   manually (#205).

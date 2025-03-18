@@ -130,7 +130,10 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
       let any_option = "[$(i,OPTION)]…" in
       if count = 0 || count > 3 then any_option else
       let syn a =
-        strf "[%s]" (synopsis_opt_arg a (Cmdliner_info.Arg.opt_name_sample a))
+        let syn = synopsis_opt_arg a (Cmdliner_info.Arg.opt_name_sample a) in
+        if Cmdliner_info.Arg.is_req a
+        then syn
+        else strf "[%s]" syn
       in
       let oargs = List.sort order_args oargs in
       let oargs = String.concat " " (List.map syn oargs) in

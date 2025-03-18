@@ -282,22 +282,22 @@ let test_opt_required =
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   error `Parse [] @@ __POS_OF__
 {|test_opt_req: required option --req is missing
-Usage: test_opt_req [--req=ARG] [OPTION]…
+Usage: test_opt_req --req=ARG [OPTION]…
 Try 'test_opt_req --help' for more information.
 |};
     error `Term ["a"] @@ __POS_OF__
 {|test_opt_req: too many arguments, don't know what to do with 'a'
-Usage: test_opt_req [--req=ARG] [OPTION]…
+Usage: test_opt_req --req=ARG [OPTION]…
 Try 'test_opt_req --help' for more information.
 |};
     error `Term ["-ra"; "a"] @@ __POS_OF__
 {|test_opt_req: too many arguments, don't know what to do with 'a'
-Usage: test_opt_req [--req=ARG] [OPTION]…
+Usage: test_opt_req --req=ARG [OPTION]…
 Try 'test_opt_req --help' for more information.
 |};
     error `Parse ["-r"] @@ __POS_OF__
 {|test_opt_req: option '-r' needs an argument
-Usage: test_opt_req [--req=ARG] [OPTION]…
+Usage: test_opt_req --req=ARG [OPTION]…
 Try 'test_opt_req --help' for more information.
 |};
   (**)
@@ -306,7 +306,7 @@ Try 'test_opt_req --help' for more information.
        test_opt_req - Test optional required arguments (don't do this)
 
 SYNOPSIS
-       test_opt_req [--req=ARG] [OPTION]…
+       test_opt_req --req=ARG [OPTION]…
 
 OPTIONS
        -r ARG, --req=ARG (required)
