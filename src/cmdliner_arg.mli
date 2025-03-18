@@ -5,15 +5,24 @@
 
 (** Command line arguments as terms. *)
 
-type 'a parser = string -> ('a, string) result
 type 'a printer = Format.formatter -> 'a -> unit
 type 'a conv
+
+module Conv : sig
+  type 'a parser = string -> ('a, string) result
+  type 'a fmt = Format.formatter -> 'a -> unit
+  type 'a t = 'a conv
+
+  val docv : 'a conv -> string
+  val parser : 'a conv -> 'a parser
+  val pp : 'a conv -> 'a fmt
+end
 
 val conv' :
   ?complete:(string -> (string * string) list) ->
   ?complete_file:bool ->
   ?complete_dir:bool ->
-  ?docv:string -> 'a parser * 'a printer -> 'a conv
+  ?docv:string -> 'a Conv.parser * 'a printer -> 'a conv
 
 val conv :
   ?complete:(string -> (string * string) list) ->
@@ -22,7 +31,6 @@ val conv :
   ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
   'a conv
 
-val conv_parser' : 'a conv -> string -> ('a, string) result
 val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
 val conv_printer : 'a conv -> 'a printer
 val conv_docv : 'a conv -> string

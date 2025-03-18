@@ -604,26 +604,42 @@ end
     be specified during the {{!Arg.argterms}conversion} to a term. *)
 module Arg : sig
 
-(** {1:argconv Argument converters}
+(** {1:argconv Argument converters} *)
 
-    An argument converter transforms a string argument of the command
-    line to an OCaml value. {{!converters}Predefined converters}
-    are provided for many types of the standard library. *)
+  (** Argument converters.
 
-  type 'a parser = string -> ('a, string) result
-  (** The type for argument parsers. *)
+      An argument converter transforms a string argument of the command
+      line to an OCaml value. {{!converters}Predefined converters}
+      are provided for many types of the standard library. *)
+  module Conv : sig
 
-  type 'a printer = Format.formatter -> 'a -> unit
-  (** The type for converted argument printers. *)
+    type 'a parser = string -> ('a, string) result
+    (** The type for argument parsers. *)
 
-  type 'a conv
+    type 'a fmt = Format.formatter -> 'a -> unit
+    (** The type for argument formatters. *)
+
+    type 'a t
+    (** The type for argument converters. *)
+
+    val docv : 'a t -> string
+    (** [docv c] is [c]'s documentation meta-variable. *)
+
+    val parser : 'a t -> 'a parser
+    (** [parser c] is [c]'s argument parser. *)
+
+    val pp : 'a t -> 'a fmt
+    (** [pp c] is [c]'s argument formatter. *)
+  end
+
+  type 'a conv = 'a Conv.t
   (** The type for argument converters. *)
 
   val conv' :
     ?complete:(string -> (string * string) list) ->
     ?complete_file:bool ->
     ?complete_dir:bool ->
-    ?docv:string -> 'a parser * 'a printer -> 'a conv
+    ?docv:string -> 'a Conv.parser * 'a Conv.fmt -> 'a conv
   (** [conv' ~docv (parse, print)] is an argument converter with:
       {ul
       {- [parse] the function for parsing arguments.}
@@ -638,28 +654,9 @@ module Arg : sig
     ?complete:(string -> (string * string) list) ->
     ?complete_file:bool ->
     ?complete_dir:bool ->
-    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
+    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a Conv.fmt ->
     'a conv
   (** [conv] is like {!val-conv'} but the [Error] case has [`Msg] label. *)
-
-  val conv_parser' : 'a conv -> 'a parser
-  (** [conv_parser' c] is the parser of [c]. *)
-
-  val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
-  (** [conv_parser c] is the parser of [c]. *)
-
-  val conv_printer : 'a conv -> 'a printer
-  (** [conv_printer c] is the printer of [c]. *)
-
-  val conv_docv : 'a conv -> string
-  (** [conv_docv c] is [c]'s documentation meta-variable. *)
-
-  val parser_of_kind_of_string :
-    kind:string -> (string -> 'a option) ->
-    (string -> ('a, [`Msg of string]) result)
-  (** [parser_of_kind_of_string ~kind kind_of_string] is an argument
-      parser using the [kind_of_string] function for parsing and [kind]
-      to report errors (e.g. could be ["an integer"] for an [int] parser.). *)
 
   val some' : ?none:'a -> 'a conv -> 'a option conv
   (** [some' ?none c] is like the converter [c] except it returns
@@ -673,6 +670,7 @@ module Arg : sig
   (** [some ?none c] is like [some'] but [none] is described as a
       string that will be rendered in bold. Use the [absent] argument
       of {!val-info} to document more complex behaviours. *)
+
 
   (** {1:arginfo Arguments} *)
 
@@ -967,4 +965,29 @@ module Arg : sig
 
   val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
   (** [doc_alts_enum quoted alts] is [doc_alts quoted (List.map fst alts)]. *)
+
+  (** {1:deprecated Deprecated}
+
+      These identifiers are silently deprecated. It is unlikely that
+      they will be removed but you should prefer to use the {!Conv}
+      interface in new code. *)
+
+  type 'a printer = 'a Conv.fmt
+  (** Deprecated. Use {!Conv.fmt}. *)
+
+  val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
+  (** Deprecated. Use {!Conv.parser}. *)
+
+  val conv_printer : 'a conv -> 'a Conv.fmt
+  (** Deprecated. Use {!Conv.pp}. *)
+
+  val conv_docv : 'a conv -> string
+  (** Deprecated. Use {!Conv.docv}. *)
+
+  val parser_of_kind_of_string :
+    kind:string -> (string -> 'a option) ->
+    (string -> ('a, [`Msg of string]) result)
+  (** Deprecated. [parser_of_kind_of_string ~kind kind_of_string] is an argument
+      parser using the [kind_of_string] function for parsing and [kind]
+      to report errors (e.g. could be ["an integer"] for an [int] parser.). *)
 end

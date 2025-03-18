@@ -162,85 +162,95 @@ let no_complete = complete ()
 
 (* Converters *)
 
-type 'a parser = string -> ('a, string) result
-type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv =
-  { docv : string;
-    parse : 'a parser;
-    print : 'a printer;
-    complete : complete; }
+module Conv = struct
+  type nonrec complete = complete
+  type 'a parser = string -> ('a, string) result
+  type 'a fmt = Format.formatter -> 'a -> unit
+  type 'a t =
+    { docv : string;
+      parser : 'a parser;
+      pp : 'a fmt;
+      complete : complete; }
+
+  let make ?(complete = no_complete) ~docv ~parser ~pp () =
+    { docv; parser; pp; complete }
+
+  let docv c = c.docv
+  let parser c = c.parser
+  let pp c = c.pp
+  let complete c = c.complete
+end
+
+type 'a conv = 'a Conv.t
 
 let some ?(none = "") conv =
-  let parse s = match conv.parse s with
-  | Ok v -> Ok (Some v)
-  | Error _ as e -> e
+  let parser s = match Conv.parser conv s with
+  | Ok v -> Ok (Some v) | Error _ as e -> e
   in
-  let print ppf v = match v with
+  let pp ppf v = match v with
   | None -> Format.pp_print_string ppf none
-  | Some v -> conv.print ppf v
+  | Some v -> Conv.pp conv ppf v
   in
-  { conv with parse; print; }
+  { conv with parser; pp; }
 
 let some' ?none conv =
-  let parse s = match conv.parse s with
-  | Ok v -> Ok (Some v)
-  | Error _ as e -> e
+  let parser s = match (Conv.parser conv) s with
+  | Ok v -> Ok (Some v) | Error _ as e -> e
   in
-  let print ppf = function
-  | None -> (match none with None -> () | Some v -> conv.print ppf v)
-  | Some v -> conv.print ppf v
+  let pp ppf = function
+  | None -> (match none with None -> () | Some v -> (Conv.pp conv) ppf v)
+  | Some v -> Conv.pp conv ppf v
   in
-  { conv with parse; print; }
+  { conv with parser; pp }
 
 let bool =
-  let parse s = try Ok (bool_of_string s) with
+  let parser s = try Ok (bool_of_string s) with
   | Invalid_argument _ ->
       Error (err_invalid_val s (alts_str ~quoted:true ["true"; "false"]))
   in
-  {docv = "BOOL"; parse; print = Format.pp_print_bool; complete = no_complete}
+  Conv.make ~docv:"BOOL" ~parser ~pp:Format.pp_print_bool ()
 
 let char =
-  let parse s = match String.length s = 1 with
+  let parser s = match String.length s = 1 with
   | true -> Ok s.[0]
   | false -> Error (err_invalid_val s "expected a character")
   in
-  {docv = "CHAR"; parse; print = pp_char; complete = no_complete}
+  Conv.make ~docv:"CHAR" ~parser ~pp:pp_char ()
 
 let parse_with t_of_str exp s =
   try Ok (t_of_str s) with Failure _ -> Error (err_invalid_val s exp)
 
 let int =
-  let parse = parse_with int_of_string "expected an integer" in
-  {docv = "INT"; parse; print = Format.pp_print_int; complete =no_complete }
+  let parser = parse_with int_of_string "expected an integer" in
+  Conv.make ~docv:"INT" ~parser ~pp:Format.pp_print_int ()
 
 let int32 =
-  let parse = parse_with Int32.of_string "expected a 32-bit integer" in
-  let print ppf = pp ppf "%ld" in
-  {docv = "INT32"; parse; print; complete = no_complete}
+  let parser = parse_with Int32.of_string "expected a 32-bit integer" in
+  let pp ppf = pp ppf "%ld" in
+  Conv.make ~docv:"INT32" ~parser ~pp ()
 
 let int64 =
-  let parse = parse_with Int64.of_string "expected a 64-bit integer" in
-  let print ppf = pp ppf "%Ld" in
-  {docv = "INT64"; parse; print; complete = no_complete}
+  let parser = parse_with Int64.of_string "expected a 64-bit integer" in
+  let pp ppf = pp ppf "%Ld" in
+  Conv.make ~docv:"INT64" ~parser ~pp ()
 
 let nativeint =
-  let parse =
+  let parser =
     parse_with Nativeint.of_string "expected a processor-native integer"
   in
-  let print ppf = pp ppf "%nd" in
-  {docv = "NATIVEINT"; parse; print; complete = no_complete}
+  let pp ppf = pp ppf "%nd" in
+  Conv.make ~docv:"NATIVEINT" ~parser ~pp ()
 
 let float =
-  let parse = parse_with float_of_string "expected a floating point number" in
-  {docv = "DBL"; parse; print = Format.pp_print_float; complete = no_complete}
+  let parser = parse_with float_of_string "expected a floating point number" in
+  Conv.make ~docv:"DOUBLE" ~parser ~pp:Format.pp_print_float ()
 
-let string =
-  { docv = "VALUE"; parse = Result.ok; print = pp_str; complete = no_complete}
+let string = Conv.make ~docv:"VALUE" ~parser:Result.ok ~pp:pp_str ()
 
 let enum sl =
   if sl = [] then invalid_arg err_empty_list else
   let t = Cmdliner_trie.of_list sl in
-  let parse s = match Cmdliner_trie.find t s with
+  let parser s = match Cmdliner_trie.find t s with
   | `Ok v -> Ok v
   | `Ambiguous ->
       let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
@@ -249,7 +259,7 @@ let enum sl =
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
         Error (err_invalid_val s ("expected " ^ (alts_str ~quoted:true alts)))
   in
-  let print ppf v =
+  let pp ppf v =
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
     try pp_str ppf (List.assoc v sl_inv)
     with Not_found -> invalid_arg (err_incomplete_enum (List.map fst sl))
@@ -257,29 +267,31 @@ let enum sl =
   let complete =
     complete ~complete:(fun _prefix -> List.map (fun (s, _) -> s, "") sl) ()
   in
-  {docv = "ENUM"; parse; print; complete}
+  Conv.make ~docv:"ENUM" ~parser ~pp ~complete ()
 
 let file =
-  let parse s = match Sys.file_exists s with
+  let parser s = match Sys.file_exists s with
   | true -> Ok s
   | false -> Error (err_no "file or directory" s)
   in
-  {docv = "PATH"; parse; print = pp_str;
-   complete = complete ~dir:true ~file:true ()}
+  let complete = complete ~dir:true ~file:true () in
+  Conv.make ~docv:"PATH" ~parser ~pp:pp_str ~complete ()
 
 let dir =
-  let parse s = match Sys.file_exists s with
+  let parser s = match Sys.file_exists s with
   | true -> if Sys.is_directory s then Ok s else Error (err_not_dir s)
   | false -> Error (err_no "directory" s)
   in
-  {docv = "DIR"; parse; print= pp_str; complete = complete ~dir:true ()}
+  let complete = complete ~dir:true () in
+  Conv.make ~docv:"DIR" ~parser ~pp:pp_str ~complete ()
 
 let non_dir_file =
-  let parse s = match Sys.file_exists s with
+  let parser s = match Sys.file_exists s with
   | true -> if not (Sys.is_directory s) then Ok s else Error (err_is_dir s)
   | false -> Error (err_no "file" s)
   in
-  {docv = "FILE"; parse; print = pp_str; complete = complete ~file:true ()}
+  let complete = complete ~file:true () in
+  Conv.make ~docv:"FILE" ~parser ~pp:pp_str ~complete ()
 
 let split_and_parse sep parse s = (* raises [Failure] *)
   let parse sub = match parse sub with
@@ -298,28 +310,30 @@ let split_and_parse sep parse s = (* raises [Failure] *)
   split [] (String.length s - 1)
 
 let list ?(sep = ',') conv =
-  let parse s = try Ok (split_and_parse sep conv.parse s) with
+  let parser s = try Ok (split_and_parse sep (Conv.parser conv) s) with
   | Failure e -> Error (err_element "list" s e)
   in
-  let rec print ppf = function
-  | v :: l -> conv.print ppf v; if (l <> []) then (pp_char ppf sep; print ppf l)
+  let rec pp ppf = function
   | [] -> ()
+  | v :: l ->
+      (Conv.pp conv) ppf v; if (l <> []) then (pp_char ppf sep; pp ppf l)
   in
   let docv = strf "%s[%c…]" conv.docv sep in
-  {docv; parse; print; complete = no_complete}
+  Conv.make ~docv ~parser ~pp ()
 
 let array ?(sep = ',') conv =
-  let parse s = try Ok (Array.of_list (split_and_parse sep conv.parse s)) with
-  | Failure e -> Error (err_element "array" s e)
+  let parser s =
+    try Ok (Array.of_list (split_and_parse sep (Conv.parser conv) s)) with
+    | Failure e -> Error (err_element "array" s e)
   in
-  let print ppf v =
+  let pp ppf v =
     let max = Array.length v - 1 in
     for i = 0 to max do
-      conv.print ppf v.(i); if i <> max then pp_char ppf sep
+      conv.pp ppf v.(i); if i <> max then pp_char ppf sep
     done
   in
   let docv = strf "%s[%c…]" conv.docv sep in
-  {docv; parse; print; complete = no_complete}
+  Conv.make ~docv ~parser ~pp ()
 
 let split_left sep s =
   try
@@ -329,38 +343,41 @@ let split_left sep s =
   with Not_found -> None
 
 let pair ?(sep = ',') conv0 conv1 =
-  let parse s = match split_left sep s with
+  let parser s = match split_left sep s with
   | None -> Error (err_sep_miss sep s)
   | Some (v0, v1) ->
-      match conv0.parse v0, conv1.parse v1 with
+      match (Conv.parser conv0) v0, (Conv.parser conv1) v1 with
       | Ok v0, Ok v1 -> Ok (v0, v1)
       | Error e, _ | _, Error e -> Error (err_element "pair" s e)
   in
-  let print ppf (v0, v1) = pp ppf "%a%c%a" conv0.print v0 sep conv1.print v1 in
-  let docv = strf "%s%c%s" conv0.docv sep conv1.docv in
-  {docv; parse; print; complete = no_complete}
+  let pp ppf (v0, v1) =
+    pp ppf "%a%c%a" (Conv.pp conv0) v0 sep (Conv.pp conv1) v1
+  in
+  let docv = strf "%s%c%s" (Conv.docv conv0) sep (Conv.docv conv1) in
+  Conv.make ~docv ~parser ~pp ()
 
 let t2 = pair
 let t3 ?(sep = ',') conv0 conv1 conv2 =
-  let parse s = match split_left sep s with
+  let parser s = match split_left sep s with
   | None -> Error (err_sep_miss sep s)
   | Some (v0, s) ->
       match split_left sep s with
       | None -> Error (err_sep_miss sep s)
       | Some (v1, v2) ->
-          match conv0.parse v0, conv1.parse v1, conv2.parse v2 with
+          match (Conv.parser conv0) v0, (Conv.parser conv1) v1,
+                (Conv.parser conv2) v2 with
           | Ok v0, Ok v1, Ok v2 -> Ok (v0, v1, v2)
           | Error e, _, _ | _, Error e, _ | _, _, Error e ->
               Error (err_element "triple" s e)
   in
-  let print ppf (v0, v1, v2) =
-    pp ppf "%a%c%a%c%a" conv0.print v0 sep conv1.print v1 sep conv2.print v2
+  let pp ppf (v0, v1, v2) =
+    pp ppf "%a%c%a%c%a" conv0.pp v0 sep conv1.pp v1 sep conv2.pp v2
   in
   let docv = strf "%s%c%s%c%s" conv0.docv sep conv1.docv sep conv2.docv in
-  {docv; parse; print; complete = no_complete}
+  Conv.make ~docv ~parser ~pp ()
 
 let t4 ?(sep = ',') conv0 conv1 conv2 conv3 =
-  let parse s = match split_left sep s with
+  let parser s = match split_left sep s with
   | None -> Error (err_sep_miss sep s)
   | Some(v0, s) ->
       match split_left sep s with
@@ -369,21 +386,21 @@ let t4 ?(sep = ',') conv0 conv1 conv2 conv3 =
           match split_left sep s with
           | None -> Error (err_sep_miss sep s)
           | Some (v2, v3) ->
-              match conv0.parse v0, conv1.parse v1, conv2.parse v2,
-                    conv3.parse v3 with
+              match (Conv.parser conv0) v0, (Conv.parser conv1) v1,
+                    (Conv.parser conv2) v2, (Conv.parser conv3) v3  with
               | Ok v1, Ok v2, Ok v3, Ok v4 -> Ok (v1, v2, v3, v4)
               | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _
               | _, _, _, Error e -> Error (err_element "quadruple" s e)
   in
-  let print ppf (v0, v1, v2, v3) =
-    pp ppf "%a%c%a%c%a%c%a" conv0.print v0 sep conv1.print v1 sep conv2.print
-      v2 sep conv3.print v3
+  let pp ppf (v0, v1, v2, v3) =
+    pp ppf "%a%c%a%c%a%c%a" conv0.pp v0 sep conv1.pp v1 sep conv2.pp
+      v2 sep conv3.pp v3
   in
   let docv =
     strf "%s%c%s%c%s%c%s" conv0.docv sep conv1.docv sep conv2.docv
       sep conv3.docv
   in
-  {docv; parse; print; complete = no_complete}
+  Conv.make ~docv ~parser ~pp ()
 
 let env_bool_parse s = match String.lowercase_ascii s with
 | "" | "false" | "no" | "n" | "0" -> Ok false

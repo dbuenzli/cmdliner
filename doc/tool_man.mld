@@ -1,6 +1,6 @@
 {0:tool_man Tool man pages}
 
-See also the {{!page-cli.man}section} about man pages in the command
+See also the {{!page-cli.help}section} about man pages in the command
 line interface manual.
 
 {1:manual Man page generation}

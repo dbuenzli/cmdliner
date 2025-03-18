@@ -323,7 +323,7 @@ unspecified on the command line.
    {{!Cmdliner.Arg.conv_printer}printer} will be used. If not
    you can specify it as a string rendered in bold via {!Cmdliner.Arg.some}.}
 {- If you want to describe a more complex, but short, behaviour use
-   the [~absent] parameter of {!Cmdliner.Arg.info}. Using this
+   the [~absent] parameter of {!Cmdliner.Arg.val-info}. Using this
    parameter overrides the two previous ways. See
    {{!args_detect_absent}this} example. }}
 
@@ -333,7 +333,7 @@ unspecified on the command line.
 
 As mentioned in {!conv_env_defaults}, any non-required argument can be
 defined by an environment variable when absent. This works by
-specifying the [env] argument in the argument's {!Cmdliner.Arg.info}
+specifying the [env] argument in the argument's {!Cmdliner.Arg.val-info}
 information. For example:
 
 {[

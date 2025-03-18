@@ -30,11 +30,10 @@ val err_multi_def :
 
 (** {1:complete Completion strategies} *)
 
-type complete = {
-  complete_file : bool;
-  complete_dir : bool;
-  complete : (string -> (string * string) list);
-}
+type complete =
+  { complete_file : bool;
+    complete_dir : bool;
+    complete : (string -> (string * string) list) }
 
 val no_complete : complete
 
@@ -46,13 +45,21 @@ val complete :
 
 (** {1:conv Textual OCaml value converters} *)
 
-type 'a parser = string -> ('a, string) result
-type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv =
-  { docv : string;
-    parse : 'a parser;
-    print : 'a printer;
-    complete : complete }
+module Conv : sig
+  type nonrec complete = complete
+  type 'a parser = string -> ('a, string) result
+  type 'a fmt = Format.formatter -> 'a -> unit
+  type 'a t
+  val make :
+    ?complete:complete -> docv:string -> parser:'a parser -> pp:'a fmt ->
+    unit -> 'a t
+  val docv : 'a t -> string
+  val parser : 'a t -> 'a parser
+  val pp : 'a t -> 'a fmt
+  val complete : 'a t -> complete
+end
+
+type 'a conv = 'a Conv.t
 
 val some : ?none:string -> 'a conv -> 'a option conv
 val some' : ?none:'a -> 'a conv -> 'a option conv
@@ -77,7 +84,7 @@ val t4 :
   ?sep:char -> 'a conv -> 'b conv -> 'c conv -> 'd conv ->
   ('a * 'b * 'c * 'd) conv
 
-val env_bool_parse : bool parser
+val env_bool_parse : bool Conv.parser
 
 val is_space : char -> bool
 

@@ -1,6 +1,5 @@
 
-* Remove deprecated `Arg.{converter,pconv}` (#206).
-* Change signature of deprecated `Arg.parser`.
+* Remove deprecated `Arg.{converter,parser,pconv}` (#206).
 * Remove deprecated `Arg.{env,env_var}` (#206).
 * Remove deprecated `Term.{pure,man_format}` (#206).
 * Remove deprecated `Term` evaluation interface (#206).
@@ -24,8 +23,12 @@
   see manpages in `emacs`'s compilation mode which unhelpfully
   hardcodes `PAGER=""`.
 
-- Add `Arg.conv_parser'`, returns the parser of an argument 
-  converter with the new definition of `Arg.parser`.
+- Add `Arg.Conv` module to define converters. This should be used in
+  new code. We silently deprecate `Arg.{printer,conv_docv,conv_parser,
+  conv_printer,parser_of_kind_of_string,conv,conv'}`, these will
+  likely never be removed but new code should use the `Arg.Conv`
+  module.
+  
 - Fix synopsis rendering of required optional arguments (#203).
 - Added a proper test suite to the library to check for regressions.
   Replaces most of the test executables that had to be run and inspected
