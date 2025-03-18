@@ -48,7 +48,11 @@ val complete :
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv = {parse: 'a parser; print: 'a printer; complete: complete}
+type 'a conv =
+  { docv : string;
+    parse : 'a parser;
+    print : 'a printer;
+    complete : complete }
 
 val some : ?none:string -> 'a conv -> 'a option conv
 val some' : ?none:'a -> 'a conv -> 'a option conv

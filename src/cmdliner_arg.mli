@@ -7,11 +7,11 @@
 
 type 'a parser = string -> [ `Ok of 'a | `Error of string ]
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv = 'a Cmdliner_base.conv = {
-  parse: 'a parser;
-  print: 'a printer;
-  complete: Cmdliner_base.complete;
-}
+type 'a conv = 'a Cmdliner_base.conv =
+  { docv : string;
+    parse : 'a parser;
+    print : 'a printer;
+    complete : Cmdliner_base.complete; }
 
 val conv :
   ?complete:(string -> (string * string) list) ->

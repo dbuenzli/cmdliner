@@ -24,30 +24,37 @@ let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 type 'a parser = 'a Cmdliner_base.parser
 type 'a printer = 'a Cmdliner_base.printer
 
-type 'a conv = 'a Cmdliner_base.conv = {
-  parse: 'a parser;
-  print: 'a printer;
-  complete: Cmdliner_base.complete;
-}
+type 'a conv = 'a Cmdliner_base.conv =
+  { docv : string;
+    parse : 'a parser;
+    print : 'a printer;
+    complete : Cmdliner_base.complete }
 
 let default_docv = "VALUE"
+
+let _conv ?(docv = default_docv) parse print complete =
+  { docv; parse; print; complete }
+
+
 let conv ?complete ?complete_file ?complete_dir ?docv (parse, print) =
-  let complete = Cmdliner_base.complete ?complete ?file:complete_file ?dir:complete_dir () in
+  let complete =
+    Cmdliner_base.complete ?complete ?file:complete_file ?dir:complete_dir ()
+  in
   let parse s = match parse s with Ok v -> `Ok v | Error (`Msg e) -> `Error e in
-  {parse; print; complete}
+  _conv ?docv parse print complete
 
-let conv' ?complete ?complete_file ?complete_dir  ?docv (parse, print) =
-  let complete = Cmdliner_base.complete ?complete ?file:complete_file ?dir:complete_dir () in
+let conv' ?complete ?complete_file ?complete_dir ?docv (parse, print) =
+  let complete =
+    Cmdliner_base.complete ?complete ?file:complete_file ?dir:complete_dir ()
+  in
   let parse s = match parse s with Ok v -> `Ok v | Error e -> `Error e in
-  {parse; print; complete}
-
-let pconv ?docv (parse, print) = {parse; print; complete=Cmdliner_base.no_complete}
+  _conv ?docv parse print complete
 
 let conv_parser {parse; _} =
   fun s -> match parse s with `Ok v -> Ok v | `Error e -> Error (`Msg e)
 
 let conv_printer {print; _} = print
-let conv_docv _ = default_docv
+let conv_docv {docv; _} = docv
 
 let err_invalid s kind = `Msg (strf "invalid value '%s', expected %s" s kind)
 let parser_of_kind_of_string ~kind k_of_string =

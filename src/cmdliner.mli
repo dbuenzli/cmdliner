@@ -648,10 +648,7 @@ module Arg : sig
   (** [conv_printer c] is the printer of [c]. *)
 
   val conv_docv : 'a conv -> string
-  (** [conv_docv c] is [c]'s documentation meta-variable.
-
-      {b Warning.} Currently always returns ["VALUE"] in the future
-      will return the value given to {!val-conv} or {!val-conv'}. *)
+  (** [conv_docv c] is [c]'s documentation meta-variable. *)
 
   val parser_of_kind_of_string :
     kind:string -> (string -> 'a option) ->
