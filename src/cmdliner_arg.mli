@@ -7,11 +7,7 @@
 
 type 'a parser = string -> ('a, string) result
 type 'a printer = Format.formatter -> 'a -> unit
-type 'a conv = 'a Cmdliner_base.conv =
-  { docv : string;
-    parse : 'a parser;
-    print : 'a printer;
-    complete : Cmdliner_base.complete; }
+type 'a conv
 
 val conv' :
   ?complete:(string -> (string * string) list) ->
