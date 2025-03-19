@@ -29,7 +29,10 @@
   
 - Add `Arg.Conv` module to define converters. This should be used in
   new code. 
-  
+
+- Use `Arg.conv`'s `docv` property in the documentation of arguments
+  whenever `Arg.info`'s `docv` is unspecified (#207).
+
 * Deprecate. `Arg.{printer,conv_docv,conv_parser,
   conv_printer,parser_of_kind_of_string,conv,conv'}`. These will
   likely never be removed but they should no longer be used for 

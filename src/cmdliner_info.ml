@@ -133,12 +133,14 @@ module Arg = struct
 
   let make_req a = { a with absent = Err }
   let make_all_opts a = { a with opt_all = true }
-  let make_opt ~absent ~kind:opt_kind a = { a with absent; opt_kind }
-  let make_opt_all ~absent ~kind:opt_kind a =
-    { a with absent; opt_kind; opt_all = true  }
+  let make_opt ~docv ~absent ~kind:opt_kind a =
+    { a with absent; opt_kind; docv }
 
-  let make_pos ~pos a = { a with pos }
-  let make_pos_abs ~absent ~pos a = { a with absent; pos }
+  let make_opt_all ~docv ~absent ~kind:opt_kind a =
+    { a with absent; opt_kind; opt_all = true; docv  }
+
+  let make_pos ~docv ~pos a = { a with pos; docv }
+  let make_pos_abs ~docv ~absent ~pos a = { a with absent; pos; docv }
 
   let is_opt a = a.opt_names <> []
   let is_pos a = a.opt_names = []

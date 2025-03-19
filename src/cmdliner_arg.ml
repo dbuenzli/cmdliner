@@ -178,7 +178,10 @@ let opt ?vopt conv v a =
   | None -> Cmdliner_info.Arg.Opt
   | Some dv -> Cmdliner_info.Arg.Opt_vopt (str_of_pp (Conv.pp conv) dv)
   in
-  let a = Cmdliner_info.Arg.make_opt ~absent ~kind a in
+  let docv = match Cmdliner_info.Arg.docv a with
+  | "" -> Conv.docv conv | docv -> docv
+  in
+  let a = Cmdliner_info.Arg.make_opt ~docv ~absent ~kind a in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a (Conv.parser conv) ~absent:v
   | [_, f, Some v] ->
@@ -202,7 +205,10 @@ let opt_all ?vopt conv v a =
   | None -> Cmdliner_info.Arg.Opt
   | Some dv -> Cmdliner_info.Arg.Opt_vopt (str_of_pp (conv_printer conv) dv)
   in
-  let a = Cmdliner_info.Arg.make_opt_all ~absent ~kind a in
+  let docv = match Cmdliner_info.Arg.docv a with
+  | "" -> Conv.docv conv | docv -> docv
+  in
+  let a = Cmdliner_info.Arg.make_opt_all ~docv ~absent ~kind a in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->
@@ -231,7 +237,10 @@ let pos ?(rev = false) k conv v a =
   | _ -> Cmdliner_info.Arg.Val (lazy (str_of_pp (Conv.pp conv) v))
   in
   let pos = Cmdliner_info.Arg.pos ~rev ~start:k ~len:(Some 1) in
-  let a = Cmdliner_info.Arg.make_pos_abs ~absent ~pos a in
+  let docv = match Cmdliner_info.Arg.docv a with
+  | "" -> Conv.docv conv | docv -> docv
+  in
+  let a = Cmdliner_info.Arg.make_pos_abs ~docv ~absent ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with
   | [] -> try_env ei a (Conv.parser conv) ~absent:v
   | [v] ->
@@ -242,7 +251,10 @@ let pos ?(rev = false) k conv v a =
 
 let pos_list pos conv v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
-  let a = Cmdliner_info.Arg.make_pos ~pos a in
+  let docv = match Cmdliner_info.Arg.docv a with
+  | "" -> Conv.docv conv | docv -> docv
+  in
+  let a = Cmdliner_info.Arg.make_pos ~docv ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->

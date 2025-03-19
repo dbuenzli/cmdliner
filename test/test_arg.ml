@@ -341,7 +341,7 @@ let test_conv_docv =
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
 {|test_pos_all: unknown option '-z'.
-Usage: test_pos_all [--field=VAL] [OPTION]… [ARG]…
+Usage: test_pos_all [--field=FIELD] [OPTION]… [FIELD]…
 Try 'test_pos_all --help' for more information.
 |};
   (**)
@@ -350,10 +350,10 @@ Try 'test_pos_all --help' for more information.
        test_pos_all - Test pos all
 
 SYNOPSIS
-       test_pos_all [--field=VAL] [OPTION]… [ARG]…
+       test_pos_all [--field=FIELD] [OPTION]… [FIELD]…
 
 OPTIONS
-       --field=VAL (absent=bla)
+       --field=FIELD (absent=bla)
 
 COMMON OPTIONS
        --help[=FMT] (default=auto)

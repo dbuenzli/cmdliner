@@ -80,10 +80,10 @@ module Arg : sig
 
   val make_req : t -> t
   val make_all_opts : t -> t
-  val make_opt : absent:absence -> kind:opt_kind -> t -> t
-  val make_opt_all : absent:absence -> kind:opt_kind -> t -> t
-  val make_pos : pos:pos_kind -> t -> t
-  val make_pos_abs : absent:absence -> pos:pos_kind -> t -> t
+  val make_opt : docv:string -> absent:absence -> kind:opt_kind -> t -> t
+  val make_opt_all : docv:string -> absent:absence -> kind:opt_kind -> t -> t
+  val make_pos : docv:string -> pos:pos_kind -> t -> t
+  val make_pos_abs : docv:string -> absent:absence -> pos:pos_kind -> t -> t
 
   val is_opt : t -> bool
   val is_pos : t -> bool
