@@ -21,33 +21,22 @@ let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 
 (* Argument converters *)
 
+module Completion = Cmdliner_base.Completion
 module Conv = Cmdliner_base.Conv
-
-type 'a parser = 'a Conv.parser
-type 'a printer = 'a Conv.fmt
 type 'a conv = 'a Conv.t
 
+type 'a printer = 'a Conv.fmt
 let docv_default = "VALUE"
-
-let conv' ?complete ?complete_file ?complete_dir ?docv (parser, pp) =
-  let completion =
-    Cmdliner_base.Completion.make
-      ?complete ?files:complete_file ?dirs:complete_dir ()
+let conv' ?docv (parser, pp) = Conv.make ~docv:docv_default ~parser ~pp ()
+let conv ?docv (parser, pp) =
+  let parser s = match parser s with
+  | Ok _ as v -> v | Error (`Msg e) -> Error e
   in
-  Conv.make ~docv:docv_default ~parser ~pp ~completion ()
+  Conv.make ~docv:docv_default ~parser ~pp ()
 
 let conv_printer = Conv.pp
 let conv_docv = Conv.docv
 
-let conv ?complete ?complete_file ?complete_dir ?docv (parser, pp) =
-  let completion =
-    Cmdliner_base.Completion.make
-      ?complete ?files:complete_file ?dirs:complete_dir ()
-  in
-  let parser s = match parser s with
-  | Ok _ as v -> v | Error (`Msg e) -> Error e
-  in
-  Conv.make ~docv:docv_default ~parser ~pp ~completion ()
 
 let conv_parser conv =
   fun s -> match Conv.parser conv s with

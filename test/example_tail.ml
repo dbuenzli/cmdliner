@@ -27,15 +27,15 @@ open Cmdliner
 open Cmdliner.Term.Syntax
 
 let loc_arg =
-  let parse s =
+  let parser s =
     try
       if s <> "" && s.[0] <> '+'
       then Ok (true, int_of_string s)
       else Ok (false, int_of_string (String.sub s 1 (String.length s - 1)))
-    with Failure _ -> Error (`Msg "unable to parse integer")
+    with Failure _ -> Error "unable to parse integer"
   in
-  let print ppf p = Format.fprintf ppf "%s" (loc_str p) in
-  Arg.conv ~docv:"N" (parse, print)
+  let pp ppf p = Format.fprintf ppf "%s" (loc_str p) in
+  Arg.Conv.make ~docv:"N" ~parser ~pp ()
 
 let lines =
   let doc = "Output the last $(docv) lines or use $(i,+)$(docv) to start \

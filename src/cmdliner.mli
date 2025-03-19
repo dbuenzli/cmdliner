@@ -604,7 +604,35 @@ end
     be specified during the {{!Arg.argterms}conversion} to a term. *)
 module Arg : sig
 
-(** {1:argconv Argument converters} *)
+  (** {1:argconv Argument converters} *)
+
+  (** Argument completion.
+
+      This modules provides a type to describe how argument values described
+      by {{!Arg.conv}argument converters} can be completed. *)
+  module Completion : sig
+
+    type complete = string -> (string * string) list
+    (** The type for completion functions. Given a prefix should
+        return a list of possible completions and a doc string. *)
+
+    type t
+    (** The type for completions. *)
+
+    val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> t
+    (** [make ()] is a completion specification with given properties.
+        See accesors for semantics. Note that the properties are
+        not mutually exclusive. *)
+
+    val files : t -> bool
+    (** [files c] indicates the argument should be completed with files. *)
+
+    val dirs : t -> bool
+    (** [dirs c] indicates the argument should be completed with directories. *)
+
+    val complete : t -> complete
+    (** [complete c] is a function to perform completion. *)
+  end
 
   (** Argument converters.
 
@@ -622,8 +650,16 @@ module Arg : sig
     type 'a t
     (** The type for argument converters. *)
 
+    val make :
+      ?completion:Completion.t -> docv:string -> parser:'a parser ->
+      pp:'a fmt -> unit -> 'a t
+    (** [make ~docv ~parser ~pp ()] is an argument converter with
+        given properties. See corresponding accessors for semantics. *)
+
     val docv : 'a t -> string
-    (** [docv c] is [c]'s documentation meta-variable. *)
+    (** [docv c] is [c]'s documentation meta-variable. This value
+        can be refered to as [$(docv)] in the doc string of arguments.
+        It can be overriden by the {!val-info} value of an argument. *)
 
     val parser : 'a t -> 'a parser
     (** [parser c] is [c]'s argument parser. *)
@@ -634,29 +670,6 @@ module Arg : sig
 
   type 'a conv = 'a Conv.t
   (** The type for argument converters. *)
-
-  val conv' :
-    ?complete:(string -> (string * string) list) ->
-    ?complete_file:bool ->
-    ?complete_dir:bool ->
-    ?docv:string -> 'a Conv.parser * 'a Conv.fmt -> 'a conv
-  (** [conv' ~docv (parse, print)] is an argument converter with:
-      {ul
-      {- [parse] the function for parsing arguments.}
-      {- [print] the function for printing parsed arguments.}
-      {- [docv] the meta-variable used in the documentation
-         to stand for the argument value, defaults to ["VALUE"].
-         This value can be referred to as [$(docv)] in the doc string
-         of arguments and can be overriden by the {!val-info} value of an
-         argument.}} *)
-
-  val conv :
-    ?complete:(string -> (string * string) list) ->
-    ?complete_file:bool ->
-    ?complete_dir:bool ->
-    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a Conv.fmt ->
-    'a conv
-  (** [conv] is like {!val-conv'} but the [Error] case has [`Msg] label. *)
 
   val some' : ?none:'a -> 'a conv -> 'a option conv
   (** [some' ?none c] is like the converter [c] except it returns
@@ -923,27 +936,28 @@ module Arg : sig
 
   (** {2:files Files and directories}
 
-      {b Warning.} These converter report errors whenever the requested
-      file system object does not exist. However nothing guarantees
-      you it will still exist at the time you act upon them. So they
-      are only mildly useful and using a {!string} and/or an argument
-      converter with your own file path data structure is often
-      equally useful as you will anyways have to treat these error cases
-      in your tool function. *)
+      {b Note.} The following converters report errors whenever the
+      requested file system object does not exist. This is only mildly
+      useful since nothing guarantees you it will still exist at the
+      time you act upon them, so you will have to treat these error
+      anyways in your tool function. *)
 
   val file : string conv
   (** [file] converts a value with the identity function and checks
-      with {!Sys.file_exists} that a file with that name exists. *)
+      with {!Sys.file_exists} that a file with that name exists.
+      It completes with both files directories. *)
 
   val dir : string conv
   (** [dir] converts a value with the identity function and checks
       with {!Sys.file_exists} and {!Sys.is_directory}
-      that a directory with that name exists. *)
+      that a directory with that name exists. It completes with
+      directories. *)
 
   val non_dir_file : string conv
-  (** [non_dir_file] converts a value with the identity function and checks
-      with {!Sys.file_exists} and {!Sys.is_directory}
-      that a non directory file with that name exists. *)
+  (** [non_dir_file] converts a value with the identity function and
+      checks with {!Sys.file_exists} and {!Sys.is_directory} that a
+      non directory file with that name exists. It completes with
+      files. *)
 
   (** {1:doc_helpers Documentation formatting helpers} *)
 
@@ -968,12 +982,20 @@ module Arg : sig
 
   (** {1:deprecated Deprecated}
 
-      These identifiers are silently deprecated. It is unlikely that
-      they will be removed but you should prefer to use the {!Conv}
+      These identifiers are silently deprecated. For now there is no
+      plan to remove them. But you should prefer to use the {!Conv}
       interface in new code. *)
 
   type 'a printer = 'a Conv.fmt
   (** Deprecated. Use {!Conv.fmt}. *)
+
+  val conv' : ?docv:string -> 'a Conv.parser * 'a Conv.fmt -> 'a conv
+  (** Deprecated. Use {!Conv.make} instead. *)
+
+  val conv :
+    ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a Conv.fmt ->
+    'a conv
+  (** Deprecated. Use {!Conv.make} instead. *)
 
   val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
   (** Deprecated. Use {!Conv.parser}. *)

@@ -31,9 +31,9 @@ let help copts man_format cmds topic = match topic with
 | Some topic ->
     let topics = "topics" :: "patterns" :: "environment" :: cmds in
     let conv = Cmdliner.Arg.enum (List.rev_map (fun s -> (s, s)) topics) in
-    let parse = Cmdliner.Arg.conv_parser conv in
+    let parse = Cmdliner.Arg.Conv.parser conv in
     match parse topic with
-    | Error (`Msg e) -> `Error (false, e)
+    | Error e -> `Error (false, e)
     | Ok t when t = "topics" -> List.iter print_endline topics; `Ok ()
     | Ok t when List.mem t cmds -> `Help (man_format, Some t)
     | Ok t ->

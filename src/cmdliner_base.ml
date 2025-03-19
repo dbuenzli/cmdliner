@@ -149,10 +149,11 @@ let err_sep_miss sep s =
 (* Completions *)
 
 module Completion = struct
+  type complete = string -> (string * string) list
   type t =
     { files : bool;
       dirs : bool;
-      complete : (string -> (string * string) list); }
+      complete : complete; }
 
   let make ?(files = false) ?(dirs = false) ?(complete = Fun.const []) () =
     {files; dirs; complete}
@@ -247,7 +248,7 @@ let float =
   let parser = parse_with float_of_string "expected a floating point number" in
   Conv.make ~docv:"DOUBLE" ~parser ~pp:Format.pp_print_float ()
 
-let string = Conv.make ~docv:"VALUE" ~parser:Result.ok ~pp:pp_str ()
+let string = Conv.make ~docv:"" ~parser:Result.ok ~pp:pp_str ()
 
 let enum sl =
   if sl = [] then invalid_arg err_empty_list else

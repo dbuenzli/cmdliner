@@ -31,15 +31,13 @@ val err_multi_def :
 (** {1:completion Completion strategies} *)
 
 module Completion : sig
+  type complete = string -> (string * string) list
   type t
-  val make :
-    ?files:bool -> ?dirs:bool -> ?complete:(string -> (string * string) list) ->
-    unit -> t
-
+  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> t
   val none : t
   val files : t -> bool
   val dirs : t -> bool
-  val complete : t -> (string -> (string * string) list)
+  val complete : t -> complete
 end
 
 (** {1:conv Textual OCaml value converters} *)

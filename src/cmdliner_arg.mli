@@ -5,42 +5,36 @@
 
 (** Command line arguments as terms. *)
 
-type 'a printer = Format.formatter -> 'a -> unit
+(* Converters *)
+
 type 'a conv
+
+module Completion : sig
+  type complete = string -> (string * string) list
+  type t
+  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> t
+  val none : t
+  val files : t -> bool
+  val dirs : t -> bool
+  val complete : t -> complete
+end
 
 module Conv : sig
   type 'a parser = string -> ('a, string) result
   type 'a fmt = Format.formatter -> 'a -> unit
   type 'a t = 'a conv
-
+  val make :
+    ?completion:Completion.t -> docv:string -> parser:'a parser -> pp:'a fmt ->
+    unit -> 'a t
   val docv : 'a conv -> string
   val parser : 'a conv -> 'a parser
   val pp : 'a conv -> 'a fmt
 end
 
-val conv' :
-  ?complete:(string -> (string * string) list) ->
-  ?complete_file:bool ->
-  ?complete_dir:bool ->
-  ?docv:string -> 'a Conv.parser * 'a printer -> 'a conv
-
-val conv :
-  ?complete:(string -> (string * string) list) ->
-  ?complete_file:bool ->
-  ?complete_dir:bool ->
-  ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a printer ->
-  'a conv
-
-val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
-val conv_printer : 'a conv -> 'a printer
-val conv_docv : 'a conv -> string
-
-val parser_of_kind_of_string :
-  kind:string -> (string -> 'a option) ->
-  (string -> ('a, [`Msg of string]) result)
-
 val some : ?none:string -> 'a conv -> 'a option conv
 val some' : ?none:'a -> 'a conv -> 'a option conv
+
+(* Arguments *)
 
 type 'a t = 'a Cmdliner_term.t
 
@@ -64,20 +58,20 @@ val pos_all : 'a conv -> 'a list -> info -> 'a list t
 val pos_left : ?rev:bool -> int -> 'a conv -> 'a list -> info -> 'a list t
 val pos_right : ?rev:bool -> int -> 'a conv -> 'a list -> info -> 'a list t
 
-(** {1 As terms} *)
+(* As terms *)
 
 val value : 'a t -> 'a Cmdliner_term.t
 val required : 'a option t -> 'a Cmdliner_term.t
 val non_empty : 'a list t -> 'a list Cmdliner_term.t
 val last : 'a list t -> 'a Cmdliner_term.t
 
-(** {1 Predefined arguments} *)
+(* Predefined arguments *)
 
 val man_format : Cmdliner_manpage.format Cmdliner_term.t
 val stdopt_version : docs:string -> bool Cmdliner_term.t
 val stdopt_help : docs:string -> Cmdliner_manpage.format option Cmdliner_term.t
 
-(** {1 Converters} *)
+(* Converters *)
 
 val bool : bool conv
 val char : char conv
@@ -103,3 +97,18 @@ val t4 :
 val doc_quote : string -> string
 val doc_alts : ?quoted:bool -> string list -> string
 val doc_alts_enum : ?quoted:bool -> (string * 'a) list -> string
+
+(* Deprecated *)
+
+type 'a printer = Format.formatter -> 'a -> unit
+val conv' : ?docv:string -> 'a Conv.parser * 'a Conv.fmt -> 'a conv
+val conv :
+  ?docv:string -> (string -> ('a, [`Msg of string]) result) * 'a Conv.fmt ->
+  'a conv
+
+val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
+val conv_printer : 'a conv -> 'a printer
+val conv_docv : 'a conv -> string
+val parser_of_kind_of_string :
+  kind:string -> (string -> 'a option) ->
+  (string -> ('a, [`Msg of string]) result)
