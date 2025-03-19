@@ -31,22 +31,17 @@ module Manpage : sig
   (** {1:man Man pages} *)
 
   type section_name = string
-  (** The type for section names. This is the actual section title. *)
+  (** The type for section names (titles). See
+      {{!standard_sections}standard section names}. *)
 
   type block =
-    [ `S of section_name | `P of string | `Pre of string | `I of string * string
-    | `Noblank | `Blocks of block list ]
+  [ `S of section_name (** Start a new section with given name. *)
+  | `P of string (** Paragraph with given text. *)
+  | `Pre of string (** Preformatted paragraph with given text. *)
+  | `I of string * string (** Indented paragraph with given label and text. *)
+  | `Noblank (** Suppress blank line introduced between two blocks. *)
+  | `Blocks of block list (** Splice given blocks. *) ]
   (** The type for a block of man page text.
-
-      {ul
-      {- [`S s] introduces a new section [s], see the
-         {{!standard_sections}standard section names}.}
-      {- [`P t] is a new paragraph with text [t].}
-      {- [`Pre t] is a new preformatted paragraph with text [t].}
-      {- [`I (l,t)] is an indented paragraph with label
-         [l] and text [t].}
-      {- [`Noblank] suppresses the blank line introduced between two blocks.}
-      {- [`Blocks bs] splices the blocks [bs].}}
 
       Except in [`Pre], whitespace and newlines are not significant
       and are all collapsed to a single space. All block strings
@@ -64,14 +59,12 @@ module Manpage : sig
   (** The type for a man page. A title and the page text as a list of blocks. *)
 
   type xref =
-    [ `Main | `Cmd of string | `Tool of string | `Page of string * int ]
-  (** The type for man page cross-references.
-      {ul
-      {- [`Main] refers to the man page of the program itself.}
-      {- [`Cmd cmd] refers to the man page of the program's [cmd]
-         command (which must exist).}
-      {- [`Tool bin] refers to the command line tool named [bin].}
-      {- [`Page (name, sec)] refers to the man page [name(sec)].}} *)
+  [ `Main (** Refer to the man page of the program itself. *)
+  | `Cmd of string (** Refer to the command [cmd] of the tool, which must
+                       exist. *)
+  | `Tool of string (** Tool refer to the given command line tool. *)
+  | `Page of string * int (** Refer to the manpage [name(sec)]. *) ]
+  (** The type for man page cross-references. *)
 
   (** {1:standard_sections Standard section names and content}
 
@@ -147,15 +140,14 @@ module Manpage : sig
     The {!print} function can be useful if the client wants to define
     other man pages (e.g. to implement a help command). *)
 
-  type format = [ `Auto | `Pager | `Plain | `Groff ]
-  (** The type for man page output specification.
-      {ul
-      {- [`Auto], formats like [`Pager] or [`Plain] whenever the [TERM]
-         environment variable is [dumb] or unset.}
-      {- [`Pager], tries to write to a discovered pager, if that fails
-         uses the [`Plain] format.}
-      {- [`Plain], formats to plain text.}
-      {- [`Groff], formats to groff commands.}} *)
+  type format =
+  [ `Auto (** Format like [`Pager] or [`Plain] whenever the [TERM]
+              environment variable is [dumb] or unset. *)
+  | `Pager (** {{!page-cli.help}Tries} to use a pager or falls back
+               to [`Plain]. *)
+  | `Plain (** Format to plain text. *)
+  | `Groff (** Format to groff commands. *) ]
+  (** The type for man page output specification. *)
 
   val print :
     ?errs:Format.formatter ->
@@ -617,7 +609,7 @@ module Arg : sig
         return a list of possible completions and a doc string. *)
 
     type 'a t
-    (** The type for completions. *)
+    (** The type for completing values parsed into values of type ['a]. *)
 
     val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
     (** [make ()] is a completion specification with given properties.
@@ -642,13 +634,13 @@ module Arg : sig
   module Conv : sig
 
     type 'a parser = string -> ('a, string) result
-    (** The type for argument parsers. *)
+    (** The type for parsing arguments to values of type ['a]. *)
 
     type 'a fmt = Format.formatter -> 'a -> unit
-    (** The type for argument formatters. *)
+    (** The type for formatting values of type ['a]. *)
 
     type 'a t
-    (** The type for argument converters. *)
+    (** The type for convertering arguments to values of type ['a]. *)
 
     val make :
       ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
@@ -657,9 +649,10 @@ module Arg : sig
         given properties. See corresponding accessors for semantics. *)
 
     val docv : 'a t -> string
-    (** [docv c] is [c]'s documentation meta-variable. This value
-        can be refered to as [$(docv)] in the doc string of arguments.
-        It can be overriden by the {!val-info} value of an argument. *)
+    (** [docv c] is [c]'s documentation meta-variable. This value can
+        be refered to as [$(docv)] in the documentation strings of
+        arguments.  It can be overriden by the {!val-info} value of an
+        argument. *)
 
     val parser : 'a t -> 'a parser
     (** [parser c] is [c]'s argument parser. *)

@@ -1,16 +1,5 @@
 
-* Remove deprecated `Arg.{converter,parser,pconv}` (#206).
-* Remove deprecated `Arg.{env,env_var}` (#206).
-* Remove deprecated `Term.{pure,man_format}` (#206).
-* Remove deprecated `Term` evaluation interface (#206).
-
-* Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for 
-  the patch (#206).
-
-- Add `Manpage.section_name` type alias (#202).
-
-- Add `Cmdliner.Cmd.make` which should be preferred to `Cmdliner.Cmd.v`
-  (`M.v` is nice for simulating literals, not for heavy constructor).
+### End-user visible changes
 
 - Pager. If set, respect the user's `LESS` environment variable
   (otherwise the default `LESS=FRX` is left unchanged).  Note however
@@ -23,13 +12,36 @@
   see manpages in `emacs`'s compilation mode which unhelpfully
   hardcodes `PAGER=""`.
 
-- Add `Arg.Conv` module to define converters. This should be used in
-  new code. We silently deprecate `Arg.{printer,conv_docv,conv_parser,
-  conv_printer,parser_of_kind_of_string,conv,conv'}`, these will
-  likely never be removed but new code should use the `Arg.Conv`
-  module.
-  
 - Fix synopsis rendering of required optional arguments (#203).
+
+### API changes
+
+* Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for 
+  the patch (#206).
+
+- Add `Manpage.section_name` type alias (#202).
+
+- Add `Cmd.make` which should be preferred to `Cmd.v` (`M.v` is nice
+  for simulating literals, not for heavy constructor).
+
+- Add `Arg.Completion` a module to define argument completion 
+  strategies (#1, #187). 
+  
+- Add `Arg.Conv` module to define converters. This should be used in
+  new code. 
+  
+* Deprecate. `Arg.{printer,conv_docv,conv_parser,
+  conv_printer,parser_of_kind_of_string,conv,conv'}`. These will
+  likely never be removed but they should no longer be used for 
+  new code. Use `Arg.Conv`. 
+
+* Remove deprecated `Arg.{converter,parser,pconv}` (#206).
+* Remove deprecated `Arg.{env,env_var}` (#206).
+* Remove deprecated `Term.{pure,man_format}` (#206).
+* Remove deprecated `Term` evaluation interface (#206).
+
+### Other
+
 - Added a proper test suite to the library to check for regressions.
   Replaces most of the test executables that had to be run and inspected
   manually (#205).
