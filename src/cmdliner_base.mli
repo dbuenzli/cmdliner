@@ -32,12 +32,12 @@ val err_multi_def :
 
 module Completion : sig
   type complete = string -> (string * string) list
-  type t
-  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> t
-  val none : t
-  val files : t -> bool
-  val dirs : t -> bool
-  val complete : t -> complete
+  type 'a t
+  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
+  val none : 'a t
+  val files : 'a t -> bool
+  val dirs : 'a t -> bool
+  val complete : 'a t -> complete
 end
 
 (** {1:conv Textual OCaml value converters} *)
@@ -47,12 +47,12 @@ module Conv : sig
   type 'a fmt = Format.formatter -> 'a -> unit
   type 'a t
   val make :
-    ?completion:Completion.t -> docv:string -> parser:'a parser -> pp:'a fmt ->
-    unit -> 'a t
+    ?completion:'a Completion.t ->
+    docv:string -> parser:'a parser -> pp:'a fmt -> unit -> 'a t
   val docv : 'a t -> string
   val parser : 'a t -> 'a parser
   val pp : 'a t -> 'a fmt
-  val completion : 'a t -> Completion.t
+  val completion : 'a t -> 'a Completion.t
 end
 
 type 'a conv = 'a Conv.t

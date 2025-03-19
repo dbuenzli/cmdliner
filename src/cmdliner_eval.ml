@@ -201,7 +201,7 @@ let handle_completion args cmd cmd_children (prefix, kind) =
   let complete_arg_values arg =
     match Cmdliner_info.Arg.Set.find_opt arg args with
     | None -> ()
-    | Some comp ->
+    | Some (V comp) ->
         let complete = Cmdliner_base.Completion.complete comp in
         Complete.group "Values";
         List.iter (Complete.item ~prefix) (complete prefix);

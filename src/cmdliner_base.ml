@@ -150,7 +150,7 @@ let err_sep_miss sep s =
 
 module Completion = struct
   type complete = string -> (string * string) list
-  type t =
+  type 'a t =
     { files : bool;
       dirs : bool;
       complete : complete; }
@@ -162,6 +162,7 @@ module Completion = struct
   let files c = c.files
   let dirs c = c.dirs
   let complete c = c.complete
+  let some : 'a t -> 'a option t = fun c -> { c with files = c.files}
 end
 
 (* Converters *)
@@ -173,7 +174,7 @@ module Conv = struct
     { docv : string;
       parser : 'a parser;
       pp : 'a fmt;
-      completion : Completion.t; }
+      completion : 'a Completion.t; }
 
   let make ?(completion = Completion.none) ~docv ~parser ~pp () =
     { docv; parser; pp; completion }
@@ -194,7 +195,7 @@ let some ?(none = "") conv =
   | None -> Format.pp_print_string ppf none
   | Some v -> Conv.pp conv ppf v
   in
-  { conv with parser; pp; }
+  { conv with parser; pp; completion = Completion.some conv.completion }
 
 let some' ?none conv =
   let parser s = match (Conv.parser conv) s with
@@ -204,7 +205,7 @@ let some' ?none conv =
   | None -> (match none with None -> () | Some v -> (Conv.pp conv) ppf v)
   | Some v -> Conv.pp conv ppf v
   in
-  { conv with parser; pp }
+  { conv with parser; pp; completion = Completion.some conv.completion }
 
 let bool =
   let parser s = try Ok (bool_of_string s) with

@@ -98,7 +98,7 @@ let flag a =
   | [_, f, Some v] -> err (Cmdliner_msg.err_flag_value f v)
   | (_, f, _) :: (_ ,g, _) :: _  -> err (Cmdliner_msg.err_opt_repeated f g)
   in
-  arg_to_args a Cmdliner_base.Completion.none, convert
+  arg_to_args a (V Cmdliner_base.Completion.none), convert
 
 let flag_all a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -115,7 +115,7 @@ let flag_all a =
         Ok (List.rev_map truth l)
       with Failure e -> err e
   in
-  arg_to_args a Cmdliner_base.Completion.none, convert
+  arg_to_args a (V Cmdliner_base.Completion.none), convert
 
 let vflag v l =
   let convert _ cl =
@@ -139,7 +139,7 @@ let vflag v l =
   let flag (_, a) =
     if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else a
   in
-  list_to_args flag l Cmdliner_base.Completion.none, convert
+  list_to_args flag l (V Cmdliner_base.Completion.none), convert
 
 let vflag_all v l =
   let convert _ cl =
@@ -163,7 +163,7 @@ let vflag_all v l =
     if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
     Cmdliner_info.Arg.make_all_opts a
   in
-  list_to_args flag l Cmdliner_base.Completion.none, convert
+  list_to_args flag l (V Cmdliner_base.Completion.none), convert
 
 let parse_opt_value parse f v = match parse v with
 | Ok v -> v | Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
@@ -190,7 +190,7 @@ let opt ?vopt conv v a =
       end
   | (_, f, _) :: (_, g, _) :: _ -> err (Cmdliner_msg.err_opt_repeated g f)
   in
-  arg_to_args a (Conv.completion conv), convert
+  arg_to_args a (V (Conv.completion conv)), convert
 
 let opt_all ?vopt conv v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -216,7 +216,7 @@ let opt_all ?vopt conv v a =
                 (List.sort rev_compare (List.rev_map parse l))) with
       | Failure e -> err e
   in
-  arg_to_args a (Conv.completion conv), convert
+  arg_to_args a (V (Conv.completion conv)), convert
 
 (* Positional arguments *)
 
@@ -238,7 +238,7 @@ let pos ?(rev = false) k conv v a =
       (try Ok (parse_pos_value (Conv.parser conv) a v) with Failure e -> err e)
   | _ -> assert false
   in
-  arg_to_args a (Conv.completion conv), convert
+  arg_to_args a (V (Conv.completion conv)), convert
 
 let pos_list pos conv v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
@@ -250,7 +250,7 @@ let pos_list pos conv v a =
       with
       | Failure e -> err e
   in
-  arg_to_args a (Conv.completion conv), convert
+  arg_to_args a (V (Conv.completion conv)), convert
 
 let all = Cmdliner_info.Arg.pos ~rev:false ~start:0 ~len:None
 let pos_all c v a = pos_list all c v a

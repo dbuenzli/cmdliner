@@ -97,7 +97,9 @@ module Arg : sig
 
   module Set : sig
     type arg = t
-    type completion = Cmdliner_base.Completion.t
+    type completion =
+    | V : 'a Cmdliner_base.Completion.t -> completion
+
     type t
     val empty : t
     val add : arg -> completion -> t -> t

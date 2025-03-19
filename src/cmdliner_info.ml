@@ -156,17 +156,16 @@ module Arg = struct
 
   module Set = struct
     type arg = t
-    type completion = Cmdliner_base.Completion.t
+    type completion =
+    | V : 'a Cmdliner_base.Completion.t -> completion
 
     module Map = Map.Make (struct type t = arg let compare = compare end)
     include Map
 
-    type t = Cmdliner_base.Completion.t Map.t
+    type t = completion Map.t
 
     let find_opt k m = try Some (Map.find k m) with Not_found -> None
-
     let elements m = List.map fst (bindings m)
-
     let union a b =
       Map.merge (fun k v v' ->
         match v, v' with

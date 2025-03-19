@@ -616,21 +616,21 @@ module Arg : sig
     (** The type for completion functions. Given a prefix should
         return a list of possible completions and a doc string. *)
 
-    type t
+    type 'a t
     (** The type for completions. *)
 
-    val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> t
+    val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
     (** [make ()] is a completion specification with given properties.
         See accesors for semantics. Note that the properties are
         not mutually exclusive. *)
 
-    val files : t -> bool
+    val files : 'a t -> bool
     (** [files c] indicates the argument should be completed with files. *)
 
-    val dirs : t -> bool
+    val dirs : 'a t -> bool
     (** [dirs c] indicates the argument should be completed with directories. *)
 
-    val complete : t -> complete
+    val complete : 'a t -> complete
     (** [complete c] is a function to perform completion. *)
   end
 
@@ -651,7 +651,7 @@ module Arg : sig
     (** The type for argument converters. *)
 
     val make :
-      ?completion:Completion.t -> docv:string -> parser:'a parser ->
+      ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
       pp:'a fmt -> unit -> 'a t
     (** [make ~docv ~parser ~pp ()] is an argument converter with
         given properties. See corresponding accessors for semantics. *)
@@ -669,13 +669,14 @@ module Arg : sig
   end
 
   type 'a conv = 'a Conv.t
-  (** The type for argument converters. *)
+  (** The type for argument converters. See the
+      {{!predef}predefined converters}. *)
 
   val some' : ?none:'a -> 'a conv -> 'a option conv
   (** [some' ?none c] is like the converter [c] except it returns
       [Some] value. It is used for command line arguments that default
-      to [None] when absent. If provided, [none] is used with [conv]'s
-      printer to document the value taken on absence; to document
+      to [None] when absent. If provided, [none] is used with [c]'s
+      formatter to document the value taken on absence; to document
       a more complex behaviour use the [absent] argument of {!val-info}.
       If you cannot construct an ['a] value use {!some}. *)
 
@@ -683,7 +684,6 @@ module Arg : sig
   (** [some ?none c] is like [some'] but [none] is described as a
       string that will be rendered in bold. Use the [absent] argument
       of {!val-info} to document more complex behaviours. *)
-
 
   (** {1:arginfo Arguments} *)
 

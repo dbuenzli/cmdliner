@@ -11,12 +11,12 @@ type 'a conv
 
 module Completion : sig
   type complete = string -> (string * string) list
-  type t
-  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> t
-  val none : t
-  val files : t -> bool
-  val dirs : t -> bool
-  val complete : t -> complete
+  type 'a t
+  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
+  val none : 'a t
+  val files : 'a t -> bool
+  val dirs : 'a t -> bool
+  val complete : 'a t -> complete
 end
 
 module Conv : sig
@@ -24,8 +24,8 @@ module Conv : sig
   type 'a fmt = Format.formatter -> 'a -> unit
   type 'a t = 'a conv
   val make :
-    ?completion:Completion.t -> docv:string -> parser:'a parser -> pp:'a fmt ->
-    unit -> 'a t
+    ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
+    pp:'a fmt -> unit -> 'a t
   val docv : 'a conv -> string
   val parser : 'a conv -> 'a parser
   val pp : 'a conv -> 'a fmt
