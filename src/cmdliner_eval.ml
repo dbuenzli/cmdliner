@@ -283,10 +283,13 @@ let eval_peek_opts
   let ei = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env ~err_ppf:null_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
-  let cli_args =  remove_exec argv in
+  let cli_args =
+    (* TODO remove the completion token *)
+    remove_exec argv
+  in
   let v, ret =
     match Cmdliner_cline.create ~peek_opts:true term_args cli_args with
-    | `Completion arg -> failwith "TODO: eval_peek_opts"
+    | `Completion arg -> None, (Error (`Complete (term_args, cmd, [], arg)))
     | `Error (e, cl) ->
         begin match try_eval_stdopts ~catch:true ei cl help version with
         | Some e -> None, e
