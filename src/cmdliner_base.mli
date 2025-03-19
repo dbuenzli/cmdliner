@@ -28,35 +28,33 @@ val err_unknown :
 val err_multi_def :
   kind:string -> string -> ('b -> string) -> 'b -> 'b -> string
 
-(** {1:complete Completion strategies} *)
+(** {1:completion Completion strategies} *)
 
-type complete =
-  { complete_file : bool;
-    complete_dir : bool;
-    complete : (string -> (string * string) list) }
+module Completion : sig
+  type t
+  val make :
+    ?files:bool -> ?dirs:bool -> ?complete:(string -> (string * string) list) ->
+    unit -> t
 
-val no_complete : complete
-
-val complete :
-  ?file:bool ->
-  ?dir:bool ->
-  ?complete:(string -> (string * string) list) ->
-  unit -> complete
+  val none : t
+  val files : t -> bool
+  val dirs : t -> bool
+  val complete : t -> (string -> (string * string) list)
+end
 
 (** {1:conv Textual OCaml value converters} *)
 
 module Conv : sig
-  type nonrec complete = complete
   type 'a parser = string -> ('a, string) result
   type 'a fmt = Format.formatter -> 'a -> unit
   type 'a t
   val make :
-    ?complete:complete -> docv:string -> parser:'a parser -> pp:'a fmt ->
+    ?completion:Completion.t -> docv:string -> parser:'a parser -> pp:'a fmt ->
     unit -> 'a t
   val docv : 'a t -> string
   val parser : 'a t -> 'a parser
   val pp : 'a t -> 'a fmt
-  val complete : 'a t -> complete
+  val completion : 'a t -> Completion.t
 end
 
 type 'a conv = 'a Conv.t

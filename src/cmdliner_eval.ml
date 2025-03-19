@@ -192,20 +192,21 @@ let handle_completion args cmd cmd_children (prefix, kind) =
     Complete.group "Options";
     let args = Cmdliner_info.Cmd.args cmd in
     Cmdliner_info.Arg.Set.iter (fun arg _ ->
-      let names = Cmdliner_info.Arg.opt_names arg in
-      let doc = Cmdliner_info.Arg.doc arg in
-      List.iter (fun name ->
-        Complete.item ~prefix (name, doc)) names)
+        let names = Cmdliner_info.Arg.opt_names arg in
+        let doc = Cmdliner_info.Arg.doc arg in
+        List.iter (fun name ->
+            Complete.item ~prefix (name, doc)) names)
       args;
   in
   let complete_arg_values arg =
     match Cmdliner_info.Arg.Set.find_opt arg args with
     | None -> ()
-    | Some { complete_file; complete_dir; complete } ->
-      Complete.group "Values";
-      List.iter (Complete.item ~prefix) (complete prefix);
-      if complete_file then Complete.file ();
-      if complete_dir then Complete.dir ()
+    | Some comp ->
+        let complete = Cmdliner_base.Completion.complete comp in
+        Complete.group "Values";
+        List.iter (Complete.item ~prefix) (complete prefix);
+        if Cmdliner_base.Completion.files comp then Complete.file ();
+        if Cmdliner_base.Completion.dirs comp then Complete.dir ()
   in
   let complete_subcommands () =
     Complete.group "Subcommands";

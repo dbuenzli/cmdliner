@@ -148,37 +148,39 @@ let err_sep_miss sep s =
 
 (* Completions *)
 
-type complete = {
-  complete_file : bool;
-  complete_dir : bool;
-  complete : (string -> (string * string) list);
-}
+module Completion = struct
+  type t =
+    { files : bool;
+      dirs : bool;
+      complete : (string -> (string * string) list); }
 
-let complete ?(file=false) ?(dir=false) ?complete () =
-  let complete = Option.value complete ~default:(fun _ -> []) in
-  {complete_file=file; complete_dir=dir; complete}
+  let make ?(files = false) ?(dirs = false) ?(complete = Fun.const []) () =
+    {files; dirs; complete}
 
-let no_complete = complete ()
+  let none = make ()
+  let files c = c.files
+  let dirs c = c.dirs
+  let complete c = c.complete
+end
 
 (* Converters *)
 
 module Conv = struct
-  type nonrec complete = complete
   type 'a parser = string -> ('a, string) result
   type 'a fmt = Format.formatter -> 'a -> unit
   type 'a t =
     { docv : string;
       parser : 'a parser;
       pp : 'a fmt;
-      complete : complete; }
+      completion : Completion.t; }
 
-  let make ?(complete = no_complete) ~docv ~parser ~pp () =
-    { docv; parser; pp; complete }
+  let make ?(completion = Completion.none) ~docv ~parser ~pp () =
+    { docv; parser; pp; completion }
 
   let docv c = c.docv
   let parser c = c.parser
   let pp c = c.pp
-  let complete c = c.complete
+  let completion c = c.completion
 end
 
 type 'a conv = 'a Conv.t
@@ -264,34 +266,33 @@ let enum sl =
     try pp_str ppf (List.assoc v sl_inv)
     with Not_found -> invalid_arg (err_incomplete_enum (List.map fst sl))
   in
-  let complete =
-    complete ~complete:(fun _prefix -> List.map (fun (s, _) -> s, "") sl) ()
-  in
-  Conv.make ~docv:"ENUM" ~parser ~pp ~complete ()
+  let complete _prefix = List.map (fun (s, _) -> s, "") sl in
+  let completion = Completion.make ~complete () in
+  Conv.make ~docv:"ENUM" ~parser ~pp ~completion ()
 
 let file =
   let parser s = match Sys.file_exists s with
   | true -> Ok s
   | false -> Error (err_no "file or directory" s)
   in
-  let complete = complete ~dir:true ~file:true () in
-  Conv.make ~docv:"PATH" ~parser ~pp:pp_str ~complete ()
+  let completion = Completion.make ~dirs:true ~files:true () in
+  Conv.make ~docv:"PATH" ~parser ~pp:pp_str ~completion ()
 
 let dir =
   let parser s = match Sys.file_exists s with
   | true -> if Sys.is_directory s then Ok s else Error (err_not_dir s)
   | false -> Error (err_no "directory" s)
   in
-  let complete = complete ~dir:true () in
-  Conv.make ~docv:"DIR" ~parser ~pp:pp_str ~complete ()
+  let completion = Completion.make ~dirs:true () in
+  Conv.make ~docv:"DIR" ~parser ~pp:pp_str ~completion ()
 
 let non_dir_file =
   let parser s = match Sys.file_exists s with
   | true -> if not (Sys.is_directory s) then Ok s else Error (err_is_dir s)
   | false -> Error (err_no "file" s)
   in
-  let complete = complete ~file:true () in
-  Conv.make ~docv:"FILE" ~parser ~pp:pp_str ~complete ()
+  let completion = Completion.make ~files:true () in
+  Conv.make ~docv:"FILE" ~parser ~pp:pp_str ~completion ()
 
 let split_and_parse sep parse s = (* raises [Failure] *)
   let parse sub = match parse sub with

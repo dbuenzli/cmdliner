@@ -156,12 +156,12 @@ module Arg = struct
 
   module Set = struct
     type arg = t
-    type complete = Cmdliner_base.complete
+    type completion = Cmdliner_base.Completion.t
 
     module Map = Map.Make (struct type t = arg let compare = compare end)
     include Map
 
-    type t = Cmdliner_base.complete Map.t
+    type t = Cmdliner_base.Completion.t Map.t
 
     let find_opt k m = try Some (Map.find k m) with Not_found -> None
 

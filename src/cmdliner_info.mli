@@ -97,21 +97,19 @@ module Arg : sig
 
   module Set : sig
     type arg = t
-    type complete = Cmdliner_base.complete
-
+    type completion = Cmdliner_base.Completion.t
     type t
-
     val empty : t
-    val add : arg -> complete -> t -> t
-    val choose : t -> arg * complete
-    val partition : (arg -> complete -> bool) -> t -> t * t
-    val filter : (arg -> complete -> bool) -> t -> t
-    val iter : (arg -> complete -> unit) -> t -> unit
-    val singleton : arg -> complete -> t
-    val fold : (arg -> complete -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val add : arg -> completion -> t -> t
+    val choose : t -> arg * completion
+    val partition : (arg -> completion -> bool) -> t -> t * t
+    val filter : (arg -> completion -> bool) -> t -> t
+    val iter : (arg -> completion -> unit) -> t -> unit
+    val singleton : arg -> completion -> t
+    val fold : (arg -> completion -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val elements : t -> arg list
     val union : t -> t -> t
-    val find_opt : arg -> t -> complete option
+    val find_opt : arg -> t -> completion option
   end
 end
 
