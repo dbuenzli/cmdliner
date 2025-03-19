@@ -26,11 +26,18 @@ let add_stdopts ei =
 
 let parse_error_term err ei cl = Error (`Parse err)
 
+type complete =
+  Cmdliner_info.Arg.Set.t * Cmdliner_cmd.info * Cmdliner_cmd.info list *
+  (string *
+   [ `Any | `Arg of Cmdliner_info.Arg.t | `Opt of Cmdliner_info.Arg.t ])
+
 type 'a eval_result =
   ('a, [ Cmdliner_term.term_escape
        | `Exn of exn * Printexc.raw_backtrace
        | `Parse of string
-       | `Std_help of Cmdliner_manpage.format | `Std_version ]) result
+       | `Std_help of Cmdliner_manpage.format
+       | `Std_version
+       | `Complete of complete]) result
 
 let run_parser ~catch ei cl f = try (f ei cl :> 'a eval_result) with
 | exn when catch ->
@@ -40,6 +47,7 @@ let run_parser ~catch ei cl f = try (f ei cl :> 'a eval_result) with
 let try_eval_stdopts ~catch ei cl help version =
   match run_parser ~catch ei cl (snd help) with
   | Ok (Some fmt) -> Some (Error (`Std_help fmt))
+  | Error (`Complete _) -> assert false
   | Error _ as err -> Some err
   | Ok None ->
       match version with
@@ -74,6 +82,57 @@ let do_help help_ppf err_ppf ei fmt cmd =
   in
   Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei
 
+let do_completion args cmd cmd_children (prefix, kind) =
+  let file () = print_endline "file" in
+  let dir () = print_endline "dir" in
+  let group fmt = print_endline "group"; Printf.ksprintf print_endline fmt in
+  let item ~prefix (name, doc) =
+    if Cmdliner_base.string_has_prefix ~prefix name then begin
+      print_endline "item";
+      print_endline name;
+      let doc =
+        String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc
+      in
+      print_endline doc
+    end
+  in
+  let complete_arg_names () =
+    group "Options";
+    let args = Cmdliner_info.Cmd.args cmd in
+    let option arg _ =
+      let names = Cmdliner_info.Arg.opt_names arg in
+      let doc = Cmdliner_info.Arg.doc arg in
+      List.iter (fun name -> item ~prefix (name, doc)) names
+    in
+    Cmdliner_info.Arg.Set.iter option args
+  in
+  let complete_arg_values arg =
+    match Cmdliner_info.Arg.Set.find_opt arg args with
+    | None -> ()
+    | Some (V comp) ->
+        let complete = Cmdliner_base.Completion.complete comp in
+        group "Values";
+        List.iter (item ~prefix) (complete prefix);
+        if Cmdliner_base.Completion.files comp then file ();
+        if Cmdliner_base.Completion.dirs comp then dir ()
+  in
+  let complete_subcommands () =
+    group "Subcommands";
+    let complete_cmd cmd =
+      let name = Cmdliner_info.Cmd.name cmd in
+      let doc = Cmdliner_info.Cmd.doc cmd in
+      item ~prefix (name, doc)
+    in
+    List.iter complete_cmd cmd_children
+  in
+  match kind with
+  | `Opt a -> complete_arg_values a
+  | `Arg a -> complete_arg_values a; complete_arg_names ()
+  | `Any ->
+      match cmd_children with
+      | [] -> complete_arg_names ()
+      | _  -> complete_subcommands ()
+
 let do_result help_ppf err_ppf ei = function
 | Ok v -> Ok (`Ok v)
 | Error res ->
@@ -85,13 +144,15 @@ let do_result help_ppf err_ppf ei = function
     | `Parse err ->
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         Error `Parse
+    | `Complete (args, cmd, cmd_children, (prefix, kind)) ->
+        do_completion args cmd cmd_children (prefix, kind); Ok `Help
     | `Help (fmt, cmd) -> do_help help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->
         (if usage
          then Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:true ~err
          else Cmdliner_msg.pp_err err_ppf ei ~err);
-        (Error `Term)
+        Error `Term
 
 let cmd_name_trie cmds =
   let add acc cmd =
@@ -170,63 +231,6 @@ let do_deprecated_msgs err_ppf cl ei =
   if msgs <> []
   then Cmdliner_msg.pp_err err_ppf ei ~err:(String.concat "\n" msgs)
 
-module Complete = struct
-  let file () = print_endline "file"
-  let dir () = print_endline "dir"
-
-  let group fmt =
-    print_endline "group";
-    Printf.ksprintf print_endline fmt
-
-  let item ~prefix (name, doc) =
-    if Cmdliner_base.string_has_prefix ~prefix name then (
-      print_endline "item";
-      print_endline name;
-      let doc =
-        String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc
-      in
-      print_endline doc)
-end
-
-let handle_completion args cmd cmd_children (prefix, kind) =
-  let complete_arg_names () =
-    Complete.group "Options";
-    let args = Cmdliner_info.Cmd.args cmd in
-    Cmdliner_info.Arg.Set.iter (fun arg _ ->
-        let names = Cmdliner_info.Arg.opt_names arg in
-        let doc = Cmdliner_info.Arg.doc arg in
-        List.iter (fun name ->
-            Complete.item ~prefix (name, doc)) names)
-      args;
-  in
-  let complete_arg_values arg =
-    match Cmdliner_info.Arg.Set.find_opt arg args with
-    | None -> ()
-    | Some (V comp) ->
-        let complete = Cmdliner_base.Completion.complete comp in
-        Complete.group "Values";
-        List.iter (Complete.item ~prefix) (complete prefix);
-        if Cmdliner_base.Completion.files comp then Complete.file ();
-        if Cmdliner_base.Completion.dirs comp then Complete.dir ()
-  in
-  let complete_subcommands () =
-    Complete.group "Subcommands";
-    List.iter (fun cmd ->
-      let info = Cmdliner_cmd.get_info cmd in
-      let name = Cmdliner_info.Cmd.name info in
-      let doc = Cmdliner_info.Cmd.doc info in
-      Complete.item ~prefix (name, doc))
-      cmd_children
-  in
-  (match kind with
-  | `Opt a -> complete_arg_values a
-  | `Arg a -> complete_arg_values a; complete_arg_names ()
-  | `Any ->
-      (match cmd_children with
-      | [] ->  complete_arg_names ()
-      | _  -> complete_subcommands ()));
-  exit 0
-
 let eval_value
     ?help:(help_ppf = Format.std_formatter)
     ?err:(err_ppf = Format.err_formatter)
@@ -238,18 +242,21 @@ let eval_value
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let res = match res with
   | Error msg -> (* Command lookup error, we still prioritize stdargs *)
-      let cl = match Cmdliner_cline.create term_args args with
-      | `Completion compl -> handle_completion term_args cmd children compl
-      | `Error (_, cl) -> cl
-      | `Ok cl -> cl
-      in
-      begin match try_eval_stdopts ~catch ei cl help version with
-      | Some e -> e
-      | None -> Error (`Error (true, msg))
+      begin match Cmdliner_cline.create term_args args with
+      | `Completion compl ->
+          let children = List.map Cmdliner_cmd.get_info children in
+          Error (`Complete (term_args, cmd, children, compl))
+      | `Error (_, cl) | `Ok cl ->
+          begin match try_eval_stdopts ~catch ei cl help version with
+          | Some e -> e
+          | None -> Error (`Error (true, msg))
+          end
       end
   | Ok () ->
       match Cmdliner_cline.create term_args args with
-      | `Completion compl -> handle_completion term_args cmd children compl
+      | `Completion compl ->
+          let children = List.map Cmdliner_cmd.get_info children in
+          Error (`Complete (term_args, cmd, children, compl))
       | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
@@ -298,6 +305,7 @@ let eval_peek_opts
   | Error `Std_version -> Ok `Version
   | Error `Parse _ -> Error `Parse
   | Error `Help _ -> Ok `Help
+  | Error `Complete _ -> Ok `Help
   | Error `Exn _ -> Error `Exn
   | Error `Error _ -> Error `Term
   in
