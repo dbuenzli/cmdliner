@@ -92,7 +92,7 @@ let complete_prefix = "+cmdliner_complete:"
 let maybe_complete_token s =
   Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
 
-exception Completion_requested of 
+exception Completion_requested of
   string * [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
 
 let parse_opt_args ~peek_opts optidx cl args =
@@ -106,7 +106,7 @@ let parse_opt_args ~peek_opts optidx cl args =
       if not (is_opt s) then loop errs (k + 1) cl (s :: pargs) args else
       let name, value = parse_opt_arg s in
       match Cmdliner_trie.find optidx name with
-      | `Ok a ->
+      | Ok a ->
           let value, args = match value, Cmdliner_info.Arg.opt_kind a with
           | Some v, Cmdliner_info.Arg.Flag when is_short_opt name ->
               None, ("-" ^ v) :: args
@@ -122,12 +122,12 @@ let parse_opt_args ~peek_opts optidx cl args =
           | None ->
           let arg = O ((k, name, value) :: opt_arg cl a) in
           loop errs (k + 1) (Amap.add a arg cl) pargs args)
-      | `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
-      | `Not_found ->
+      | Error `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
+      | Error `Not_found ->
           let hints = hint_matching_opt optidx s in
           let err = Cmdliner_base.err_unknown ~kind:"option" ~hints name in
           loop (err :: errs) (k + 1) cl pargs args
-      | `Ambiguous ->
+      | Error `Ambiguous ->
           let ambs = Cmdliner_trie.ambiguities optidx name in
           let ambs = List.sort compare ambs in
           let err = Cmdliner_base.err_ambiguous ~kind:"option" name ~ambs in
@@ -145,9 +145,9 @@ let take_range start stop l =
       match maybe_complete_token v with
       | Some prefix -> `Complete prefix
       | None ->
-      if i < start then loop (i + 1) acc vs else
-      if i <= stop then loop (i + 1) (v :: acc) vs else
-      `Range (List.rev acc)
+          if i < start then loop (i + 1) acc vs else
+          if i <= stop then loop (i + 1) (v :: acc) vs else
+          `Range (List.rev acc)
   in
   loop 0 [] l
 
@@ -173,7 +173,7 @@ let process_pos_args posidx cl pargs =
       | Some n -> pos rev (Cmdliner_info.Arg.pos_start apos + n - 1)
       in
       let start, stop = if rev then stop, start else start, stop in
-      let args = 
+      let args =
         match take_range start stop pargs with
         | `Range args -> args
         | `Complete prefix -> raise (Completion_requested (prefix, `Arg a))
@@ -187,29 +187,28 @@ let process_pos_args posidx cl pargs =
       loop misses cl max_spec al
   in
   let misses, cl, max_spec = loop [] cl (-1) posidx in
-  let consume_excess () =
-    match take_range (max_spec + 1) last pargs with
-    | `Range args -> args
-    | `Complete prefix -> raise (Completion_requested (prefix, `Any))
+  let consume_excess () = match take_range (max_spec + 1) last pargs with
+  | `Range args -> args
+  | `Complete prefix -> raise (Completion_requested (prefix, `Any))
   in
-  if misses <> [] then (
+  if misses <> [] then begin
     let _ : string list = consume_excess () in
-    Error (Cmdliner_msg.err_pos_misses misses, cl)) else
+    Error (Cmdliner_msg.err_pos_misses misses, cl)
+  end else
   if last <= max_spec then Ok cl else
   Error (Cmdliner_msg.err_pos_excess (consume_excess ()), cl)
 
 let create ?(peek_opts = false) al args =
   let optidx, posidx, cl = arg_info_indexes al in
-  try
-  match parse_opt_args ~peek_opts optidx cl args with
+  try match parse_opt_args ~peek_opts optidx cl args with
   | Ok (cl, _) when peek_opts -> `Ok cl
-  | Ok (cl, pargs) -> 
-    (match process_pos_args posidx cl pargs with 
-    | Ok v -> `Ok v 
-    | Error v -> `Error v)
+  | Ok (cl, pargs) ->
+      (match process_pos_args posidx cl pargs with
+      | Ok v -> `Ok v
+      | Error v -> `Error v)
   | Error (errs, cl, pargs) ->
-    let _ : _ result = process_pos_args posidx cl pargs in
-    `Error (errs, cl)
+      let _ : _ result = process_pos_args posidx cl pargs in
+      `Error (errs, cl)
   with Completion_requested (prefix, kind) -> `Completion (prefix, kind)
 
 let deprecated_msgs cl =

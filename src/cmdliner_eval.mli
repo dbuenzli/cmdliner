@@ -5,8 +5,6 @@
 
 (** Command evaluation *)
 
-(** {1:eval Evaluating commands} *)
-
 type 'a eval_ok = [ `Ok of 'a | `Version | `Help ]
 type eval_error = [ `Parse | `Term | `Exn ]
 type 'a eval_exit = [ `Ok of 'a  | `Exit of Cmdliner_info.Exit.code ]

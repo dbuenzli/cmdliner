@@ -3,13 +3,13 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-module Cmap = Map.Make (Char)                           (* character maps. *)
+module Cmap = Map.Make (Char) (* character maps. *)
 
-type 'a value =                         (* type for holding a bound value. *)
-| Pre of 'a                    (* value is bound by the prefix of a key. *)
-| Key of 'a                          (* value is bound by an entire key. *)
-| Amb                     (* no value bound because of ambiguous prefix. *)
-| Nil                            (* not bound (only for the empty trie). *)
+type 'a value = (* type for holding a bound value. *)
+| Pre of 'a (* value is bound by the prefix of a key. *)
+| Key of 'a (* value is bound by an entire key. *)
+| Amb (* no value bound because of ambiguous prefix. *)
+| Nil (* not bound (only for the empty trie). *)
 
 type 'a t = { v : 'a value; succs : 'a t Cmap.t }
 let empty = { v = Nil; succs = Cmap.empty }
@@ -47,8 +47,8 @@ let find_node t k =
 
 let find t k =
   try match (find_node t k).v with
-  | Key v | Pre v -> `Ok v | Amb -> `Ambiguous | Nil -> `Not_found
-  with Not_found -> `Not_found
+  | Key v | Pre v -> Ok v | Amb -> Error `Ambiguous | Nil -> Error `Not_found
+  with Not_found -> Error `Not_found
 
 let ambiguities t p =                        (* ambiguities of [p] in [t]. *)
   try

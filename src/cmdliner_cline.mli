@@ -10,8 +10,9 @@ type t
 val create :
   ?peek_opts:bool -> Cmdliner_info.Arg.Set.t -> string list ->
   [ `Ok of t
-  | `Completion of 
-    string * [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
+  | `Completion of
+      string *
+      [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
   | `Error of string * t ]
 
 val opt_arg : t -> Cmdliner_info.Arg.t -> (int * string * (string option)) list

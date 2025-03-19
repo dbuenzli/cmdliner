@@ -11,9 +11,9 @@ let err_help s = "Term error, help requested for unknown command " ^ s
 let err_argv = "argv array must have at least one element"
 
 let add_stdopts ei =
-  let docs = Cmdliner_info.Cmd.stdopts_docs @@ Cmdliner_info.Eval.cmd ei in
+  let docs = Cmdliner_info.Cmd.stdopts_docs (Cmdliner_info.Eval.cmd ei) in
   let vargs, vers =
-    match Cmdliner_info.Cmd.version @@ Cmdliner_info.Eval.main ei with
+    match Cmdliner_info.Cmd.version (Cmdliner_info.Eval.main ei) with
     | None -> Cmdliner_info.Arg.Set.empty, None
     | Some _ ->
         let args, _ as vers = Cmdliner_arg.stdopt_version ~docs in
@@ -136,8 +136,8 @@ let find_term args cmd =
       | Group (i, (t, children)) ->
           let index = cmd_name_trie children in
           match Cmdliner_trie.find index arg with
-          | `Ok cmd -> loop args_rev (i :: parents) cmd args
-          | `Not_found ->
+          | Ok cmd -> loop args_rev (i :: parents) cmd args
+          | Error `Not_found ->
               let args = List.rev_append args_rev (arg :: args) in
               let all = Cmdliner_trie.ambiguities index "" in
               let hints = Cmdliner_base.suggest arg all in
@@ -145,7 +145,7 @@ let find_term args cmd =
               let kind = "command" in
               let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
               args, never_term, i, parents, children, Error err
-          | `Ambiguous ->
+          | Error `Ambiguous ->
               let args = List.rev_append args_rev (arg :: args) in
               let ambs = Cmdliner_trie.ambiguities index arg in
               let ambs = List.sort compare ambs in
@@ -171,7 +171,6 @@ let do_deprecated_msgs err_ppf cl ei =
   then Cmdliner_msg.pp_err err_ppf ei ~err:(String.concat "\n" msgs)
 
 module Complete = struct
-
   let file () = print_endline "file"
   let dir () = print_endline "dir"
 
@@ -183,7 +182,9 @@ module Complete = struct
     if Cmdliner_base.string_has_prefix ~prefix name then (
       print_endline "item";
       print_endline name;
-      let doc = String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc in
+      let doc =
+        String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc
+      in
       print_endline doc)
 end
 
@@ -218,15 +219,12 @@ let handle_completion args cmd cmd_children (prefix, kind) =
       cmd_children
   in
   (match kind with
-  | `Opt a ->
-    complete_arg_values a
-  | `Arg a ->
-    complete_arg_values a;
-    complete_arg_names ()
+  | `Opt a -> complete_arg_values a
+  | `Arg a -> complete_arg_values a; complete_arg_names ()
   | `Any ->
-    (match cmd_children with
-     | [] ->  complete_arg_names ()
-     | _  -> complete_subcommands ()));
+      (match cmd_children with
+      | [] ->  complete_arg_names ()
+      | _  -> complete_subcommands ()));
   exit 0
 
 let eval_value

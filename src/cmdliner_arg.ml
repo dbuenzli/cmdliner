@@ -368,11 +368,11 @@ let enum sl =
   if sl = [] then invalid_arg Cmdliner_base.err_empty_list else
   let t = Cmdliner_trie.of_list sl in
   let parser s = match Cmdliner_trie.find t s with
-  | `Ok v -> Ok v
-  | `Ambiguous ->
+  | Ok _ as v -> v
+  | Error `Ambiguous ->
       let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
       Error (Cmdliner_base.err_ambiguous ~kind:"enum value" s ~ambs)
-  | `Not_found ->
+  | Error `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
         Error (err_invalid_val s ("expected " ^ (doc_alts ~quoted:true alts)))
   in
