@@ -328,6 +328,50 @@ EXIT STATUS
 |};
   ()
 
+let test_conv_docv =
+  Test.test "Arg.Conv docv" @@ fun () ->
+  let cmd =
+    let field = Arg.Conv.of_conv Arg.string ~docv:"FIELD" () in
+    Cmd.make (Cmd.info "test_pos_all" ~doc:"Test pos all") @@
+    let+ all = Arg.(value & pos_all field [] & info [])
+    and+ opt = Arg.(value & opt field "bla" & info ["field"]) in
+    all, opt
+  in
+  let error err = Testing_cmdliner.snap_eval_error err cmd in
+  (**)
+  error `Term ["-z"; "a"] @@ __POS_OF__
+{|test_pos_all: unknown option '-z'.
+Usage: test_pos_all [--field=VAL] [OPTION]… [ARG]…
+Try 'test_pos_all --help' for more information.
+|};
+  (**)
+  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+{|NAME
+       test_pos_all - Test pos all
+
+SYNOPSIS
+       test_pos_all [--field=VAL] [OPTION]… [ARG]…
+
+OPTIONS
+       --field=VAL (absent=bla)
+
+COMMON OPTIONS
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of auto,
+           pager, groff or plain. With auto, the format is pager or plain
+           whenever the TERM env var is dumb or undefined.
+
+EXIT STATUS
+       test_pos_all exits with:
+
+       0   on success.
+
+       123 on indiscriminate errors reported on standard error.
+
+       124 on command line parsing errors.
+|};
+  ()
+
 let main () =
   let doc = "Test argument specifications" in
   Test.main ~doc @@ fun () -> Test.autorun ()

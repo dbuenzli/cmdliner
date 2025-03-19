@@ -137,16 +137,11 @@ let smap_append_block smap ~sec b =
 (* Formatting tools *)
 
 let strf = Printf.sprintf
-let pf = Format.fprintf
-let pp_str = Format.pp_print_string
-let pp_char = Format.pp_print_char
-let pp_indent ppf c = for i = 1 to c do pp_char ppf ' ' done
-let pp_lines = Cmdliner_base.pp_lines
-let pp_tokens = Cmdliner_base.pp_tokens
+module Fmt = Cmdliner_base.Fmt
 
 (* Cmdliner markup handling *)
 
-let err e fmt = pf e ("cmdliner error: " ^^ fmt ^^ "@.")
+let err e fmt = Fmt.pf e ("cmdliner error: " ^^ fmt ^^ "@.")
 let err_unescaped ~errs c s = err errs "unescaped %C in %S" c s
 let err_malformed ~errs s = err errs "Malformed $(…) in %S" s
 let err_unclosed ~errs s = err errs "Unclosed $(…) in %S" s
@@ -314,7 +309,7 @@ let l_indent = 4                                      (* label indentation. *)
 let pp_plain_blocks ~errs subst ppf ts =
   let b = Buffer.create 1024 in
   let markup t = doc_to_plain ~errs b ~subst t in
-  let pp_tokens ppf t = pp_tokens ~spaces:true ppf t in
+  let pp_tokens ppf t = Fmt.tokens ~spaces:true ppf t in
   let rec blank_line = function
   | `Noblank :: ts -> loop ts
   | ts -> Format.pp_print_cut ppf (); loop ts
@@ -325,30 +320,31 @@ let pp_plain_blocks ~errs subst ppf ts =
       | `Noblank -> loop ts
       | `Blocks bs -> loop (bs @ ts)
       | `P s ->
-          pf ppf "%a@[%a@]@," pp_indent p_indent pp_tokens (markup s);
+          Fmt.pf ppf "%a@[%a@]@," Fmt.indent p_indent pp_tokens (markup s);
           blank_line ts
-      | `S s -> pf ppf "@[%a@]@," pp_tokens (markup s); loop ts
+      | `S s -> Fmt.pf ppf "@[%a@]@," pp_tokens (markup s); loop ts
       | `Pre s ->
-          pf ppf "%a@[%a@]@," pp_indent p_indent pp_lines (markup s);
+          Fmt.pf ppf "%a@[%a@]@," Fmt.indent p_indent Fmt.lines (markup s);
           blank_line ts
       | `I (label, s) ->
           let label = markup label and s = markup s in
-          pf ppf "@[%a@[%a@]" pp_indent p_indent pp_tokens label;
+          Fmt.pf ppf "@[%a@[%a@]" Fmt.indent p_indent pp_tokens label;
           begin match s with
-          | "" -> pf ppf "@]@,"
+          | "" -> Fmt.pf ppf "@]@,"
           | s ->
               let ll = String.length label in
               if ll < l_indent
-              then (pf ppf "%a@[%a@]@]@," pp_indent (l_indent - ll) pp_tokens s)
-              else (pf ppf "@\n%a@[%a@]@]@,"
-                      pp_indent (p_indent + l_indent) pp_tokens s)
+              then (Fmt.pf ppf "%a@[%a@]@]@,"
+                      Fmt.indent (l_indent - ll) pp_tokens s)
+              else (Fmt.pf ppf "@\n%a@[%a@]@]@,"
+                      Fmt.indent (p_indent + l_indent) pp_tokens s)
           end;
           blank_line ts
   in
   loop ts
 
 let pp_plain_page ~errs subst ppf (_, text) =
-  pf ppf "@[<v>%a@]" (pp_plain_blocks ~errs subst) text
+  Fmt.pf ppf "@[<v>%a@]" (pp_plain_blocks ~errs subst) text
 
 (* Groff output *)
 
@@ -402,20 +398,21 @@ let doc_to_groff ~errs ~subst b s =
 let pp_groff_blocks ~errs subst ppf text =
   let buf = Buffer.create 1024 in
   let markup t = doc_to_groff ~errs ~subst buf t in
-  let pp_tokens ppf t = pp_tokens ~spaces:false ppf t in
+  let pp_tokens ppf t = Fmt.tokens ~spaces:false ppf t in
   let rec pp_block = function
   | `Blocks bs -> List.iter pp_block bs (* not T.R. *)
-  | `P s -> pf ppf "@\n.P@\n%a" pp_tokens (markup s)
-  | `Pre s -> pf ppf "@\n.P@\n.nf@\n%a@\n.fi" pp_lines (markup s)
-  | `S s -> pf ppf "@\n.SH %a" pp_tokens (markup s)
-  | `Noblank -> pf ppf "@\n.sp -1"
+  | `P s -> Fmt.pf ppf "@\n.P@\n%a" pp_tokens (markup s)
+  | `Pre s -> Fmt.pf ppf "@\n.P@\n.nf@\n%a@\n.fi" Fmt.lines (markup s)
+  | `S s -> Fmt.pf ppf "@\n.SH %a" pp_tokens (markup s)
+  | `Noblank -> Fmt.pf ppf "@\n.sp -1"
   | `I (l, s) ->
-      pf ppf "@\n.TP 4@\n%a@\n%a" pp_tokens (markup l) pp_tokens (markup s)
+      Fmt.pf ppf "@\n.TP 4@\n%a@\n%a" pp_tokens (markup l) pp_tokens (markup s)
   in
   List.iter pp_block text
 
 let pp_groff_page ~errs subst ppf ((n, s, a1, a2, a3), t) =
-  pf ppf ".\\\" Pipe this output to groff -m man -K utf8 -T utf8 | less -R@\n\
+  Fmt.pf ppf
+         ".\\\" Pipe this output to groff -m man -K utf8 -T utf8 | less -R@\n\
           .\\\"@\n\
           .mso an.tmac@\n\
           .TH \"%s\" %d \"%s\" \"%s\" \"%s\"@\n\

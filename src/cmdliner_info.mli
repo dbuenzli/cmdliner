@@ -62,10 +62,9 @@ module Arg : sig
   val pos_len : pos_kind -> int option
 
   type t
-  val v :
+  val make :
     ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:Env.info ->
-    string list -> t
+    ?doc:string -> ?env:Env.info -> string list -> t
 
   val id : t -> int
   val deprecated : t -> string option

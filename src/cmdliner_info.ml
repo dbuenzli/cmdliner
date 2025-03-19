@@ -96,7 +96,8 @@ module Arg = struct
 
   let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
-  let v ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env names =
+  let make ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env names
+    =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let opt_names = List.map dash names in
     let docs = match docs with

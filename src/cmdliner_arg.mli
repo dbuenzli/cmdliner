@@ -26,9 +26,15 @@ module Conv : sig
   val make :
     ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
     pp:'a fmt -> unit -> 'a t
+
+  val of_conv : 'a t ->
+    ?completion:'a Completion.t -> ?docv:string -> ?parser:'a parser ->
+    ?pp:'a fmt -> unit -> 'a t
+
   val docv : 'a conv -> string
   val parser : 'a conv -> 'a parser
   val pp : 'a conv -> 'a fmt
+  val completion : 'a t -> 'a Completion.t
 end
 
 val some : ?none:string -> 'a conv -> 'a option conv

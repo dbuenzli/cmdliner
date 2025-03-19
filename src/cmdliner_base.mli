@@ -12,13 +12,22 @@ val suggest : string -> string list -> string list
 (** [suggest near candidates]  suggest values from [candidates]
     not too far from [near]. *)
 
-(** {1:fmt Formatting helpers} *)
+val is_space : char -> bool
+val string_has_prefix : prefix:string -> string -> bool
+val string_drop_prefix : prefix:string -> string -> string option
 
-val pp_text : Format.formatter -> string -> unit
-val pp_lines : Format.formatter -> string -> unit
-val pp_tokens : spaces:bool -> Format.formatter -> string -> unit
+(* Formatters *)
 
-(** {1:err Error message helpers} *)
+module Fmt : sig
+  type 'a t = Format.formatter -> 'a -> unit
+  val pf : Format.formatter -> ('a, Format.formatter, unit) format -> 'a
+  val indent : int t
+  val text : string t
+  val lines : string t
+  val tokens : spaces:bool -> string t
+end
+
+(* Error message helpers *)
 
 val quote : string -> string
 val alts_str : ?quoted:bool -> string list -> string
@@ -28,7 +37,7 @@ val err_unknown :
 val err_multi_def :
   kind:string -> string -> ('b -> string) -> 'b -> 'b -> string
 
-(** {1:completion Completion strategies} *)
+(* Completion strategies *)
 
 module Completion : sig
   type complete = string -> (string * string) list
@@ -40,49 +49,49 @@ module Completion : sig
   val complete : 'a t -> complete
 end
 
-(** {1:conv Textual OCaml value converters} *)
+(* Textual OCaml value converters *)
 
 module Conv : sig
   type 'a parser = string -> ('a, string) result
-  type 'a fmt = Format.formatter -> 'a -> unit
+  type 'a fmt = 'a Fmt.t
   type 'a t
   val make :
-    ?completion:'a Completion.t ->
-    docv:string -> parser:'a parser -> pp:'a fmt -> unit -> 'a t
+    ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
+    pp:'a fmt -> unit -> 'a t
+
+  val of_conv : 'a t ->
+    ?completion:'a Completion.t -> ?docv:string -> ?parser:'a parser ->
+    ?pp:'a fmt -> unit -> 'a t
+
   val docv : 'a t -> string
   val parser : 'a t -> 'a parser
   val pp : 'a t -> 'a fmt
   val completion : 'a t -> 'a Completion.t
 end
 
-type 'a conv = 'a Conv.t
+val some : ?none:string -> 'a Conv.t -> 'a option Conv.t
+val some' : ?none:'a -> 'a Conv.t -> 'a option Conv.t
+val bool : bool Conv.t
+val char : char Conv.t
+val int : int Conv.t
+val nativeint : nativeint Conv.t
+val int32 : int32 Conv.t
+val int64 : int64 Conv.t
+val float : float Conv.t
+val string : string Conv.t
+val enum : (string * 'a) list -> 'a Conv.t
+val file : string Conv.t
+val dir : string Conv.t
+val non_dir_file : string Conv.t
+val list : ?sep:char -> 'a Conv.t -> 'a list Conv.t
+val array : ?sep:char -> 'a Conv.t -> 'a array Conv.t
+val pair : ?sep:char -> 'a Conv.t -> 'b Conv.t -> ('a * 'b) Conv.t
+val t2 : ?sep:char -> 'a Conv.t -> 'b Conv.t -> ('a * 'b) Conv.t
+val t3 :
+  ?sep:char -> 'a Conv.t ->'b Conv.t -> 'c Conv.t -> ('a * 'b * 'c) Conv.t
 
-val some : ?none:string -> 'a conv -> 'a option conv
-val some' : ?none:'a -> 'a conv -> 'a option conv
-val bool : bool conv
-val char : char conv
-val int : int conv
-val nativeint : nativeint conv
-val int32 : int32 conv
-val int64 : int64 conv
-val float : float conv
-val string : string conv
-val enum : (string * 'a) list -> 'a conv
-val file : string conv
-val dir : string conv
-val non_dir_file : string conv
-val list : ?sep:char -> 'a conv -> 'a list conv
-val array : ?sep:char -> 'a conv -> 'a array conv
-val pair : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
-val t2 : ?sep:char -> 'a conv -> 'b conv -> ('a * 'b) conv
-val t3 : ?sep:char -> 'a conv ->'b conv -> 'c conv -> ('a * 'b * 'c) conv
 val t4 :
-  ?sep:char -> 'a conv -> 'b conv -> 'c conv -> 'd conv ->
-  ('a * 'b * 'c * 'd) conv
+  ?sep:char -> 'a Conv.t -> 'b Conv.t -> 'c Conv.t -> 'd Conv.t ->
+  ('a * 'b * 'c * 'd) Conv.t
 
 val env_bool_parse : bool Conv.parser
-
-val is_space : char -> bool
-
-val string_has_prefix : prefix:string -> string -> bool
-val string_drop_prefix : prefix:string -> string -> string option

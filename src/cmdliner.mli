@@ -648,6 +648,12 @@ module Arg : sig
     (** [make ~docv ~parser ~pp ()] is an argument converter with
         given properties. See corresponding accessors for semantics. *)
 
+    val of_conv :
+      'a t -> ?completion:'a Completion.t -> ?docv:string ->
+      ?parser:'a parser -> ?pp:'a fmt -> unit -> 'a t
+    (** [of_conv conv ()] is a new converter with given unspecified
+        properties defaulting to those of [conv]. *)
+
     val docv : 'a t -> string
     (** [docv c] is [c]'s documentation meta-variable. This value can
         be refered to as [$(docv)] in the documentation strings of
@@ -659,6 +665,9 @@ module Arg : sig
 
     val pp : 'a t -> 'a fmt
     (** [pp c] is [c]'s argument formatter. *)
+
+    val completion : 'a t -> 'a Completion.t
+    (** [completion c] is [c]'s completion. *)
   end
 
   type 'a conv = 'a Conv.t

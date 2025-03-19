@@ -327,7 +327,7 @@ let eval' ?help ?err ?catch ?env ?argv ?term_err cmd =
 
 let pp_err ppf cmd ~msg = (* FIXME move that to Cmdliner_msgs *)
   let name = Cmdliner_cmd.name cmd in
-  Format.fprintf  ppf "%s: @[%a@]@." name Cmdliner_base.pp_lines msg
+  Format.fprintf  ppf "%s: @[%a@]@." name Cmdliner_base.Fmt.lines msg
 
 let eval_result
     ?help ?(err = Format.err_formatter) ?catch ?env ?argv ?term_err cmd

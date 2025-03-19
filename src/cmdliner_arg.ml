@@ -24,6 +24,10 @@ let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 module Completion = Cmdliner_base.Completion
 module Conv = Cmdliner_base.Conv
 type 'a conv = 'a Conv.t
+let some = Cmdliner_base.some
+let some' = Cmdliner_base.some'
+
+(* Deprecated *)
 
 type 'a printer = 'a Conv.fmt
 let docv_default = "VALUE"
@@ -36,8 +40,6 @@ let conv ?docv (parser, pp) =
 
 let conv_printer = Conv.pp
 let conv_docv = Conv.docv
-
-
 let conv_parser conv =
   fun s -> match Conv.parser conv s with
   | Ok _ as v -> v | Error e -> Error (`Msg e)
@@ -48,14 +50,12 @@ let parser_of_kind_of_string ~kind k_of_string =
   | None -> Error (err_invalid s kind)
   | Some v -> Ok v
 
-let some = Cmdliner_base.some
-let some' = Cmdliner_base.some'
 
 (* Argument information *)
 
 type 'a t = 'a Cmdliner_term.t
 type info = Cmdliner_info.Arg.t
-let info = Cmdliner_info.Arg.v
+let info = Cmdliner_info.Arg.make
 
 (* Arguments *)
 

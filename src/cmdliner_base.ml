@@ -47,6 +47,27 @@ let suggest s candidates =
   let dist, suggs = List.fold_left add (max_int, []) candidates in
   if dist < 3 (* suggest only if not too far *) then suggs else []
 
+(* Stdlib compatibility *)
+
+let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false
+
+let string_has_prefix ~prefix s =
+  let prefix_len = String.length prefix in
+  let s_len = String.length s in
+  if prefix_len > s_len then false else
+  let rec loop i =
+    if i = prefix_len then true
+    else if String.get prefix i = String.get s i then loop (i + 1)
+    else false
+  in
+  loop 0
+
+let string_drop_prefix ~prefix s =
+  if string_has_prefix ~prefix s then
+    let drop = String.length prefix in
+    Some (String.sub s drop (String.length s - drop))
+  else None
+
 (* Invalid argument strings *)
 
 let err_empty_list = "empty list"
@@ -56,50 +77,52 @@ let err_incomplete_enum ss =
 
 (* Formatting tools *)
 
-let pp = Format.fprintf
-let pp_sp = Format.pp_print_space
-let pp_str = Format.pp_print_string
-let pp_char = Format.pp_print_char
-let pp_text = Format.pp_print_text
-let pp_lines ppf s =
-  let rec stop_at sat ~start ~max s =
-    if start > max then start else
-    if sat s.[start] then start else
-    stop_at sat ~start:(start + 1) ~max s
-  in
-  let sub s start stop ~max =
-    if start = stop then "" else
-    if start = 0 && stop > max then s else
-    String.sub s start (stop - start)
-  in
-  let is_nl c = c = '\n' in
-  let max = String.length s - 1 in
-  let rec loop start s = match stop_at is_nl ~start ~max s with
-  | stop when stop > max -> Format.pp_print_string ppf (sub s start stop ~max)
-  | stop ->
-      Format.pp_print_string ppf (sub s start stop ~max);
-      Format.pp_force_newline ppf ();
-      loop (stop + 1) s
-  in
-  loop 0 s
+module Fmt = struct
+  type 'a t = Format.formatter -> 'a -> unit
+  let pf = Format.fprintf
+  let sp = Format.pp_print_space
+  let string = Format.pp_print_string
+  let char = Format.pp_print_char
+  let indent ppf c = for i = 1 to c do char ppf ' ' done
+  let text = Format.pp_print_text
+  let lines ppf s =
+    let rec stop_at sat ~start ~max s =
+      if start > max then start else
+      if sat s.[start] then start else
+      stop_at sat ~start:(start + 1) ~max s
+    in
+    let sub s start stop ~max =
+      if start = stop then "" else
+      if start = 0 && stop > max then s else
+      String.sub s start (stop - start)
+    in
+    let is_nl c = c = '\n' in
+    let max = String.length s - 1 in
+    let rec loop start s = match stop_at is_nl ~start ~max s with
+    | stop when stop > max -> Format.pp_print_string ppf (sub s start stop ~max)
+    | stop ->
+        Format.pp_print_string ppf (sub s start stop ~max);
+        Format.pp_force_newline ppf ();
+        loop (stop + 1) s
+    in
+    loop 0 s
 
-let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false
-
-let pp_tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
-  let i_max = String.length s - 1 in
-  let flush start stop = pp_str ppf (String.sub s start (stop - start + 1)) in
-  let rec skip_white i =
-    if i > i_max then i else
-    if is_space s.[i] then skip_white (i + 1) else i
-  in
-  let rec loop start i =
-    if i > i_max then flush start i_max else
-    if not (is_space s.[i]) then loop start (i + 1) else
-    let next_start = skip_white i in
-    (flush start (i - 1); if spaces then pp_sp ppf () else pp_char ppf ' ';
-     if next_start > i_max then () else loop next_start next_start)
-  in
-  loop 0 0
+  let tokens ~spaces ppf s = (* collapse white and hint spaces (maybe) *)
+    let i_max = String.length s - 1 in
+    let flush start stop = string ppf (String.sub s start (stop - start + 1)) in
+    let rec skip_white i =
+      if i > i_max then i else
+      if is_space s.[i] then skip_white (i + 1) else i
+    in
+    let rec loop start i =
+      if i > i_max then flush start i_max else
+      if not (is_space s.[i]) then loop start (i + 1) else
+      let next_start = skip_white i in
+      (flush start (i - 1); if spaces then sp ppf () else char ppf ' ';
+       if next_start > i_max then () else loop next_start next_start)
+    in
+    loop 0 0
+end
 
 (* Converter (end-user) error messages *)
 
@@ -162,7 +185,7 @@ module Completion = struct
   let files c = c.files
   let dirs c = c.dirs
   let complete c = c.complete
-  let some : 'a t -> 'a option t = fun c -> { c with files = c.files}
+  let some = (Fun.id :> 'a t -> 'a option t)
 end
 
 (* Converters *)
@@ -179,13 +202,17 @@ module Conv = struct
   let make ?(completion = Completion.none) ~docv ~parser ~pp () =
     { docv; parser; pp; completion }
 
+  let of_conv
+      conv ?(completion = conv.completion) ?(docv = conv.docv)
+      ?(parser = conv.parser) ?(pp = conv.pp) ()
+    =
+    { docv; parser; pp; completion }
+
   let docv c = c.docv
   let parser c = c.parser
   let pp c = c.pp
   let completion c = c.completion
 end
-
-type 'a conv = 'a Conv.t
 
 let some ?(none = "") conv =
   let parser s = match Conv.parser conv s with
@@ -219,7 +246,7 @@ let char =
   | true -> Ok s.[0]
   | false -> Error (err_invalid_val s "expected a character")
   in
-  Conv.make ~docv:"CHAR" ~parser ~pp:pp_char ()
+  Conv.make ~docv:"CHAR" ~parser ~pp:Fmt.char ()
 
 let parse_with t_of_str exp s =
   try Ok (t_of_str s) with Failure _ -> Error (err_invalid_val s exp)
@@ -230,26 +257,25 @@ let int =
 
 let int32 =
   let parser = parse_with Int32.of_string "expected a 32-bit integer" in
-  let pp ppf = pp ppf "%ld" in
+  let pp ppf = Fmt.pf ppf "%ld" in
   Conv.make ~docv:"INT32" ~parser ~pp ()
 
 let int64 =
   let parser = parse_with Int64.of_string "expected a 64-bit integer" in
-  let pp ppf = pp ppf "%Ld" in
+  let pp ppf = Fmt.pf ppf "%Ld" in
   Conv.make ~docv:"INT64" ~parser ~pp ()
 
 let nativeint =
-  let parser =
-    parse_with Nativeint.of_string "expected a processor-native integer"
-  in
-  let pp ppf = pp ppf "%nd" in
+  let err = "expected a processor-native integer" in
+  let parser = parse_with Nativeint.of_string err in
+  let pp ppf = Fmt.pf ppf "%nd" in
   Conv.make ~docv:"NATIVEINT" ~parser ~pp ()
 
 let float =
   let parser = parse_with float_of_string "expected a floating point number" in
   Conv.make ~docv:"DOUBLE" ~parser ~pp:Format.pp_print_float ()
 
-let string = Conv.make ~docv:"" ~parser:Result.ok ~pp:pp_str ()
+let string = Conv.make ~docv:"" ~parser:Result.ok ~pp:Fmt.string ()
 
 let enum sl =
   if sl = [] then invalid_arg err_empty_list else
@@ -265,7 +291,7 @@ let enum sl =
   in
   let pp ppf v =
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
-    try pp_str ppf (List.assoc v sl_inv)
+    try Fmt.string ppf (List.assoc v sl_inv)
     with Not_found -> invalid_arg (err_incomplete_enum (List.map fst sl))
   in
   let complete _prefix = List.map (fun (s, _) -> s, "") sl in
@@ -278,7 +304,7 @@ let file =
   | false -> Error (err_no "file or directory" s)
   in
   let completion = Completion.make ~dirs:true ~files:true () in
-  Conv.make ~docv:"PATH" ~parser ~pp:pp_str ~completion ()
+  Conv.make ~docv:"PATH" ~parser ~pp:Fmt.string ~completion ()
 
 let dir =
   let parser s = match Sys.file_exists s with
@@ -286,7 +312,7 @@ let dir =
   | false -> Error (err_no "directory" s)
   in
   let completion = Completion.make ~dirs:true () in
-  Conv.make ~docv:"DIR" ~parser ~pp:pp_str ~completion ()
+  Conv.make ~docv:"DIR" ~parser ~pp:Fmt.string ~completion ()
 
 let non_dir_file =
   let parser s = match Sys.file_exists s with
@@ -294,7 +320,7 @@ let non_dir_file =
   | false -> Error (err_no "file" s)
   in
   let completion = Completion.make ~files:true () in
-  Conv.make ~docv:"FILE" ~parser ~pp:pp_str ~completion ()
+  Conv.make ~docv:"FILE" ~parser ~pp:Fmt.string ~completion ()
 
 let split_and_parse sep parse s = (* raises [Failure] *)
   let parse sub = match parse sub with
@@ -319,7 +345,7 @@ let list ?(sep = ',') conv =
   let rec pp ppf = function
   | [] -> ()
   | v :: l ->
-      (Conv.pp conv) ppf v; if (l <> []) then (pp_char ppf sep; pp ppf l)
+      (Conv.pp conv) ppf v; if (l <> []) then (Fmt.char ppf sep; pp ppf l)
   in
   let docv = strf "%s[%c…]" conv.docv sep in
   Conv.make ~docv ~parser ~pp ()
@@ -332,7 +358,7 @@ let array ?(sep = ',') conv =
   let pp ppf v =
     let max = Array.length v - 1 in
     for i = 0 to max do
-      conv.pp ppf v.(i); if i <> max then pp_char ppf sep
+      conv.pp ppf v.(i); if i <> max then Fmt.char ppf sep
     done
   in
   let docv = strf "%s[%c…]" conv.docv sep in
@@ -354,7 +380,7 @@ let pair ?(sep = ',') conv0 conv1 =
       | Error e, _ | _, Error e -> Error (err_element "pair" s e)
   in
   let pp ppf (v0, v1) =
-    pp ppf "%a%c%a" (Conv.pp conv0) v0 sep (Conv.pp conv1) v1
+    Fmt.pf ppf "%a%c%a" (Conv.pp conv0) v0 sep (Conv.pp conv1) v1
   in
   let docv = strf "%s%c%s" (Conv.docv conv0) sep (Conv.docv conv1) in
   Conv.make ~docv ~parser ~pp ()
@@ -374,7 +400,7 @@ let t3 ?(sep = ',') conv0 conv1 conv2 =
               Error (err_element "triple" s e)
   in
   let pp ppf (v0, v1, v2) =
-    pp ppf "%a%c%a%c%a" conv0.pp v0 sep conv1.pp v1 sep conv2.pp v2
+    Fmt.pf ppf "%a%c%a%c%a" conv0.pp v0 sep conv1.pp v1 sep conv2.pp v2
   in
   let docv = strf "%s%c%s%c%s" conv0.docv sep conv1.docv sep conv2.docv in
   Conv.make ~docv ~parser ~pp ()
@@ -396,7 +422,7 @@ let t4 ?(sep = ',') conv0 conv1 conv2 conv3 =
               | _, _, _, Error e -> Error (err_element "quadruple" s e)
   in
   let pp ppf (v0, v1, v2, v3) =
-    pp ppf "%a%c%a%c%a%c%a" conv0.pp v0 sep conv1.pp v1 sep conv2.pp
+    Fmt.pf ppf "%a%c%a%c%a%c%a" conv0.pp v0 sep conv1.pp v1 sep conv2.pp
       v2 sep conv3.pp v3
   in
   let docv =
@@ -411,20 +437,3 @@ let env_bool_parse s = match String.lowercase_ascii s with
 | s ->
     let alts = alts_str ~quoted:true ["true"; "yes"; "false"; "no" ] in
     Error (err_invalid_val s alts)
-
-let string_has_prefix ~prefix s =
-  let prefix_len = String.length prefix in
-  let s_len = String.length s in
-  if prefix_len > s_len then false else
-  let rec loop i =
-    if i = prefix_len then true
-    else if String.get prefix i = String.get s i then loop (i + 1)
-    else false
-  in
-  loop 0
-
-let string_drop_prefix ~prefix s =
-  if string_has_prefix ~prefix s then
-    let drop = String.length prefix in
-    Some (String.sub s drop (String.length s - drop))
-  else None
