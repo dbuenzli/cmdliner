@@ -299,25 +299,29 @@ let enum sl =
   Conv.make ~docv:"ENUM" ~parser ~pp ~completion ()
 
 let file =
-  let parser s = match Sys.file_exists s with
-  | true -> Ok s
-  | false -> Error (err_no "file or directory" s)
+  let parser s =
+    if s = "-" then Ok s else
+    if Sys.file_exists s then Ok s else
+    Error (err_no "file or directory" s)
   in
   let completion = Completion.make ~dirs:true ~files:true () in
   Conv.make ~docv:"PATH" ~parser ~pp:Fmt.string ~completion ()
 
 let dir =
-  let parser s = match Sys.file_exists s with
-  | true -> if Sys.is_directory s then Ok s else Error (err_not_dir s)
-  | false -> Error (err_no "directory" s)
+  let parser s =
+    if Sys.file_exists s
+    then (if Sys.is_directory s then Ok s else Error (err_not_dir s))
+    else Error (err_no "directory" s)
   in
   let completion = Completion.make ~dirs:true () in
   Conv.make ~docv:"DIR" ~parser ~pp:Fmt.string ~completion ()
 
 let non_dir_file =
-  let parser s = match Sys.file_exists s with
-  | true -> if not (Sys.is_directory s) then Ok s else Error (err_is_dir s)
-  | false -> Error (err_no "file" s)
+  let parser s =
+    if s = "-" then Ok s else
+    if Sys.file_exists s
+    then (if not (Sys.is_directory s) then Ok s else Error (err_is_dir s))
+    else Error (err_no "file" s)
   in
   let completion = Completion.make ~files:true () in
   Conv.make ~docv:"FILE" ~parser ~pp:Fmt.string ~completion ()

@@ -946,20 +946,21 @@ module Arg : sig
 
   val file : string conv
   (** [file] converts a value with the identity function and checks
-      with {!Sys.file_exists} that a file with that name exists.
+      with {!Sys.file_exists} that a file with that name exists.  The
+      string ["-"] is parsed without checking it represents [stdio].
       It completes with both files directories. *)
 
   val dir : string conv
   (** [dir] converts a value with the identity function and checks
-      with {!Sys.file_exists} and {!Sys.is_directory}
-      that a directory with that name exists. It completes with
-      directories. *)
+      with {!Sys.file_exists} and {!Sys.is_directory} that a directory
+      with that name exists. It completes with directories. *)
 
   val non_dir_file : string conv
   (** [non_dir_file] converts a value with the identity function and
       checks with {!Sys.file_exists} and {!Sys.is_directory} that a
-      non directory file with that name exists. It completes with
-      files. *)
+      non directory file with that name exists. The string ["-"] is
+      parsed without checking it represents [stdio].  It completes
+      with files. *)
 
   (** {1:doc_helpers Documentation formatting helpers} *)
 

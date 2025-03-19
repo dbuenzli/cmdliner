@@ -33,7 +33,11 @@
 - Use `Arg.conv`'s `docv` property in the documentation of arguments
   whenever `Arg.info`'s `docv` is unspecified (#207).
 
-* Deprecate. `Arg.{printer,conv_docv,conv_parser,
+- Do not check file existence for `-` in `Arg.file` or
+  `Arg.non_dir_file` values. This is supposed to mean `stdin` or
+  `stdout` (#208).
+
+- Deprecate. `Arg.{printer,conv_docv,conv_parser,
   conv_printer,parser_of_kind_of_string,conv,conv'}`. These will
   likely never be removed but they should no longer be used for 
   new code. Use `Arg.Conv`. 
