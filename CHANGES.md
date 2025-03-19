@@ -38,10 +38,10 @@
   likely never be removed but they should no longer be used for 
   new code. Use `Arg.Conv`. 
 
-* Remove deprecated `Arg.{converter,parser,pconv}` (#206).
-* Remove deprecated `Arg.{env,env_var}` (#206).
-* Remove deprecated `Term.{pure,man_format}` (#206).
-* Remove deprecated `Term` evaluation interface (#206).
+- Remove deprecated `Arg.{converter,parser,pconv}` (#206).
+- Remove deprecated `Arg.{env,env_var}` (#206).
+- Remove deprecated `Term.{pure,man_format}` (#206).
+- Remove deprecated `Term` evaluation interface (#206).
 
 ### Other
 
