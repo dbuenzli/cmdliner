@@ -16,7 +16,7 @@ let cmdliner_lib =
 (* Tool *)
 
 let cmdliner_tool =
-  let srcs = [`Dir ~/"bin"] in
+  let srcs = [`Dir ~/"src/tool"] in
   B0_ocaml.exe "cmdliner" ~public:true ~srcs ~requires:[cmdliner]
 
 (* Tests *)

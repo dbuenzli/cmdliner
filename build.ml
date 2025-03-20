@@ -8,7 +8,7 @@ let src_dir = "src"
 
 type unit = Lib | Bin
 
-let unit_dir = function Lib -> "src" | Bin -> "bin"
+let unit_dir = function Lib -> "src" | Bin -> "src/tool"
 let build_dir u = Filename.concat root_build_dir (unit_dir u)
 
 let base_ocaml_opts =
@@ -108,11 +108,11 @@ let rec rmdir dir =
   try match Sys.file_exists dir with
   | false -> ()
   | true ->
-      let rm f = 
+      let rm f =
         let p = fpath ~dir f in
-        if Sys.is_directory p 
-        then rmdir p 
-        else Sys.remove (fpath ~dir f) 
+        if Sys.is_directory p
+        then rmdir p
+        else Sys.remove (fpath ~dir f)
       in
       Array.iter rm (Sys.readdir dir);
       run_cmd ["rmdir"; dir]
@@ -138,7 +138,7 @@ let sort_srcs srcs =
 
 let common srcs = base_ocaml_opts @ sort_srcs srcs
 
-let exe src = 
+let exe src =
   let lib = build_dir Lib in
   ["-I"; lib; "cmdliner.cmxa"] @ common src
 

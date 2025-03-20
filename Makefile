@@ -72,7 +72,7 @@ install-byte: prepare-prefix
 install-native: prepare-prefix
 	$(INSTALL) -m 644 $(BASE).cmxa $(BASE)$(EXT_LIB) \
 	  $(wildcard -m 644 $(BASE)*.cmx) "$(LIBDIR)"
-	$(INSTALL) -m 755 $(B)/bin/cmdliner.exe "$(BINDIR)/cmdliner"
+	$(INSTALL) -m 755 $(B)/src/tool/cmdliner.exe "$(BINDIR)/cmdliner"
 
 install-native-dynlink: prepare-prefix
 	$(INSTALL) -m 644 $(BASE).cmxs "$(LIBDIR)"
