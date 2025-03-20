@@ -78,6 +78,7 @@ module Fmt = struct
   type 'a t = Format.formatter -> 'a -> unit
   let pf = Format.fprintf
   let sp = Format.pp_print_space
+  let cut = Format.pp_print_cut
   let string = Format.pp_print_string
   let char = Format.pp_print_char
   let indent ppf c = for i = 1 to c do char ppf ' ' done

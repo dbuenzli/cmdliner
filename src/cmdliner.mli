@@ -532,8 +532,8 @@ module Cmd : sig
       {- [catch] if [true] (default) uncaught exceptions
          are intercepted and their stack trace is written to the [err]
          formatter}
-      {- [help] is the formatter used to print help or version messages
-         (defaults to {!Format.std_formatter})}
+      {- [help] is the formatter used to print help, version messages
+         or completions, (defaults to {!Format.std_formatter})}
       {- [err] is the formatter used to print error messages
          (defaults to {!Format.err_formatter}).}} *)
 

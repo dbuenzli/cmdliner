@@ -82,56 +82,56 @@ let do_help help_ppf err_ppf ei fmt cmd =
   in
   Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei
 
-let do_completion args cmd cmd_children (prefix, kind) =
-  let file () = print_endline "file" in
-  let dir () = print_endline "dir" in
-  let group fmt = print_endline "group"; Printf.ksprintf print_endline fmt in
-  let item ~prefix (name, doc) =
+let do_completion help_ppf args cmd cmd_children (prefix, kind) =
+  let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
+  let pp_group ppf s = pp_line ppf "group"; pp_line ppf s in
+  let pp_item ppf ~prefix (name, doc) =
     if Cmdliner_base.string_has_prefix ~prefix name then begin
-      print_endline "item";
-      print_endline name;
-      let doc =
-        String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) doc
+      let on_single_line s =
+        String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) s
       in
-      print_endline doc
+      pp_line ppf "item";
+      pp_line ppf name;
+      pp_line ppf (on_single_line doc)
     end
   in
-  let complete_arg_names () =
-    group "Options";
-    let args = Cmdliner_info.Cmd.args cmd in
-    let option arg _ =
-      let names = Cmdliner_info.Arg.opt_names arg in
-      let doc = Cmdliner_info.Arg.doc arg in
-      List.iter (fun name -> item ~prefix (name, doc)) names
-    in
-    Cmdliner_info.Arg.Set.iter option args
+  let pp_option ppf arg _ =
+    let names = Cmdliner_info.Arg.opt_names arg in
+    let doc = Cmdliner_info.Arg.doc arg in
+    List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
   in
-  let complete_arg_values arg =
+  let pp_complete_arg_names ppf cmd =
+    pp_group ppf "Options";
+    Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args cmd)
+  in
+  let pp_complete_arg_values ppf arg =
     match Cmdliner_info.Arg.Set.find_opt arg args with
     | None -> ()
     | Some (V comp) ->
         let complete = Cmdliner_base.Completion.complete comp in
-        group "Values";
-        List.iter (item ~prefix) (complete prefix);
-        if Cmdliner_base.Completion.files comp then file ();
-        if Cmdliner_base.Completion.dirs comp then dir ()
+        pp_group ppf "Values";
+        List.iter (pp_item ppf ~prefix) (complete prefix);
+        if Cmdliner_base.Completion.files comp then pp_line ppf "file";
+        if Cmdliner_base.Completion.dirs comp then pp_line ppf "dir"
   in
-  let complete_subcommands () =
-    group "Subcommands";
+  let pp_complete_subcommands ppf cmd_children =
+    pp_group ppf "Subcommands";
     let complete_cmd cmd =
       let name = Cmdliner_info.Cmd.name cmd in
       let doc = Cmdliner_info.Cmd.doc cmd in
-      item ~prefix (name, doc)
+      pp_item ppf ~prefix (name, doc)
     in
     List.iter complete_cmd cmd_children
   in
-  match kind with
-  | `Opt a -> complete_arg_values a
-  | `Arg a -> complete_arg_values a; complete_arg_names ()
+  let pp_completions ppf () = match kind with
+  | `Opt a -> pp_complete_arg_values ppf a
+  | `Arg a -> pp_complete_arg_values ppf a; pp_complete_arg_names ppf cmd
   | `Any ->
       match cmd_children with
-      | [] -> complete_arg_names ()
-      | _  -> complete_subcommands ()
+      | [] -> pp_complete_arg_names ppf cmd
+      | _  -> pp_complete_subcommands ppf cmd_children
+  in
+  Cmdliner_base.Fmt.pf help_ppf "@[<v>%a@]" pp_completions ()
 
 let do_result help_ppf err_ppf ei = function
 | Ok v -> Ok (`Ok v)
@@ -145,7 +145,7 @@ let do_result help_ppf err_ppf ei = function
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         Error `Parse
     | `Complete (args, cmd, cmd_children, (prefix, kind)) ->
-        do_completion args cmd cmd_children (prefix, kind); Ok `Help
+        do_completion help_ppf args cmd cmd_children (prefix, kind); Ok `Help
     | `Help (fmt, cmd) -> do_help help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->
