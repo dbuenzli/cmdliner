@@ -37,11 +37,6 @@ let example_group_test =
   let srcs = [testing] and requires = [b0_std] in
   test ~/"test/example_group_test.ml" ~run:false ~srcs ~requires
 
-
-let blueprint_min = test ~/"test/blueprint_min.ml" ~run:false
-let blueprint_tool = test ~/"test/blueprint_tool.ml" ~run:false
-let blueprint_cmds = test ~/"test/blueprint_cmds.ml" ~run:false
-
 let example_chorus = test ~/"test/example_chorus.ml" ~run:false
 let example_cp = test ~/"test/example_cp.ml" ~run:false
 let example_darcs = test ~/"test/example_darcs.ml" ~run:false
@@ -49,6 +44,10 @@ let example_revolt1 = test ~/"test/example_revolt1.ml" ~run:false
 let example_revolt2 = test ~/"test/example_revolt2.ml" ~run:false
 let example_rm = test ~/"test/example_rm.ml" ~run:false
 let example_tail = test ~/"test/example_tail.ml" ~run:false
+
+let blueprint_min = test ~/"test/blueprint_min.ml" ~run:false
+let blueprint_tool = test ~/"test/blueprint_tool.ml" ~run:false
+let blueprint_cmds = test ~/"test/blueprint_cmds.ml" ~run:false
 
 (* Completion scripts update *)
 
