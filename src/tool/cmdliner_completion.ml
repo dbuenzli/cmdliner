@@ -25,7 +25,6 @@ let zsh_completion name = Printf.sprintf {|function _%s {
   fi
 }
 compdef _%s %s
-
 |} name name name
 
 let bash_completion name = Printf.sprintf {|_%s() {
@@ -53,5 +52,4 @@ let bash_completion name = Printf.sprintf {|_%s() {
   return 0
 }
 complete -F _%s %s
-
 |} name name name

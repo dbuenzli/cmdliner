@@ -1,4 +1,4 @@
-function _NAME {
+function _cmdliner_generic {
   words[CURRENT]="+cmdliner_complete:${words[CURRENT]}"
   local line="${(@)words}"
   local -a completions
@@ -24,4 +24,3 @@ function _NAME {
     _describe -V unsorted completions -U
   fi
 }
-compdef _NAME NAME

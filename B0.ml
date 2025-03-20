@@ -58,11 +58,13 @@ let update_completion_scripts =
   let ml = B0_env.in_scope_dir env ~/"src/tool/cmdliner_completion.ml" in
   let* zsh = Os.File.read zsh in
   let* bash = Os.File.read bash in
-  let rename s = String.replace_all ~sub:"NAME" ~by:"%s" s in
+  let rename s = String.replace_all ~sub:"_cmdliner_generic" ~by:"_%s" s in
   let src = Fmt.str
-      "let zsh_completion name = Printf.sprintf {|%s\n\
+      "let zsh_completion name = Printf.sprintf {|%s\
+       compdef _%%s %%s\n\
        |} name name name\n\n\
-       let bash_completion name = Printf.sprintf {|%s\n\
+       let bash_completion name = Printf.sprintf {|%s\
+       complete -F _%%s %%s\n\
        |} name name name" (rename zsh) (rename bash)
   in
   Os.File.write ~force:true ~make_path:false ml src
@@ -88,8 +90,9 @@ let default =
     |> ~~ B0_opam.depends [ "ocaml", {|>= "4.08.0"|}; ]
     |> ~~ B0_opam.build {|[[ make "all" "PREFIX=%{prefix}%" ]]|}
     |> ~~ B0_opam.install
-      {|[[make "install" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
-         [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]]|}
+{|[[make "install" "BINDIR=%{_:bin}%" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
+   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
+   [make "install-completions" "SHAREDIR=%{share}%"]]|}
     |> B0_meta.tag B0_opam.tag
   in
   let locked = false (* So that it looks up b0.std *) in

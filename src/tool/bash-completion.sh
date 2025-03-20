@@ -1,4 +1,4 @@
-_NAME() {
+_cmdliner_generic() {
   local prefix="${COMP_WORDS[COMP_CWORD]}"
   COMP_WORDS[COMP_CWORD]="+cmdliner_complete:${COMP_WORDS[COMP_CWORD]}"
   local line="${COMP_WORDS[@]}"
@@ -22,4 +22,3 @@ _NAME() {
   done < <(eval $line)
   return 0
 }
-complete -F _NAME NAME
