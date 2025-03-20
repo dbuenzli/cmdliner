@@ -9,6 +9,14 @@ perform common development tasks.
 
 The build system used for distribution is in the `Makefile`.
 
+# Changing completion scripts
+
+If you change completion scripts you should invoke:
+
+    b0 -- update-completion-scripts
+
+so that the changes get incorporated into the `cmdliner` tool.
+
 # Testing
 
 Testing is done with `B0_testing` from `b0.std`. The catch is that

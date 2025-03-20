@@ -2,6 +2,7 @@
 (* See DEVEL.md for an explanation for the above line *)
 
 open B0_kit.V000
+open Result.Syntax
 
 (* OCaml library names *)
 
@@ -49,6 +50,23 @@ let example_revolt2 = test ~/"test/example_revolt2.ml" ~run:false
 let example_rm = test ~/"test/example_rm.ml" ~run:false
 let example_tail = test ~/"test/example_tail.ml" ~run:false
 
+(* Completion scripts update *)
+
+let update_completion_scripts =
+  B0_unit.of_action "update-completion-scripts" @@ fun env _ ~args:_ ->
+  let zsh = B0_env.in_scope_dir env ~/"src/tool/zsh-completion.sh" in
+  let bash = B0_env.in_scope_dir env ~/"src/tool/bash-completion.sh" in
+  let ml = B0_env.in_scope_dir env ~/"src/tool/cmdliner_completion.ml" in
+  let* zsh = Os.File.read zsh in
+  let* bash = Os.File.read bash in
+  let rename s = String.replace_all ~sub:"NAME" ~by:"%s" s in
+  let src = Fmt.str
+      "let zsh_completion name = Printf.sprintf {|%s\n\
+       |} name name name\n\n\
+       let bash_completion name = Printf.sprintf {|%s\n\
+       |} name name name" (rename zsh) (rename bash)
+  in
+  Os.File.write ~force:true ~make_path:false ml src
 
 (* Packs *)
 
