@@ -23,6 +23,20 @@ let cmdliner_tool =
 
 let test ?(requires = []) = B0_ocaml.test ~requires:(cmdliner :: requires)
 
+let testing = `File ~/"test/testing_cmdliner.ml"
+
+let test_arg = test ~/"test/test_arg.ml" ~srcs:[testing] ~requires:[b0_std]
+let test_term = test ~/"test/test_term.ml" ~srcs:[testing] ~requires:[b0_std]
+let test_cmd = test ~/"test/test_cmd.ml" ~srcs:[testing] ~requires:[b0_std]
+let test_man = test ~/"test/test_man.ml" ~srcs:[testing] ~requires:[b0_std]
+let test_completion =
+  test ~/"test/test_completion.ml" ~srcs:[testing] ~requires:[b0_std]
+
+let example_group_test =
+  let srcs = [testing] and requires = [b0_std] in
+  test ~/"test/example_group_test.ml" ~run:false ~srcs ~requires
+
+
 let blueprint_min = test ~/"test/blueprint_min.ml" ~run:false
 let blueprint_tool = test ~/"test/blueprint_tool.ml" ~run:false
 let blueprint_cmds = test ~/"test/blueprint_cmds.ml" ~run:false
@@ -34,12 +48,6 @@ let example_revolt1 = test ~/"test/example_revolt1.ml" ~run:false
 let example_revolt2 = test ~/"test/example_revolt2.ml" ~run:false
 let example_rm = test ~/"test/example_rm.ml" ~run:false
 let example_tail = test ~/"test/example_tail.ml" ~run:false
-
-let testing = `File ~/"test/testing_cmdliner.ml"
-let test_arg = test ~/"test/test_arg.ml" ~requires:[b0_std] ~srcs:[testing]
-let test_term = test ~/"test/test_term.ml" ~requires:[b0_std] ~srcs:[testing]
-let test_cmd = test ~/"test/test_cmd.ml" ~requires:[b0_std] ~srcs:[testing]
-let test_man = test ~/"test/test_man.ml" ~requires:[b0_std] ~srcs:[testing]
 
 
 (* Packs *)

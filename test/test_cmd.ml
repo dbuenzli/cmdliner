@@ -21,64 +21,7 @@ open Cmdliner.Term.Syntax
 
 let test_groups =
   Test.test "Cmd.group" @@ fun () ->
-  let cmd =
-    let man = [ `P "Invoke command with $(iname)." ] in
-    let kind =
-      let doc = "Kind of entity" in
-      Arg.(value & opt (some string) None & info ["k";"kind"] ~doc)
-    in
-    let speed =
-      let doc = "Movement $(docv) in m/s" in
-      Arg.(value & opt int 2 & info ["speed"] ~doc ~docv:"SPEED")
-    in
-    let birds =
-      let bird =
-        let doc = "Use $(docv) specie." in
-        Arg.(value & pos 0 string "pigeon" & info [] ~doc ~docv:"BIRD")
-      in
-      let fly =
-        Cmd.make (Cmd.info "fly" ~doc:"Fly birds." ~man) @@
-        let+ bird and+ speed in ()
-      in
-      let land' =
-        Cmd.make (Cmd.info "land" ~doc:"Land birds." ~man) @@
-        let+ bird in ()
-      in
-      let info = Cmd.info "birds" ~doc:"Operate on birds." ~man in
-      Cmd.group ~default:Term.(const (fun k -> ()) $ kind) info [fly; land']
-    in
-    let mammals =
-      let man_xrefs = [`Main; `Cmd "birds" ] and doc = "Operate on mammals." in
-      Cmd.make (Cmd.info "mammals" ~doc ~man_xrefs ~man) @@
-      Term.(const (fun () -> ()) $ const ())
-    in
-    let fishs =
-      let name' =
-        let doc = "Use fish named $(docv)." in
-        Arg.(value & pos 0 (some string) None & info [] ~doc ~docv:"NAME")
-      in
-      Cmd.make (Cmd.info "fishs" ~doc:"Operate on fishs." ~man) @@
-      let+ name' in ()
-    in
-    let camels =
-      let herd =
-        let doc = "Find in herd $(docv)." and docv = "HERD" in
-        let deprecated = "deprecated, herds are ignored." in
-        Arg.(value & pos 0 (some string) None & info [] ~deprecated ~doc ~docv)
-      in
-      let bactrian =
-        let deprecated = "deprecated, use nothing instead." in
-        let doc = "Specify a bactrian camel." in
-        let env = Cmd.Env.info "BACTRIAN" ~deprecated in
-        Arg.(value & flag & info ["bactrian"; "b"] ~deprecated ~env ~doc)
-      in
-      let deprecated = "deprecated, use 'mammals' instead." in
-      Cmd.make (Cmd.info "camels" ~deprecated ~doc:"Operate on camels." ~man) @@
-      let+ bactrian and+ herd in ()
-    in
-    Cmd.group (Cmd.info "test_group" ~version:"X.Y.Z" ~man) @@
-    [birds; mammals; fishs; camels]
-  in
+  let cmd = Testing_cmdliner.sample_group_cmd in
   let parse = Testing_cmdliner.snap_parse Test.T.unit cmd in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   let warning = Testing_cmdliner.snap_parse_warnings cmd in
