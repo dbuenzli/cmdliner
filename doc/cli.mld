@@ -8,9 +8,9 @@ with shells when you use Cmdliner.
 For tools evaluating a command without sub commands the most general
 form of invocation is:
 
-{[
+{v
 tool [OPTION]… [ARG]…
-]}
+v}
 
 The tool automatically reponds to the [--help] option by printing
 {{!help}the help}. If a version string is provided in the
@@ -27,9 +27,9 @@ argument.
 
 Tools evaluating commands with sub commands have this form of invocation
 
-{[
+{v
 tool [COMMAND]… [OPTION]… [ARG]…
-]}
+v}
 
 Commands automatically respond to the [--help] option by printing
 {{!help}their help}. The sequence of [COMMAND] strings must be the first
@@ -92,14 +92,27 @@ optional argument or they may need to look like option names, anything
 that follows the special token ["--"] on the command line is
 considered to be a positional argument:
 
-{[
+{v
 tool --option -- but --now we -are --all positional --argu=ments
-]}
+v}
+
+{2:constraints Constraints on option names}
+
+Using the cmdliner library puts the following constraints on your
+command line interface:
+
+{ul
+{- The option name [--cmdliner] is reserved by the library.}
+{- The option name [--help], (and [--version] if you specify a version
+   string) is reserved by the library. Using it as a term or option
+   name may result in undefined behaviour.}
+{- Defining the same option or command name via two different
+   arguments or terms is illegal and raises [Invalid_argument].}}
 
 {1:envlookup Environment variables}
 
 Non-required command line arguments can be backed up by an environment
-variable.  If the argument is absent from the command line and that
+variable.  If the argument is absent from the command line and
 the environment variable is defined, its value is parsed using the
 argument converter and defines the value of the argument.
 
@@ -126,7 +139,7 @@ as plain text.
 Alternative help formats can be specified with the optional argument
 of [--help], see your own [tool --help] for more information.
 
-{[
+{@sh[
 tool --help
 tool cmd --help
 tool --help=groff > tool.1
@@ -146,15 +159,212 @@ Regardless of the pager, it is invoked with [LESS=FRX] set in the
 environment unless, the [LESS] environment variable is set in your
 environment.
 
-{1:reserved Reserved option names}
+{1:cli_completion Command line completion}
 
-Using the cmdliner library puts the following constraints on your
-command line interface:
+Cmdliner programs automatically get support for shell command line
+completion.
+
+The completion process happens via a {{!completion_protocol}protocol}
+which is interpreted by generic shell completion scripts that are
+installed by the library. For now the [zsh] and [bash] shells are
+supported.
+
+Tool developers can easily {{!install_completion_tool}install}
+completion definitions that invoke these completion scripts. Tool
+end-users need to {{!user_configuration}make sure} these definitions are
+looked up by their shell.
+
+{2:user_configuration End-user configuration}
+
+If you are the user of a cmdliner based tool, the following
+shell-dependent steps need to be performed in order to benefit from
+command line completion.
+
+{3:user_zsh For [zsh]}
+
+The [FPATH] environment variable must be setup to include the
+directory where the generic cmdliner completion function is
+{{!install_completion} installed} {b before} properly initializing the
+completion system.
+
+For example, {{:https://github.com/ocaml/opam/issues/6427}for now}, if
+you are using [opam]. You should add something like this to your
+[.zshrc]:
+
+{@sh[
+FPATH="$(opam var share)/zsh/site-functions:${FPATH}"
+autoload -Uz compinit
+compinit -u
+]}
+
+After this to test everything is right, call the [_cmdliner_generic]
+function, which should result in an error.
+
+{@sh[
+> _cmdliner_generic
+_cmdliner_generic:1: words: assignment to invalid subscript range
+]}
+
+If the function cannnot be found make sure the [cmdliner] library is
+installed, that the generic scripts were
+{{!install_completion_generic}installed} and that the
+[_cmdliner_generic] file can be found in one of the directories
+mentioned in the [FPATH] variable.
+
+With this setup, if you are using a cmdliner based tool named
+[thetool] that did not {{!install_completion_tool}install} a completion
+definition. You can always do it yourself by invoking:
+
+{@sh[
+compdef _cmdliner_generic thetool
+]}
+
+{3:user_bash For [bash]}
+
+These instructions assume that you have
+{{:https://repology.org/project/bash-completion/versions}[bash-completion]}
+installed and correctly sourced in some way in your [.bashrc].
+
+The [XDG_DATA_DIRS] environment variable must be setup to include the
+[share] directory where the generic cmdliner completion function is
+{{!install_completion}installed}.
+
+For example, {{:https://github.com/ocaml/opam/issues/6427}for now}, if
+you are using [opam]. You should add something like this to your
+[.zshrc]:
+{@sh[
+# This is supposed to work but it may not
+XDG_DATA_DIRS="$(opam var share):${XDG_DATA_DIRS}"
+]}
+
+After this to test everything is right, call the [_cmdliner_generic]
+function, which should result in an error.:
+
+{@sh[
+> _comp_load _cmdliner_generic
+> _cmdliner_generic
+bash: +cmdliner_complete:: command not found
+]}
+
+If the function cannot be found make sure the [cmdliner] library is
+installed, that the generic scripts were
+{{!install_completion_generic}installed} and that the
+[_cmdliner_generic] file can looked up by [_comp_load].
+
+With this setup, if you are using a cmdliner based tool named
+[thetool] that did not {{!install_completion_tool}install} a completion
+definition. You can always do it yourself by invoking:
+
+{@sh[
+_comp_load _cmdliner_generic
+complete -F _cmdliner_generic thetool
+]}
+
+{2:install_completion Install}
+
+Completion scripts need to be installed in subdirectories of a
+{{:https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch04s11.html}[share]}
+directory which we specify in a [$SHAREDIR] variable below. In a
+package installation script this variable is typically defined by:
+
+{@sh[
+SHAREDIR="$DESTDIR/$PREFIX/share"
+]}
+
+The final destination directory in [share] depends on the shell:
 
 {ul
-{- The option name [--cmdliner] is reserved by the library.}
-{- The option name [--help], (and [--version] if you specify a version
-   string) is reserved by the library. Using it as a term or option
-   name may result in undefined behaviour.}
-{- Defining the same option or command name via two different
-   arguments or terms is illegal and raises [Invalid_argument].}}
+{- For [zsh] it is [$SHAREDIR/zsh/site-functions]}
+{- For [bash] it is [$SHAREDIR/bash-completions/completions]}}
+
+If that is unsastifying you can output the completion scripts directly
+where you want with the [cmdliner shell-completion] command.
+
+{3:install_completion_generic Generic scripts}
+
+The generic completion scripts should have been installed by the
+[cmdliner] library. If they were not you can inspect and install them
+with the following invocations, invoke with [--help] for more information.
+{@sh[
+cmdliner shell-completion generic zsh   # Output generic zsh script on stdout
+cmdliner install shell-completion generic $SHAREDIR     # All shells
+cmdliner install shell-completion generic $SHAREDIR zsh # Only zsh
+]}
+
+{3:install_completion_tool Tool scripts}
+
+If your tool named [thetool] uses Cmdliner you should install completion
+definitions for them. They rely on the {{!install_completion_generic}generic
+scripts} to be installed. These tool specific scripts can be inspected
+and installed via these invocations:
+{@sh[
+cmdliner completion tool thetool zsh   # Output generic script on stdout.
+cmdliner install shell-completion tool $SHAREDIR thetool     # All shells
+cmdliner install shell-completion tool $SHAREDIR thetool zsh # Only zsh
+]}
+
+{2:completion_protocol Completion protocol}
+
+There is no standard that allows tools and shells to interact to
+perform shell command line completion. Completion is supposed to
+happen through idiosyncratic, ad-hoc, obscure and brain damaging
+shell-specific completion scripts.
+
+To aleviate this, Cmdliner defines one generic script per shell and
+interacts with it using the protocol described below. The protocol can
+be used to implement generic completion scripts for other shells. The
+protocol is versioned but can change even between minor versions of
+Cmdliner. Generic scripts for popular shells can be inspected via
+the [cmdliner shell-completion generic] command.
+
+The protocol betwen the shell completion {e script} and a
+cmdliner based {e tool} is as follows:
+
+{ol
+{- When completion is requested the script invokes the tool with a
+   modified command line, replacing an argument [ARG] on which completion is
+   requested with the special argument [+cmdliner-complete:ARG].}
+{- The tool responds by writing on standard output a list of
+   completion directives which match the [completions] rule of the grammar
+   given below.}
+{- The script interprets the completion directives according
+   to the given semantics below so that the shell can display the
+   completions. The script is free to ignore directives
+   or data that it is unable to present.}}
+
+The following ABNF grammar is described using the notations of
+{{:https://www.rfc-editor.org/rfc/rfc5234}RFC 5234} and
+{{:https://www.rfc-editor.org/rfc/rfc7405}RFC 7405}. A few constraints
+are not expressed by the grammar:
+
+{ul
+{- Except in the [completion] rule, the byte stream may contain ANSI escape
+   sequences introduced by the byte [0x1B].}
+{- After stripping the ANSI escape sequences, the resulting byte stream must
+   be valid UTF-8 text.}}
+
+{@abnf[
+completions = version nl directives
+version = "1"
+directives = *(directive nl)
+directive = group / %s"file" / %s"dir"
+group = %s"group" nl group_name nl *item
+group_name = *pchar
+item = %s"item" nl completion nl description
+completion = *pchar
+description = *pchar
+nl = %0A
+pchar = %20-%7E / %8A-%FF
+]}
+
+The semantics of directives is as follows:
+
+{ul
+{- A [group] directive defines an informational [group_name]
+   followed by a possibly empty list of completion items that are part of
+   the group. An item provides a [completion] value followed by a single line
+   [description] which can include ANSI escapes.}
+{- A [file] directive indicates that the script should add existing
+   files staring with [ARG] to completion values.}
+{- A [dir] directive indicates that the script should add existing
+   directories starting with [ARG] to completion values.}}

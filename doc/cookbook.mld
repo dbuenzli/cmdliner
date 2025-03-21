@@ -379,8 +379,8 @@ let tool_cmd =
 {2:cmds_exit_code_docs How do I document command exit codes?}
 
 Exit codes are documentd by {!Cmdliner.Cmd.Exit.type-info} values and
-must be given to the command's {!Cmdliner.Cmd.type-info} value via
-the [exits] optional arguments. For example:
+must be given to the command's {!Cmdliner.Cmd.type-info} value via the
+[exits] optional arguments. For example:
 
 {[
 let conf_not_found = 1
@@ -436,6 +436,12 @@ in your tool function.
    the [Ok] case carries an exit code which is returned by the evaluation
    function.}}
 
+{2:cmds_howto_complete How can my tool support command line completion?}
+
+The command line interface manual has all
+{{!page-cli.cli_completion}the details} and
+{{!page-cli.install_completion_tool} specific instructions} for
+complementing your tool install.
 
 {1:blueprints Blueprints}
 
