@@ -30,6 +30,8 @@
 - Add `Arg.Conv` module to define converters. This should be used in
   new code. 
 
+- Add `docv` optional parameter to `Arg.enum`.
+
 - Use `Arg.conv`'s `docv` property in the documentation of arguments
   whenever `Arg.info`'s `docv` is unspecified (#207).
 

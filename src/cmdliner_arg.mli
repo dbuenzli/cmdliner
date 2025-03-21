@@ -87,7 +87,7 @@ val int32 : int32 conv
 val int64 : int64 conv
 val float : float conv
 val string : string conv
-val enum : (string * 'a) list -> 'a conv
+val enum : ?docv:string -> (string * 'a) list -> 'a conv
 val file : string conv
 val dir : string conv
 val non_dir_file : string conv

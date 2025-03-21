@@ -364,7 +364,7 @@ let float =
 
 let string = Conv.make ~docv:"" ~parser:Result.ok ~pp:Fmt.string ()
 
-let enum sl =
+let enum ?(docv = "ENUM") sl =
   if sl = [] then invalid_arg Cmdliner_base.err_empty_list else
   let t = Cmdliner_trie.of_list sl in
   let parser s = match Cmdliner_trie.find t s with
@@ -383,7 +383,7 @@ let enum sl =
   in
   let complete _prefix = List.map (fun (s, _) -> s, "") sl in
   let completion = Completion.make ~complete () in
-  Conv.make ~docv:"ENUM" ~parser ~pp ~completion ()
+  Conv.make ~docv ~parser ~pp ~completion ()
 
 let file =
   let parser s =
