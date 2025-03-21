@@ -11,9 +11,9 @@ The build system used for distribution is in the `Makefile`.
 
 # Changing completion scripts
 
-If you change completion scripts you should invoke:
+If you change completion scripts in [`src/tool`](src/tool) you must invoke:
 
-    b0 -- update-completion-scripts
+    b0 -- update-cmdliner-data
 
 so that the changes get incorporated into the `cmdliner` tool.
 

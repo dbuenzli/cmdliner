@@ -51,6 +51,10 @@
 
 ### Other
 
+- Install a `cmdliner` tool to help with completion script
+  installation. See the command line interface manual of the library
+  for more information (#187).
+
 - Added a proper test suite to the library to check for regressions.
   Replaces most of the test executables that had to be run and inspected
   manually (#205).
