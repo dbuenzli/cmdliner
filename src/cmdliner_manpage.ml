@@ -455,25 +455,24 @@ let find_cmd cmds =
   let find = if Sys.win32 then find_win32 else find_posix in
   try Some (List.find find cmds) with Not_found -> None
 
-let getenv_empty_is_none env = match Sys.getenv_opt env with
-| None | Some "" -> None
-| Some _ as v -> v
+let getenv_empty_is_none env var = match env var with
+| None | Some "" -> None | Some _ as v -> v
 
-let find_pager () =
+let find_pager env =
   let cmds = ["less", ""; "more", ""] in
-  let cmds = match getenv_empty_is_none "PAGER" with
+  let cmds = match getenv_empty_is_none env "PAGER" with
   | Some pager -> (pager, "") :: cmds | None -> cmds
   in
-  let cmds = match getenv_empty_is_none "MANPAGER" with
+  let cmds = match getenv_empty_is_none env "MANPAGER" with
   | Some manpager -> (manpager, "") :: cmds | None -> cmds
   in
   find_cmd cmds
 
-let pp_to_pager print ppf v = match find_pager () with
+let pp_to_pager env print ppf v = match find_pager env with
 | None -> print `Plain ppf v
 | Some (pager, opts) ->
     let pager =
-      let set_less_env = match Sys.getenv_opt "LESS" with
+      let set_less_env = match env "LESS" with
       | None -> if Sys.win32 then "set LESS=FRX && " else "LESS=FRX "
       | Some _ -> "" (* Sys.command will pass it *)
       in
@@ -519,18 +518,19 @@ let pp_to_pager print ppf v = match find_pager () with
 type format = [ `Auto | `Pager | `Plain | `Groff ]
 
 let rec print
-    ?(errs = Format.err_formatter) ?(subst = fun x -> None) fmt ppf page
+    ?(env = Sys.getenv_opt)  ?(errs = Format.err_formatter)
+    ?(subst = fun x -> None) fmt ppf page
   =
   match fmt with
-  | `Pager -> pp_to_pager (print ~errs ~subst) ppf page
+  | `Pager -> pp_to_pager env (print ~env ~errs ~subst) ppf page
   | `Plain -> pp_plain_page ~errs subst ppf page
   | `Groff -> pp_groff_page ~errs subst ppf page
   | `Auto ->
       let fmt =
-        match Sys.getenv "TERM" with
-        | exception Not_found when Sys.win32 -> `Pager
-        | exception Not_found -> `Plain
-        | "dumb" -> `Plain
+        match env "TERM" with
+        | None when Sys.win32 -> `Pager
+        | None -> `Plain
+        | Some "dumb" -> `Plain
         | _ -> `Pager
       in
-      print ~errs ~subst fmt ppf page
+      print ~env ~errs ~subst fmt ppf page

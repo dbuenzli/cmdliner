@@ -58,7 +58,7 @@ let try_eval_stdopts ~catch ei cl help version =
           | Ok true -> Some (Error (`Std_version))
           | Error _ as err -> Some err
 
-let do_help help_ppf err_ppf ei fmt cmd =
+let do_help ~env help_ppf err_ppf ei fmt cmd =
   let ei = match cmd with
   | None (* help of main command requested *)  ->
       let env _ = assert false in
@@ -80,7 +80,7 @@ let do_help help_ppf err_ppf ei fmt cmd =
         ei
       with Not_found -> invalid_arg (err_help cmd)
   in
-  Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei
+  Cmdliner_docgen.pp_man ~env ~errs:err_ppf fmt help_ppf ei
 
 let do_completion help_ppf args cmd cmd_children (prefix, kind) =
   let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
@@ -133,12 +133,12 @@ let do_completion help_ppf args cmd cmd_children (prefix, kind) =
   in
   Cmdliner_base.Fmt.pf help_ppf "@[<v>%a@]" pp_completions ()
 
-let do_result help_ppf err_ppf ei = function
+let do_result ~env help_ppf err_ppf ei = function
 | Ok v -> Ok (`Ok v)
 | Error res ->
     match res with
     | `Std_help fmt ->
-        Cmdliner_docgen.pp_man ~errs:err_ppf fmt help_ppf ei; Ok `Help
+        Cmdliner_docgen.pp_man ~env ~errs:err_ppf fmt help_ppf ei; Ok `Help
     | `Std_version ->
         Cmdliner_msg.pp_version help_ppf ei; Ok `Version
     | `Parse err ->
@@ -146,7 +146,7 @@ let do_result help_ppf err_ppf ei = function
         Error `Parse
     | `Complete (args, cmd, cmd_children, (prefix, kind)) ->
         do_completion help_ppf args cmd cmd_children (prefix, kind); Ok `Help
-    | `Help (fmt, cmd) -> do_help help_ppf err_ppf ei fmt cmd; Ok `Help
+    | `Help (fmt, cmd) -> do_help ~env help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->
         (if usage
@@ -215,7 +215,6 @@ let find_term args cmd =
   in
   loop [] [] cmd args
 
-let env_default v = try Some (Sys.getenv v) with Not_found -> None
 let remove_exec argv =
   try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
@@ -234,7 +233,7 @@ let do_deprecated_msgs err_ppf cl ei =
 let eval_value
     ?help:(help_ppf = Format.std_formatter)
     ?err:(err_ppf = Format.err_formatter)
-    ?(catch = true) ?(env = env_default) ?(argv = Sys.argv) cmd
+    ?(catch = true) ?(env = Sys.getenv_opt) ?(argv = Sys.argv) cmd
   =
   let args, f, cmd, parents, children, res = find_term (remove_exec argv) cmd in
   let ei = Cmdliner_info.Eval.v ~cmd ~parents ~env ~err_ppf in
@@ -269,10 +268,10 @@ let eval_value
               do_deprecated_msgs err_ppf cl ei;
               run_parser ~catch ei cl f
   in
-  do_result help_ppf err_ppf ei res
+  do_result ~env help_ppf err_ppf ei res
 
 let eval_peek_opts
-    ?(version_opt = false) ?(env = env_default) ?(argv = Sys.argv) t
+    ?(version_opt = false) ?(env = Sys.getenv_opt) ?(argv = Sys.argv) t
   : 'a option * ('a eval_ok, eval_error) result
   =
   let args, f = t in

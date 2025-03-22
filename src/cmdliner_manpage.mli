@@ -62,6 +62,7 @@ val s_environment_intro : block
 
 type format = [ `Auto | `Pager | `Plain | `Groff ]
 val print :
+  ?env:(string -> string option) ->
   ?errs:Format.formatter -> ?subst:(string -> string option) -> format ->
   Format.formatter -> t -> unit
 

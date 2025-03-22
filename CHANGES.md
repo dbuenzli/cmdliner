@@ -16,7 +16,7 @@
 
 ### API changes
 
-* Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for 
+- Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for
   the patch (#206).
 
 - Add `Manpage.section_name` type alias (#202).
@@ -38,6 +38,11 @@
 - Do not check file existence for `-` in `Arg.file` or
   `Arg.non_dir_file` values. This is supposed to mean `stdin` or
   `stdout` (#208).
+
+- Fix manpage rendering performing direct calls to `Sys.getenv` in
+  `Cmd.eval*` functions instead of calling the `env` argument as
+  advertised in the docs. Incidentally add an `env` optional argument
+  to `Manpage.print` (#209).
 
 - Deprecate. `Arg.{printer,conv_docv,conv_parser,
   conv_printer,parser_of_kind_of_string,conv,conv'}`. These will

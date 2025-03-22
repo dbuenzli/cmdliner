@@ -4,6 +4,7 @@
   ---------------------------------------------------------------------------*)
 
 val pp_man :
+  env:(string -> string option) ->
   errs:Format.formatter -> Cmdliner_manpage.format -> Format.formatter ->
   Cmdliner_info.Eval.t -> unit
 

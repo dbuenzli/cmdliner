@@ -150,12 +150,17 @@ module Manpage : sig
   (** The type for man page output specification. *)
 
   val print :
-    ?errs:Format.formatter ->
+    ?env:(string -> string option) -> ?errs:Format.formatter ->
     ?subst:(string -> string option) -> format -> Format.formatter -> t -> unit
-  (** [print ~errs ~subst fmt ppf page] prints [page] on [ppf] in the
-      format [fmt]. [subst] can be used to perform variable
-      substitution,(defaults to the identity). [errs] is used to print
-      formatting errors, it defaults to {!Format.err_formatter}. *)
+  (** [print ~env ~errs ~subst fmt ppf page] prints [page] on [ppf] in the
+      format [fmt].
+      {ul
+      {- [env] is used to lookup environment for driving paging when the
+         format is [`Pager]. Defaults to {!Sys.getenv_opt}.}
+      {- [subst] can be used to perform variable
+         substitution (defaults to the identity).}
+      {- [errs] is used to print formatting errors, it defaults to
+         {!Format.err_formatter}.}} *)
 end
 
 (** Terms.

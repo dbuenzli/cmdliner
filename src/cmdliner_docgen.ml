@@ -382,9 +382,9 @@ let title ei =
 
 let man ~errs ei = title ei, text ~errs ei
 
-let pp_man ~errs fmt ppf ei =
+let pp_man ~env ~errs fmt ppf ei =
   Cmdliner_manpage.print
-    ~errs ~subst:(cmd_info_subst ei) fmt ppf (man ~errs ei)
+    ~env ~errs ~subst:(cmd_info_subst ei) fmt ppf (man ~errs ei)
 
 (* Plain synopsis for usage *)
 
