@@ -223,7 +223,7 @@ compdef _cmdliner_generic thetool
 
 These instructions assume that you have
 {{:https://repology.org/project/bash-completion/versions}[bash-completion]}
-installed and correctly sourced in some way in your [.bashrc].
+installed and setup in some way in your [.bashrc].
 
 The [XDG_DATA_DIRS] environment variable must be setup to include the
 [share] directory where the generic cmdliner completion function is
@@ -231,7 +231,7 @@ The [XDG_DATA_DIRS] environment variable must be setup to include the
 
 For example, {{:https://github.com/ocaml/opam/issues/6427}for now}, if
 you are using [opam]. You should add something like this to your
-[.zshrc]:
+[.bashrc]:
 {@sh[
 XDG_DATA_DIRS="$(opam var share):${XDG_DATA_DIRS}"
 ]}
@@ -248,7 +248,7 @@ bash: +cmdliner_complete:: command not found
 If the function cannot be found make sure the [cmdliner] library is
 installed, that the generic scripts were
 {{!install_completion_generic}installed} and that the
-[_cmdliner_generic] file can looked up by [_comp_load].
+[_cmdliner_generic] file can be looked up by [_comp_load].
 
 With this setup, if you are using a cmdliner based tool named
 [thetool] that did not {{!install_completion_tool}install} a completion
