@@ -197,10 +197,11 @@ autoload -Uz compinit
 compinit -u
 ]}
 
-After this, to test everything is right, call the [_cmdliner_generic]
-function, which should result in an error.
+After this, to test everything is right, check that the [_cmdliner_generic]
+function can be looked by invoking it (this will result in an error).
 
 {@sh[
+> autoload _cmdliner_generic
 > _cmdliner_generic
 _cmdliner_generic:1: words: assignment to invalid subscript range
 ]}
@@ -216,6 +217,7 @@ With this setup, if you are using a cmdliner based tool named
 definition. You can always do it yourself by invoking:
 
 {@sh[
+autoload _cmdliner_generic
 compdef _cmdliner_generic thetool
 ]}
 
@@ -236,13 +238,13 @@ you are using [opam]. You should add something like this to your
 XDG_DATA_DIRS="$(opam var share):${XDG_DATA_DIRS}"
 ]}
 
-After this, to test everything is right, call the [_cmdliner_generic]
-function, which should result in an error.:
+After this, to test everything is right, check that the [_cmdliner_generic]
+function can be looked up:
 
 {@sh[
 > _comp_load _cmdliner_generic
-> _cmdliner_generic
-bash: +cmdliner_complete:: command not found
+> declare -F _cmdliner_generic &>/dev/null && echo "Found" || echo "Not found"
+Found!
 ]}
 
 If the function cannot be found make sure the [cmdliner] library is

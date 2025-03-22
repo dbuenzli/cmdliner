@@ -54,6 +54,7 @@ module Zsh = struct
   let tool_script_name ~toolname = "_" ^ toolname
   let tool_completion ~toolname = strf
 {|#compdef %s
+autoload _cmdliner_generic
 _cmdliner_generic
 |} toolname
 end
