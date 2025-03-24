@@ -40,6 +40,8 @@ let err_sep_miss sep s =
 module Completion = Cmdliner_base.Completion
 module Conv = Cmdliner_base.Conv
 type 'a conv = 'a Conv.t
+type 'a econv = Conv : { conv : 'b conv; vopt : 'b option; vconv : ('b -> 'a)} -> 'a econv
+type 'a opt_or_vflag_arg = Opt of 'a econv | VFlag of 'a
 let some = Cmdliner_base.Conv.some
 let some' = Cmdliner_base.Conv.some'
 
@@ -195,20 +197,26 @@ let opt ?vopt conv v a =
   in
   arg_to_args a (V (Conv.completion conv)), convert
 
+let make_opt_all a conv vopt =
+  if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt
+  else (
+    let absent =
+      match Cmdliner_info.Arg.absent a with
+      | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
+      | _ -> Cmdliner_info.Arg.Val (lazy "")
+    in
+    let kind =
+      match vopt with
+      | None -> Cmdliner_info.Arg.Opt
+      | Some dv -> Cmdliner_info.Arg.Opt_vopt (str_of_pp (Conv.pp conv) dv)
+    in
+    let docv = match Cmdliner_info.Arg.docv a with
+    | "" -> Conv.docv conv | docv -> docv
+    in
+    Cmdliner_info.Arg.make_opt_all ~absent ~kind ~docv a)
+
 let opt_all ?vopt conv v a =
-  if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
-  let absent = match Cmdliner_info.Arg.absent a with
-  | Cmdliner_info.Arg.Doc d as a when d <> "" -> a
-  | _ -> Cmdliner_info.Arg.Val (lazy "")
-  in
-  let kind = match vopt with
-  | None -> Cmdliner_info.Arg.Opt
-  | Some dv -> Cmdliner_info.Arg.Opt_vopt (str_of_pp (Conv.pp conv) dv)
-  in
-  let docv = match Cmdliner_info.Arg.docv a with
-  | "" -> Conv.docv conv | docv -> docv
-  in
-  let a = Cmdliner_info.Arg.make_opt_all ~docv ~absent ~kind a in
+  let a = make_opt_all a conv vopt in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->
@@ -223,6 +231,87 @@ let opt_all ?vopt conv v a =
       | Failure e -> parse_error e
   in
   arg_to_args a (V (Conv.completion conv)), convert
+
+let handle_econv econv a_init cl ei v =
+  let convert_v (type b) 
+      (conv : b conv) (bound_vconv : b -> 'a) (vopt : b option) =
+    let a_opt = make_opt_all a_init conv vopt in
+    match Cmdliner_cline.opt_arg cl a_opt with
+    | [] ->
+        try_env ei a_opt (fun v ->
+            match (Conv.parser conv) v with
+            | Ok b -> Ok [ 0, bound_vconv b ]
+            | Error e -> Error e)
+          ~absent:(List.mapi (fun i a -> i, a) v)
+    | l ->
+        let parse (k, f, v) =
+          match v with
+          | Some v ->
+              let b = parse_opt_value (Conv.parser conv) f v in
+              let a = bound_vconv b in
+              k, a
+          | None ->
+              (match vopt with
+              | None -> failwith (Cmdliner_msg.err_opt_value_missing f)
+              | Some b ->
+                  let a = bound_vconv b in
+                  k, a)
+        in
+        Ok (List.rev (List.sort rev_compare (List.rev_map parse l)))
+  in
+  match econv with
+  | Conv {conv; vopt; vconv} -> convert_v conv vconv vopt
+
+let opt_vflag_all v l =
+  let convert ei cl =
+    let rec aux acc_result = function
+    | (VFlag fv, a) :: rest ->
+        Result.fold 
+          acc_result
+          ~ok:(fun acc ->
+              match Cmdliner_cline.opt_arg cl a with
+              | [] -> aux (Ok acc) rest
+              | l -> 
+                  let fval (k, f, v) =
+                    match v with
+                    | None -> k, fv
+                    | Some v -> failwith (Cmdliner_msg.err_flag_value f v) 
+                  in
+                  aux (Ok (List.rev_append (List.rev_map fval l) acc)) rest)
+          ~error:(fun e -> aux (Error e) rest)
+    | (Opt econv, info_init) :: rest ->
+        Result.fold acc_result
+          ~ok:(fun acc ->
+              let opt_result =
+                let opt_list = handle_econv econv info_init cl ei v in
+                Result.map (fun opt_list -> List.rev_append opt_list acc) opt_list
+              in
+              aux opt_result rest)
+          ~error:(fun e -> aux (Error e) rest)
+    | [] ->
+        Result.map
+          (fun acc ->
+             if acc = [] then v else List.rev_map snd (List.sort rev_compare acc))
+          acc_result
+    in
+    try aux (Ok []) l with
+    | Failure e -> parse_error e
+  in
+  let vflag_opt_args =
+    List.fold_left
+      (fun acc -> function
+       | Opt (Conv {conv  ; vopt; vconv}), info_init ->
+           let a_opt = make_opt_all info_init conv vopt in
+           Cmdliner_info.Arg.Set.union 
+             (arg_to_args  a_opt (V (Conv.completion conv))) acc
+       | VFlag _, info ->
+           let arg =
+             if Cmdliner_info.Arg.is_pos info then invalid_arg err_not_opt
+             else Cmdliner_info.Arg.make_all_opts info
+           in Cmdliner_info.Arg.Set.add arg (V Cmdliner_base.Completion.none) acc)
+      Cmdliner_info.Arg.Set.empty l
+  in
+  vflag_opt_args, convert
 
 (* Positional arguments *)
 

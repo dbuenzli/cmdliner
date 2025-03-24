@@ -679,6 +679,26 @@ module Arg : sig
   (** The type for argument converters. See the
       {{!predef}predefined converters}. *)
 
+  type 'a econv = Conv : { conv : 'b conv; vopt : 'b option; vconv : ('b -> 'a)} -> 'a econv  
+  (** A type for handling existentially-typed conversions of optional arguments.
+      Hides the intermediate type ['b] used for parsing option values, allowing different
+      conversion strategies to be packaged uniformly as a value of type ['a econv]
+      Used in {!opt_vflag_all} to unify option and flag values of the same type.
+      {ul
+      {- [conv] is the converter for the raw argument type ['b].}
+      {- [vopt] specifies a default value to use when the option is present 
+         but its argument is omitted. If [vopt] is [Some b], then the option 
+         argument itself is optional.}
+      {- [vconv] adapts the parsed ['b] value to the final result type ['a], 
+         so that values parsed via optional arguments can be unified with those
+         coming from variant flags.}} *)
+
+  type 'a opt_or_vflag_arg = Opt of 'a econv | VFlag of 'a
+  (** A mixed argument for {!opt_vflag_all}:
+      {ul
+      {- [Opt econv] for an optional argument with conversion logic.}
+      {- [VFlag v] for a flag that produces value [v] when present.}} *)
+
   val some' : ?none:'a -> 'a conv -> 'a option conv
   (** [some' ?none c] is like the converter [c] except it returns
       [Some] value. It is used for command line arguments that default
@@ -806,6 +826,24 @@ module Arg : sig
       appear more than once. The argument holds a list that contains one value
       per occurrence of the flag in the order found on the command line.
       It holds the list [v] if the flag is absent from the command line. *)
+
+  val opt_vflag_all : 'a list -> ('a opt_or_vflag_arg * info) list -> 'a list t
+  (** [opt_vflag_all default specs] Combines {!opt_all} and {!vflag_all}, 
+      allowing the definition of both optional arguments and flags that can
+      appear multiple times on the command line, while preserving the order 
+      of appearance.
+      Each element in [specs] is either:
+      {ul 
+      {- [Opt econv] defines an optional argument, using ['a econv] to handle the
+         conversion of its values.}
+      {- or [VFlag v], defining a flag that holds ['a] values}}
+      The result is a list of values in the order in which they appeared on the
+      command line. If no inputs are found, the list [default] is returned.
+      This is a generalized mechanism for mixing argument forms like:
+      {[
+        --opt 42 --flag --opt 7 --flag
+      ]}
+      and unifying them into a single ordered value list.*)
 
   (** {2:posargs Positional arguments}
 

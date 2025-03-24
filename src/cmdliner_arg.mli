@@ -8,6 +8,8 @@
 (* Converters *)
 
 type 'a conv
+type 'a econv = Conv : { conv : 'b conv; vopt : 'b option; vconv : ('b -> 'a)} -> 'a econv
+type 'a opt_or_vflag_arg = Opt of 'a econv | VFlag of 'a
 
 module Completion : sig
   type complete = string -> (string * string) list
@@ -58,6 +60,7 @@ val vflag : 'a -> ('a * info) list -> 'a t
 val vflag_all : 'a list -> ('a * info) list -> 'a list t
 val opt : ?vopt:'a -> 'a conv -> 'a -> info -> 'a t
 val opt_all : ?vopt:'a -> 'a conv -> 'a list -> info -> 'a list t
+val opt_vflag_all : 'a list -> ('a opt_or_vflag_arg * info) list -> 'a list t
 
 val pos : ?rev:bool -> int -> 'a conv -> 'a -> info -> 'a t
 val pos_all : 'a conv -> 'a list -> info -> 'a list t
