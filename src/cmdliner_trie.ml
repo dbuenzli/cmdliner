@@ -45,10 +45,11 @@ let find_node t k =
   in
   aux t k (String.length k) 0
 
-let find t k =
-  try match (find_node t k).v with
-  | Key v | Pre v -> Ok v | Amb -> Error `Ambiguous | Nil -> Error `Not_found
-  with Not_found -> Error `Not_found
+let find t k = match (find_node t k).v with
+| Key v | Pre v -> Ok v
+| Amb -> Error `Ambiguous
+| Nil -> Error `Not_found
+| exception Not_found -> Error `Not_found
 
 let ambiguities t p =                        (* ambiguities of [p] in [t]. *)
   try
