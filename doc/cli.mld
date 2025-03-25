@@ -34,8 +34,7 @@ v}
 Commands automatically respond to the [--help] option by printing
 {{!help}their help}. The sequence of [COMMAND] strings must be the first
 strings following the tool name – as soon as an optional argument is
-seen the search for a sub command stops. Command names may be specified by
-a prefix as long as they are not ambiguous.
+seen the search for a sub command stops.
 
 {1:args Arguments}
 
@@ -55,7 +54,7 @@ The name of an option can be short or long.
 More than one name may refer to the same optional argument.  For
 example in a given program the names [-q], [--quiet] and [--silent]
 may all stand for the same boolean argument indicating the program to
-be quiet.  Long names can be specified by any non ambiguous prefix.
+be quiet.
 
 The value of an option can be specified in three different ways.
 
@@ -378,3 +377,21 @@ The semantics of directives is as follows:
    files staring with [ARG] to completion values.}
 {- A [dir] directive indicates that the script should add existing
    directories starting with [ARG] to completion values.}}
+
+
+{1:legacy_prefix_specification Legacy prefix specification}
+
+Before Cmdliner 2.0, command names, long option names and
+{!Cmdliner.Arg.enum} values could be specified by a prefix as long as
+the prefix was not ambiguous.
+
+This turned out to be a mistake. It makes the user experience of the
+tool unstable as it evolves: former user established shortcuts or
+invocations in scripts may be broken by new command, option and
+enumerant additions.
+
+Therefore this behaviour was unconditionally removed in Cmdliner
+2.0. If you happen to have scripts that rely on it, you can invoke
+them with [CMDLINER_LEGACY_PREFIXES=true] set in the environment to
+recover the old behaviour. {b However the scripts should be fixed: this
+escape hatch will be removed in the future.}

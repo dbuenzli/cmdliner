@@ -21,30 +21,32 @@ let capture_fmt f =
 
 let make_argv cmd args = Array.of_list (Cmd.name cmd :: args)
 
-let snap_parse t cmd args exp =
+let snap_parse ?env t cmd args exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
-  let ret = Cmd.eval_value cmd ~argv in
+  let ret = Cmd.eval_value ?env cmd ~argv in
   Test.snap t (get_eval_value ~__POS__:loc ret) exp
 
-let snap_parse_warnings cmd args exp =
+let snap_parse_warnings ?env cmd args exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
-  let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ~err cmd ~argv in
+  let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ?env ~err cmd ~argv in
   ignore (get_eval_value ~__POS__:loc ret);
   Snap.lines err exp
 
-let snap_eval_error error cmd args exp =
+let snap_eval_error ?env error cmd args exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
-  let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ~err cmd ~argv in
+  let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ?env ~err cmd ~argv in
   Test.any ret (Error error) ~__POS__:loc ;
   Snap.lines err exp
 
-let snap_man ?(args = ["--help=plain"]) cmd exp =
+let snap_man ?env ?(args = ["--help=plain"]) cmd exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
-  let ret, help = capture_fmt @@ fun help -> Cmd.eval_value ~help cmd ~argv in
+  let ret, help =
+    capture_fmt @@ fun help -> Cmd.eval_value ?env ~help cmd ~argv
+  in
   Test.any ret (Ok `Help) ~__POS__:loc;
   Snap.lines help exp
 

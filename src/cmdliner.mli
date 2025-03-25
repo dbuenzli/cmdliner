@@ -906,9 +906,9 @@ module Arg : sig
   (** [string] converts values with the identity function. *)
 
   val enum : ?docv:string -> (string * 'a) list -> 'a conv
-  (** [enum l p] converts values such that unambiguous prefixes of string names
-      in [l] map to the corresponding value of type ['a]. [docv] is the
-      converter's documentation meta-variable, it defaults to [ENUM]
+  (** [enum l p] converts values such that string names in [l] map to
+      the corresponding value of type ['a]. [docv] is the converter's
+      documentation meta-variable, it defaults to [ENUM]
 
       {b Warning.} The type ['a] must be comparable with {!Stdlib.compare}.
 

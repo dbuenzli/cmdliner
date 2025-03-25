@@ -1,6 +1,14 @@
 
 ### End-user visible changes
 
+- **IMPORTANT** Cmdliner no longer allows command names, option names,
+  and `Arg.enum` values to be specified by a prefix if the prefix is
+  unambiguous. See #200 for the rationale. To quickly salvage scripts
+  that may be relying on the old behaviour, it can be restored by
+  setting the environment variable `CMDLINER_LEGACY_PREFIXES=true`.
+  However the scripts should be fixed: this escape hatch will be
+  removed in the future.
+
 - Pager. If set, respect the user's `LESS` environment variable
   (otherwise the default `LESS=FRX` is left unchanged).  Note however
   that you likely need at least `R` specified if you define it

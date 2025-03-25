@@ -95,7 +95,7 @@ let maybe_complete_token s =
 exception Completion_requested of
   string * [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
 
-let parse_opt_args ~peek_opts optidx cl args =
+let parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args =
   (* returns an updated [cl] cmdline according to the options found in [args]
      with the trie index [optidx]. Positional arguments are returned in order
      in a list. *)
@@ -105,7 +105,7 @@ let parse_opt_args ~peek_opts optidx cl args =
   | s :: args ->
       if not (is_opt s) then loop errs (k + 1) cl (s :: pargs) args else
       let name, value = parse_opt_arg s in
-      match Cmdliner_trie.find optidx name with
+      match Cmdliner_trie.find ~legacy_prefixes optidx name with
       | Ok a ->
           let value, args = match value, Cmdliner_info.Arg.opt_kind a with
           | Some v, Cmdliner_info.Arg.Flag when is_short_opt name ->
@@ -127,7 +127,7 @@ let parse_opt_args ~peek_opts optidx cl args =
           let hints = hint_matching_opt optidx s in
           let err = Cmdliner_base.err_unknown ~kind:"option" ~hints name in
           loop (err :: errs) (k + 1) cl pargs args
-      | Error `Ambiguous ->
+      | Error `Ambiguous (* Only on legacy prefixes *) ->
           let ambs = Cmdliner_trie.ambiguities optidx name in
           let ambs = List.sort compare ambs in
           let err = Cmdliner_base.err_ambiguous ~kind:"option" name ~ambs in
@@ -198,9 +198,9 @@ let process_pos_args posidx cl pargs =
   if last <= max_spec then Ok cl else
   Error (Cmdliner_msg.err_pos_excess (consume_excess ()), cl)
 
-let create ?(peek_opts = false) al args =
+let create ?(peek_opts = false) ~legacy_prefixes al args =
   let optidx, posidx, cl = arg_info_indexes al in
-  try match parse_opt_args ~peek_opts optidx cl args with
+  try match parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args with
   | Ok (cl, _) when peek_opts -> `Ok cl
   | Ok (cl, pargs) ->
       (match process_pos_args posidx cl pargs with

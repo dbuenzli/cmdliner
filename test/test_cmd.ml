@@ -214,7 +214,7 @@ EXIT STATUS
 
 SEE ALSO|};
   ();
-  Testing_cmdliner.snap_man ~args:["fish"; "--help=plain"] cmd @@
+  Testing_cmdliner.snap_man ~args:["fishs"; "--help=plain"] cmd @@
   __POS_OF__
     {|NAME
        test_group-fishs - Operate on fishs.

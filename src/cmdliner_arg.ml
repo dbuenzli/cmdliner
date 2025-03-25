@@ -367,12 +367,14 @@ let string = Conv.make ~docv:"" ~parser:Result.ok ~pp:Fmt.string ()
 let enum ?(docv = "ENUM") sl =
   if sl = [] then invalid_arg Cmdliner_base.err_empty_list else
   let t = Cmdliner_trie.of_list sl in
-  let parser s = match Cmdliner_trie.find t s with
-  | Ok _ as v -> v
-  | Error `Ambiguous ->
-      let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
-      Error (Cmdliner_base.err_ambiguous ~kind:"enum value" s ~ambs)
-  | Error `Not_found ->
+  let parser s =
+    let legacy_prefixes = Cmdliner_trie.legacy_prefixes ~env:Sys.getenv_opt in
+    match Cmdliner_trie.find ~legacy_prefixes t s with
+    | Ok _ as v -> v
+    | Error `Ambiguous (* Only on legacy prefixes *) ->
+        let ambs = List.sort compare (Cmdliner_trie.ambiguities t s) in
+        Error (Cmdliner_base.err_ambiguous ~kind:"enum value" s ~ambs)
+    | Error `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
         Error (err_invalid_val s ("expected " ^ (doc_alts ~quoted:true alts)))
   in

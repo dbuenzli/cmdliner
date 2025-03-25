@@ -108,7 +108,7 @@ let info =
 let cmd = Cmd.make info man_test_t
 
 let test_plain =
-  Test.test "Test plain text manpage" @@ fun () ->
+  Test.test "plain text manpage" @@ fun () ->
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
     {|NAME
        man_test - UTF-8 test: 🐫 íöüóőúűéáăîâșț
@@ -237,7 +237,7 @@ BUGS
 SEE ALSO|}
 
 let test_groff =
-  Test.test "Test groff manpage" @@ fun () ->
+  Test.test "groff manpage" @@ fun () ->
   Testing_cmdliner.snap_man ~args:["--help=groff"] cmd @@ __POS_OF__
     {|.\" Pipe this output to groff -m man -K utf8 -T utf8 | less -R
 .\"
