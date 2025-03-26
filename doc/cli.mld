@@ -196,6 +196,10 @@ autoload -Uz compinit
 compinit -u
 ]}
 
+Also make sure this {b happens before} [opam]'s [zsh] init script
+inclusion, see {{:https://github.com/ocaml/opam/issues/6428}this
+issue}.
+
 After this, to test everything is right, check that the [_cmdliner_generic]
 function can be looked by invoking it (this will result in an error).
 
@@ -264,7 +268,7 @@ complete -F _cmdliner_generic thetool
 
 Completion scripts need to be installed in subdirectories of a
 {{:https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch04s11.html}[share]}
-directory which we specify in a [$SHAREDIR] variable below. In a
+directory which we denote by the [$SHAREDIR] variable below. In a
 package installation script this variable is typically defined by:
 
 {@sh[
@@ -277,24 +281,25 @@ The final destination directory in [share] depends on the shell:
 {- For [zsh] it is [$SHAREDIR/zsh/site-functions]}
 {- For [bash] it is [$SHAREDIR/bash-completion/completions]}}
 
-If that is unsastifying you can output the completion scripts directly
-where you want with the [cmdliner shell-completion] command.
+If that is unsatisfying you can output the completion scripts directly
+where you want with the [cmdliner generic-completion] and
+[cmdliner tool-completion] commands.
 
 {3:install_completion_generic Generic completion scripts}
 
-The generic completion scripts should have been installed by the
-[cmdliner] library, they should not be part of your tool install.
-If they were not installed you can inspect and install them
-with the following invocations, invoke with [--help] for more information.
+The generic completion scripts must be installed by the
+[cmdliner] library. They should not be part of your tool install.  If
+they are not installed you can inspect and install them with the
+following invocations, invoke with [--help] for more information.
 
 {@sh[
 cmdliner generic-completion zsh   # Output generic zsh script on stdout
-cmdliner install generic-completion $SHAREDIR                 # All shells
+cmdliner install generic-completion $SHAREDIR             # All shells
 cmdliner install generic-completion --shell zsh $SHAREDIR # Only zsh
 ]}
 
-Use option [--dry-run] to see which paths would be written by an install
-invocation. The directories need to exist (no {!Sys.mkdir} before 4.12).
+Directories are created as needed. Use option [--dry-run] to see which
+paths would be written by an [install] invocation.
 
 {3:install_completion_tool Tool completion scripts}
 
@@ -305,12 +310,29 @@ and installed via these invocations:
 
 {@sh[
 cmdliner tool-completion zsh thetool  # Output tool zsh script on stdout.
-cmdliner install tool-completion thetool $SHAREDIR     # All shells
+cmdliner install tool-completion thetool $SHAREDIR             # All shells
 cmdliner install tool-completion --shell zsh thetool $SHAREDIR # Only zsh
 ]}
 
-Use option [--dry-run] to see which paths would be written by an [install]
-invocation. The directories need to exist (no {!Sys.mkdir} before 4.12).
+Directories are created as needed. Use option [--dry-run] to see which
+paths would be written by an [install] invocation.
+
+If you are installing your package for [thetool] with [opam] and have
+[cmdliner] as a direct dependency you can add the following to your
+[install:] instructions. It will install completion support for all
+shells supported by [cmdliner] (also works if your build system is
+using a [.install] file):
+
+{@sh[
+install: [ "cmdliner" "install" "tool-completion" "thetool" "%{share}%"]
+]}
+
+If [cmdliner] is only an optional dependency use:
+
+{@sh[
+install: [ "cmdliner" "install" "tool-completion" "thetool" "%{share}%"
+           {cmdliner:installed} ]
+]}
 
 {2:completion_protocol Completion protocol}
 

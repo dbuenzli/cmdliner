@@ -5,6 +5,21 @@
 
 let strf = Printf.sprintf
 
+let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
+  (* On Windows -p does not exist we do it ourselves on all platforms. *)
+  let err_cmd exit cmd =
+    raise (Sys_error (strf "exited with %d: %s\n" exit cmd))
+  in
+  let quote_cmd = if Sys.win32 then fun cmd -> strf "\"%s\"" cmd else Fun.id in
+  let run_cmd args =
+    let cmd = String.concat " " (List.map Filename.quote args) in
+    let exit = Sys.command (quote_cmd cmd) in
+    if exit = 0 then () else err_cmd exit cmd
+  in
+  let parent = Filename.dirname dir in
+  (if String.equal dir parent then () else mkdir (Filename.dirname dir));
+  (if Sys.file_exists dir then () else run_cmd ["mkdir"; dir])
+
 let write_file file s =
   let write file s oc = try Ok (Out_channel.output_string oc s) with
   | Sys_error e -> Error (Printf.sprintf "%s: %s" file e)
@@ -18,6 +33,23 @@ let write_file file s =
 let with_binary_stdout f =
   try let () = Out_channel.set_binary_mode stdout true in f () with
   | Sys_error e | Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
+
+(* File path actions *)
+
+let log_action act p = Printf.printf "%s \x1B[1m%s\x1B[0m\n%!" act p
+
+let mkdir ~dry_run p =
+  if not (Sys.file_exists p) then begin
+    log_action "Creating directory" p;
+    if not dry_run then mkdir p
+  end
+
+let write_file ~dry_run p contents =
+  log_action "Writing" p;
+  if not dry_run then begin match write_file p contents with
+  | Ok () -> ()
+  | Error e -> failwith e
+  end
 
 (* Shells *)
 
@@ -61,8 +93,6 @@ end
 
 let shells : shell list = [(module Bash); (module Zsh)]
 
-let log_write p = Printf.printf "Writing \x1B[1m%s\x1B[0m\n%!" p
-
 let generic_completion (module Shell : SHELL) =
   with_binary_stdout @@ fun () ->
   print_string Shell.generic_completion;
@@ -78,24 +108,24 @@ let install_generic_completion ~dry_run shells sharedir =
   let install ~dry_run sharedir (module Shell : SHELL) =
     let dest = Filename.concat sharedir Shell.sharedir in
     let path = Filename.concat dest Shell.generic_script_name in
-    log_write path;
-    if not dry_run then match write_file path (Shell.generic_completion) with
-    | Error e -> failwith e | Ok () -> ()
+    mkdir ~dry_run dest;
+    write_file ~dry_run path Shell.generic_completion;
   in
   List.iter (install ~dry_run sharedir) shells;
   Cmdliner.Cmd.Exit.ok
 
-let install_tool_completion ~dry_run shells ~toolname sharedir =
+let install_tool_completion ~dry_run shells ~toolnames sharedir =
   with_binary_stdout @@ fun () ->
-  let install ~dry_run ~toolname sharedir (module Shell : SHELL) =
+  let install ~dry_run ~toolnames sharedir (module Shell : SHELL) =
     let dest = Filename.concat sharedir Shell.sharedir in
-    let path = Filename.concat dest (Shell.tool_script_name ~toolname) in
-    log_write path;
-    let script = Shell.tool_completion ~toolname in
-    if not dry_run then match write_file path script with
-    | Error e -> failwith e | Ok () -> ()
+    let write toolname =
+      let path = Filename.concat dest (Shell.tool_script_name ~toolname) in
+      write_file ~dry_run path (Shell.tool_completion ~toolname)
+    in
+    mkdir ~dry_run dest;
+    List.iter write toolnames
   in
-  List.iter (install ~dry_run ~toolname sharedir) shells;
+  List.iter (install ~dry_run ~toolnames sharedir) shells;
   Cmdliner.Cmd.Exit.ok
 
 (* Command line interface *)
@@ -107,12 +137,13 @@ let dry_run =
   let doc = "Do not install, output paths that would be written." in
   Arg.(value & flag & info ["dry-run"] ~doc)
 
-let sharedir_posn n =
+let sharedir_posn ~rev n =
   let doc = "$(docv) is the $(b,share) directory to install to." in
-  Arg.(required & pos n (some dir) None & info [] ~doc ~docv:"SHAREDIR")
+  Arg.(required & pos ~rev n (some dirpath) None &
+       info [] ~doc ~docv:"SHAREDIR")
 
-let sharedir_pos0 = sharedir_posn 0
-let sharedir_pos1 = sharedir_posn 1
+let sharedir_pos0 = sharedir_posn ~rev:false 0
+let sharedir_poslast = sharedir_posn ~rev:true 0
 
 let shell_assoc = List.map (fun ((module S : SHELL) as s) -> S.name, s) shells
 let shells_doc = Arg.doc_alts_enum shell_assoc
@@ -131,10 +162,14 @@ let shell_pos1 = shell_posn 1
 
 let toolname_posn n =
   let doc = "$(docv) is the name of the tool to complete" in
-  Arg.(required & pos n (some string) None & info [] ~doc ~docv:"TOOLNAME")
+  Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:"TOOLNAME")
 
 let toolname_pos0 = toolname_posn 0
 let toolname_pos1 = toolname_posn 1
+let toolnames_posleft =
+  let doc = "$(docv) is the name of the tool to complete. Repeatable." in
+  Arg.(non_empty & pos_left ~rev:true 0 string [] &
+       info [] ~doc ~docv:"TOOLNAME")
 
 let generic_completion_cmd =
   let doc = "Output generic completion scripts" in
@@ -191,9 +226,9 @@ let install_tool_completion_cmd =
     `Pre "$(iname) $(b,--shell zsh mytool /usr/local/share)"; ]
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
-  let+ dry_run and+ shells = shells_opt and+ toolname = toolname_pos0
-  and+ sharedir_pos1 in
-  install_tool_completion ~dry_run shells ~toolname sharedir_pos1
+  let+ dry_run and+ shells = shells_opt and+ toolnames = toolnames_posleft
+  and+ sharedir_poslast in
+  install_tool_completion ~dry_run shells ~toolnames sharedir_poslast
 
 let install_cmd =
   let doc = "Install cmdliner support files" in
