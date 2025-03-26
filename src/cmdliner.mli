@@ -942,13 +942,23 @@ module Arg : sig
       characters (defaults to [',']) respectively converts the substrings
       with [c0], [c1], [c2] and [c3]. *)
 
-  (** {2:files Files and directories}
+  (** {2:files Files and directories} *)
 
-      {b Note.} The following converters report errors whenever the
+  val filepath : string conv
+  (** [filepath] is like {!string} but prints using {!Filename.quote}
+      and completes both files and directories. *)
+
+  val dirpath : string conv
+  (** [dirpath] is like {!string} but prints using {!Filename.quote}
+      and completes directories. *)
+
+  (** {b Note.} The following converters report errors whenever the
       requested file system object does not exist. This is only mildly
       useful since nothing guarantees you it will still exist at the
       time you act upon them, so you will have to treat these error
-      anyways in your tool function. *)
+      anyways in your tool function. It is also unhelpful the file
+      system object may be created by your tool, use {!filpath}
+      and {!dirpath} in this case. *)
 
   val file : string conv
   (** [file] converts a value with the identity function and checks
