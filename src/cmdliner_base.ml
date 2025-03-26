@@ -120,6 +120,41 @@ module Fmt = struct
        if next_start > i_max then () else loop next_start next_start)
     in
     loop 0 0
+
+  (* Text styling *)
+
+  type styler = Ansi | Plain
+
+  let styler' =
+    ref begin match Sys.getenv_opt "TERM" with
+    | None when Sys.backend_type = Other "js_of_ocaml" -> Ansi
+    | None | Some "dumb" -> Plain
+    | _ -> Ansi
+    end
+
+  let set_styler styler = styler' := styler
+  let styler () = !styler'
+
+  let sgr_of_style = function
+  | `Bold -> "01"
+  | `Underline -> "04"
+  | `Fg `Red -> string_of_int (30 + 1)
+
+  let sgrs_of_styles styles = String.concat ";" (List.map sgr_of_style styles)
+  let ansi_esc = "\x1B["
+  let sgr_reset = "\x1B[m"
+
+  let st styles ppf s = match !styler' with
+  | Plain -> Format.pp_print_string ppf s
+  | Ansi ->
+      let sgrs = String.concat "" [ansi_esc; sgrs_of_styles styles; "m"] in
+      Format.pp_print_as ppf 0 sgrs;
+      Format.pp_print_string ppf s;
+      Format.pp_print_as ppf 0 sgr_reset
+
+  let code ppf v = st [`Bold] ppf v
+  let code_var ppf v = st [`Underline] ppf v
+  let puterr ppf () = st [`Bold; `Fg `Red] ppf "Error"; Format.pp_print_char ppf ':'
 end
 
 (* Converter (end-user) error messages *)

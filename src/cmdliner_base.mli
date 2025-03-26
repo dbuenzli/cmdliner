@@ -29,6 +29,9 @@ module Fmt : sig
   val text : string t
   val lines : string t
   val tokens : spaces:bool -> string t
+  val code : string t
+  val code_var : string t
+  val puterr : unit t
 end
 
 (* Error message helpers *)
