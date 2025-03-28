@@ -67,6 +67,10 @@ let sample_group_cmd =
     let doc = "Movement $(docv) in m/s" in
     Arg.(value & opt int 2 & info ["speed"] ~doc ~docv:"SPEED")
   in
+  let can_fly =
+    let doc = "$(docv) indicates if the entity can fly." in
+    Arg.(value & opt bool false & info ["can-fly"] ~doc)
+  in
   let birds =
     let bird =
       let doc = "Use $(docv) specie." in
@@ -81,7 +85,8 @@ let sample_group_cmd =
       let+ bird in ()
     in
     let info = Cmd.info "birds" ~doc:"Operate on birds." ~man in
-    Cmd.group ~default:Term.(const (fun k -> ()) $ kind) info [fly; land']
+    Cmd.group ~default:Term.(const (fun _ _-> ()) $ kind $ can_fly) info @@
+    [fly; land']
   in
   let mammals =
     let man_xrefs = [`Main; `Cmd "birds" ] and doc = "Operate on mammals." in

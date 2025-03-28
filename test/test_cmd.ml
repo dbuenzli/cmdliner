@@ -115,6 +115,9 @@ COMMANDS
            Land birds.
 
 OPTIONS
+       --can-fly=BOOL (absent=false)
+           BOOL indicates if the entity can fly.
+
        -k VAL, --kind=VAL
            Kind of entity
 
