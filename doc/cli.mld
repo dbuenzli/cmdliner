@@ -341,12 +341,12 @@ perform shell command line completion. Completion is supposed to
 happen through idiosyncratic, ad-hoc, obscure and brain damaging
 shell-specific completion scripts.
 
-To aleviate this, Cmdliner defines one generic script per shell and
+To alleviate this, Cmdliner defines one generic script per shell and
 interacts with it using the protocol described below. The protocol can
 be used to implement generic completion scripts for other shells. The
 protocol is versioned but can change even between minor versions of
 Cmdliner. Generic scripts for popular shells can be inspected via
-the [cmdliner shell-completion generic] command.
+the [cmdliner generic-completion] command.
 
 The protocol betwen the shell completion {e script} and a
 cmdliner based {e tool} is as follows:

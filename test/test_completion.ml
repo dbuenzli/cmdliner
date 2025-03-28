@@ -20,7 +20,8 @@ let test_groups =
   let cmd = Testing_cmdliner.sample_group_cmd in
   let complete = Testing_cmdliner.snap_completion cmd in
   complete ["+cmdliner_complete:"] @@  __POS_OF__
-"group\n\
+"1\n\
+group\n\
 Subcommands\n\
 item\n\
 birds\n\
@@ -32,7 +33,7 @@ item\n\
 fishs\n\
 Operate on fishs.\n\
 item\n\
- camels";
+camels";
   complete ["birds"; "+cmdliner_complete:"] @@  __POS_OF__
 "";
 

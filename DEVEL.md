@@ -11,11 +11,21 @@ The build system used for distribution is in the `Makefile`.
 
 # Changing completion scripts
 
+To test them you can: 
+
+    source ./src/tool/zsh-completion.sh  # zsh
+    source ./src/tool/bash-completion.sh # bash
+    
+This replaces the generic completion function used by tool completion 
+scripts with the new definition. Trying to complete tools should now
+use the new definitions.
+
 If you change completion scripts in [`src/tool`](src/tool) you must invoke:
 
     b0 -- update-cmdliner-data
 
 so that the changes get incorporated into the `cmdliner` tool.
+
 
 # Testing
 

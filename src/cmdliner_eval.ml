@@ -131,7 +131,8 @@ let do_completion help_ppf args cmd cmd_children (prefix, kind) =
       | [] -> pp_complete_arg_names ppf cmd
       | _  -> pp_complete_subcommands ppf cmd_children
   in
-  Cmdliner_base.Fmt.pf help_ppf "@[<v>%a@]" pp_completions ()
+  let vnum = 1 in
+  Cmdliner_base.Fmt.pf help_ppf "@[<v>%d@,%a@]" vnum pp_completions ()
 
 let do_result ~env help_ppf err_ppf ei = function
 | Ok v -> Ok (`Ok v)
