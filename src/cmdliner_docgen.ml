@@ -388,11 +388,11 @@ let pp_man ~env ~errs fmt ppf ei =
 
 (* Plain synopsis for usage *)
 
-let pp_plain_synopsis ~errs ppf ei =
+let pp_styled_synopsis ~errs ppf ei =
   let buf = Buffer.create 100 in
   let subst = cmd_info_subst ei in
   let cmd = Cmdliner_info.Eval.cmd ei in
   let parents = Cmdliner_info.Eval.parents ei in
   let synopsis = synopsis ~parents cmd in
-  let syn = Cmdliner_manpage.doc_to_plain ~errs ~subst buf synopsis in
+  let syn = Cmdliner_manpage.doc_to_styled ~errs ~subst buf synopsis in
   Format.fprintf ppf "@[%s@]" syn

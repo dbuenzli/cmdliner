@@ -8,7 +8,7 @@ let rev_compare n0 n1 = compare n1 n0
 (* Documentation formatting helpers *)
 
 module Fmt = Cmdliner_base.Fmt
-let strf = Printf.sprintf
+
 let doc_quote = Cmdliner_base.quote
 let doc_alts = Cmdliner_base.alts_str
 let doc_alts_enum ?quoted enum = doc_alts ?quoted (List.map fst enum)
@@ -19,21 +19,28 @@ let str_of_pp pp v = pp Format.str_formatter v; Format.flush_str_formatter ()
 let err_not_opt = "Option argument without name"
 let err_not_pos = "Positional argument with a name"
 let err_incomplete_enum ss =
-  strf "Arg.enum: missing printable string for a value, other strings are: %s"
+  Printf.sprintf
+    "Arg.enum: missing printable string for a value, other strings are: %s"
     (String.concat ", " ss)
 
 (* Parse error strings *)
 
-let err_no kind s = strf "no %s %s" (doc_quote s) kind
-let err_not_dir s = strf "%s is not a directory" (doc_quote s)
-let err_is_dir s = strf "%s is a directory" (doc_quote s)
-let err_element kind s exp =
-  strf "invalid element in %s ('%s'): %s" kind s exp
+let err_no kind s = Fmt.str "no %a %s" Fmt.code_or_quote s kind
+let err_not_dir s =
+  Fmt.str "%a %a" Fmt.code_or_quote s Fmt.ereason "is not a directory"
 
-let err_invalid kind s exp = strf "invalid %s %s, %s" kind (doc_quote s) exp
+let err_is_dir s =
+  Fmt.str "%a %a" Fmt.code_or_quote s Fmt.ereason "is a directory"
+
+let err_element kind s exp =
+  Fmt.str "%a element in %s ('%s'): %s" Fmt.invalid () kind s exp
+
+let err_invalid kind s exp =
+  Fmt.str "%a %s %a, %s" Fmt.invalid () kind Fmt.code_or_quote s exp
+
 let err_invalid_val = err_invalid "value"
 let err_sep_miss sep s =
-  err_invalid_val s (strf "missing a '%c' separator" sep)
+  err_invalid_val s (Fmt.str "%a a '%c' separator" Fmt.missing () sep)
 
 (* Argument converters *)
 
@@ -452,7 +459,7 @@ let list ?(sep = ',') conv =
   | v :: l ->
       (Conv.pp conv) ppf v; if (l <> []) then (Fmt.char ppf sep; pp ppf l)
   in
-  let docv = strf "%s[%c…]" (Conv.docv conv) sep in
+  let docv = Printf.sprintf "%s[%c…]" (Conv.docv conv) sep in
   Conv.make ~docv ~parser ~pp ()
 
 let array ?(sep = ',') conv =
@@ -466,7 +473,7 @@ let array ?(sep = ',') conv =
       Conv.pp conv ppf v.(i); if i <> max then Fmt.char ppf sep
     done
   in
-  let docv = strf "%s[%c…]" (Conv.docv conv) sep in
+  let docv = Printf.sprintf "%s[%c…]" (Conv.docv conv) sep in
   Conv.make ~docv ~parser ~pp ()
 
 let split_left sep s =
@@ -487,7 +494,7 @@ let pair ?(sep = ',') conv0 conv1 =
   let pp ppf (v0, v1) =
     Fmt.pf ppf "%a%c%a" (Conv.pp conv0) v0 sep (Conv.pp conv1) v1
   in
-  let docv = strf "%s%c%s" (Conv.docv conv0) sep (Conv.docv conv1) in
+  let docv = Printf.sprintf "%s%c%s" (Conv.docv conv0) sep (Conv.docv conv1) in
   Conv.make ~docv ~parser ~pp ()
 
 let t2 = pair
@@ -510,7 +517,7 @@ let t3 ?(sep = ',') conv0 conv1 conv2 =
   in
   let docv =
     let docv = Conv.docv in
-    strf "%s%c%s%c%s" (docv conv0) sep (docv conv1) sep (docv conv2)
+    Printf.sprintf "%s%c%s%c%s" (docv conv0) sep (docv conv1) sep (docv conv2)
   in
   Conv.make ~docv ~parser ~pp ()
 
@@ -537,8 +544,8 @@ let t4 ?(sep = ',') conv0 conv1 conv2 conv3 =
   in
   let docv =
     let docv = Conv.docv in
-    strf "%s%c%s%c%s%c%s" (docv conv0) sep (docv conv1) sep (docv conv2)
-      sep (docv conv3)
+    Printf.sprintf "%s%c%s%c%s%c%s"
+      (docv conv0) sep (docv conv1) sep (docv conv2) sep (docv conv3)
   in
   Conv.make ~docv ~parser ~pp ()
 
@@ -551,9 +558,10 @@ let man_fmt_docv = "FMT"
 let man_fmts_enum = enum man_fmts
 let man_fmts_alts = doc_alts_enum man_fmts
 let man_fmts_doc kind =
-  strf "Show %s in format $(docv). The value $(docv) must be %s. \
-        With $(b,auto), the format is $(b,pager) or $(b,plain) whenever \
-        the $(b,TERM) env var is $(b,dumb) or undefined."
+  Printf.sprintf
+    "Show %s in format $(docv). The value $(docv) must be %s. \
+     With $(b,auto), the format is $(b,pager) or $(b,plain) whenever \
+     the $(b,TERM) env var is $(b,dumb) or undefined."
     kind man_fmts_alts
 
 let man_format =
@@ -587,7 +595,9 @@ let conv_parser conv =
   fun s -> match Conv.parser conv s with
   | Ok _ as v -> v | Error e -> Error (`Msg e)
 
-let err_invalid s kind = `Msg (strf "invalid value '%s', expected %s" s kind)
+let err_invalid s kind =
+  `Msg (Printf.sprintf "invalid value '%s', expected %s" s kind)
+
 let parser_of_kind_of_string ~kind k_of_string =
   fun s -> match k_of_string s with
   | None -> Error (err_invalid s kind)

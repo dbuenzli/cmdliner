@@ -260,7 +260,7 @@ let add_markup_text ~errs k b s start target_need_escape target_escape =
 
 (* Plain text output *)
 
-let markup_to_plain ~errs b s =
+let markup_to_plain ~styled ~errs b s =
   let max_i = String.length s - 1 in
   let flush start stop = match start > max_i with
   | true -> ()
@@ -268,7 +268,8 @@ let markup_to_plain ~errs b s =
   in
   let need_escape _ = false in
   let escape _ _ = assert false in
-  let rec loop start i =
+  let rec end_text start i = Buffer.add_string b "\x1B[m"; loop start i
+  and loop start i =
     if i > max_i then flush start max_i else
     let next = i + 1 in
     match s.[i] with
@@ -284,11 +285,23 @@ let markup_to_plain ~errs b s =
             begin match s.[min] with
             | ',' ->
                 let markup = s.[min - 1] in
-                if not (is_markup_dir markup)
-                then (err_markup ~errs markup s; loop start next) else
                 let start_data = min + 1 in
-                (flush start (i - 1);
-                 add_markup_text ~errs loop b s start_data need_escape escape)
+                if not (is_markup_dir markup)
+                then (err_markup ~errs markup s; loop start next) else begin
+                  flush start (i - 1);
+                  if not styled then
+                    add_markup_text ~errs loop b s start_data need_escape escape
+                  else
+                  begin
+                    begin match markup with
+                    | 'i' -> Buffer.add_string b "\x1B[04m";
+                    | 'b' -> Buffer.add_string b "\x1B[01m"
+                    | _ -> assert false
+                    end;
+                    add_markup_text ~errs end_text b s start_data
+                      need_escape escape
+                  end
+                end
             | _ ->
                 err_malformed ~errs s; loop start next
             end
@@ -301,7 +314,11 @@ let markup_to_plain ~errs b s =
   (Buffer.clear b; loop 0 0; Buffer.contents b)
 
 let doc_to_plain ~errs ~subst b s =
-  markup_to_plain ~errs b (subst_vars ~errs ~subst b s)
+  markup_to_plain ~styled:false ~errs b (subst_vars ~errs ~subst b s)
+
+let doc_to_styled ~errs ~subst b s =
+  let styled = Cmdliner_base.Fmt.styler () = Cmdliner_base.Fmt.Ansi in
+  markup_to_plain ~styled ~errs b (subst_vars ~errs ~subst b s)
 
 let p_indent = 7                                  (* paragraph indentation. *)
 let l_indent = 4                                      (* label indentation. *)

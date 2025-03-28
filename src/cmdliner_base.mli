@@ -20,23 +20,34 @@ val string_drop_prefix : prefix:string -> string -> string option
 
 module Fmt : sig
   type 'a t = Format.formatter -> 'a -> unit
+  val str : ('a, Format.formatter, unit, string) format4 -> 'a
   val pf : Format.formatter -> ('a, Format.formatter, unit) format -> 'a
   val sp : unit t
+  val comma : unit t
   val cut : unit t
   val char : char t
   val string : string t
   val indent : int t
+  val list : ?sep:unit t -> 'a t -> 'a list t
   val text : string t
   val lines : string t
   val tokens : spaces:bool -> string t
   val code : string t
   val code_var : string t
+  val code_or_quote : string t
+  val ereason : string t
+  val missing : unit t
+  val invalid : unit t
   val puterr : unit t
+
+  type styler = Ansi | Plain
+  val styler : unit -> styler
 end
 
 (* Error message helpers *)
 
 val quote : string -> string
+val pp_alts : string list Fmt.t
 val alts_str : ?quoted:bool -> string list -> string
 val err_empty_list : string
 val err_ambiguous : kind:string -> string -> ambs:string list -> string

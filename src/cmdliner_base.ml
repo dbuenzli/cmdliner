@@ -76,12 +76,15 @@ let err_empty_list = "empty list"
 
 module Fmt = struct
   type 'a t = Format.formatter -> 'a -> unit
+  let str = Format.asprintf
   let pf = Format.fprintf
   let sp = Format.pp_print_space
   let cut = Format.pp_print_cut
   let string = Format.pp_print_string
   let char = Format.pp_print_char
+  let comma ppf () = char ppf ','; sp ppf ()
   let indent ppf c = for i = 1 to c do char ppf ' ' done
+  let list ?sep pp_v ppf l = Format.pp_print_list ?pp_sep:sep pp_v ppf l
   let text = Format.pp_print_text
   let lines ppf s =
     let rec stop_at sat ~start ~max s =
@@ -144,52 +147,74 @@ module Fmt = struct
   let ansi_esc = "\x1B["
   let sgr_reset = "\x1B[m"
 
+  let ansi styles ppf s =
+    let sgrs = String.concat "" [ansi_esc; sgrs_of_styles styles; "m"] in
+    Format.pp_print_as ppf 0 sgrs;
+    string ppf s;
+    Format.pp_print_as ppf 0 sgr_reset
+
   let st styles ppf s = match !styler' with
-  | Plain -> Format.pp_print_string ppf s
-  | Ansi ->
-      let sgrs = String.concat "" [ansi_esc; sgrs_of_styles styles; "m"] in
-      Format.pp_print_as ppf 0 sgrs;
-      Format.pp_print_string ppf s;
-      Format.pp_print_as ppf 0 sgr_reset
+  | Plain -> string ppf s
+  | Ansi -> ansi styles ppf s
 
   let code ppf v = st [`Bold] ppf v
   let code_var ppf v = st [`Underline] ppf v
-  let puterr ppf () = st [`Bold; `Fg `Red] ppf "Error"; Format.pp_print_char ppf ':'
+  let code_or_quote ppf v = match !styler' with
+  | Plain -> char ppf '\''; string ppf v; char ppf '\''
+  | Ansi -> ansi [`Bold] ppf v
+
+  let ereason ppf s = match !styler' with
+  | Plain -> string ppf s
+  | Ansi -> ansi [`Fg `Red] ppf s
+
+  let missing ppf () = ereason ppf "missing"
+  let invalid ppf () = ereason ppf "invalid"
+  let unknown ppf () = ereason ppf "unknown"
+  let puterr ppf () = st [`Bold; `Fg `Red] ppf "Error"; char ppf ':'
 end
 
 (* Converter (end-user) error messages *)
 
-let quote s = strf "'%s'" s
-let alts_str ?quoted alts =
-  let quote = match quoted with
-  | None -> strf "$(b,%s)"
-  | Some quoted -> if quoted then quote else (fun s -> s)
-  in
-  match alts with
-  | [] -> invalid_arg err_empty_list
-  | [a] -> (quote a)
-  | [a; b] -> strf "either %s or %s" (quote a) (quote b)
-  | alts ->
-      let rev_alts = List.rev alts in
-      strf "one of %s or %s"
-        (String.concat ", " (List.rev_map quote (List.tl rev_alts)))
-        (quote (List.hd rev_alts))
-
-let err_multi_def ~kind name doc v v' =
+let err_multi_def ~kind name doc v v' = (* programming error *)
   strf "%s %s defined twice (doc strings are '%s' and '%s')"
     kind name (doc v) (doc v')
 
+let quote s = strf "'%s'" s (* Exposed in the API do not change *)
+let _alts_str ~styled ?quoted ppf alts =
+  let quote = match quoted with
+  | None -> fun ppf s -> Fmt.pf ppf "$(b,%s)" s
+  | Some quoted ->
+      if not quoted then Fmt.string else
+      if styled then Fmt.code_or_quote else
+      fun ppf s -> Fmt.pf ppf "'%s'" s
+  in
+  match alts with
+  | [] -> invalid_arg err_empty_list
+  | [a] -> quote ppf a
+  | [a; b] -> Fmt.pf ppf "either@ %a@ or@ %a" quote a quote b
+  | alts ->
+      let rev_alts = List.rev alts in
+      Fmt.pf ppf "one@ of@ %a@ or@ %a"
+        Fmt.(list ~sep:comma quote) (List.rev (List.tl rev_alts))
+        quote (List.hd rev_alts)
+
+let alts_str ?quoted alts = (* Exposed in the API do not change *)
+  Fmt.str "%a" (_alts_str ~styled:false ?quoted) alts
+
+let pp_alts ppf alts =
+  _alts_str ~styled:true ~quoted:true ppf alts
+
 let err_ambiguous ~kind s ~ambs =
-  strf "%s %s ambiguous and could be %s" kind (quote s)
-    (alts_str ~quoted:true ambs)
+  Fmt.str "@[%s %a %a@ and@ could@ be@ %a@]"
+    kind Fmt.code_or_quote s Fmt.ereason "ambiguous" pp_alts ambs
 
 let err_unknown ?(dom = []) ?(hints = []) ~kind v =
-  let hints = match hints, dom with
-  | [], [] -> "."
-  | [], dom -> strf ", must be %s." (alts_str ~quoted:true dom)
-  | hints, _ -> strf ", did you mean %s?" (alts_str ~quoted:true hints)
+  let hints ppf () = match hints, dom with
+  | [], [] -> ()
+  | [], dom -> Fmt.pf ppf ". Must@ be@ %a" pp_alts dom
+  | hints, _ -> Fmt.pf ppf ". Did@ you@ mean@ %a?" pp_alts hints
   in
-  strf "unknown %s %s%s" kind (quote v) hints
+  Fmt.str "@[%a %s@ %a%a@]" Fmt.unknown () kind Fmt.code_or_quote v hints ()
 
 (* Completions *)
 

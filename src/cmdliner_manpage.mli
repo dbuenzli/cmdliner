@@ -85,3 +85,8 @@ val doc_to_plain :
     text.
 
     Raises Invalid_argument in case of illegal syntax. *)
+
+val doc_to_styled :
+  errs:Format.formatter -> subst:(string -> string option) -> Buffer.t ->
+  string -> string
+(** doc_to_styled is like {!doc_to_plain} but uses ANSI escapes. *)

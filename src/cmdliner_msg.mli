@@ -33,7 +33,8 @@ val pp_version : Format.formatter -> Cmdliner_info.Eval.t -> unit
 val pp_try_help : Format.formatter -> Cmdliner_info.Eval.t -> unit
 val pp_err : Format.formatter -> Cmdliner_info.Eval.t -> err:string -> unit
 val pp_err_usage :
-  Format.formatter -> Cmdliner_info.Eval.t -> err_lines:bool -> err:string -> unit
+  Format.formatter -> Cmdliner_info.Eval.t -> err_lines:bool -> err:string ->
+  unit
 
 val pp_backtrace :
   Format.formatter ->

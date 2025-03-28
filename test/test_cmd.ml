@@ -32,30 +32,31 @@ let test_groups =
   parse ["mammals"] @@ __POS_OF__ ();
   (**)
   warning ["camels"; "--bactrian"] @@ __POS_OF__
-{|test_group: command 'camels': deprecated, use 'mammals' instead.
+"test_group: command 'camels': deprecated, use 'mammals' instead.
             option '--bactrian': deprecated, use nothing instead.
-|};
+";
   (**)
   error `Term [] @@ __POS_OF__
-  {|test_group: required COMMAND name is missing, must be one of 'birds', 'camels', 'fishs' or 'mammals'.
-Usage: test_group COMMAND …
-Try 'test_group --help' for more information.
-|};
+  "test_group: required \x1B[04mCOMMAND\x1B[m name is \x1B[31mmissing\x1B[m, must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or
+            \x1B[01mmammals\x1B[m
+Usage: \x1B[01mtest_group\x1B[m \x1B[04mCOMMAND\x1B[m …
+Try \x1B[01mtest_group --help\x1B[m for more information.
+";
   error `Term ["bla"] @@ __POS_OF__
-{|test_group: unknown command 'bla', must be one of 'birds', 'camels', 'fishs' or 'mammals'.
-Usage: test_group COMMAND …
-Try 'test_group --help' for more information.
-|};
+"test_group: \x1B[31munknown\x1B[m command \x1B[01mbla\x1B[m. Must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or \x1B[01mmammals\x1B[m
+Usage: \x1B[01mtest_group\x1B[m \x1B[04mCOMMAND\x1B[m …
+Try \x1B[01mtest_group --help\x1B[m for more information.
+";
   error `Parse ["birds"; "-k"] @@ __POS_OF__
-{|test_group: option '-k' needs an argument
-Usage: test_group birds [COMMAND] …
-Try 'test_group birds --help' or 'test_group --help' for more information.
-|};
+"test_group: option \x1B[01m-k\x1B[m \x1B[31mneeds an argument\x1B[m
+Usage: \x1B[01mtest_group birds\x1B[m [\x1B[04mCOMMAND\x1B[m] …
+Try \x1B[01mtest_group birds --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
+";
   error `Term ["mammals"; "land"] @@ __POS_OF__
-{|test_group: too many arguments, don't know what to do with 'land'
-Usage: test_group mammals [OPTION]…
-Try 'test_group mammals --help' or 'test_group --help' for more information.
-|};
+"test_group: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01mland\x1B[m
+Usage: \x1B[01mtest_group mammals\x1B[m [\x1B[04mOPTION\x1B[m]…
+Try \x1B[01mtest_group mammals --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME

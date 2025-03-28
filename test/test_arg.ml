@@ -37,10 +37,10 @@ let test_pos_all =
   parse ["0";"--"; "1"] @@ __POS_OF__ ["0"; "1"];
   (**)
   error `Term ["--opt"] @@ __POS_OF__
-  {|test_pos_all: unknown option '--opt'.
-Usage: test_pos_all [OPTION]… [THEARG]…
-Try 'test_pos_all --help' for more information.
-|};
+  "test_pos_all: \x1B[31munknown\x1B[m option \x1B[01m--opt\x1B[m
+Usage: \x1B[01mtest_pos_all\x1B[m [\x1B[04mOPTION\x1B[m]… [\x1B[04mTHEARG\x1B[m]…
+Try \x1B[01mtest_pos_all --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -82,10 +82,10 @@ let test_pos_left =
   parse ["0"; "1" ] @@ __POS_OF__ ["0"; "1"];
   (**)
   error `Term ["0"; "1"; "2"] @@ __POS_OF__
-  {|test_pos_left: too many arguments, don't know what to do with '2'
-Usage: test_pos_left [OPTION]… [LEFT] [LEFT]
-Try 'test_pos_left --help' for more information.
-|};
+  "test_pos_left: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01m2\x1B[m
+Usage: \x1B[01mtest_pos_left\x1B[m [\x1B[04mOPTION\x1B[m]… [\x1B[04mLEFT\x1B[m] [\x1B[04mLEFT\x1B[m]
+Try \x1B[01mtest_pos_left --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -131,25 +131,25 @@ let test_pos_req =
   (**)
   let error = Testing_cmdliner.snap_eval_error `Term cmd in
   error [] @@ __POS_OF__
-{|test_pos_req: required arguments R1, R2, R3, RIGHT are missing
-Usage: test_pos_req [OPTION]… R1 R2 R3 RIGHT…
-Try 'test_pos_req --help' for more information.
-|};
+"test_pos_req: required arguments \x1B[04mR1\x1B[m, \x1B[04mR2\x1B[m, \x1B[04mR3\x1B[m, \x1B[04mRIGHT\x1B[m are \x1B[31mmissing\x1B[m
+Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
+Try \x1B[01mtest_pos_req --help\x1B[m for more information.
+";
   error ["r1"] @@ __POS_OF__
-{|test_pos_req: required arguments R2, R3, RIGHT are missing
-Usage: test_pos_req [OPTION]… R1 R2 R3 RIGHT…
-Try 'test_pos_req --help' for more information.
-|};
+"test_pos_req: required arguments \x1B[04mR2\x1B[m, \x1B[04mR3\x1B[m, \x1B[04mRIGHT\x1B[m are \x1B[31mmissing\x1B[m
+Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
+Try \x1B[01mtest_pos_req --help\x1B[m for more information.
+";
   error ["r1"; "r2"] @@ __POS_OF__
-{|test_pos_req: required arguments R3, RIGHT are missing
-Usage: test_pos_req [OPTION]… R1 R2 R3 RIGHT…
-Try 'test_pos_req --help' for more information.
-|};
+"test_pos_req: required arguments \x1B[04mR3\x1B[m, \x1B[04mRIGHT\x1B[m are \x1B[31mmissing\x1B[m
+Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
+Try \x1B[01mtest_pos_req --help\x1B[m for more information.
+";
   error ["r1"; "r2"; "r3"] @@ __POS_OF__
-{|test_pos_req: required argument RIGHT is missing
-Usage: test_pos_req [OPTION]… R1 R2 R3 RIGHT…
-Try 'test_pos_req --help' for more information.
-|};
+"test_pos_req: required argument \x1B[04mRIGHT\x1B[m is \x1B[31mmissing\x1B[m
+Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
+Try \x1B[01mtest_pos_req --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -281,25 +281,25 @@ let test_opt_required =
   (**)
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   error `Parse [] @@ __POS_OF__
-{|test_opt_req: required option --req is missing
-Usage: test_opt_req --req=ARG [OPTION]…
-Try 'test_opt_req --help' for more information.
-|};
+"test_opt_req: required option \x1B[01m--req\x1B[m is \x1B[31mmissing\x1B[m
+Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
+Try \x1B[01mtest_opt_req --help\x1B[m for more information.
+";
     error `Term ["a"] @@ __POS_OF__
-{|test_opt_req: too many arguments, don't know what to do with 'a'
-Usage: test_opt_req --req=ARG [OPTION]…
-Try 'test_opt_req --help' for more information.
-|};
+"test_opt_req: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01ma\x1B[m
+Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
+Try \x1B[01mtest_opt_req --help\x1B[m for more information.
+";
     error `Term ["-ra"; "a"] @@ __POS_OF__
-{|test_opt_req: too many arguments, don't know what to do with 'a'
-Usage: test_opt_req --req=ARG [OPTION]…
-Try 'test_opt_req --help' for more information.
-|};
+"test_opt_req: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01ma\x1B[m
+Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
+Try \x1B[01mtest_opt_req --help\x1B[m for more information.
+";
     error `Parse ["-r"] @@ __POS_OF__
-{|test_opt_req: option '-r' needs an argument
-Usage: test_opt_req --req=ARG [OPTION]…
-Try 'test_opt_req --help' for more information.
-|};
+"test_opt_req: option \x1B[01m-r\x1B[m \x1B[31mneeds an argument\x1B[m
+Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
+Try \x1B[01mtest_opt_req --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -339,10 +339,10 @@ let test_arg_info_docv =
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
-{|test_arg_docv: unknown option '-z'.
-Usage: test_arg_docv [--field=VAL] [OPTION]… [ARG]…
-Try 'test_arg_docv --help' for more information.
-|};
+"test_arg_docv: \x1B[31munknown\x1B[m option \x1B[01m-z\x1B[m
+Usage: \x1B[01mtest_arg_docv\x1B[m [\x1B[01m--field\x1B[m=\x1B[04mVAL\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mARG\x1B[m]…
+Try \x1B[01mtest_arg_docv --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -383,10 +383,10 @@ let test_conv_docv =
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
-{|test_conv_docv: unknown option '-z'.
-Usage: test_conv_docv [--field=FIELD] [OPTION]… [FIELD]…
-Try 'test_conv_docv --help' for more information.
-|};
+"test_conv_docv: \x1B[31munknown\x1B[m option \x1B[01m-z\x1B[m
+Usage: \x1B[01mtest_conv_docv\x1B[m [\x1B[01m--field\x1B[m=\x1B[04mFIELD\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mFIELD\x1B[m]…
+Try \x1B[01mtest_conv_docv --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -427,10 +427,10 @@ let test_arg_file =
   parse ["-"] @@ __POS_OF__ ["-"];
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
-{|test_arg_file: unknown option '-z'.
-Usage: test_arg_file [OPTION]… [PATH]…
-Try 'test_arg_file --help' for more information.
-|};
+"test_arg_file: \x1B[31munknown\x1B[m option \x1B[01m-z\x1B[m
+Usage: \x1B[01mtest_arg_file\x1B[m [\x1B[04mOPTION\x1B[m]… [\x1B[04mPATH\x1B[m]…
+Try \x1B[01mtest_arg_file --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME

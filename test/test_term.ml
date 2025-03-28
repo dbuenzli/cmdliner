@@ -52,10 +52,10 @@ let test_with_used_args =
      (true, Some "msg", ["hoho"; "hihi"]));
   (**)
   error `Term ["--opt"] @@ __POS_OF__
-  {|test_with_used_args: unknown option '--opt'.
-Usage: test_with_used_args [--aaa] [--bbb=VAL] [OPTION]… [ARG]…
-Try 'test_with_used_args --help' for more information.
-|};
+"test_with_used_args: \x1B[31munknown\x1B[m option \x1B[01m--opt\x1B[m
+Usage: \x1B[01mtest_with_used_args\x1B[m [\x1B[01m--aaa\x1B[m] [\x1B[01m--bbb\x1B[m=\x1B[04mVAL\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mARG\x1B[m]…
+Try \x1B[01mtest_with_used_args --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -107,10 +107,10 @@ let term_duplication =
   parse ["0"; "-f"] @@ __POS_OF__ ("0", "0", true, true);
   (**)
   error `Term ["0"; "1"] @@ __POS_OF__
-{|test_term_dups: too many arguments, don't know what to do with '1'
-Usage: test_term_dups [--flag] [OPTION]… [POS]
-Try 'test_term_dups --help' for more information.
-|};
+"test_term_dups: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01m1\x1B[m
+Usage: \x1B[01mtest_term_dups\x1B[m [\x1B[01m--flag\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mPOS\x1B[m]
+Try \x1B[01mtest_term_dups --help\x1B[m for more information.
+";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
