@@ -329,11 +329,14 @@ let last (args, convert) =
 (* Predefined converters. *)
 
 let bool =
+  let alts = ["true"; "false"] in
   let parser s = try Ok (bool_of_string s) with
   | Invalid_argument _ ->
-      Error (err_invalid_val s (doc_alts ~quoted:true ["true"; "false"]))
+      Error (err_invalid_val s (doc_alts ~quoted:true alts))
   in
-  Conv.make ~docv:"BOOL" ~parser ~pp:Format.pp_print_bool ()
+  let complete _prefix = List.map (fun s -> s, "") alts in
+  let completion = Completion.make ~complete () in
+  Conv.make ~docv:"BOOL" ~parser ~pp:Format.pp_print_bool ~completion ()
 
 let char =
   let parser s = match String.length s = 1 with
