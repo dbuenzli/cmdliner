@@ -36,9 +36,9 @@ let test_completion =
 let test_legacy_prefix =
   test ~/"test/test_legacy_prefix.ml" ~srcs:[testing] ~requires:[b0_std]
 
-let example_group_test =
+let example_group =
   let srcs = [testing] and requires = [b0_std] in
-  test ~/"test/example_group_test.ml" ~run:false ~srcs ~requires
+  test ~/"test/example_group.ml" ~run:false ~srcs ~requires
 
 let example_chorus = test ~/"test/example_chorus.ml" ~run:false
 let example_cp = test ~/"test/example_cp.ml" ~run:false

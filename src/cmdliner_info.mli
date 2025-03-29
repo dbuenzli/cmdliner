@@ -117,7 +117,7 @@ end
 (** Commands. *)
 module Cmd : sig
   type t
-  val v :
+  val make :
     ?deprecated:string ->
     ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->
     ?envs:Env.info list -> ?exits:Exit.info list ->
@@ -144,7 +144,7 @@ end
 (** Evaluation. *)
 module Eval : sig
   type t
-  val v :
+  val make :
     cmd:Cmd.t -> parents:Cmd.t list -> env:(string -> string option) ->
     err_ppf:Format.formatter -> t
 

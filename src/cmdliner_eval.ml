@@ -63,7 +63,7 @@ let do_help ~env help_ppf err_ppf ei fmt cmd =
   | None (* help of main command requested *)  ->
       let env _ = assert false in
       let cmd = Cmdliner_info.Eval.main ei in
-      let ei' = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env ~err_ppf in
+      let ei' = Cmdliner_info.Eval.make ~cmd ~parents:[] ~env ~err_ppf in
       begin match Cmdliner_info.Eval.parents ei with
       | [] -> (* [ei] is an evaluation of main, [cmd] has stdopts *) ei'
       | _ -> let _, _, ei = add_stdopts ei' in ei
@@ -240,7 +240,7 @@ let eval_value
   let args, f, cmd, parents, children, res =
     find_term ~legacy_prefixes (remove_exec argv) cmd
   in
-  let ei = Cmdliner_info.Eval.v ~cmd ~parents ~env ~err_ppf in
+  let ei = Cmdliner_info.Eval.make ~cmd ~parents ~env ~err_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let res = match res with
@@ -280,10 +280,10 @@ let eval_peek_opts
   =
   let args, f = Cmdliner_term.argset t, Cmdliner_term.parser t in
   let version = if version_opt then Some "dummy" else None in
-  let cmd = Cmdliner_info.Cmd.v ?version "dummy" in
+  let cmd = Cmdliner_info.Cmd.make ?version "dummy" in
   let cmd = Cmdliner_info.Cmd.add_args cmd args in
   let null_ppf = Format.make_formatter (fun _ _ _ -> ()) (fun () -> ()) in
-  let ei = Cmdliner_info.Eval.v ~cmd ~parents:[] ~env ~err_ppf:null_ppf in
+  let ei = Cmdliner_info.Eval.make ~cmd ~parents:[] ~env ~err_ppf:null_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let cli_args =
@@ -340,9 +340,10 @@ let eval' ?help ?err ?catch ?env ?argv ?term_err cmd =
   | Ok (`Ok c) -> c
   | r -> exit_status_of_result ?term_err r
 
-let pp_err ppf cmd ~msg = (* FIXME move that to Cmdliner_msgs *)
+let pp_err ppf cmd ~msg =
+  (* Here instead of Cmdliner_msgs to avoid circular dep *)
   let name = Cmdliner_cmd.name cmd in
-  Format.fprintf  ppf "%s: @[%a@]@." name Cmdliner_base.Fmt.lines msg
+  Cmdliner_base.Fmt.pf ppf "%s: @[%a@]@." name Cmdliner_base.Fmt.lines msg
 
 let eval_result
     ?help ?(err = Format.err_formatter) ?catch ?env ?argv ?term_err cmd

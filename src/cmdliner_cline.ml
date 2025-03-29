@@ -109,7 +109,7 @@ let parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args =
       | Ok a ->
           let value, args = match value, Cmdliner_info.Arg.opt_kind a with
           | Some v, Cmdliner_info.Arg.Flag when is_short_opt name ->
-              None, ("-" ^ v) :: args
+              None, ("-" ^ v) :: args (* short flag dash sharing *)
           | Some _, _ -> value, args
           | None, Cmdliner_info.Arg.Flag -> value, args
           | None, _ ->
@@ -120,8 +120,8 @@ let parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args =
           (match Option.bind value maybe_complete_token with
           | Some prefix -> raise (Completion_requested (prefix, `Opt a))
           | None ->
-          let arg = O ((k, name, value) :: opt_arg cl a) in
-          loop errs (k + 1) (Amap.add a arg cl) pargs args)
+              let arg = O ((k, name, value) :: opt_arg cl a) in
+              loop errs (k + 1) (Amap.add a arg cl) pargs args)
       | Error `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
       | Error `Not_found ->
           let hints = hint_matching_opt optidx s in

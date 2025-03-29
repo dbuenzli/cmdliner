@@ -195,7 +195,7 @@ module Cmd = struct
       has_args : bool; (* [true] if has own parsing term. *)
       children : t list; } (* Children, if any. *)
 
-  let v
+  let make
       ?deprecated ?(man_xrefs = [`Main]) ?(man = []) ?(envs = [])
       ?(exits = Exit.defaults) ?(sdocs = Cmdliner_manpage.s_common_options)
       ?(docs = Cmdliner_manpage.s_commands) ?(doc = "") ?version name
@@ -235,7 +235,7 @@ module Eval = struct
       env : string -> string option; (* environment variable lookup. *)
       err_ppf : Format.formatter (* error formatter *) }
 
-  let v ~cmd ~parents ~env ~err_ppf = { cmd; parents; env; err_ppf }
+  let make ~cmd ~parents ~env ~err_ppf = { cmd; parents; env; err_ppf }
 
   let cmd e = e.cmd
   let parents e = e.parents

@@ -8,7 +8,7 @@
 (* Command info *)
 
 type info = Cmdliner_info.Cmd.t
-let info = Cmdliner_info.Cmd.v
+let info = Cmdliner_info.Cmd.make
 
 type 'a t =
 | Cmd of info * 'a Cmdliner_term.parser

@@ -37,5 +37,5 @@ val pp_err_usage :
   unit
 
 val pp_backtrace :
-  Format.formatter ->
-  Cmdliner_info.Eval.t -> exn -> Printexc.raw_backtrace -> unit
+  Format.formatter -> Cmdliner_info.Eval.t -> exn -> Printexc.raw_backtrace ->
+  unit
