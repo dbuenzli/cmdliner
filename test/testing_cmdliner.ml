@@ -3,15 +3,11 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
+open B0_std
 open B0_testing
 open Cmdliner
 
 (* Snapshotting command line evaluations *)
-
-let get_eval_value ?__POS__ = function
-| Ok (`Ok v) -> v
-| Error _ | Ok `Version | Ok `Help ->
-    Test.failstop ?__POS__ "Unexpected evaluation"
 
 let capture_fmt f =
   let buf = Buffer.create 255 in
@@ -20,6 +16,47 @@ let capture_fmt f =
   ret, (Buffer.contents buf)
 
 let make_argv cmd args = Array.of_list (Cmd.name cmd :: args)
+let env_dumb_term = function
+| "TERM" -> Some "dumb"
+| var -> Sys.getenv_opt var
+
+let t_eval_result ok =
+  let test_eval_error : Cmd.eval_error Test.T.t =
+    let pp ppf = function
+    | `Parse -> Fmt.string ppf "`Parse"
+    | `Term -> Fmt.string ppf "`Term"
+    | `Exn -> Fmt.string ppf "`Exn"
+    in
+    Test.T.make ~equal:(=) ~pp ()
+  in
+  let test_eval_ok ok =
+    let pp ppf = function
+    | `Ok v -> Test.T.pp ok ppf v
+    | `Version -> Fmt.string ppf "`Version"
+    | `Help -> Fmt.string ppf "`Help"
+    in
+    let equal v0 v1 = match v0, v1 with
+    | `Ok v0, `Ok v1 -> Test.T.equal ok v0 v1
+    | v0, v1 -> v0 = v1
+    in
+    Test.T.make ~equal ~pp ()
+  in
+  Test.T.result' ~ok:(test_eval_ok ok) ~error:test_eval_error
+
+let get_eval_value ?__POS__ = function
+| Ok (`Ok v) -> v
+| (Error _ | Ok `Version | Ok `Help) as v ->
+    Test.failstop ?__POS__ "Unexpected evalution: %a"
+      (Test.T.pp (t_eval_result Test.T.any)) v
+
+let test_eval_result ?__POS__ ?env t cmd args exp =
+  let argv = make_argv cmd args in
+  let (ret, _), _ = (* Ignore outputs *)
+    capture_fmt @@ fun err ->
+    capture_fmt @@ fun help ->
+    Cmd.eval_value ?env ~help ~err cmd ~argv
+  in
+  Test.eq ?__POS__ (t_eval_result t) ret exp
 
 let snap_parse ?env t cmd args exp =
   let loc = Test.Snapshot.loc exp in
@@ -38,19 +75,21 @@ let snap_eval_error ?env error cmd args exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
   let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ?env ~err cmd ~argv in
-  Test.any ret (Error error) ~__POS__:loc ;
+  Test.eq (t_eval_result Test.T.any) ret (Error error) ~__POS__:loc ;
   Snap.lines err exp
 
-let snap_man ?env ?(args = ["--help=plain"]) cmd exp =
+let snap_help ?env retv cmd args exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
   let ret, help =
     capture_fmt @@ fun help -> Cmd.eval_value ?env ~help cmd ~argv
   in
-  Test.any ret (Ok `Help) ~__POS__:loc;
+  Test.eq (t_eval_result Test.T.any) ret retv ~__POS__:loc;
   Snap.lines help exp
 
-let snap_completion cmd args exp = snap_man cmd ~args exp
+let snap_completion ?env cmd args exp = snap_help ?env (Ok `Help) cmd args exp
+let snap_man ?env ?(args = ["--help=plain"]) cmd exp =
+  snap_help ?env (Ok `Help) cmd args exp
 
 (* Sample commands *)
 

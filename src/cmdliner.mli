@@ -440,7 +440,7 @@ module Cmd : sig
       parsed by [t]. *)
 
   val v : info -> 'a Term.t -> 'a t
-  (** [v] is {!make} which should be preferred. *)
+  (** [v] is an old name for {!make} which should be preferred. *)
 
   val group : ?default:'a Term.t -> info -> 'a t list -> 'a t
   (** [group i ?default cmds] is a command with information [i] that

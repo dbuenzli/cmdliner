@@ -331,8 +331,27 @@ ENVIRONMENT
 SEE ALSO|};
   ()
 
+let test_std_opts =
+  Test.test "Standard options" @@ fun () ->
+  let cmd = Testing_cmdliner.sample_group_cmd in
+  let snap_version = Testing_cmdliner.snap_help (Ok `Version) cmd in
+  let ret ?__POS__ =
+    let env = Testing_cmdliner.env_dumb_term in
+    Testing_cmdliner.test_eval_result ?__POS__ ~env Test.T.unit cmd
+  in
+  snap_version ["--version"] @@ __POS_OF__ "X.Y.Z\n";
+  snap_version ["--version"; "birds"] @@ __POS_OF__ "X.Y.Z\n";
+  snap_version ["fishs"; "--version"; "birds"] @@ __POS_OF__ "X.Y.Z\n";
+  ret ["--help"; "--version"] (Ok `Help) ~__POS__;
+  ret ["--help"; "--version"] (Ok `Help) ~__POS__;
+  ret ["fishs"; "--version"; "birds"; "--help"] (Ok `Help) ~__POS__;
+  ret ["--help"; "crow"] (Ok `Help) ~__POS__;
+  ret ["birds"; "--help"; "crow"] (Ok `Help) ~__POS__;
+  ret ["fishs"; "--"; "--help"] (Ok (`Ok ())) ~__POS__;
+  ()
+
 let main () =
-  let doc = "Test term specifications" in
+  let doc = "Test command specifications" in
   Test.main ~doc @@ fun () -> Test.autorun ()
 
 let () = if !Sys.interactive then () else exit (main ())

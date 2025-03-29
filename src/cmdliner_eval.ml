@@ -48,6 +48,9 @@ let try_eval_stdopts ~catch ei cl help version =
   match run_parser ~catch ei cl (Cmdliner_term.parser help) with
   | Ok (Some fmt) -> Some (Error (`Std_help fmt))
   | Error (`Complete _) -> assert false
+  | Error (`Parse _) ->
+      (* only [FMT] errored, there was a `--help`, show help anyways *)
+      Some (Error (`Std_help `Auto))
   | Error _ as err -> Some err
   | Ok None ->
       match version with
@@ -242,7 +245,7 @@ let eval_value
   in
   let ei = Cmdliner_info.Eval.make ~cmd ~parents ~env ~err_ppf in
   let help, version, ei = add_stdopts ei in
-  let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
+  let term_args = Cmdliner_info.Cmd.args (Cmdliner_info.Eval.cmd ei) in
   let res = match res with
   | Error msg -> (* Command lookup error, we still prioritize stdargs *)
       begin match Cmdliner_cline.create ~legacy_prefixes term_args args with
