@@ -104,7 +104,7 @@ let flag a =
   | (_, f, _) :: (_ ,g, _) :: _  ->
       parse_error (Cmdliner_msg.err_opt_repeated f g)
   in
-  arg_to_args a (V Cmdliner_base.Completion.none), convert
+  Cmdliner_term.make (arg_to_args a (V Cmdliner_base.Completion.none)) convert
 
 let flag_all a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -120,7 +120,7 @@ let flag_all a =
         Ok (List.rev_map truth l)
       with Failure e -> parse_error e
   in
-  arg_to_args a (V Cmdliner_base.Completion.none), convert
+  Cmdliner_term.make (arg_to_args a (V Cmdliner_base.Completion.none)) convert
 
 let vflag v l =
   let convert _ cl =
@@ -144,7 +144,8 @@ let vflag v l =
   let flag (_, a) =
     if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else a
   in
-  list_to_args flag l (V Cmdliner_base.Completion.none), convert
+  Cmdliner_term.make
+    (list_to_args flag l (V Cmdliner_base.Completion.none)) convert
 
 let vflag_all v l =
   let convert _ cl =
@@ -168,7 +169,8 @@ let vflag_all v l =
     if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
     Cmdliner_info.Arg.make_all_opts a
   in
-  list_to_args flag l (V Cmdliner_base.Completion.none), convert
+  Cmdliner_term.make
+    (list_to_args flag l (V Cmdliner_base.Completion.none)) convert
 
 let parse_opt_value parse f v = match parse v with
 | Ok v -> v | Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
@@ -200,7 +202,7 @@ let opt ?vopt conv v a =
   | (_, f, _) :: (_, g, _) :: _ ->
       parse_error (Cmdliner_msg.err_opt_repeated g f)
   in
-  arg_to_args a (V (Conv.completion conv)), convert
+  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
 
 let opt_all ?vopt conv v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -229,7 +231,7 @@ let opt_all ?vopt conv v a =
                 (List.sort rev_compare (List.rev_map parse l))) with
       | Failure e -> parse_error e
   in
-  arg_to_args a (V (Conv.completion conv)), convert
+  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
 
 (* Positional arguments *)
 
@@ -255,7 +257,7 @@ let pos ?(rev = false) k conv v a =
       | Failure e -> parse_error e)
   | _ -> assert false
   in
-  arg_to_args a (V (Conv.completion conv)), convert
+  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
 
 let pos_list pos conv v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
@@ -270,7 +272,7 @@ let pos_list pos conv v a =
       with
       | Failure e -> parse_error e
   in
-  arg_to_args a (V (Conv.completion conv)), convert
+  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
 
 let all = Cmdliner_info.Arg.pos ~rev:false ~start:0 ~len:None
 let pos_all c v a = pos_list all c v a
@@ -300,31 +302,31 @@ let err_arg_missing args =
   parse_error @@
   Cmdliner_msg.err_arg_missing (fst (Cmdliner_info.Arg.Set.choose args))
 
-let required (args, convert) =
-  let args = absent_error args in
-  let convert ei cl = match convert ei cl with
+let required t =
+  let args = absent_error (Cmdliner_term.argset t) in
+  let convert ei cl = match (Cmdliner_term.parser t) ei cl with
   | Ok (Some v) -> Ok v
   | Ok None -> err_arg_missing args
   | Error _ as e -> e
   in
-  args, convert
+  Cmdliner_term.make args convert
 
-let non_empty (al, convert) =
-  let args = absent_error al in
-  let convert ei cl = match convert ei cl with
+let non_empty t =
+  let args = absent_error (Cmdliner_term.argset t) in
+  let convert ei cl = match (Cmdliner_term.parser t) ei cl with
   | Ok [] -> err_arg_missing args
   | Ok l -> Ok l
   | Error _ as e -> e
   in
-  args, convert
+  Cmdliner_term.make args convert
 
-let last (args, convert) =
-  let convert ei cl = match convert ei cl with
-  | Ok [] -> err_arg_missing args
+let last t =
+  let convert ei cl = match (Cmdliner_term.parser t) ei cl with
+  | Ok [] -> err_arg_missing (Cmdliner_term.argset t)
   | Ok l -> Ok (List.hd (List.rev l))
   | Error _ as e -> e
   in
-  args, convert
+  Cmdliner_term.make (Cmdliner_term.argset t) convert
 
 (* Predefined converters. *)
 

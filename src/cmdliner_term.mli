@@ -15,9 +15,13 @@ type 'a parser =
 (** Type type for command line parser. given static information about
     the command line and a command line to parse returns an OCaml value. *)
 
-type 'a t = Cmdliner_info.Arg.Set.t * 'a parser
+type +'a t
 (** The type for terms. The list of arguments it can parse and the parsing
     function that does so. *)
+
+val make : Cmdliner_info.Arg.Set.t -> 'a parser -> 'a t
+val argset : 'a t -> Cmdliner_info.Arg.Set.t
+val parser : 'a t -> 'a parser
 
 val const : 'a -> 'a t
 val app : ('a -> 'b) t -> 'a t -> 'b t

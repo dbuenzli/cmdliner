@@ -16,11 +16,11 @@ let add_stdopts ei =
     match Cmdliner_info.Cmd.version (Cmdliner_info.Eval.main ei) with
     | None -> Cmdliner_info.Arg.Set.empty, None
     | Some _ ->
-        let args, _ as vers = Cmdliner_arg.stdopt_version ~docs in
-        args, Some vers
+        let vers = Cmdliner_arg.stdopt_version ~docs in
+        (Cmdliner_term.argset vers), Some vers
   in
   let help = Cmdliner_arg.stdopt_help ~docs in
-  let args = Cmdliner_info.Arg.Set.union vargs (fst help) in
+  let args = Cmdliner_info.Arg.Set.union vargs (Cmdliner_term.argset help) in
   let cmd = Cmdliner_info.Cmd.add_args (Cmdliner_info.Eval.cmd ei) args in
   help, vers, Cmdliner_info.Eval.with_cmd ei cmd
 
@@ -45,7 +45,7 @@ let run_parser ~catch ei cl f = try (f ei cl :> 'a eval_result) with
     Error (`Exn (exn, bt))
 
 let try_eval_stdopts ~catch ei cl help version =
-  match run_parser ~catch ei cl (snd help) with
+  match run_parser ~catch ei cl (Cmdliner_term.parser help) with
   | Ok (Some fmt) -> Some (Error (`Std_help fmt))
   | Error (`Complete _) -> assert false
   | Error _ as err -> Some err
@@ -53,7 +53,7 @@ let try_eval_stdopts ~catch ei cl help version =
       match version with
       | None -> None
       | Some version ->
-          match run_parser ~catch ei cl (snd version) with
+          match run_parser ~catch ei cl (Cmdliner_term.parser version) with
           | Ok false -> None
           | Ok true -> Some (Error (`Std_version))
           | Error _ as err -> Some err
@@ -278,7 +278,7 @@ let eval_peek_opts
     ?(version_opt = false) ?(env = Sys.getenv_opt) ?(argv = Sys.argv) t
   : 'a option * ('a eval_ok, eval_error) result
   =
-  let args, f = t in
+  let args, f = Cmdliner_term.argset t, Cmdliner_term.parser t in
   let version = if version_opt then Some "dummy" else None in
   let cmd = Cmdliner_info.Cmd.v ?version "dummy" in
   let cmd = Cmdliner_info.Cmd.add_args cmd args in

@@ -11,7 +11,10 @@ type 'a parser =
   Cmdliner_info.Eval.t -> Cmdliner_cline.t ->
   ('a, [ `Parse of string | term_escape ]) result
 
-type 'a t = Cmdliner_info.Arg.Set.t * 'a parser
+type +'a t = Cmdliner_info.Arg.Set.t * 'a parser
+let make args p = (args, p)
+let argset (args, _) = args
+let parser (_, parser) = parser
 
 let const v = Cmdliner_info.Arg.Set.empty, (fun _ _ -> Ok v)
 let app (args_f, f) (args_v, v) =
