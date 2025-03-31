@@ -211,32 +211,44 @@ let create ?(peek_opts = false) ~legacy_prefixes al args =
       `Error (errs, cl)
   with Completion_requested (prefix, kind) -> `Completion (prefix, kind)
 
+(* Deprecations *)
 
-type deprecated_arg = Cmdliner_info.Arg.t * arg
-let deprecated_args cl =
-  let add info arg acc = match Cmdliner_info.Arg.deprecated info with
-  | None -> acc
-  | Some msg ->
-      match arg with
-      | O [] | P [] -> acc (* Happens if env var *)
-      | _ -> (info, arg) :: acc
+type deprecated = Cmdliner_info.Arg.t * arg
+
+let deprecated ~env cl =
+  let add ~env info arg acc =
+    let deprecation_invoked = match arg with
+    | O [] | P [] -> (* nothing on the cli for the argument *)
+        begin match Cmdliner_info.Arg.env info with
+        | None -> false
+        | Some ienv ->
+            (* the parse uses the env var if defined which may be deprecated  *)
+            Option.is_some (Cmdliner_info.Env.info_deprecated ienv) &&
+            Option.is_some (env (Cmdliner_info.Env.info_var ienv))
+        end
+    | _ -> Option.is_some (Cmdliner_info.Arg.deprecated info)
+    in
+    if deprecation_invoked then (info, arg) :: acc else acc
   in
-  List.rev (Amap.fold add cl [])
+  List.rev (Amap.fold (add ~env) cl [])
 
-let pp_deprecated_arg ppf (i, arg) = match Cmdliner_info.Arg.deprecated i with
-| None -> ()
-| Some msg ->
-    let plural l = if List.length l > 1 then "s" else "" in
-    match arg with
-    | O [] | P [] -> ()
-    | O os ->
-        let plural = plural os in
-        let names = List.map (fun (_, n, _) -> n) os in
-        Cmdliner_base.(Fmt.pf ppf "@[option%s %a:@[ %a@]@]"
-                         plural Fmt.(list ~sep:sp code_or_quote) names
-                         Fmt.styled_text msg)
-    | P args ->
-        let plural = plural args in
-        Cmdliner_base.(Fmt.pf ppf "@[argument%s %a:@[ %a@]@]"
-                         plural Fmt.(list ~sep:sp code_or_quote) args
-                         Fmt.styled_text msg)
+let pp_deprecated ppf (info, arg) =
+  let open Cmdliner_base in
+  let plural l = if List.length l > 1 then "s" else "" in
+  match arg with
+  | O [] | P [] ->
+      let env = Option.get (Cmdliner_info.Arg.env info) in
+      let msg = Option.get (Cmdliner_info.Arg.deprecated info) in
+      Fmt.pf ppf "@[environment variable %a: @[%a@]@]"
+        Fmt.code (Cmdliner_info.Env.info_var env) Fmt.styled_text msg
+  | O os ->
+      let plural = plural os in
+      let names = List.map (fun (_, n, _) -> n) os in
+      let msg = Option.get (Cmdliner_info.Arg.deprecated info) in
+      Fmt.pf ppf "@[option%s %a:@[ %a@]@]"
+        plural Fmt.(list ~sep:sp code_or_quote) names Fmt.styled_text msg
+  | P args ->
+      let plural = plural args in
+      let msg = Option.get (Cmdliner_info.Arg.deprecated info) in
+      Fmt.pf ppf "@[argument%s %a:@[ %a@]@]"
+        plural Fmt.(list ~sep:sp code_or_quote) args Fmt.styled_text msg

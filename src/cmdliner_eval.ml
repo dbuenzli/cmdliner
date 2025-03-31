@@ -225,9 +225,9 @@ let find_term ~legacy_prefixes args cmd =
 let remove_exec argv =
   try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
 
-let do_deprecated_msgs err_ppf cl ei =
+let do_deprecated_msgs ~env err_ppf cl ei =
   let cmd = Cmdliner_info.Eval.cmd ei in
-  let deprecated = Cmdliner_cline.deprecated_args cl in
+  let deprecated = Cmdliner_cline.deprecated ~env cl in
   match Cmdliner_info.Cmd.deprecated cmd, deprecated with
   | None, [] -> ()
   | depr_cmd, deprs ->
@@ -235,7 +235,7 @@ let do_deprecated_msgs err_ppf cl ei =
         if Option.is_some depr_cmd && deprs <> []
         then Cmdliner_base.Fmt.cut ppf ();
       in
-      let pp_deprs = Cmdliner_base.Fmt.list Cmdliner_cline.pp_deprecated_arg in
+      let pp_deprs = Cmdliner_base.Fmt.list Cmdliner_cline.pp_deprecated in
       Cmdliner_base.(Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
                        Cmdliner_msg.pp_exec_msg ei
                        Cmdliner_info.Cmd.pp_deprecated cmd pp_sep ()
@@ -279,7 +279,7 @@ let eval_value
           match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
           | None ->
-              do_deprecated_msgs err_ppf cl ei;
+              do_deprecated_msgs ~env err_ppf cl ei;
               run_parser ~catch ei cl f
   in
   do_result ~env help_ppf err_ppf ei res

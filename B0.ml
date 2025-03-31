@@ -27,22 +27,26 @@ let test ?(requires = []) = B0_ocaml.test ~requires:(cmdliner :: requires)
 let testing = `File ~/"test/testing_cmdliner.ml"
 
 let test_arg = test ~/"test/test_arg.ml" ~srcs:[testing] ~requires:[b0_std]
-let test_term = test ~/"test/test_term.ml" ~srcs:[testing] ~requires:[b0_std]
 let test_cmd = test ~/"test/test_cmd.ml" ~srcs:[testing] ~requires:[b0_std]
-let test_man = test ~/"test/test_man.ml" ~srcs:[testing] ~requires:[b0_std]
 let test_completion =
   test ~/"test/test_completion.ml" ~srcs:[testing] ~requires:[b0_std]
+
+let test_deprecation =
+  test ~/"test/test_deprecation.ml" ~srcs:[testing] ~requires:[b0_std]
 
 let test_legacy_prefix =
   test ~/"test/test_legacy_prefix.ml" ~srcs:[testing] ~requires:[b0_std]
 
-let example_group =
-  let srcs = [testing] and requires = [b0_std] in
-  test ~/"test/example_group.ml" ~run:false ~srcs ~requires
+let test_man = test ~/"test/test_man.ml" ~srcs:[testing] ~requires:[b0_std]
+let test_term = test ~/"test/test_term.ml" ~srcs:[testing] ~requires:[b0_std]
 
 let example_chorus = test ~/"test/example_chorus.ml" ~run:false
 let example_cp = test ~/"test/example_cp.ml" ~run:false
 let example_darcs = test ~/"test/example_darcs.ml" ~run:false
+let example_group =
+  let srcs = [testing] and requires = [b0_std] in
+  test ~/"test/example_group.ml" ~run:false ~srcs ~requires
+
 let example_revolt1 = test ~/"test/example_revolt1.ml" ~run:false
 let example_revolt2 = test ~/"test/example_revolt2.ml" ~run:false
 let example_rm = test ~/"test/example_rm.ml" ~run:false

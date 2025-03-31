@@ -3,6 +3,8 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
+val is_opt : string -> bool
+
 (** Command lines. *)
 
 type t
@@ -21,9 +23,15 @@ val pos_arg : t -> Cmdliner_info.Arg.t -> string list
 val actual_args : t -> Cmdliner_info.Arg.t -> string list
 (** Actual command line arguments from the command line *)
 
+(** {1:deprecations Deprecations} *)
 
-val is_opt : string -> bool
+type deprecated
+(** The type for deprecation invocations. This include both environment
+    variable deprecations and argument deprecations. *)
 
-type deprecated_arg
-val deprecated_args : t -> deprecated_arg list
-val pp_deprecated_arg : deprecated_arg Cmdliner_base.Fmt.t
+val deprecated : env:(string -> string option) -> t -> deprecated list
+(** [deprecated ~env cli] are the deprecated invocations that occur
+    when parsing [cli]. *)
+
+val pp_deprecated : deprecated Cmdliner_base.Fmt.t
+(** [pp_deprecated] formats deprecations. *)

@@ -31,10 +31,8 @@ let test_groups =
   parse ["birds"; "land"] @@ __POS_OF__ ();
   parse ["mammals"] @@ __POS_OF__ ();
   (**)
-  warning ["camels"; "--bactrian"] @@ __POS_OF__
-"test_group: command 'camels': deprecated, use 'mammals' instead.
-            option '--bactrian': deprecated, use nothing instead.
-";
+  warning ["camels"] @@ __POS_OF__
+    "test_group: command \u{001B}[01mcamels\u{001B}[m: deprecated, use 'mammals' instead.\n";
   (**)
   error `Term [] @@ __POS_OF__
   "test_group: required \x1B[04mCOMMAND\x1B[m name is \x1B[31mmissing\x1B[m, must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or

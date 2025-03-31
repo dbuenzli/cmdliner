@@ -79,14 +79,6 @@ let env_bool_parse s = match String.lowercase_ascii s with
 let parse_to_list parser s = match parser s with
 | Ok v -> Ok [v] | Error _ as e -> e
 
-let report_deprecated_env ei e = match Cmdliner_info.Env.info_deprecated e with
-| None -> ()
-| Some msg ->
-    let ppf = Cmdliner_info.Eval.err_ppf ei in
-    let var = Cmdliner_info.Env.info_var e in
-    Fmt.pf ppf "@[%a @[<v>environment variable %a: @[%a@]@]@]@."
-      Cmdliner_msg.pp_exec_msg ei Fmt.code var Fmt.styled_text msg
-
 let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
 | None -> Ok absent
 | Some env ->
@@ -96,7 +88,7 @@ let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
     | Some v ->
         match parse v with
         | Error e -> parse_error (Cmdliner_msg.err_env_parse env ~err:e)
-        | Ok _ as v -> report_deprecated_env ei env; v
+        | Ok _ as v -> v
 
 let arg_to_args a complete = Cmdliner_info.Arg.Set.singleton a complete
 let list_to_args f l complete =
