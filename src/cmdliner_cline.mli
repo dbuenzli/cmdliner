@@ -21,5 +21,9 @@ val pos_arg : t -> Cmdliner_info.Arg.t -> string list
 val actual_args : t -> Cmdliner_info.Arg.t -> string list
 (** Actual command line arguments from the command line *)
 
+
 val is_opt : string -> bool
-val deprecated_msgs : t -> string list
+
+type deprecated_arg
+val deprecated_args : t -> deprecated_arg list
+val pp_deprecated_arg : deprecated_arg Cmdliner_base.Fmt.t

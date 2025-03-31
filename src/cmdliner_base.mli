@@ -29,7 +29,7 @@ module Fmt : sig
   val string : string t
   val indent : int t
   val list : ?sep:unit t -> 'a t -> 'a list t
-  val text : string t
+  val styled_text : string t
   val lines : string t
   val tokens : spaces:bool -> string t
   val code : string t

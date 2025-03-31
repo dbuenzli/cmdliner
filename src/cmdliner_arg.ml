@@ -33,14 +33,22 @@ let err_is_dir s =
   Fmt.str "%a %a" Fmt.code_or_quote s Fmt.ereason "is a directory"
 
 let err_element kind s exp =
-  Fmt.str "%a element in %s ('%s'): %s" Fmt.invalid () kind s exp
+  Fmt.str "%a element in %s (%a): %s"
+    Fmt.invalid () kind Fmt.code_or_quote s exp
 
 let err_invalid kind s exp =
-  Fmt.str "%a %s %a, %s" Fmt.invalid () kind Fmt.code_or_quote s exp
+  Fmt.str "@[%a %s %a, %s@]" Fmt.invalid () kind Fmt.code_or_quote s exp
 
 let err_invalid_val = err_invalid "value"
 let err_sep_miss sep s =
   err_invalid_val s (Fmt.str "%a a '%c' separator" Fmt.missing () sep)
+
+let err_invalid_enum var s enums =
+  let pp_docv ppf var =
+    if not (var = "ENUM" || var = "") then Fmt.pf ppf "%a " Fmt.code_var var
+  in
+  Fmt.str "@[%a@ %avalue %a, expected@ %a@]" Fmt.invalid () pp_docv var
+    Fmt.code_or_quote s Cmdliner_base.pp_alts enums
 
 (* Argument converters *)
 
@@ -74,10 +82,10 @@ let parse_to_list parser s = match parser s with
 let report_deprecated_env ei e = match Cmdliner_info.Env.info_deprecated e with
 | None -> ()
 | Some msg ->
+    let ppf = Cmdliner_info.Eval.err_ppf ei in
     let var = Cmdliner_info.Env.info_var e in
-    let msg = String.concat "" ["environment variable "; var; ": "; msg ] in
-    let err_fmt = Cmdliner_info.Eval.err_ppf ei in
-    Cmdliner_msg.pp_err err_fmt ei ~err:msg
+    Fmt.pf ppf "@[%a @[<v>environment variable %a: @[%a@]@]@]@."
+      Cmdliner_msg.pp_exec_msg ei Fmt.code var Fmt.styled_text msg
 
 let try_env ei a parse ~absent = match Cmdliner_info.Arg.env a with
 | None -> Ok absent
@@ -333,8 +341,7 @@ let last t =
 let bool =
   let alts = ["true"; "false"] in
   let parser s = try Ok (bool_of_string s) with
-  | Invalid_argument _ ->
-      Error (err_invalid_val s (doc_alts ~quoted:true alts))
+  | Invalid_argument _ -> Error (err_invalid_enum "" s alts)
   in
   let complete _prefix = List.map (fun s -> s, "") alts in
   let completion = Completion.make ~complete () in
@@ -388,7 +395,7 @@ let enum ?(docv = "ENUM") sl =
         Error (Cmdliner_base.err_ambiguous ~kind:"enum value" s ~ambs)
     | Error `Not_found ->
         let alts = List.rev (List.rev_map (fun (s, _) -> s) sl) in
-        Error (err_invalid_val s ("expected " ^ (doc_alts ~quoted:true alts)))
+        Error (err_invalid_enum docv s alts)
   in
   let pp ppf v =
     let sl_inv = List.rev_map (fun (s,v) -> (v,s)) sl in
@@ -560,7 +567,7 @@ let man_fmts =
   ["auto", `Auto; "pager", `Pager; "groff", `Groff; "plain", `Plain]
 
 let man_fmt_docv = "FMT"
-let man_fmts_enum = enum man_fmts
+let man_fmts_enum = enum ~docv:man_fmt_docv man_fmts
 let man_fmts_alts = doc_alts_enum man_fmts
 let man_fmts_doc kind =
   Printf.sprintf

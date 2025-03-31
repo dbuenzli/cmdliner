@@ -211,23 +211,32 @@ let create ?(peek_opts = false) ~legacy_prefixes al args =
       `Error (errs, cl)
   with Completion_requested (prefix, kind) -> `Completion (prefix, kind)
 
-let deprecated_msgs cl =
-  let add i arg acc = match Cmdliner_info.Arg.deprecated i with
+
+type deprecated_arg = Cmdliner_info.Arg.t * arg
+let deprecated_args cl =
+  let add info arg acc = match Cmdliner_info.Arg.deprecated info with
   | None -> acc
   | Some msg ->
-      let plural l = if List.length l > 1 then "s " else " " in
       match arg with
-      | O [] | P [] -> acc (* Should not happen *)
-      | O os ->
-          let plural = plural os in
-          let names = List.map (fun (_, n, _) -> n) os in
-          let names = String.concat " " (List.map Cmdliner_base.quote names) in
-          let msg = "option" :: plural :: names :: ": " :: msg :: [] in
-          String.concat "" msg :: acc
-      | P args ->
-          let plural = plural args in
-          let args = String.concat " " (List.map Cmdliner_base.quote args) in
-          let msg = "argument" :: plural :: args :: ": " :: msg :: [] in
-          String.concat "" msg :: acc
+      | O [] | P [] -> acc (* Happens if env var *)
+      | _ -> (info, arg) :: acc
   in
-  Amap.fold add cl []
+  List.rev (Amap.fold add cl [])
+
+let pp_deprecated_arg ppf (i, arg) = match Cmdliner_info.Arg.deprecated i with
+| None -> ()
+| Some msg ->
+    let plural l = if List.length l > 1 then "s" else "" in
+    match arg with
+    | O [] | P [] -> ()
+    | O os ->
+        let plural = plural os in
+        let names = List.map (fun (_, n, _) -> n) os in
+        Cmdliner_base.(Fmt.pf ppf "@[option%s %a:@[ %a@]@]"
+                         plural Fmt.(list ~sep:sp code_or_quote) names
+                         Fmt.styled_text msg)
+    | P args ->
+        let plural = plural args in
+        Cmdliner_base.(Fmt.pf ppf "@[argument%s %a:@[ %a@]@]"
+                         plural Fmt.(list ~sep:sp code_or_quote) args
+                         Fmt.styled_text msg)

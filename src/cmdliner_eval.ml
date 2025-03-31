@@ -153,9 +153,12 @@ let do_result ~env help_ppf err_ppf ei = function
     | `Help (fmt, cmd) -> do_help ~env help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->
+          (* I think the idea of this is that we preserve the user's
+             err layout. *)
         (if usage
          then Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:true ~err
-         else Cmdliner_msg.pp_err err_ppf ei ~err);
+         else Cmdliner_base.(Fmt.pf err_ppf "@[%a @[%a@]@."
+                               Cmdliner_msg.pp_exec_msg ei Fmt.lines err));
         Error `Term
 
 let cmd_name_trie cmds =
@@ -224,15 +227,19 @@ let remove_exec argv =
 
 let do_deprecated_msgs err_ppf cl ei =
   let cmd = Cmdliner_info.Eval.cmd ei in
-  let msgs = Cmdliner_cline.deprecated_msgs cl in
-  let msgs = match Cmdliner_info.Cmd.deprecated cmd with
-  | None -> msgs
-  | Some msg ->
-      let name = Cmdliner_base.quote (Cmdliner_info.Cmd.name cmd) in
-      String.concat "" ("command " :: name :: ": " :: msg :: []) :: msgs
-  in
-  if msgs <> []
-  then Cmdliner_msg.pp_err err_ppf ei ~err:(String.concat "\n" msgs)
+  let deprecated = Cmdliner_cline.deprecated_args cl in
+  match Cmdliner_info.Cmd.deprecated cmd, deprecated with
+  | None, [] -> ()
+  | depr_cmd, deprs ->
+      let pp_sep ppf () =
+        if Option.is_some depr_cmd && deprs <> []
+        then Cmdliner_base.Fmt.cut ppf ();
+      in
+      let pp_deprs = Cmdliner_base.Fmt.list Cmdliner_cline.pp_deprecated_arg in
+      Cmdliner_base.(Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
+                       Cmdliner_msg.pp_exec_msg ei
+                       Cmdliner_info.Cmd.pp_deprecated cmd pp_sep ()
+                       pp_deprs deprs)
 
 let eval_value
     ?help:(help_ppf = Format.std_formatter)

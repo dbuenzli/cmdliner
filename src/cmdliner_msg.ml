@@ -53,7 +53,7 @@ let err_opt_value_missing f =
   Fmt.str "@[option %a %a@]" Fmt.code_or_quote f Fmt.ereason "needs an argument"
 
 let err_opt_parse f ~err =
-  Fmt.str "@[option %a: %s@]" Fmt.code_or_quote f err
+  Fmt.str "@[option %a: %a@]" Fmt.code_or_quote f Fmt.styled_text err
 
 let err_opt_repeated f f' =
   if f = f' then
@@ -77,12 +77,10 @@ let err_cmd_missing ~dom =
 
 (* Other messages *)
 
-let exec_name ei = Cmdliner_info.Cmd.name (Cmdliner_info.Eval.main ei)
-
 let pp_version ppf ei =
   match Cmdliner_info.Cmd.version (Cmdliner_info.Eval.main ei) with
   | None -> assert false
-  | Some v -> Fmt.pf ppf "@[%a@]@." Fmt.text v
+  | Some v -> Fmt.pf ppf "@[%s@]@." v
 
 let pp_try_help ppf ei =
   let rcmds = Cmdliner_info.Eval.(cmd ei :: parents ei) in
@@ -98,12 +96,13 @@ let pp_try_help ppf ei =
         Fmt.code_or_quote (with_help cmds)
         Fmt.code_or_quote (with_help tool)
 
-let pp_err ppf ei ~err = Fmt.pf ppf "%s: @[%a@]@." (exec_name ei) Fmt.lines err
+let exec_name ei = Cmdliner_info.Cmd.name (Cmdliner_info.Eval.main ei)
 
+let pp_exec_msg ppf ei = Fmt.pf ppf "%s:" (exec_name ei)
 let pp_err_usage ppf ei ~err_lines ~err =
-  let pp_err = if err_lines then Fmt.lines else Fmt.text in
-  Fmt.pf ppf "@[<v>%s: @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-    (exec_name ei) pp_err err (Cmdliner_docgen.pp_styled_synopsis ~errs:ppf) ei
+  let pp_err = if err_lines then Fmt.lines else Fmt.styled_text in
+  Fmt.pf ppf "@[<v>%a @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
+    pp_exec_msg ei pp_err err (Cmdliner_docgen.pp_styled_synopsis ~errs:ppf) ei
     pp_try_help ei
 
 let pp_backtrace ppf ei e bt =
@@ -112,5 +111,5 @@ let pp_backtrace ppf ei e bt =
     let len = String.length bt in
     if len > 0 then String.sub bt 0 (len - 1) (* remove final '\n' *) else bt
   in
-  Fmt.pf ppf "@[%s: @[internal error, uncaught exception:@\n%a@]@]@."
-    (exec_name ei) Fmt.lines (String.concat "\n" [Printexc.to_string e; bt])
+  Fmt.pf ppf "@[%a @[internal error, uncaught exception:@\n%a@]@]@."
+    pp_exec_msg ei Fmt.lines (String.concat "\n" [Printexc.to_string e; bt])

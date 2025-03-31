@@ -85,7 +85,6 @@ module Fmt = struct
   let comma ppf () = char ppf ','; sp ppf ()
   let indent ppf c = for i = 1 to c do char ppf ' ' done
   let list ?sep pp_v ppf l = Format.pp_print_list ?pp_sep:sep pp_v ppf l
-  let text = Format.pp_print_text
   let lines ppf s =
     let rec stop_at sat ~start ~max s =
       if start > max then start else
@@ -171,6 +170,23 @@ module Fmt = struct
   let invalid ppf () = ereason ppf "invalid"
   let unknown ppf () = ereason ppf "unknown"
   let puterr ppf () = st [`Bold; `Fg `Red] ppf "Error"; char ppf ':'
+
+  let styled_text ppf s = (* Detects ANSI escapes and prints as 0 width *)
+    let rec loop ppf s i max =
+      if i > max then () else
+      let ansi = s.[i] = '\x1B' && i + 1 < max && s.[i+1] = '[' in
+      if not ansi then begin
+        if s.[i] = ' ' || s.[i] = '\n' then sp ppf () else char ppf s.[i];
+        loop ppf s (i + 1) max
+      end else begin
+        let k = ref (i + 2) in
+        while (!k <= max && s.[!k] <> 'm') do incr k done;
+        let esc = String.sub s i (!k - i + 1) in
+        Format.pp_print_as ppf 0 esc;
+        loop ppf s (!k + 1) max
+      end
+    in
+    loop ppf s 0 (String.length s - 1)
 end
 
 (* Converter (end-user) error messages *)
@@ -199,7 +215,7 @@ let _alts_str ~styled ?quoted ppf alts =
         quote (List.hd rev_alts)
 
 let alts_str ?quoted alts = (* Exposed in the API do not change *)
-  Fmt.str "%a" (_alts_str ~styled:false ?quoted) alts
+  Fmt.str "@[%a@]" (_alts_str ~styled:false ?quoted) alts
 
 let pp_alts ppf alts =
   _alts_str ~styled:true ~quoted:true ppf alts

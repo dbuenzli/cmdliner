@@ -224,6 +224,13 @@ module Cmd = struct
     | Some args -> true, Arg.Set.union args cmd.args
     in
     { cmd with has_args; args; children }
+
+  let pp_deprecated ppf t = match t.deprecated with
+  | None -> ()
+  | Some msg ->
+      Cmdliner_base.(Fmt.pf ppf "@[command %a:@[ %a@]@]"
+                       Fmt.code_or_quote t.name Fmt.styled_text msg)
+
 end
 
 (* Evaluation *)

@@ -139,6 +139,7 @@ module Cmd : sig
   val children : t -> t list
   val add_args : t -> Arg.Set.t -> t
   val with_children : t -> args:Arg.Set.t option -> children:t list -> t
+  val pp_deprecated : t Cmdliner_base.Fmt.t
 end
 
 (** Evaluation. *)
