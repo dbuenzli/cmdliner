@@ -6,7 +6,7 @@ function _cmdliner_generic {
   eval $line | {
     read -r version
     if [[ $version != "1" ]]; then
-      printf "\nUnsupported Cmdliner completion protocol version: $version" >&2
+      _message -r "Unsupported Cmdliner completion protocol version: $version"
       return 1
     fi
     while IFS= read -r type; do
