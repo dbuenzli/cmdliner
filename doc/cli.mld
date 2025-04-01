@@ -245,7 +245,7 @@ After this, to test everything is right, check that the [_cmdliner_generic]
 function can be looked up:
 
 {@sh[
-> _comp_load _cmdliner_generic
+> _completion_loader _cmdliner_generic
 > declare -F _cmdliner_generic &>/dev/null && echo "Found" || echo "Not found"
 Found!
 ]}
@@ -253,16 +253,21 @@ Found!
 If the function cannot be found make sure the [cmdliner] library is
 installed, that the generic scripts were
 {{!install_completion_generic}installed} and that the
-[_cmdliner_generic] file can be looked up by [_comp_load].
+[_cmdliner_generic] file can be looked up by [_completion_loader].
 
 With this setup, if you are using a cmdliner based tool named
 [thetool] that did not {{!install_completion_tool}install} a completion
 definition. You can always do it yourself by invoking:
 
 {@sh[
-_comp_load _cmdliner_generic
+_completion_loader _cmdliner_generic
 complete -F _cmdliner_generic thetool
 ]}
+
+{b Note.} {{:https://github.com/scop/bash-completion/commit/9efc596735c4509001178f0cf28e02f66d1f7703}It seems} [_completion_loader] was deprecated in
+bash-completion [2.12] in favour of [_comp_load] but many distributions
+are on [< 2.12] and in [2.12] [_completion_loader] simply calls
+[_comp_load].
 
 {2:install_completion Install}
 
