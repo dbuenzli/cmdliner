@@ -371,18 +371,24 @@ module Cmd : sig
         [var] such that:
         {ul
         {- [doc] is the man page information of the environment
-            variable, defaults to ["undocumented"].
-            The {{!page-tool_man.doclang}documentation markup language}
-            can be used with following variables:
-            {ul
-            {- [$(env)], the value of [var].}
-            {- The variables mentioned in the doc string of {!Cmd.val-info}.}}}
+            variable, defaults to ["See option $(opt)."].}
         {- [docs] is the title of the man page section in which the environment
           variable will be listed, it defaults to
           {!Cmdliner.Manpage.s_environment}.}
-        {- [deprecated], if specified the environment is deprecated and the
-           string is a message output on standard error when the environment
-           variable gets used to lookup the default value of an argument.}} *)
+        {- [deprecated], if specified the environment variable is
+           deprecated.  Use of the variable warns on dep[stderr] This
+           message which should be a capitalized sentence is
+           preprended to [doc] and output on standard error when the
+           environment variable ends up being used.}}
+
+        In [doc] and [deprecated] the {{!page-tool_man.doclang}documentation
+        markup language} can be used with following variables:
+
+        {ul
+        {- [$(opt)], if any the option name of the argument the variable is
+           looked up for.}
+        {- [$(env)], the value of [var].}
+        {- The variables mentioned in the doc string of {!Cmd.val-info}.}} *)
   end
 
   type info
@@ -399,9 +405,11 @@ module Cmd : sig
       {- [name] is the name of the command.}
       {- [version] is the version string of the command line tool, this
          is only relevant for the main command and ignored otherwise.}
-      {- [deprecated], if specified the command is deprecated and the
-         string is a message output on standard error when the command
-         is used.}
+      {- [deprecated], if specified the command is deprecated. Use of the
+          variable warns on [stderr]. This
+          message which should be a capitalized sentence is
+          preprended to [doc] and output on standard error when the
+          environment variable ends up being used.}
       {- [doc] is a one line description of the command used
          for the [NAME] section of the command's man page and in command
          group listings.}
@@ -419,9 +427,9 @@ module Cmd : sig
       {- [man_xrefs] are cross-references to other manual pages. These
          are used to generate a {!Manpage.s_see_also} section.}}
 
-      [doc], [man], [envs], [exits] support the {{!page-tool_man.doclang}
-      documentation markup language} in which the following variables are
-      recognized:
+      [doc], [deprecated], [man], [envs], [exits] support the
+      {{!page-tool_man.doclang} documentation markup language} in which the
+      following variables are recognized:
       {ul
       {- [$(tname)] the (term's) command's name.}
       {- [$(mname)] the main command name.}
@@ -722,13 +730,6 @@ module Arg : sig
          command line. See {{!page-cli.envlookup}environment variables} for
          details.}
       {- [doc] is the man page information of the argument.
-         The {{!page-tool_man.doclang}documentation language} can be used and
-         the following variables are recognized:
-         {ul
-         {- ["$(docv)"] the value of [docv] (see below).}
-         {- ["$(opt)"], one of the options of [names], preference
-            is given to a long one.}
-         {- ["$(env)"], the environment var specified by [env] (if any).}}
          {{!doc_helpers}These functions} can help with formatting argument
          values.}
       {- [docv] is for positional and non-flag optional arguments.
@@ -738,13 +739,25 @@ module Arg : sig
          to {!Manpage.s_options}. For positional arguments this defaults
          to {!Manpage.s_arguments}. However a positional argument is only
          listed if it has both a [doc] and [docv] specified.}
-      {- [deprecated], if specified the argument is deprecated and the
-         string is a message output on standard error when the argument
-         is used.}
+      {- [deprecated], if specified the argument is deprecated. Use of the
+          variable warns on [stderr]. This
+          message which should be a capitalized sentence is
+          preprended to [doc] and output on standard error when the
+          environment variable ends up being used.}
       {- [absent], if specified a documentation string that indicates
          what happens when the argument is absent. The document language
          can be used like in [doc]. This overrides the automatic default
-         value rendering that is performed by the combinators.}} *)
+         value rendering that is performed by the combinators.}}
+
+      In [doc], [deprecated], [absent] the
+      {{!page-tool_man.doclang}documentation markup language} can be
+      used with following variables:
+
+      {ul
+      {- ["$(docv)"] the value of [docv] (see below).}
+      {- ["$(opt)"], one of the options of [names], preference
+        is given to a long one.}
+      {- ["$(env)"], the environment var specified by [env] (if any).}} *)
 
   val ( & ) : ('a -> 'b) -> 'a -> 'b
   (** [f & v] is [f v], a right associative composition operator for

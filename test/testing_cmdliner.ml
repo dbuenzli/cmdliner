@@ -143,16 +143,16 @@ let sample_group_cmd =
   let camels =
     let herd =
       let doc = "Find in herd $(docv)." and docv = "HERD" in
-      let deprecated = "deprecated, herds are ignored." in
+      let deprecated = "Herds $(docv) are ignored." in
       Arg.(value & pos 0 (some string) None & info [] ~deprecated ~doc ~docv)
     in
     let bactrian =
-      let deprecated = "deprecated, use nothing instead." in
+      let deprecated = "Use nothing instead of $(env), $(b,HA!)." in
       let doc = "Specify a bactrian camel." in
       let env = Cmd.Env.info "BACTRIAN" ~deprecated in
       Arg.(value & flag & info ["bactrian"; "b"] ~deprecated ~env ~doc)
     in
-    let deprecated = "deprecated, use 'mammals' instead." in
+    let deprecated = "Use $(b,mammals) instead." in
     Cmd.make (Cmd.info "camels" ~deprecated ~doc:"Operate on camels." ~man) @@
     let+ bactrian and+ herd in ()
   in

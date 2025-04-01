@@ -38,6 +38,7 @@ module Fmt : sig
   val ereason : string t
   val missing : unit t
   val invalid : unit t
+  val deprecated : unit t
   val puterr : unit t
 
   type styler = Ansi | Plain

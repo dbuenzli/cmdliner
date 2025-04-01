@@ -24,8 +24,9 @@ let order_args a0 a1 =
   | true, false -> -1 (* positional first *)
   | false, true -> 1  (* optional after *)
 
+
 let esc = Cmdliner_manpage.escape
-let cmd_name t = esc @@ Cmdliner_info.Cmd.name t
+
 
 let sorted_items_to_blocks ~boilerplate:b items =
   (* Items are sorted by section and then rev. sorted by appearance.
@@ -44,38 +45,6 @@ let sorted_items_to_blocks ~boilerplate:b items =
   match items with
   | [] -> []
   | (sec, it) :: its -> loop [] sec [it] its
-
-(* Doc string variables substitutions. *)
-
-let env_info_subst ~subst e = function
-| "env" -> Some (strf "$(b,%s)" @@ esc (Cmdliner_info.Env.info_var e))
-| id -> subst id
-
-let exit_info_subst ~subst e = function
-| "status" -> Some (strf "%d" (fst @@ Cmdliner_info.Exit.info_codes e))
-| "status_max" -> Some (strf "%d" (snd @@ Cmdliner_info.Exit.info_codes e))
-| id -> subst id
-
-let arg_info_subst ~subst a = function
-| "docv" ->
-    Some (strf "$(i,%s)" @@ esc (Cmdliner_info.Arg.docv a))
-| "opt" when Cmdliner_info.Arg.is_opt a ->
-    Some (strf "$(b,%s)" @@ esc (Cmdliner_info.Arg.opt_name_sample a))
-| "env" as id ->
-    begin match Cmdliner_info.Arg.env a with
-    | Some e -> env_info_subst ~subst e id
-    | None -> subst id
-    end
-| id -> subst id
-
-let cmd_info_subst ei = function
-| "tname" -> Some (strf "$(b,%s)" @@ cmd_name (Cmdliner_info.Eval.cmd ei))
-| "mname" -> Some (strf "$(b,%s)" @@ cmd_name (Cmdliner_info.Eval.main ei))
-| "iname" ->
-    let cmd = Cmdliner_info.Eval.cmd ei :: Cmdliner_info.Eval.parents ei in
-    let cmd = String.concat " " (List.rev_map Cmdliner_info.Cmd.name cmd) in
-    Some (strf "$(b,%s)" cmd)
-| _ -> None
 
 (* Command docs *)
 
@@ -116,7 +85,9 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
       Cmdliner_info.Arg.rev_pos_cli_order a0 a1
     in
     let args = Cmdliner_info.Cmd.args cmd in
-    let oargs, pargs = Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args) in
+    let oargs, pargs =
+      Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args)
+    in
     let oargs =
       (* Keep only those that are listed in the s_options section and
          that are not [--version] or [--help]. * *)
@@ -154,12 +125,18 @@ let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
     in
     strf "%s$(b,%s) %s …" (deprecated cmd) (invocation ?parents cmd) subcmd
 
+let cmd_doc cmd =
+  let depr = match Cmdliner_info.Cmd.deprecated cmd with
+  | None -> "" | Some msg -> msg ^ " "
+  in
+  depr ^ Cmdliner_info.Cmd.doc cmd
+
 let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
 | [] -> []
 | cmds ->
     let add_cmd acc cmd =
       let syn = synopsis cmd in
-      (Cmdliner_info.Cmd.docs cmd, `I (syn, Cmdliner_info.Cmd.doc cmd)) :: acc
+      (Cmdliner_info.Cmd.docs cmd, `I (syn, cmd_doc cmd)) :: acc
     in
     let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
       let c = compare s0 s1 in
@@ -183,7 +160,7 @@ let arg_man_item_label a =
   | None -> s | Some _ -> "(Deprecated) " ^ s
 
 let arg_to_man_item ~errs ~subst ~buf a =
-  let subst = arg_info_subst ~subst a in
+  let subst = Cmdliner_info.Arg.doclang_subst ~subst a in
   let or_env ~value a = match Cmdliner_info.Arg.env a with
   | None -> ""
   | Some e ->
@@ -210,7 +187,10 @@ let arg_to_man_item ~errs ~subst ~buf a =
   | s, "" | "", s -> strf " (%s)" s
   | s, s' -> strf " (%s) (%s)" s s'
   in
-  let doc = Cmdliner_info.Arg.doc a in
+  let deprecated = match Cmdliner_info.Arg.deprecated a with
+  | None -> "" | Some msg -> msg ^ " "
+  in
+  let doc = deprecated ^ Cmdliner_info.Arg.doc a in
   let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
   (Cmdliner_info.Arg.docs a, `I (arg_man_item_label a ^ argvdoc, doc))
 
@@ -244,13 +224,13 @@ let exit_boilerplate sec = match sec = Cmdliner_manpage.s_exit_status with
 
 let exit_docs ~errs ~subst ~buf ~has_sexit ei =
   let by_sec (s0, _) (s1, _) = compare s0 s1 in
-  let add_exit_item acc e =
-    let subst = exit_info_subst ~subst e in
-    let min, max = Cmdliner_info.Exit.info_codes e in
-    let doc = Cmdliner_info.Exit.info_doc e in
+  let add_exit_item acc einfo =
+    let subst = Cmdliner_info.Exit.doclang_subst ~subst einfo in
+    let min, max = Cmdliner_info.Exit.info_codes einfo in
+    let doc = Cmdliner_info.Exit.info_doc einfo in
     let label = if min = max then strf "%d" min else strf "%d-%d" min max in
     let item = `I (label, Cmdliner_manpage.subst_vars ~errs ~subst buf doc) in
-    (Cmdliner_info.Exit.info_docs e, item) :: acc
+    (Cmdliner_info.Exit.info_docs einfo, item) :: acc
   in
   let exits = Cmdliner_info.Cmd.exits @@ Cmdliner_info.Eval.cmd ei in
   let exits = List.sort Cmdliner_info.Exit.info_order exits in
@@ -270,18 +250,23 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
     if Cmdliner_info.Env.Set.mem e seen then acc else
     let seen = Cmdliner_info.Env.Set.add e seen in
     let var = strf "$(b,%s)" @@ esc (Cmdliner_info.Env.info_var e) in
-    let var = match Cmdliner_info.Env.info_deprecated e with
-    | None -> var | Some _ -> "(Deprecated) " ^ var in
-    let doc = Cmdliner_info.Env.info_doc e in
+    let var, deprecated = match Cmdliner_info.Env.info_deprecated e with
+    | None -> var, "" | Some msg -> "(Deprecated) " ^ var, msg ^ " " in
+    let doc = deprecated ^ Cmdliner_info.Env.info_doc e in
     let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
     let envs = (Cmdliner_info.Env.info_docs e, `I (var, doc)) :: envs in
     seen, envs
   in
   let add_arg_env a _ acc = match Cmdliner_info.Arg.env a with
   | None -> acc
-  | Some e -> add_env_item ~subst:(arg_info_subst ~subst a) acc e
+  | Some e ->
+      let subst = Cmdliner_info.Arg.doclang_subst ~subst a in
+      add_env_item ~subst acc e
   in
-  let add_env acc e = add_env_item ~subst:(env_info_subst ~subst e) acc e in
+  let add_env acc e =
+    let subst = Cmdliner_info.Env.doclang_subst ~subst e in
+    add_env_item ~subst acc e
+  in
   let by_sec_by_rev_name (s0, `I (v0, _)) (s1, `I (v1, _)) =
     let c = compare s0 s1 in
     if c <> 0 then c else compare v1 v0 (* N.B. reverse *)
@@ -332,7 +317,7 @@ let ensure_s_name ei sm =
   let cmd = Cmdliner_info.Eval.cmd ei in
   let parents = Cmdliner_info.Eval.parents ei in
   let tname = (deprecated cmd) ^ invocation ~sep:"-" ~parents cmd in
-  let tdoc = Cmdliner_info.Cmd.doc cmd in
+  let tdoc = cmd_doc cmd in
   let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
   let tagline = `P (strf "%s%s" tname tagline) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_name tagline)
@@ -346,7 +331,7 @@ let ensure_s_synopsis ei sm =
 
 let insert_cmd_man_docs ~errs ei sm =
   let buf = Buffer.create 200 in
-  let subst = cmd_info_subst ei in
+  let subst = Cmdliner_info.Eval.doclang_subst ei in
   let ins sm (sec, b) = Cmdliner_manpage.smap_append_block sm ~sec b in
   let has_senv = Cmdliner_manpage.(smap_has_section sm ~sec:s_environment) in
   let has_sexit = Cmdliner_manpage.(smap_has_section sm ~sec:s_exit_status) in
@@ -383,16 +368,15 @@ let title ei =
 let man ~errs ei = title ei, text ~errs ei
 
 let pp_man ~env ~errs fmt ppf ei =
-  Cmdliner_manpage.print
-    ~env ~errs ~subst:(cmd_info_subst ei) fmt ppf (man ~errs ei)
+  let subst = Cmdliner_info.Eval.doclang_subst ei in
+  Cmdliner_manpage.print ~env ~errs ~subst fmt ppf (man ~errs ei)
 
 (* Plain synopsis for usage *)
 
 let pp_styled_synopsis ~errs ppf ei =
-  let buf = Buffer.create 100 in
-  let subst = cmd_info_subst ei in
+  let subst = Cmdliner_info.Eval.doclang_subst ei in
   let cmd = Cmdliner_info.Eval.cmd ei in
   let parents = Cmdliner_info.Eval.parents ei in
   let synopsis = synopsis ~parents cmd in
-  let syn = Cmdliner_manpage.doc_to_styled ~errs ~subst buf synopsis in
+  let syn = Cmdliner_manpage.doc_to_styled ~errs ~subst synopsis in
   Format.fprintf ppf "@[%s@]" syn

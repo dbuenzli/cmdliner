@@ -141,6 +141,7 @@ module Fmt = struct
   | `Bold -> "01"
   | `Underline -> "04"
   | `Fg `Red -> string_of_int (30 + 1)
+  | `Fg `Yellow -> string_of_int (30 + 3)
 
   let sgrs_of_styles styles = String.concat ";" (List.map sgr_of_style styles)
   let ansi_esc = "\x1B["
@@ -166,9 +167,15 @@ module Fmt = struct
   | Plain -> string ppf s
   | Ansi -> ansi [`Fg `Red] ppf s
 
+  let wreason ppf s = match !styler' with
+  | Plain -> string ppf s
+  | Ansi -> ansi [`Fg `Yellow] ppf s
+
   let missing ppf () = ereason ppf "missing"
   let invalid ppf () = ereason ppf "invalid"
   let unknown ppf () = ereason ppf "unknown"
+  let deprecated ppf () = wreason ppf "deprecated"
+
   let puterr ppf () = st [`Bold; `Fg `Red] ppf "Error"; char ppf ':'
 
   let styled_text ppf s = (* Detects ANSI escapes and prints as 0 width *)

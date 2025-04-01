@@ -232,23 +232,27 @@ let deprecated ~env cl =
   in
   List.rev (Amap.fold (add ~env) cl [])
 
-let pp_deprecated ppf (info, arg) =
+let pp_deprecated ~subst ppf (info, arg) =
   let open Cmdliner_base in
   let plural l = if List.length l > 1 then "s" else "" in
+  let subst = Cmdliner_info.Arg.doclang_subst ~subst info in
   match arg with
   | O [] | P [] ->
       let env = Option.get (Cmdliner_info.Arg.env info) in
-      let msg = Option.get (Cmdliner_info.Arg.deprecated info) in
-      Fmt.pf ppf "@[environment variable %a: @[%a@]@]"
-        Fmt.code (Cmdliner_info.Env.info_var env) Fmt.styled_text msg
+      let msg = Cmdliner_info.Env.styled_deprecated ~errs:ppf ~subst env in
+      Fmt.pf ppf "@[%a @[environment variable %a: %a@]@]"
+        Fmt.deprecated () Fmt.code (Cmdliner_info.Env.info_var env)
+        Fmt.styled_text msg
   | O os ->
       let plural = plural os in
       let names = List.map (fun (_, n, _) -> n) os in
-      let msg = Option.get (Cmdliner_info.Arg.deprecated info) in
-      Fmt.pf ppf "@[option%s %a:@[ %a@]@]"
-        plural Fmt.(list ~sep:sp code_or_quote) names Fmt.styled_text msg
+      let msg = Cmdliner_info.Arg.styled_deprecated ~errs:ppf ~subst info in
+      Fmt.pf ppf "@[%a @[option%s %a: %a@]@]"
+        Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) names
+        Fmt.styled_text msg
   | P args ->
       let plural = plural args in
-      let msg = Option.get (Cmdliner_info.Arg.deprecated info) in
-      Fmt.pf ppf "@[argument%s %a:@[ %a@]@]"
-        plural Fmt.(list ~sep:sp code_or_quote) args Fmt.styled_text msg
+      let msg = Cmdliner_info.Arg.styled_deprecated ~errs:ppf ~subst info in
+      Fmt.pf ppf "@[%a @[argument%s %a: %a@]@]"
+        Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) args
+        Fmt.styled_text msg

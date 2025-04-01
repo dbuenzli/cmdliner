@@ -316,9 +316,11 @@ let markup_to_plain ~styled ~errs b s =
 let doc_to_plain ~errs ~subst b s =
   markup_to_plain ~styled:false ~errs b (subst_vars ~errs ~subst b s)
 
-let doc_to_styled ~errs ~subst b s =
+let doc_to_styled ?buffer:(b = Buffer.create 255) ~errs ~subst s =
   let styled = Cmdliner_base.Fmt.styler () = Cmdliner_base.Fmt.Ansi in
   markup_to_plain ~styled ~errs b (subst_vars ~errs ~subst b s)
+
+
 
 let p_indent = 7                                  (* paragraph indentation. *)
 let l_indent = 4                                      (* label indentation. *)
@@ -531,6 +533,8 @@ let pp_to_pager env print ppf v = match find_pager env with
     | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
 
 (* Output *)
+
+type subst = string -> string option
 
 type format = [ `Auto | `Pager | `Plain | `Groff ]
 

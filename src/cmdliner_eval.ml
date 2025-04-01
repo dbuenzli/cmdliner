@@ -231,15 +231,22 @@ let do_deprecated_msgs ~env err_ppf cl ei =
   match Cmdliner_info.Cmd.deprecated cmd, deprecated with
   | None, [] -> ()
   | depr_cmd, deprs ->
+      let open Cmdliner_base in
       let pp_sep ppf () =
-        if Option.is_some depr_cmd && deprs <> []
-        then Cmdliner_base.Fmt.cut ppf ();
+        if Option.is_some depr_cmd && deprs <> [] then Fmt.cut ppf ();
       in
-      let pp_deprs = Cmdliner_base.Fmt.list Cmdliner_cline.pp_deprecated in
-      Cmdliner_base.(Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
-                       Cmdliner_msg.pp_exec_msg ei
-                       Cmdliner_info.Cmd.pp_deprecated cmd pp_sep ()
-                       pp_deprs deprs)
+      let subst = Cmdliner_info.Eval.doclang_subst ei in
+      let pp_cmd_msg ppf cmd =
+        match Cmdliner_info.Cmd.styled_deprecated ~subst ~errs:err_ppf cmd with
+        | "" -> ()
+        | msg ->
+            let name = Cmdliner_info.Cmd.name cmd in
+            Fmt.pf ppf "@[%a command %a:@[ %a@]@]"
+              Fmt.deprecated () Fmt.code_or_quote name Fmt.styled_text msg
+      in
+      let pp_deprs = Fmt.list (Cmdliner_cline.pp_deprecated ~subst) in
+      Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
+        Cmdliner_msg.pp_exec_msg ei pp_cmd_msg cmd pp_sep () pp_deprs deprs
 
 let eval_value
     ?help:(help_ppf = Format.std_formatter)

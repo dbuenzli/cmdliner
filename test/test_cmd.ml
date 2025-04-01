@@ -32,7 +32,7 @@ let test_groups =
   parse ["mammals"] @@ __POS_OF__ ();
   (**)
   warning ["camels"] @@ __POS_OF__
-    "test_group: command \u{001B}[01mcamels\u{001B}[m: deprecated, use 'mammals' instead.\n";
+    "test_group: \u{001B}[33mdeprecated\u{001B}[m command \u{001B}[01mcamels\u{001B}[m: Use \u{001B}[01mmammals\u{001B}[m instead.\n";
   (**)
   error `Term [] @@ __POS_OF__
   "test_group: required \x1B[04mCOMMAND\x1B[m name is \x1B[31mmissing\x1B[m, must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or
@@ -76,7 +76,7 @@ COMMANDS
            Operate on mammals.
 
        (Deprecated) camels [--bactrian] [OPTION]… [HERD]
-           Operate on camels.
+           Use mammals instead. Operate on camels.
 
 COMMON OPTIONS
        --help[=FMT] (default=auto)
@@ -285,7 +285,8 @@ SEE ALSO|};
   Testing_cmdliner.snap_man ~args:["camels"; "--help=plain"] cmd @@
   __POS_OF__
     {|NAME
-       (Deprecated) test_group-camels - Operate on camels.
+       (Deprecated) test_group-camels - Use mammals instead. Operate on
+       camels.
 
 SYNOPSIS
        (Deprecated) test_group camels [--bactrian] [OPTION]… [HERD]
@@ -294,11 +295,11 @@ SYNOPSIS
 
 ARGUMENTS
        (Deprecated) HERD
-           Find in herd HERD.
+           Herds HERD are ignored. Find in herd HERD.
 
 OPTIONS
        (Deprecated) -b, --bactrian (absent BACTRIAN env)
-           Specify a bactrian camel.
+           Use nothing instead of BACTRIAN, HA!. Specify a bactrian camel.
 
 COMMON OPTIONS
        --help[=FMT] (default=auto)
@@ -324,7 +325,7 @@ ENVIRONMENT
        These environment variables affect the execution of test_group camels:
 
        (Deprecated) BACTRIAN
-           See option --bactrian.
+           Use nothing instead of BACTRIAN, HA!. See option --bactrian.
 
 SEE ALSO|};
   ()

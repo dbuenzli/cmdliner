@@ -33,5 +33,6 @@ val deprecated : env:(string -> string option) -> t -> deprecated list
 (** [deprecated ~env cli] are the deprecated invocations that occur
     when parsing [cli]. *)
 
-val pp_deprecated : deprecated Cmdliner_base.Fmt.t
+val pp_deprecated :
+  subst:Cmdliner_manpage.subst -> deprecated Cmdliner_base.Fmt.t
 (** [pp_deprecated] formats deprecations. *)

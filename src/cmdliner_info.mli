@@ -24,6 +24,10 @@ module Exit : sig
   val info_docs : info  -> string
   val info_order : info -> info -> int
   val defaults : info list
+  val doclang_subst :
+    subst:Cmdliner_manpage.subst -> info -> Cmdliner_manpage.subst
+  (** [doclang_subst ~subst info] adds the substitution of [info] to
+      [subst]. *)
 end
 
 (** Environment variables. *)
@@ -35,6 +39,16 @@ module Env : sig
   val info_doc : info -> string
   val info_docs : info -> string
   val info_deprecated : info -> string option
+  val doclang_subst :
+    subst:Cmdliner_manpage.subst -> info -> Cmdliner_manpage.subst
+  (** [doclang_subst ~subst info] adds the substitution of [info] to
+      [subst]. *)
+
+  val styled_deprecated :
+    errs:Format.formatter -> subst:Cmdliner_manpage.subst -> info -> string
+
+  val styled_doc :
+    errs:Format.formatter -> subst:Cmdliner_manpage.subst -> info -> string
 
   module Set : Set.S with type elt = info
 end
@@ -94,6 +108,17 @@ module Arg : sig
 
   val compare : t -> t -> int
 
+  val doclang_subst :
+    subst:Cmdliner_manpage.subst -> t -> Cmdliner_manpage.subst
+  (** [doclang_subst ~subst info] adds the substitution of [info] to
+      [subst]. Note this includes the substitutions for [env] if present. *)
+
+  val styled_deprecated :
+    errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
+
+  val styled_doc :
+    errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
+
   module Set : sig
     type arg = t
     type completion =
@@ -139,7 +164,9 @@ module Cmd : sig
   val children : t -> t list
   val add_args : t -> Arg.Set.t -> t
   val with_children : t -> args:Arg.Set.t option -> children:t list -> t
-  val pp_deprecated : t Cmdliner_base.Fmt.t
+
+  val styled_deprecated :
+      errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 end
 
 (** Evaluation. *)
@@ -155,4 +182,6 @@ module Eval : sig
   val env_var : t -> string -> string option
   val err_ppf : t -> Format.formatter
   val with_cmd : t -> Cmd.t -> t
+
+  val doclang_subst : t -> Cmdliner_manpage.subst
 end

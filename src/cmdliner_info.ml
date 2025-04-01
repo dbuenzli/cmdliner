@@ -3,6 +3,8 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
+let strf = Printf.sprintf
+
 (* Exit codes *)
 
 module Exit = struct
@@ -35,6 +37,11 @@ module Exit = struct
         ~doc:"on indiscriminate errors reported on standard error.";
       info cli_error ~doc:"on command line parsing errors.";
       info internal_error ~doc:"on unexpected internal errors (bugs)."; ]
+
+  let doclang_subst ~subst i = function
+  | "status" -> Some (string_of_int (info_code i))
+  | "status_max" -> Some (string_of_int (snd i.codes))
+  | id -> subst id
 end
 
 (* Environment variables *)
@@ -59,6 +66,16 @@ module Env = struct
   let info_doc i = i.doc
   let info_docs i = i.docs
   let info_compare i0 i1 = Int.compare i0.id i1.id
+
+  let doclang_subst ~subst i = function
+  | "env" -> Some (strf "$(b,%s)" (Cmdliner_manpage.escape i.var))
+  | id -> subst id
+
+  let styled_deprecated ~errs ~subst i = match i.deprecated with
+  | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
+
+  let styled_doc ~errs ~subst i =
+    Cmdliner_manpage.doc_to_styled ~errs ~subst i.doc
 
   module Set = Set.Make (struct type t = info let compare = info_compare end)
 end
@@ -157,6 +174,21 @@ module Arg = struct
 
   let compare a0 a1 = Int.compare a0.id a1.id
 
+  let doclang_subst ~subst a = function
+  | "docv" -> Some (strf "$(i,%s)" (Cmdliner_manpage.escape a.docv))
+  | "opt" when is_opt a ->
+      Some (strf "$(b,%s)" (Cmdliner_manpage.escape (opt_name_sample a)))
+  | id ->
+      match env a with
+      | Some e -> Env.doclang_subst ~subst e id
+      | None -> subst id
+
+  let styled_deprecated ~errs ~subst i = match i.deprecated with
+  | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
+
+  let styled_doc ~errs ~subst i =
+    Cmdliner_manpage.doc_to_styled ~errs ~subst i.doc
+
   module Set = struct
     type arg = t
     type completion =
@@ -225,12 +257,8 @@ module Cmd = struct
     in
     { cmd with has_args; args; children }
 
-  let pp_deprecated ppf t = match t.deprecated with
-  | None -> ()
-  | Some msg ->
-      Cmdliner_base.(Fmt.pf ppf "@[command %a:@[ %a@]@]"
-                       Fmt.code_or_quote t.name Fmt.styled_text msg)
-
+  let styled_deprecated ~errs ~subst i = match i.deprecated with
+  | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
 end
 
 (* Evaluation *)
@@ -250,4 +278,14 @@ module Eval = struct
   let err_ppf e = e.err_ppf
   let main e = match List.rev e.parents with [] -> e.cmd | m :: _ -> m
   let with_cmd ei cmd = { ei with cmd }
+
+  let cmd_name t = Cmdliner_manpage.escape (Cmd.name t)
+  let doclang_subst ei = function
+  | "tname" -> Some (strf "$(b,%s)" (cmd_name ei.cmd))
+  | "mname" -> Some (strf "$(b,%s)" (cmd_name (main ei)))
+  | "iname" ->
+      let cmd = cmd ei :: parents ei in
+      let cmd = String.concat " " (List.rev_map Cmd.name cmd) in
+      Some (strf "$(b,%s)" cmd)
+  | _ -> None
 end

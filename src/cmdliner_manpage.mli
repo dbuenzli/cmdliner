@@ -60,17 +60,19 @@ val s_environment_intro : block
 
 (** {1 Output} *)
 
+type subst = string -> string option
+(** The type for variable substitution functions. *)
+
 type format = [ `Auto | `Pager | `Plain | `Groff ]
 val print :
   ?env:(string -> string option) ->
-  ?errs:Format.formatter -> ?subst:(string -> string option) -> format ->
+  ?errs:Format.formatter -> ?subst:subst -> format ->
   Format.formatter -> t -> unit
 
 (** {1 Printers and escapes used by Cmdliner module} *)
 
 val subst_vars :
-  errs:Format.formatter -> subst:(string -> string option) -> Buffer.t ->
-  string -> string
+  errs:Format.formatter -> subst:subst -> Buffer.t -> string -> string
 (** [subst b ~subst s], using [b], substitutes in [s] variables of the form
     "$(doc)" by their [subst] definition. This leaves escapes and markup
     directives $(markup,…) intact.
@@ -78,8 +80,7 @@ val subst_vars :
     @raise Invalid_argument in case of illegal syntax. *)
 
 val doc_to_plain :
-  errs:Format.formatter -> subst:(string -> string option) -> Buffer.t ->
-  string -> string
+  errs:Format.formatter -> subst:subst -> Buffer.t -> string -> string
 (** [doc_to_plain b ~subst s] using [b], substitutes in [s] variables by
     their [subst] definition and renders cmdliner directives to plain
     text.
@@ -87,6 +88,5 @@ val doc_to_plain :
     Raises Invalid_argument in case of illegal syntax. *)
 
 val doc_to_styled :
-  errs:Format.formatter -> subst:(string -> string option) -> Buffer.t ->
-  string -> string
-(** doc_to_styled is like {!doc_to_plain} but uses ANSI escapes. *)
+  ?buffer:Buffer.t -> errs:Format.formatter -> subst:subst -> string -> string
+(** [doc_to_styled] is like {!doc_to_plain} but uses ANSI escapes. *)
