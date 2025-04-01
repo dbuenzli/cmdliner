@@ -94,9 +94,9 @@ let default =
     |> ~~ B0_opam.depends [ "ocaml", {|>= "4.08.0"|}; ]
     |> ~~ B0_opam.build {|[[ make "all" "PREFIX=%{prefix}%" ]]|}
     |> ~~ B0_opam.install
-{|[[make "install" "BINDIR=%{_:bin}%" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
-   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
-   [make "install-completions" "SHAREDIR=%{share}%"]]|}
+{|[[make "install" "BINDIR=%{_:bin}%" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"
+         "SHAREDIR=%{share}%"]
+   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]]|}
     |> B0_meta.tag B0_opam.tag
   in
   let locked = false (* So that it looks up b0.std *) in

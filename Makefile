@@ -26,18 +26,22 @@ NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
 INSTALL=install
 B=_build
 BASE=$(B)/src/cmdliner
-TOOL=$(B)/src/tool/cmdliner
+TOOLBDIR=$(B)/src/tool
+TOOL=$(TOOLBDIR)/cmdliner
 
 ifeq ($(NATIVE),true)
-	BUILD-TARGETS=build-byte build-native build-native-exe
-	INSTALL-TARGETS=install-common install-byte install-native install-exe
+	BUILD-EXE=build-native-exe
+	BUILD-TARGETS=build-byte build-native build-native-exe build-completions
+	INSTALL-TARGETS=install-common install-byte install-native install-exe \
+	                install-completions
 	ifeq ($(NATDYNLINK),true)
 	  BUILD-TARGETS += build-native-dynlink
 	  INSTALL-TARGETS += install-native-dynlink
 	endif
 else
-	BUILD-TARGETS=build-byte build-byte-exe
-	INSTALL-TARGETS=install-common install-byte install-exe
+	BUILD-EXE=build-byte-exe
+	BUILD-TARGETS=build-byte build-byte-exe build-completions
+	INSTALL-TARGETS=install-common install-byte install-exe install-completions
 endif
 
 all: $(BUILD-TARGETS)
@@ -61,6 +65,12 @@ build-byte-exe: build-byte
 
 build-native-exe: build-native
 	ocaml build.ml natexe
+
+build-completions: $(BUILD-EXE)
+	$(TOOL) generic-completion bash > $(TOOLBDIR)/bash-completion.sh
+	$(TOOL) tool-completion bash cmdliner > $(TOOLBDIR)/bash-cmdliner.sh
+	$(TOOL) generic-completion zsh > $(TOOLBDIR)/zsh-completion.sh
+	$(TOOL) tool-completion zsh cmdliner > $(TOOLBDIR)/zsh-cmdliner.sh
 
 prepare-prefix:
 	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
@@ -90,14 +100,15 @@ install-doc:
 
 install-completions:
 	$(INSTALL) -d "$(BASHCOMPDIR)"
-	$(INSTALL) -m 644 src/tool/bash-completion.sh \
+	$(INSTALL) -m 644 $(TOOLBDIR)/bash-completion.sh \
 	  "$(BASHCOMPDIR)/_cmdliner_generic"
-	$(INSTALL) -m 644 src/tool/bash-cmdliner.sh "$(BASHCOMPDIR)/cmdliner"
+	$(INSTALL) -m 644 $(TOOLBDIR)/bash-cmdliner.sh "$(BASHCOMPDIR)/cmdliner"
 	$(INSTALL) -d "$(ZSHCOMPDIR)"
-	$(INSTALL) -m 644 src/tool/zsh-completion.sh \
+	$(INSTALL) -m 644 $(TOOLBDIR)/zsh-completion.sh \
 	  "$(ZSHCOMPDIR)/_cmdliner_generic"
-	$(INSTALL) -m 644 src/tool/zsh-cmdliner.sh "$(ZSHCOMPDIR)/_cmdliner"
+	$(INSTALL) -m 644 $(TOOLBDIR)/zsh-cmdliner.sh "$(ZSHCOMPDIR)/_cmdliner"
 
 .PHONY: all install install-doc clean build-byte build-native \
-	build-native-dynlink build-byte-exe build-native-exe prepare-prefix \
-	install-common install-byte install-native install-dynlink install-exe
+	build-native-dynlink build-byte-exe build-native-exe build-completions \
+	prepare-prefix install-common install-byte install-native install-dynlink \
+	install-exe install-completions

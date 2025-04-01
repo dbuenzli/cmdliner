@@ -30,9 +30,15 @@ depends: [
 ]
 build: [make "all" "PREFIX=%{prefix}%"]
 install: [
-  [make "install" "BINDIR=%{_:bin}%" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
+  [
+    make
+    "install"
+    "BINDIR=%{_:bin}%"
+    "LIBDIR=%{_:lib}%"
+    "DOCDIR=%{_:doc}%"
+    "SHAREDIR=%{share}%"
+  ]
   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
-  [make "install-completions" "SHAREDIR=%{share}%"]
 ]
 dev-repo: "git+https://erratique.ch/repos/cmdliner.git"
 x-maintenance-intent: ["(latest)"]

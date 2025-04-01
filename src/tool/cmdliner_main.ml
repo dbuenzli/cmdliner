@@ -166,7 +166,7 @@ let shell_pos1 = shell_posn 1
 
 let toolname_posn n =
   let doc = "$(docv) is the name of the tool to complete" in
-  Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:"TOOLNAME")
+  Arg.(required & pos n (some string) None & info [] ~doc ~docv:"TOOLNAME")
 
 let toolname_pos0 = toolname_posn 0
 let toolname_pos1 = toolname_posn 1
