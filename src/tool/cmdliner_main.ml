@@ -21,17 +21,21 @@ let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   (if Sys.file_exists dir then () else run_cmd ["mkdir"; dir])
 
 let write_file file s =
-  let write file s oc = try Ok (Out_channel.output_string oc s) with
+  (* Out_channel is < 4.14 *)
+  let write file s oc = try Ok (output_string oc s) with
   | Sys_error e -> Error (Printf.sprintf "%s: %s" file e)
   in
-  let binary_stdout () = Out_channel.(set_binary_mode stdout true) in
+  let binary_stdout () = set_binary_mode_out stdout true in
   try match file with
-  | "-" -> binary_stdout (); write file s Out_channel.stdout
-  | file -> Out_channel.with_open_bin file (write file s)
+  | "-" -> binary_stdout (); write file s stdout
+  | file ->
+      let oc = open_out_bin file in
+      let finally () = close_out_noerr oc in
+      Fun.protect ~finally @@ fun () -> write file s oc
   with Sys_error e -> Error e
 
 let with_binary_stdout f =
-  try let () = Out_channel.set_binary_mode stdout true in f () with
+  try let () = set_binary_mode_out stdout true in f () with
   | Sys_error e | Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
 
 (* File path actions *)
