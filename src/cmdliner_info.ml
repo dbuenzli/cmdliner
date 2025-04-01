@@ -128,40 +128,40 @@ module Arg = struct
       env; doc; docv; docs; pos = dumb_pos; opt_kind = Flag; opt_names;
       opt_all = false; }
 
-  let id a = a.id
-  let deprecated a = a.deprecated
-  let absent a = a.absent
-  let env a = a.env
-  let doc a = a.doc
-  let docv a = a.docv
-  let docs a = a.docs
-  let pos_kind a = a.pos
-  let opt_kind a = a.opt_kind
-  let opt_names a = a.opt_names
-  let opt_all a = a.opt_all
-  let opt_name_sample a =
+  let id i = i.id
+  let deprecated i = i.deprecated
+  let absent i = i.absent
+  let env i = i.env
+  let doc i = i.doc
+  let docv i = i.docv
+  let docs i = i.docs
+  let pos_kind i = i.pos
+  let opt_kind i = i.opt_kind
+  let opt_names i = i.opt_names
+  let opt_all i = i.opt_all
+  let opt_name_sample i =
     (* First long or short name (in that order) in the list; this
        allows the client to control which name is shown *)
     let rec find = function
-    | [] -> List.hd a.opt_names
+    | [] -> List.hd i.opt_names
     | n :: ns -> if (String.length n) > 2 then n else find ns
     in
-    find a.opt_names
+    find i.opt_names
 
-  let make_req a = { a with absent = Err }
-  let make_all_opts a = { a with opt_all = true }
-  let make_opt ~docv ~absent ~kind:opt_kind a =
-    { a with absent; opt_kind; docv }
+  let make_req i = { i with absent = Err }
+  let make_all_opts i = { i with opt_all = true }
+  let make_opt ~docv ~absent ~kind:opt_kind i =
+    { i with absent; opt_kind; docv }
 
-  let make_opt_all ~docv ~absent ~kind:opt_kind a =
-    { a with absent; opt_kind; opt_all = true; docv  }
+  let make_opt_all ~docv ~absent ~kind:opt_kind i =
+    { i with absent; opt_kind; opt_all = true; docv  }
 
-  let make_pos ~docv ~pos a = { a with pos; docv }
-  let make_pos_abs ~docv ~absent ~pos a = { a with absent; pos; docv }
+  let make_pos ~docv ~pos i = { i with pos; docv }
+  let make_pos_abs ~docv ~absent ~pos i = { i with absent; pos; docv }
 
-  let is_opt a = a.opt_names <> []
-  let is_pos a = a.opt_names = []
-  let is_req a = a.absent = Err
+  let is_opt i = i.opt_names <> []
+  let is_pos i = i.opt_names = []
+  let is_req i = i.absent = Err
 
   let pos_cli_order a0 a1 = (* best-effort order on the cli. *)
     let c = compare (a0.pos.pos_rev) (a1.pos.pos_rev) in
@@ -174,12 +174,12 @@ module Arg = struct
 
   let compare a0 a1 = Int.compare a0.id a1.id
 
-  let doclang_subst ~subst a = function
-  | "docv" -> Some (strf "$(i,%s)" (Cmdliner_manpage.escape a.docv))
-  | "opt" when is_opt a ->
-      Some (strf "$(b,%s)" (Cmdliner_manpage.escape (opt_name_sample a)))
+  let doclang_subst ~subst i = function
+  | "docv" -> Some (strf "$(i,%s)" (Cmdliner_manpage.escape i.docv))
+  | "opt" when is_opt i ->
+      Some (strf "$(b,%s)" (Cmdliner_manpage.escape (opt_name_sample i)))
   | id ->
-      match env a with
+      match env i with
       | Some e -> Env.doclang_subst ~subst e id
       | None -> subst id
 
@@ -236,20 +236,20 @@ module Cmd = struct
       envs; man; man_xrefs; args = Arg.Set.empty;
       has_args = true; children = [] }
 
-  let name t = t.name
-  let version t = t.version
-  let deprecated t = t.deprecated
-  let doc t = t.doc
-  let docs t = t.docs
-  let stdopts_docs t = t.sdocs
-  let exits t = t.exits
-  let envs t = t.envs
-  let man t = t.man
-  let man_xrefs t = t.man_xrefs
-  let args t = t.args
-  let has_args t = t.has_args
-  let children t = t.children
-  let add_args t args = { t with args = Arg.Set.union args t.args }
+  let name i = i.name
+  let version i = i.version
+  let deprecated i = i.deprecated
+  let doc i = i.doc
+  let docs i = i.docs
+  let stdopts_docs i = i.sdocs
+  let exits i = i.exits
+  let envs i = i.envs
+  let man i = i.man
+  let man_xrefs i = i.man_xrefs
+  let args i = i.args
+  let has_args i = i.has_args
+  let children i = i.children
+  let add_args i args = { i with args = Arg.Set.union args i.args }
   let with_children cmd ~args ~children =
     let has_args, args = match args with
     | None -> false, cmd.args
@@ -259,6 +259,8 @@ module Cmd = struct
 
   let styled_deprecated ~errs ~subst i = match i.deprecated with
   | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
+
+  let escaped_name i = Cmdliner_manpage.escape i.name
 end
 
 (* Evaluation *)
@@ -272,20 +274,19 @@ module Eval = struct
 
   let make ~cmd ~parents ~env ~err_ppf = { cmd; parents; env; err_ppf }
 
-  let cmd e = e.cmd
-  let parents e = e.parents
-  let env_var e v = e.env v
-  let err_ppf e = e.err_ppf
-  let main e = match List.rev e.parents with [] -> e.cmd | m :: _ -> m
-  let with_cmd ei cmd = { ei with cmd }
+  let cmd i = i.cmd
+  let parents i = i.parents
+  let env_var i v = i.env v
+  let err_ppf i = i.err_ppf
+  let main i = match List.rev i.parents with [] -> i.cmd | m :: _ -> m
+  let with_cmd i cmd = { i with cmd }
 
-  let cmd_name t = Cmdliner_manpage.escape (Cmd.name t)
   let doclang_subst ei = function
-  | "tname" | "cmdname" -> Some (strf "$(b,%s)" (cmd_name ei.cmd))
-  | "mname" | "tool" -> Some (strf "$(b,%s)" (cmd_name (main ei)))
+  | "tname" | "cmdname" -> Some (strf "$(b,%s)" (Cmd.escaped_name ei.cmd))
+  | "mname" | "tool" -> Some (strf "$(b,%s)" (Cmd.escaped_name (main ei)))
   | "iname" | "cmd" ->
       let cmd = cmd ei :: parents ei in
       let cmd = String.concat " " (List.rev_map Cmd.name cmd) in
-      Some (strf "$(b,%s)" cmd)
+      Some (strf "$(b,%s)" (Cmdliner_manpage.escape cmd))
   | _ -> None
 end

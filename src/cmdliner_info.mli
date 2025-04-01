@@ -143,11 +143,10 @@ end
 module Cmd : sig
   type t
   val make :
-    ?deprecated:string ->
-    ?man_xrefs:Cmdliner_manpage.xref list -> ?man:Cmdliner_manpage.block list ->
-    ?envs:Env.info list -> ?exits:Exit.info list ->
-    ?sdocs:string -> ?docs:string -> ?doc:string -> ?version:string ->
-    string -> t
+    ?deprecated:string -> ?man_xrefs:Cmdliner_manpage.xref list ->
+    ?man:Cmdliner_manpage.block list -> ?envs:Env.info list ->
+    ?exits:Exit.info list -> ?sdocs:string -> ?docs:string -> ?doc:string ->
+    ?version:string -> string -> t
 
   val name : t -> string
   val version : t -> string option
@@ -164,9 +163,8 @@ module Cmd : sig
   val children : t -> t list
   val add_args : t -> Arg.Set.t -> t
   val with_children : t -> args:Arg.Set.t option -> children:t list -> t
-
   val styled_deprecated :
-      errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
+    errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 end
 
 (** Evaluation. *)
@@ -182,6 +180,5 @@ module Eval : sig
   val env_var : t -> string -> string option
   val err_ppf : t -> Format.formatter
   val with_cmd : t -> Cmd.t -> t
-
   val doclang_subst : t -> Cmdliner_manpage.subst
 end
