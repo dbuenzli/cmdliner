@@ -85,12 +85,13 @@ let do_help ~env help_ppf err_ppf ei fmt cmd =
   in
   Cmdliner_docgen.pp_man ~env ~errs:err_ppf fmt help_ppf ei
 
-let do_completion help_ppf args cmd cmd_children (prefix, kind) =
+let do_completion help_ppf err_ppf ei args cmd cmd_children (prefix, kind) =
+  let subst = Cmdliner_info.Eval.doclang_subst ei in
   let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
   let pp_group ppf s = pp_line ppf "group"; pp_line ppf s in
   let pp_item ppf ~prefix (name, doc) =
     if Cmdliner_base.string_has_prefix ~prefix name then begin
-      let on_single_line s =
+      let on_single_line s = (* FIXME can we avoid that ? *)
         String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) s
       in
       pp_line ppf "item";
@@ -98,9 +99,11 @@ let do_completion help_ppf args cmd cmd_children (prefix, kind) =
       pp_line ppf (on_single_line doc)
     end
   in
-  let pp_option ppf arg _ =
-    let names = Cmdliner_info.Arg.opt_names arg in
-    let doc = Cmdliner_info.Arg.doc arg in
+  let pp_option ppf arginfo _ =
+    (* FIXME should we list a single name ? *)
+    let names = Cmdliner_info.Arg.opt_names arginfo in
+    let subst = Cmdliner_info.Arg.doclang_subst ~subst arginfo in
+    let doc = Cmdliner_info.Arg.styled_doc ~errs:err_ppf ~subst arginfo in
     List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
   in
   let pp_complete_arg_names ppf cmd =
@@ -121,7 +124,8 @@ let do_completion help_ppf args cmd cmd_children (prefix, kind) =
     pp_group ppf "Subcommands";
     let complete_cmd cmd =
       let name = Cmdliner_info.Cmd.name cmd in
-      let doc = Cmdliner_info.Cmd.doc cmd in
+      (* FIXME subst is wrong here. *)
+      let doc = Cmdliner_info.Cmd.styled_doc ~errs:err_ppf ~subst cmd in
       pp_item ppf ~prefix (name, doc)
     in
     List.iter complete_cmd cmd_children
@@ -149,7 +153,8 @@ let do_result ~env help_ppf err_ppf ei = function
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         Error `Parse
     | `Complete (args, cmd, cmd_children, (prefix, kind)) ->
-        do_completion help_ppf args cmd cmd_children (prefix, kind); Ok `Help
+        do_completion help_ppf err_ppf ei
+          args cmd cmd_children (prefix, kind); Ok `Help
     | `Help (fmt, cmd) -> do_help ~env help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->

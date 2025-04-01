@@ -165,6 +165,9 @@ module Cmd : sig
   val with_children : t -> args:Arg.Set.t option -> children:t list -> t
   val styled_deprecated :
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
+
+  val styled_doc :
+    errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 end
 
 (** Evaluation. *)

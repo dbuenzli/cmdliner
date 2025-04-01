@@ -260,6 +260,9 @@ module Cmd = struct
   let styled_deprecated ~errs ~subst i = match i.deprecated with
   | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
 
+  let styled_doc ~errs ~subst i =
+    Cmdliner_manpage.doc_to_styled ~errs ~subst i.doc
+
   let escaped_name i = Cmdliner_manpage.escape i.name
 end
 
