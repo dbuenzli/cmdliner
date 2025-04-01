@@ -138,12 +138,15 @@ let sort_srcs srcs =
 
 let common srcs = base_ocaml_opts @ sort_srcs srcs
 
-let exe src =
+let exe ar src =
   let lib = build_dir Lib in
-  ["-I"; lib; "cmdliner.cmxa"] @ common src
+  ["-I"; lib; ar] @ common src
 
-let build_exe srcs =
-  run_cmd ([ocamlopt ()] @ exe srcs @ ["-o"; "cmdliner.exe"])
+let build_natexe srcs =
+  run_cmd ([ocamlopt ()] @ exe "cmdliner.cmxa" srcs @ ["-o"; "cmdliner"])
+
+let build_bytexe srcs =
+  run_cmd ([ocamlc ()] @ exe "cmdliner.cma" srcs @ ["-o"; "cmdliner"])
 
 let build_cma srcs =
   run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
@@ -166,7 +169,8 @@ let in_build_dir u f =
   Sys.chdir build_dir; f srcs; Sys.chdir root_dir
 
 let main () = match Array.to_list Sys.argv with
-| _ :: [ "exe" ] -> in_build_dir Bin build_exe
+| _ :: [ "natexe" ] -> in_build_dir Bin build_natexe
+| _ :: [ "bytexe" ] -> in_build_dir Bin build_bytexe
 | _ :: [ "cma" ] -> in_build_dir Lib build_cma
 | _ :: [ "cmxa" ] -> in_build_dir Lib build_cmxa
 | _ :: [ "cmxs" ] -> in_build_dir Lib build_cmxs

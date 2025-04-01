@@ -26,22 +26,61 @@ NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
 INSTALL=install
 B=_build
 BASE=$(B)/src/cmdliner
+TOOL=$(B)/src/tool/cmdliner
 
 ifeq ($(NATIVE),true)
-	BUILD-TARGETS=build-byte build-native
-	INSTALL-TARGETS=install-common install-byte install-native
+	BUILD-TARGETS=build-byte build-native build-native-exe
+	INSTALL-TARGETS=install-common install-byte install-native install-exe
 	ifeq ($(NATDYNLINK),true)
 	  BUILD-TARGETS += build-native-dynlink
 	  INSTALL-TARGETS += install-native-dynlink
 	endif
 else
-	BUILD-TARGETS=build-byte
-	INSTALL-TARGETS=install-common install-byte
+	BUILD-TARGETS=build-byte build-byte-exe
+	INSTALL-TARGETS=install-common install-byte install-exe
 endif
 
 all: $(BUILD-TARGETS)
 
 install: $(INSTALL-TARGETS)
+
+clean:
+	ocaml build.ml clean
+
+build-byte:
+	ocaml build.ml cma
+
+build-native:
+	ocaml build.ml cmxa
+
+build-native-dynlink:
+	ocaml build.ml cmxs
+
+build-byte-exe: build-byte
+	ocaml build.ml bytexe
+
+build-native-exe: build-native
+	ocaml build.ml natexe
+
+prepare-prefix:
+	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
+
+install-common: prepare-prefix
+	$(INSTALL) -m 644 pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
+	$(INSTALL) -m 644 cmdliner.opam "$(LIBDIR)/opam"
+
+install-byte: prepare-prefix
+	$(INSTALL) -m 644 $(BASE).cma "$(LIBDIR)"
+
+install-native: prepare-prefix
+	$(INSTALL) -m 644 $(BASE).cmxa $(BASE)$(EXT_LIB) \
+	  $(wildcard -m 644 $(BASE)*.cmx) "$(LIBDIR)"
+
+install-native-dynlink: prepare-prefix
+	$(INSTALL) -m 644 $(BASE).cmxs "$(LIBDIR)"
+
+install-exe:
+	$(INSTALL) -m 755 "$(B)/src/tool/cmdliner" "$(BINDIR)/cmdliner"
 
 install-doc:
 	$(INSTALL) -d "$(DOCDIR)/odoc-pages"
@@ -59,37 +98,6 @@ install-completions:
 	  "$(ZSHCOMPDIR)/_cmdliner_generic"
 	$(INSTALL) -m 644 src/tool/zsh-cmdliner.sh "$(ZSHCOMPDIR)/_cmdliner"
 
-clean:
-	ocaml build.ml clean
-
-build-byte:
-	ocaml build.ml cma
-
-build-native:
-	ocaml build.ml cmxa
-	ocaml build.ml exe
-
-build-native-dynlink:
-	ocaml build.ml cmxs
-
-prepare-prefix:
-	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
-
-install-common: prepare-prefix
-	$(INSTALL) -m 644 pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
-	$(INSTALL) -m 644 cmdliner.opam "$(LIBDIR)/opam"
-
-install-byte: prepare-prefix
-	$(INSTALL) -m 644 $(BASE).cma "$(LIBDIR)"
-
-install-native: prepare-prefix
-	$(INSTALL) -m 644 $(BASE).cmxa $(BASE)$(EXT_LIB) \
-	  $(wildcard -m 644 $(BASE)*.cmx) "$(LIBDIR)"
-	$(INSTALL) -m 755 $(B)/src/tool/cmdliner.exe "$(BINDIR)/cmdliner"
-
-install-native-dynlink: prepare-prefix
-	$(INSTALL) -m 644 $(BASE).cmxs "$(LIBDIR)"
-
 .PHONY: all install install-doc clean build-byte build-native \
-	build-native-dynlink prepare-prefix install-common install-byte \
-  install-native install-dynlink
+	build-native-dynlink build-byte-exe build-native-exe prepare-prefix \
+	install-common install-byte install-native install-dynlink install-exe
