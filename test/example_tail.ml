@@ -73,7 +73,7 @@ let tail_cmd =
   let doc = "Display the last part of a file" in
   let man = [
     `S Manpage.s_description;
-    `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
+    `P "$(cmd) prints the last lines of each $(i,FILE) to standard output. If
         no file is specified reads standard input. The number of printed
         lines can be  specified with the $(b,-n) option.";
     `S Manpage.s_bugs;

@@ -61,7 +61,7 @@ various [info] values support the following markup language.
    text respectively rendered in italics and bold.}
 {- Outside markup directives, context dependent variables of the form
    [$(var)] are substituted by marked up data. For example in a command
-   man page [$(iname)] is substituted by the command's invocation in
+   man page [$(cmd)] is substituted by the command's invocation in
    bold.}
 {- Characters '$', '(', ')' and '\' can respectively be escaped by \$, \(, \)
    and \\ . In OCaml strings this will be ["\\$"], ["\\("], ["\\)"],

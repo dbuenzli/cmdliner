@@ -431,11 +431,15 @@ module Cmd : sig
       {{!page-tool_man.doclang} documentation markup language} in which the
       following variables are recognized:
       {ul
-      {- [$(tname)] the (term's) command's name.}
-      {- [$(mname)] the main command name.}
-      {- [$(iname)] the command invocation from main command to the
+      {- [$(cmdname)] the command's name}
+      {- [$(tool)] the main, topmost, command name.}
+      {- [$(cmd)] the command invocation from main command to the
          command name.}}
-  *)
+
+      Previously these names were refered to as [$(tname)], [$(mname)]
+      and [$(iname)], they still work but do not use them, they
+      are obscure. *)
+
 
   (** {1:cmds Commands} *)
 

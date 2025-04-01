@@ -49,9 +49,9 @@ let help_secs = [
  `S Manpage.s_common_options;
  `P "These options are common to all commands.";
  `S "MORE HELP";
- `P "Use $(mname) $(i,COMMAND) --help for help on a single command.";`Noblank;
- `P "Use $(mname) $(b,help patterns) for help on patch matching."; `Noblank;
- `P "Use $(mname) $(b,help environment) for help on environment variables.";
+ `P "Use $(tool) $(i,COMMAND) --help for help on a single command.";`Noblank;
+ `P "Use $(tool) $(b,help patterns) for help on patch matching."; `Noblank;
+ `P "Use $(tool) $(b,help environment) for help on environment variables.";
  `S Manpage.s_bugs; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
@@ -71,7 +71,7 @@ let copts_t =
     Arg.(last & vflag_all [Normal] [quiet; verbose])
   in
   let prehook =
-    let doc = "Specify command to run before this $(mname) command." in
+    let doc = "Specify command to run before this $(tool) command." in
     Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
   Term.(const copts $ debug $ verb $ prehook)

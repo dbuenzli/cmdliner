@@ -281,9 +281,9 @@ module Eval = struct
 
   let cmd_name t = Cmdliner_manpage.escape (Cmd.name t)
   let doclang_subst ei = function
-  | "tname" -> Some (strf "$(b,%s)" (cmd_name ei.cmd))
-  | "mname" -> Some (strf "$(b,%s)" (cmd_name (main ei)))
-  | "iname" ->
+  | "tname" | "cmdname" -> Some (strf "$(b,%s)" (cmd_name ei.cmd))
+  | "mname" | "tool" -> Some (strf "$(b,%s)" (cmd_name (main ei)))
+  | "iname" | "cmd" ->
       let cmd = cmd ei :: parents ei in
       let cmd = String.concat " " (List.rev_map Cmd.name cmd) in
       Some (strf "$(b,%s)" cmd)

@@ -19,7 +19,7 @@ let tool_cmd =
   let doc = "The tool synopsis is TODO" in
   let man = [
     `S Manpage.s_description;
-    `P "$(iname) does TODO" ]
+    `P "$(cmd) does TODO" ]
   in
   let exits =
     Cmd.Exit.info exit_todo ~doc:"When there is stuff todo" ::

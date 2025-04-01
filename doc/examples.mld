@@ -69,14 +69,14 @@ let rm_cmd =
   let doc = "Remove files or directories" in
   let man = [
     `S Manpage.s_description;
-    `P "$(tname) removes each specified $(i,FILE). By default it does not
+    `P "$(cmd) removes each specified $(i,FILE). By default it does not
         remove directories, to also remove them and their contents, use the
         option $(b,--recursive) ($(b,-r) or $(b,-R)).";
     `P "To remove a file whose name starts with a $(b,-), for example
         $(b,-foo), use one of these commands:";
-    `Pre "$(mname) $(b,-- -foo)"; `Noblank;
-    `Pre "$(mname) $(b,./-foo)";
-    `P "$(tname) removes symbolic links, not the files referenced by the
+    `Pre "$(cmd) $(b,-- -foo)"; `Noblank;
+    `Pre "$(cmd) $(b,./-foo)";
+    `P "$(cmdname) removes symbolic links, not the files referenced by the
         links.";
     `S Manpage.s_bugs; `P "Report bugs to <bugs@example.org>.";
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]
@@ -257,8 +257,8 @@ let tail_cmd =
   let doc = "Display the last part of a file" in
   let man = [
     `S Manpage.s_description;
-    `P "$(tname) prints the last lines of each $(i,FILE) to standard output. If
-        no file is specified reads standard input. The number of printed
+    `P "$(cmd) prints the last lines of each $(i,FILE) to standard output.
+        If no file is specified reads standard input. The number of printed
         lines can be  specified with the $(b,-n) option.";
     `S Manpage.s_bugs;
     `P "Report them to <bugs@example.org>.";
@@ -345,9 +345,9 @@ let help_secs = [
  `S Manpage.s_common_options;
  `P "These options are common to all commands.";
  `S "MORE HELP";
- `P "Use $(mname) $(i,COMMAND) --help for help on a single command.";`Noblank;
- `P "Use $(mname) $(b,help patterns) for help on patch matching."; `Noblank;
- `P "Use $(mname) $(b,help environment) for help on environment variables.";
+ `P "Use $(tool) $(i,COMMAND) --help for help on a single command.";`Noblank;
+ `P "Use $(tool) $(b,help patterns) for help on patch matching."; `Noblank;
+ `P "Use $(tool) $(b,help environment) for help on environment variables.";
  `S Manpage.s_bugs; `P "Check bug reports at http://bugs.example.org.";]
 
 (* Options common to all commands *)
@@ -367,7 +367,7 @@ let copts_t =
     Arg.(last & vflag_all [Normal] [quiet; verbose])
   in
   let prehook =
-    let doc = "Specify command to run before this $(mname) command." in
+    let doc = "Specify command to run before this $(tool) command." in
     Arg.(value & opt (some string) None & info ["prehook"] ~docs ~doc)
   in
   Term.(const copts $ debug $ verb $ prehook)

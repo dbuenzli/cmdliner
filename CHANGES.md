@@ -36,6 +36,10 @@
 
 ### API changes
 
+- Documentation language, `$(cmd)`, `$(cmdname)` and `$(tool)` can be
+  used and should be prefered instead of `$(iname)`, `$(tname)` and
+  `$(mname)`.
+
 - Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for
   the patch (#206).
 

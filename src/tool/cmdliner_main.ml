@@ -175,10 +175,10 @@ let generic_completion_cmd =
   let doc = "Output generic completion scripts" in
   let man =
     [ `S Manpage.s_description;
-      `P "$(iname) outputs the generic completion script of a given shell. \
+      `P "$(cmd) outputs the generic completion script of a given shell. \
           For example:";
-      `Pre "$(iname) $(b,zsh)"; `Noblank;
-      `Pre "$(b,eval) \\$($(iname) $(b,zsh))"; ]
+      `Pre "$(cmd) $(b,zsh)"; `Noblank;
+      `Pre "$(b,eval) \\$($(cmd) $(b,zsh))"; ]
   in
   Cmd.make (Cmd.info "generic-completion" ~doc ~man) @@
   let+ shell = shell_pos0 in
@@ -188,9 +188,9 @@ let tool_completion_cmd =
   let doc = "Output tool completion scripts" in
   let man =
     [ `S Manpage.s_description;
-      `P "$(iname) outputs the tool completion script of a given shell. \
+      `P "$(cmd) outputs the tool completion script of a given shell. \
           For example:";
-      `Pre "$(iname) $(b,zsh mytool)"; ]
+      `Pre "$(cmd) $(b,zsh mytool)"; ]
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
   let+ shell = shell_pos0 and+ toolname = toolname_pos1 in
@@ -200,13 +200,13 @@ let install_generic_completion_cmd =
   let doc = "Install generic completion scripts" in
   let man = [
     `S Manpage.s_description;
-    `P "$(iname) installs the generic completion script of given shells in \
+    `P "$(cmd) installs the generic completion script of given shells in \
         a $(b,share) directory according to specific shell conventions. \
         Directories are not created. \
         Use option $(b,--dry-run) to see which paths would be written. \
         For example:";
-    `Pre "$(iname) $(b,/usr/local/share) # All supported shells"; `Noblank;
-    `Pre "$(iname) $(b,--shell zsh /usr/local/share)"; ]
+    `Pre "$(cmd) $(b,/usr/local/share) # All supported shells"; `Noblank;
+    `Pre "$(cmd) $(b,--shell zsh /usr/local/share)"; ]
   in
   Cmd.make (Cmd.info "generic-completion" ~doc ~man) @@
   let+ dry_run and+ shells = shells_opt and+ sharedir_pos0 in
@@ -216,14 +216,14 @@ let install_tool_completion_cmd =
   let doc = "Install tool completion scripts" in
   let man = [
     `S Manpage.s_description;
-    `P "$(iname) installs the tool completion script of given shells in \
+    `P "$(cmd) installs the tool completion script of given shells in \
         a $(b,share) directory according to specific shell conventions. \
         Directories are not created. \
         Use option $(b,--dry-run) to see which paths would be written. \
         For example:";
-    `Pre "$(iname) $(b,mytool) $(b,/usr/local/share)  # All supported shells";
+    `Pre "$(cmd) $(b,mytool) $(b,/usr/local/share)  # All supported shells";
     `Noblank;
-    `Pre "$(iname) $(b,--shell zsh mytool /usr/local/share)"; ]
+    `Pre "$(cmd) $(b,--shell zsh mytool /usr/local/share)"; ]
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
   let+ dry_run and+ shells = shells_opt and+ toolnames = toolnames_posleft
@@ -234,7 +234,7 @@ let install_cmd =
   let doc = "Install cmdliner support files" in
   let man =
     [ `S Manpage.s_description;
-      `P "$(iname) subcommands install cmdliner support files. \
+      `P "$(cmd) subcommands install cmdliner support files. \
           See the library documentation or invoke \
           subcommands with $(b,--help) for more details."; ]
   in
@@ -246,7 +246,7 @@ let main_cmd =
   let default = Term.(ret (const (`Help (`Pager, None)))) in
   let man =
     [ `S Manpage.s_description;
-      `P "$(mname) is a helper tool for Cmdliner based programs. It \
+      `P "$(tool) is a helper tool for Cmdliner based programs. It \
           helps with installing command line completion scripts. \
           See the library documentation or invoke \
           subcommands with $(b,--help) for more details."; ]

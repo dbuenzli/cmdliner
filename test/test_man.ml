@@ -28,14 +28,14 @@ let id =
   Arg.(value & opt int ~vopt:10 0 & info ["id"; "i"] ~env ~docv:"ID)" ~doc)
 
 let miaouw =
-  let doc = "See option $(opt). These are term names $(mname) $(tname)" in
+  let doc = "See option $(opt). These are term names $(tool) $(cmdname)" in
   let docs = "MIAOUW SECTION (non-standard unpositioned do not do this)" in
   let env = Cmd.Env.info "TEST_MIAOUW" ~doc ~docs in
   let doc = "Whatever this is the doc var $(docv) this is the env var $(env) \
              this is the opt $(opt) and this is $(i,italic) and this is
              $(b,bold) and this $(b,\\$(opt\\)) is \\$(opt) in bold and this
-             \\$ is a dollar. $(mname) is the main term name, $(tname) is the
-             term name."
+             \\$ is a dollar. $(tool) is the main command name, $(cmdname) \
+             is the subcommand name and $(cmd) the command invocation."
   in
   Arg.(value & opt string "miaouw" & info ["m";] ~env ~docv:"MIAOUW" ~doc)
 
@@ -47,15 +47,15 @@ let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)
 
 let info =
   let doc = "UTF-8 test: \u{1F42B} íöüóőúűéáăîâșț ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝" in
-  let envs = [ Cmd.Env.info "TEST_IT" ~doc:"This is $(env) for $(tname)" ] in
-  let exits = (Cmd.Exit.info ~doc:"This is a $(status) for $(tname)" 1 ::
+  let envs = [ Cmd.Env.info "TEST_IT" ~doc:"This is $(env) for $(cmdname)" ] in
+  let exits = (Cmd.Exit.info ~doc:"This is a $(status) for $(cmdname)" 1 ::
                Cmd.Exit.info ~doc:"Ranges from $(status) to $(status_max)"
                  ~max:10 2 ::
                Cmd.Exit.defaults)
   in
   let man = [
-    `S "THIS IS A SECTION FOR $(mname)";
-    `P "$(mname) subst at begin and end $(mname)";
+    `S "THIS IS A SECTION FOR $(tool)";
+    `P "$(cmdname) subst at begin and end $(tool)";
     `P "$(i,italic) and $(b,bold)";
     `P "\\$ escaped \\$\\$ escaped \\$";
     `P "This does not fail \\$(a)";
@@ -66,7 +66,7 @@ let info =
     `P "This: \\\\\"  is a groff comment and it should not be one.";
     `P "This is a non preformatted paragraph, filling will occur. This will
         be properly layout on 80 columns.";
-    `Pre "This is a preformatted paragraph for $(mname) no filling will \
+    `Pre "This is a preformatted paragraph for $(tool) no filling will \
           occur do the $(i,ASCII) art $(b,here) this will overflow on 80 \
           columns \n\
           01234556789\
@@ -183,7 +183,8 @@ OPTIONS
            Whatever this is the doc var MIAOUW this is the env var
            TEST_MIAOUW this is the opt -m and this is italic and this is bold
            and this $(opt) is $(opt) in bold and this $ is a dollar. man_test
-           is the main term name, man_test is the term name.
+           is the main command name, man_test is the subcommand name and
+           man_test the command invocation.
 
        --repodir=DIR (absent=. or TEST_REPODDIR env)
            Run the program in repository directory DIR.
@@ -323,7 +324,7 @@ See option \fB\N'45'm\fR\N'46' These are term names \fBman_test\fR \fBman_test\f
 Whatever \fIID)\fR bla \fBTEST_ID\fR and \fB\N'45'\N'45'id\fR\N'46'
 .TP 4
 \fB\N'45'm\fR \fIMIAOUW\fR (absent=\fBmiaouw\fR or \fBTEST_MIAOUW\fR env)
-Whatever this is the doc var \fIMIAOUW\fR this is the env var \fBTEST_MIAOUW\fR this is the opt \fB\N'45'm\fR and this is \fIitalic\fR and this is \fBbold\fR and this \fB$(opt)\fR is $(opt) in bold and this $ is a dollar\N'46' \fBman_test\fR is the main term name, \fBman_test\fR is the term name\N'46'
+Whatever this is the doc var \fIMIAOUW\fR this is the env var \fBTEST_MIAOUW\fR this is the opt \fB\N'45'm\fR and this is \fIitalic\fR and this is \fBbold\fR and this \fB$(opt)\fR is $(opt) in bold and this $ is a dollar\N'46' \fBman_test\fR is the main command name, \fBman_test\fR is the subcommand name and \fBman_test\fR the command invocation\N'46'
 .TP 4
 \fB\N'45'\N'45'repodir\fR=\fIDIR\fR (absent=\fB\N'46'\fR or \fBTEST_REPODDIR\fR env)
 Run the program in repository directory \fIDIR\fR\N'46'

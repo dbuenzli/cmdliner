@@ -63,7 +63,8 @@ Try \x1B[01mtest_group mammals --help\x1B[m or \x1B[01mtest_group --help\x1B[m f
 SYNOPSIS
        test_group COMMAND …
 
-       Invoke command with test_group.
+       Invoke command with test_group, the command name is test_group, the
+       tool name is test_group.
 
 COMMANDS
        birds [COMMAND] …
@@ -103,7 +104,8 @@ EXIT STATUS
 SYNOPSIS
        test_group birds [COMMAND] …
 
-       Invoke command with test_group birds.
+       Invoke command with test_group birds, the command name is birds, the
+       tool name is test_group.
 
 COMMANDS
        fly [--speed=SPEED] [OPTION]… [BIRD]
@@ -149,7 +151,8 @@ SEE ALSO|};
 SYNOPSIS
        test_group birds fly [--speed=SPEED] [OPTION]… [BIRD]
 
-       Invoke command with test_group birds fly.
+       Invoke command with test_group birds fly, the command name is fly, the
+       tool name is test_group.
 
 ARGUMENTS
        BIRD (absent=pigeon)
@@ -188,7 +191,8 @@ SEE ALSO|};
 SYNOPSIS
        test_group birds land [OPTION]… [BIRD]
 
-       Invoke command with test_group birds land.
+       Invoke command with test_group birds land, the command name is land,
+       the tool name is test_group.
 
 ARGUMENTS
        BIRD (absent=pigeon)
@@ -224,7 +228,8 @@ SEE ALSO|};
 SYNOPSIS
        test_group fishs [OPTION]… [NAME]
 
-       Invoke command with test_group fishs.
+       Invoke command with test_group fishs, the command name is fishs, the
+       tool name is test_group.
 
 ARGUMENTS
        NAME
@@ -259,7 +264,8 @@ SEE ALSO|};
 SYNOPSIS
        test_group mammals [OPTION]…
 
-       Invoke command with test_group mammals.
+       Invoke command with test_group mammals, the command name is mammals,
+       the tool name is test_group.
 
 COMMON OPTIONS
        --help[=FMT] (default=auto)
@@ -291,7 +297,8 @@ SEE ALSO|};
 SYNOPSIS
        (Deprecated) test_group camels [--bactrian] [OPTION]… [HERD]
 
-       Invoke command with test_group camels.
+       Invoke command with test_group camels, the command name is camels, the
+       tool name is test_group.
 
 ARGUMENTS
        (Deprecated) HERD
