@@ -209,7 +209,9 @@ let install_generic_completion_cmd =
     `Pre "$(cmd) $(b,--shell zsh /usr/local/share)"; ]
   in
   Cmd.make (Cmd.info "generic-completion" ~doc ~man) @@
-  let+ dry_run and+ shells = shells_opt and+ sharedir_pos0 in
+  (* No let punning in < 4.13 *)
+  let+ dry_run = dry_run and+ shells = shells_opt
+  and+ sharedir_pos0 = sharedir_pos0 in
   install_generic_completion ~dry_run shells sharedir_pos0
 
 let install_tool_completion_cmd =
@@ -226,8 +228,9 @@ let install_tool_completion_cmd =
     `Pre "$(cmd) $(b,--shell zsh mytool /usr/local/share)"; ]
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
-  let+ dry_run and+ shells = shells_opt and+ toolnames = toolnames_posleft
-  and+ sharedir_poslast in
+  (* No let punning in < 4.13 *)
+  let+ dry_run = dry_run and+ shells = shells_opt
+  and+ toolnames = toolnames_posleft and+ sharedir_poslast = sharedir_poslast in
   install_tool_completion ~dry_run shells ~toolnames sharedir_poslast
 
 let install_cmd =
