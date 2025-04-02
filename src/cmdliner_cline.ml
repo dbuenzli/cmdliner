@@ -92,16 +92,22 @@ let complete_prefix = "+cmdliner_complete:"
 let maybe_complete_token s =
   Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
 
-exception Completion_requested of
-  string * [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
+type completion =
+  { prefix : string;
+    after_dashdash : bool;
+    kind : [ `Opt of Cmdliner_info.Arg.t
+           | `Arg of Cmdliner_info.Arg.t
+           | `Any ] }
+
+exception Completion_requested of completion
 
 let parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args =
   (* returns an updated [cl] cmdline according to the options found in [args]
      with the trie index [optidx]. Positional arguments are returned in order
      in a list. *)
   let rec loop errs k cl pargs = function
-  | [] -> List.rev errs, cl, List.rev pargs
-  | "--" :: args -> List.rev errs, cl, (List.rev_append pargs args)
+  | [] -> List.rev errs, cl, false, List.rev pargs
+  | "--" :: args -> List.rev errs, cl, true, (List.rev_append pargs args)
   | s :: args ->
       if not (is_opt s) then loop errs (k + 1) cl (s :: pargs) args else
       let name, value = parse_opt_arg s in
@@ -118,7 +124,9 @@ let parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args =
               | v :: rest -> if is_opt v then None, args else Some v, rest
           in
           (match Option.bind value maybe_complete_token with
-          | Some prefix -> raise (Completion_requested (prefix, `Opt a))
+          | Some prefix ->
+              let c = { prefix; after_dashdash = false; kind = `Opt a } in
+              raise (Completion_requested c)
           | None ->
               let arg = O ((k, name, value) :: opt_arg cl a) in
               loop errs (k + 1) (Amap.add a arg cl) pargs args)
@@ -133,10 +141,10 @@ let parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args =
           let err = Cmdliner_base.err_ambiguous ~kind:"option" name ~ambs in
           loop (err :: errs) (k + 1) cl pargs args
   in
-  let errs, cl, pargs = loop [] 0 cl [] args in
-  if errs = [] then Ok (cl, pargs) else
+  let errs, cl, after_dashdash, pargs = loop [] 0 cl [] args in
+  if errs = [] then Ok (cl, after_dashdash, pargs) else
   let err = String.concat "\n" errs in
-  Error (err, cl, pargs)
+  Error (err, cl, after_dashdash, pargs)
 
 let take_range start stop l =
   let rec loop i acc = function
@@ -151,7 +159,7 @@ let take_range start stop l =
   in
   loop 0 [] l
 
-let process_pos_args posidx cl pargs =
+let process_pos_args posidx cl ~after_dashdash pargs =
   (* returns an updated [cl] cmdline in which each positional arg mentioned
      in the list index posidx, is given a value according the list
      of positional arguments values [pargs]. *)
@@ -176,7 +184,9 @@ let process_pos_args posidx cl pargs =
       let args =
         match take_range start stop pargs with
         | `Range args -> args
-        | `Complete prefix -> raise (Completion_requested (prefix, `Arg a))
+        | `Complete prefix ->
+            let c = { prefix; after_dashdash; kind = `Arg a } in
+            raise (Completion_requested c)
       in
       let max_spec = max stop max_spec in
       let cl = Amap.add a (P args) cl in
@@ -189,7 +199,9 @@ let process_pos_args posidx cl pargs =
   let misses, cl, max_spec = loop [] cl (-1) posidx in
   let consume_excess () = match take_range (max_spec + 1) last pargs with
   | `Range args -> args
-  | `Complete prefix -> raise (Completion_requested (prefix, `Any))
+  | `Complete prefix ->
+      let c = { prefix; after_dashdash; kind = `Any } in
+      raise (Completion_requested c)
   in
   if misses <> [] then begin
     let _ : string list = consume_excess () in
@@ -201,15 +213,15 @@ let process_pos_args posidx cl pargs =
 let create ?(peek_opts = false) ~legacy_prefixes al args =
   let optidx, posidx, cl = arg_info_indexes al in
   try match parse_opt_args ~peek_opts ~legacy_prefixes optidx cl args with
-  | Ok (cl, _) when peek_opts -> `Ok cl
-  | Ok (cl, pargs) ->
-      (match process_pos_args posidx cl pargs with
+  | Ok (cl, after_dashdash, _) when peek_opts -> `Ok cl
+  | Ok (cl, after_dashdash, pargs) ->
+      (match process_pos_args posidx cl ~after_dashdash pargs with
       | Ok v -> `Ok v
       | Error v -> `Error v)
-  | Error (errs, cl, pargs) ->
-      let _ : _ result = process_pos_args posidx cl pargs in
+  | Error (errs, cl, after_dashdash, pargs) ->
+      let _ : _ result = process_pos_args posidx cl ~after_dashdash pargs in
       `Error (errs, cl)
-  with Completion_requested (prefix, kind) -> `Completion (prefix, kind)
+  with Completion_requested c -> `Completion c
 
 (* Deprecations *)
 

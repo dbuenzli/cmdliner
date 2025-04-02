@@ -81,9 +81,11 @@ let snap_eval_error ?env error cmd args exp =
 let snap_help ?env retv cmd args exp =
   let loc = Test.Snapshot.loc exp in
   let argv = make_argv cmd args in
-  let ret, help =
-    capture_fmt @@ fun help -> Cmd.eval_value ?env ~help cmd ~argv
+  let (ret, help), err =
+    capture_fmt @@ fun err ->
+    capture_fmt @@ fun help -> Cmd.eval_value ?env ~help ~err cmd ~argv
   in
+  Test.string err "";
   Test.eq (t_eval_result Test.T.any) ret retv ~__POS__:loc;
   Snap.lines help exp
 

@@ -28,8 +28,7 @@ let parse_error_term err ei cl = Error (`Parse err)
 
 type complete =
   Cmdliner_info.Arg.Set.t * Cmdliner_cmd.info * Cmdliner_cmd.info list *
-  (string *
-   [ `Any | `Arg of Cmdliner_info.Arg.t | `Opt of Cmdliner_info.Arg.t ])
+  Cmdliner_cline.completion
 
 type 'a eval_result =
   ('a, [ Cmdliner_term.term_escape
@@ -85,7 +84,8 @@ let do_help ~env help_ppf err_ppf ei fmt cmd =
   in
   Cmdliner_docgen.pp_man ~env ~errs:err_ppf fmt help_ppf ei
 
-let do_completion help_ppf err_ppf ei args cmd cmd_children (prefix, kind) =
+let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
+  let prefix = comp.Cmdliner_cline.prefix in
   let subst = Cmdliner_info.Eval.doclang_subst ei in
   let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
   let pp_group ppf s = pp_line ppf "group"; pp_line ppf s in
@@ -106,7 +106,7 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children (prefix, kind) =
     let doc = Cmdliner_info.Arg.styled_doc ~errs:err_ppf ~subst arginfo in
     List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
   in
-  let pp_complete_arg_names ppf cmd =
+  let pp_complete_opt_names ppf cmd =
     pp_group ppf "Options";
     Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args cmd)
   in
@@ -130,16 +130,18 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children (prefix, kind) =
     in
     List.iter complete_cmd cmd_children
   in
-  let pp_completions ppf () = match kind with
+  let pp_completions ppf () = match comp.kind with
   | `Opt a -> pp_complete_arg_values ppf a
-  | `Arg a -> pp_complete_arg_values ppf a; pp_complete_arg_names ppf cmd
+  | `Arg a ->
+      pp_complete_arg_values ppf a;
+      if not comp.after_dashdash then pp_complete_opt_names ppf cmd
   | `Any ->
-      match cmd_children with
-      | [] -> pp_complete_arg_names ppf cmd
+      if not comp.after_dashdash then match cmd_children with
+      | [] -> pp_complete_opt_names ppf cmd
       | _  -> pp_complete_subcommands ppf cmd_children
   in
   let vnum = 1 in
-  Cmdliner_base.Fmt.pf help_ppf "@[<v>%d@,%a@]" vnum pp_completions ()
+  Cmdliner_base.Fmt.pf help_ppf "@[<v>%d@,%a@]@?" vnum pp_completions ()
 
 let do_result ~env help_ppf err_ppf ei = function
 | Ok v -> Ok (`Ok v)
@@ -152,9 +154,9 @@ let do_result ~env help_ppf err_ppf ei = function
     | `Parse err ->
         Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
         Error `Parse
-    | `Complete (args, cmd, cmd_children, (prefix, kind)) ->
+    | `Complete (args, cmd, cmd_children, comp) ->
         do_completion help_ppf err_ppf ei
-          args cmd cmd_children (prefix, kind); Ok `Help
+          args cmd cmd_children comp; Ok `Help
     | `Help (fmt, cmd) -> do_help ~env help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->

@@ -9,14 +9,16 @@ val is_opt : string -> bool
 
 type t
 
+type completion =
+  { prefix : string;
+    after_dashdash : bool;
+    kind : [ `Opt of Cmdliner_info.Arg.t
+           | `Arg of Cmdliner_info.Arg.t
+           | `Any ] }
+
 val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> Cmdliner_info.Arg.Set.t ->
-  string list ->
-  [ `Ok of t
-  | `Completion of
-      string *
-      [ `Opt of Cmdliner_info.Arg.t | `Arg of Cmdliner_info.Arg.t | `Any ]
-  | `Error of string * t ]
+  string list -> [ `Ok of t | `Completion of completion | `Error of string * t ]
 
 val opt_arg : t -> Cmdliner_info.Arg.t -> (int * string * (string option)) list
 val pos_arg : t -> Cmdliner_info.Arg.t -> string list
