@@ -150,12 +150,11 @@ let take_range start stop l =
   let rec loop i acc = function
   | [] -> `Range (List.rev acc)
   | v :: vs ->
-      match maybe_complete_token v with
+      if i < start then loop (i + 1) acc vs else
+      if i <= stop then match maybe_complete_token v with
       | Some prefix -> `Complete prefix
-      | None ->
-          if i < start then loop (i + 1) acc vs else
-          if i <= stop then loop (i + 1) (v :: acc) vs else
-          `Range (List.rev acc)
+      | None -> loop (i + 1) (v :: acc) vs
+      else `Range (List.rev acc)
   in
   loop 0 [] l
 
