@@ -40,7 +40,7 @@ let zsh_generic_completion =
   eval $line | {
     read -r version
     if [[ $version != "1" ]]; then
-      printf "\nUnsupported Cmdliner completion protocol version: $version" >&2
+      _message -r "Unsupported Cmdliner completion protocol version: $version"
       return 1
     fi
     while IFS= read -r type; do
@@ -58,6 +58,15 @@ let zsh_generic_completion =
         _path_files -/
       elif [[ "$type" == "file" ]]; then
         _path_files -f
+      elif [[ "$type" == "restart" ]]; then
+        # N.B. only emitted if there is a -- token
+        while [[ $words[1] != "--" ]]; do
+          shift words
+          (( CURRENT-- ))
+        done
+        shift words
+        (( CURRENT-- ))
+        _normal
       fi
     done
   }

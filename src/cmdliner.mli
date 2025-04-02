@@ -617,8 +617,11 @@ module Arg : sig
 
   (** Argument completion.
 
-      This modules provides a type to describe how argument values described
-      by {{!Arg.conv}argument converters} can be completed. *)
+      This modules provides a type to describe how argument values
+      described by {{!Arg.conv}argument converters} can be completed.
+      They define which completion directives from the
+      {{!page-cli.completion_protocol}protocol} get emitted by
+      cmdliner for the argument. *)
   module Completion : sig
 
     type complete = string -> (string * string) list
@@ -628,19 +631,40 @@ module Arg : sig
     type 'a t
     (** The type for completing values parsed into values of type ['a]. *)
 
-    val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
+    val make :
+      ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
+      unit -> 'a t
     (** [make ()] is a completion specification with given properties.
         See accesors for semantics. Note that the properties are
         not mutually exclusive. *)
 
-    val files : 'a t -> bool
-    (** [files c] indicates the argument should be completed with files. *)
+    val complete : 'a t -> complete
+    (** [complete c] is a function to perform completion. *)
 
     val dirs : 'a t -> bool
     (** [dirs c] indicates the argument should be completed with directories. *)
 
-    val complete : 'a t -> complete
-    (** [complete c] is a function to perform completion. *)
+    val files : 'a t -> bool
+    (** [files c] indicates the argument should be completed with files. *)
+
+    val restart : 'a t -> bool
+    (** [restart c] indicates that shell should restart the completion
+        after the positional disambiguation token [--].
+
+        This is typically used for tools that end-up invoking other
+        tools like [sudo -- TOOL [ARG]…]. For the latter a restart
+        completion should be added on all positional arguments.  If
+        you allow [TOOL] to be only a restricted set of tools known to
+        your program you'd eschew [restart] on the first postional
+        argument but add it to the remaining ones.
+
+        {b Warning.} Other completion properties are ignored when you
+        use this. Also note that [restart] directives are emitted only
+        after a [--] token and it's likely that it will work with
+        completion scripts only if the [TOOL] is specified after the
+        token. Educate your users to use the [--] (e.g. mention them
+        in user {{!page-cookbook.manpage_synopsis}user defined
+        synopses}) it's good cli sepcication hygiene anyways. *)
   end
 
   (** Argument converters.

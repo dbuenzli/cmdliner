@@ -244,18 +244,23 @@ let err_unknown ?(dom = []) ?(hints = []) ~kind v =
 module Completion = struct
   type complete = string -> (string * string) list
   type 'a t =
-    { files : bool;
+    { complete : complete;
       dirs : bool;
-      complete : complete; }
+      files : bool;
+      restart : bool }
 
-  let make ?(files = false) ?(dirs = false) ?(complete = Fun.const []) () =
-    {files; dirs; complete}
+  let make
+      ?(complete = Fun.const []) ?(dirs = false) ?(files = false)
+      ?(restart = false) ()
+    =
+    {complete; dirs; files; restart}
 
   let none = make ()
-  let files c = c.files
-  let dirs c = c.dirs
-  let complete c = c.complete
   let some = (Fun.id :> 'a t -> 'a option t)
+  let complete c = c.complete
+  let dirs c = c.dirs
+  let files c = c.files
+  let restart c = c.restart
 end
 
 (* Converters *)

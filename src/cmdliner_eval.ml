@@ -86,6 +86,7 @@ let do_help ~env help_ppf err_ppf ei fmt cmd =
 
 let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
   let prefix = comp.Cmdliner_cline.prefix in
+  let after_dashdash = comp.Cmdliner_cline.after_dashdash in
   let subst = Cmdliner_info.Eval.doclang_subst ei in
   let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
   let pp_group ppf s = pp_line ppf "group"; pp_line ppf s in
@@ -113,10 +114,13 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
       Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args cmd)
     end
   in
-  let pp_complete_arg_values ppf arg =
+  let pp_complete_arg_values ~after_dashdash ppf arg =
     match Cmdliner_info.Arg.Set.find_opt arg args with
     | None -> ()
     | Some (V comp) ->
+        if after_dashdash && Cmdliner_base.Completion.restart comp
+        then pp_line ppf "restart"
+        else
         let items = Cmdliner_base.Completion.complete comp prefix in
         let comp_files = Cmdliner_base.Completion.files comp in
         let comp_dirs = Cmdliner_base.Completion.dirs comp in
@@ -138,10 +142,10 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
     List.iter complete_cmd cmd_children
   in
   let pp_completions ppf () = match comp.kind with
-  | `Opt a -> pp_complete_arg_values ppf a
+  | `Opt a -> pp_complete_arg_values ~after_dashdash ppf a
   | `Arg a ->
-      pp_complete_arg_values ppf a;
-      if not comp.after_dashdash then pp_complete_opt_names ppf cmd
+      pp_complete_arg_values ~after_dashdash ppf a;
+      if not after_dashdash then pp_complete_opt_names ppf cmd
   | `Any ->
       if not comp.after_dashdash then match cmd_children with
       | [] -> pp_complete_opt_names ppf cmd

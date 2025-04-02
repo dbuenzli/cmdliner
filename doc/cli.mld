@@ -383,7 +383,7 @@ are not expressed by the grammar:
 completions = version nl directives
 version = "1"
 directives = *(directive nl)
-directive = group / %s"file" / %s"dir"
+directive = group / %s"file" / %s"dir" / %"restart"
 group = %s"group" nl group_name nl *item
 group_name = *pchar
 item = %s"item" nl completion nl description
@@ -403,7 +403,11 @@ The semantics of directives is as follows:
 {- A [file] directive indicates that the script should add existing
    files staring with [ARG] to completion values.}
 {- A [dir] directive indicates that the script should add existing
-   directories starting with [ARG] to completion values.}}
+   directories starting with [ARG] to completion values.}
+{- A [restart] directive indicates that the script should restart
+   shell completion as if the command line was starting after the leftmost
+   [--] disambiguation token. The directive never gets emited if
+   there is no [--] on the command line.}}
 
 
 {1:legacy_prefix_specification Legacy prefix specification}

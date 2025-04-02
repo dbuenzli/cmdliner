@@ -24,6 +24,15 @@ function _cmdliner_generic {
         _path_files -/
       elif [[ "$type" == "file" ]]; then
         _path_files -f
+      elif [[ "$type" == "restart" ]]; then
+        # N.B. only emitted if there is a -- token
+        while [[ $words[1] != "--" ]]; do
+          shift words
+          (( CURRENT-- ))
+        done
+        shift words
+        (( CURRENT-- ))
+        _normal
       fi
     done
   }

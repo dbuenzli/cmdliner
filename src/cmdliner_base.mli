@@ -62,12 +62,16 @@ val err_multi_def :
 module Completion : sig
   type complete = string -> (string * string) list
   type 'a t
-  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
+  val make :
+    ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool -> unit ->
+    'a t
+
   val none : 'a t
-  val files : 'a t -> bool
-  val dirs : 'a t -> bool
-  val complete : 'a t -> complete
   val some : 'a t -> 'a option t
+  val complete : 'a t -> complete
+  val dirs : 'a t -> bool
+  val files : 'a t -> bool
+  val restart : 'a t -> bool
 end
 
 (* Textual OCaml value converters *)

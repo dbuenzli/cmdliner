@@ -12,11 +12,15 @@ type 'a conv
 module Completion : sig
   type complete = string -> (string * string) list
   type 'a t
-  val make : ?files:bool -> ?dirs:bool -> ?complete:complete -> unit -> 'a t
-  val none : 'a t
-  val files : 'a t -> bool
-  val dirs : 'a t -> bool
+  val make :
+    ?complete:complete -> ?dirs:bool ->  ?files:bool -> ?restart:bool -> unit ->
+    'a t
   val complete : 'a t -> complete
+  val dirs : 'a t -> bool
+  val files : 'a t -> bool
+  val restart : 'a t -> bool
+  val none : 'a t
+  val some : 'a t -> 'a option t
 end
 
 module Conv : sig
