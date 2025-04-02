@@ -107,18 +107,25 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
     List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
   in
   let pp_complete_opt_names ppf cmd =
-    pp_group ppf "Options";
-    Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args cmd)
+    let set = Cmdliner_info.Cmd.args cmd in
+    if not (Cmdliner_info.Arg.Set.is_empty set) then begin
+      pp_group ppf "Options";
+      Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args cmd)
+    end
   in
   let pp_complete_arg_values ppf arg =
     match Cmdliner_info.Arg.Set.find_opt arg args with
     | None -> ()
     | Some (V comp) ->
-        let complete = Cmdliner_base.Completion.complete comp in
-        pp_group ppf "Values";
-        List.iter (pp_item ppf ~prefix) (complete prefix);
-        if Cmdliner_base.Completion.files comp then pp_line ppf "file";
-        if Cmdliner_base.Completion.dirs comp then pp_line ppf "dir"
+        let items = Cmdliner_base.Completion.complete comp prefix in
+        let comp_files = Cmdliner_base.Completion.files comp in
+        let comp_dirs = Cmdliner_base.Completion.dirs comp in
+        if items <> [] || comp_files || comp_dirs then begin
+          pp_group ppf "Values";
+          List.iter (pp_item ppf ~prefix) items;
+          if comp_files then pp_line ppf "file";
+          if comp_dirs then pp_line ppf "dir"
+        end
   in
   let pp_complete_subcommands ppf cmd_children =
     pp_group ppf "Subcommands";

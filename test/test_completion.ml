@@ -53,16 +53,12 @@ let test_no_options_after_dashsash =
   complete ["birds"; "fly"; "+cmdliner_complete:"] @@ __POS_OF__
     "1\n\
      group\n\
-     Values\n\
-     group\n\
      Options\n\
      item\n\
      --speed\n\
      Movement \u{001B}[04mSPEED\u{001B}[m in m/s\n";
   complete ["birds"; "fly"; "--"; "+cmdliner_complete:"] @@ __POS_OF__
-    "1\n\
-     group\n\
-     Values\n";
+    "1\n";
   ()
 
 

@@ -125,6 +125,7 @@ module Arg : sig
     | V : 'a Cmdliner_base.Completion.t -> completion
 
     type t
+    val is_empty : t -> bool
     val empty : t
     val add : arg -> completion -> t -> t
     val choose : t -> arg * completion
