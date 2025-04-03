@@ -359,7 +359,7 @@ cmdliner based {e tool} is as follows:
 {ol
 {- When completion is requested the script invokes the tool with a
    modified command line, replacing an argument [ARG] on which completion is
-   requested with the special argument [+cmdliner-complete:ARG].}
+   requested with the special argument [+cmdliner_complete:ARG].}
 {- The tool responds by writing on standard output a list of
    completion directives which match the [completions] rule of the grammar
    given below.}
@@ -383,7 +383,7 @@ are not expressed by the grammar:
 completions = version nl directives
 version = "1"
 directives = *(directive nl)
-directive = group / %s"file" / %s"dir" / %"restart"
+directive = group / %s"files" / %s"dirs" / %"restart"
 group = %s"group" nl group_name nl *item
 group_name = *pchar
 item = %s"item" nl completion nl description

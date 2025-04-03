@@ -127,8 +127,8 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
         if items <> [] || comp_files || comp_dirs then begin
           pp_group ppf "Values";
           List.iter (pp_item ppf ~prefix) items;
-          if comp_files then pp_line ppf "file";
-          if comp_dirs then pp_line ppf "dir"
+          if comp_files then pp_line ppf "files";
+          if comp_dirs then pp_line ppf "dirs"
         end
   in
   let pp_complete_subcommands ppf cmd_children =

@@ -20,9 +20,9 @@ function _cmdliner_generic {
         read -r item;
         read -r item_doc;
         completions+=("$item":"$item_doc")
-      elif [[ "$type" == "dir" ]]; then
+      elif [[ "$type" == "dirs" ]]; then
         _path_files -/
-      elif [[ "$type" == "file" ]]; then
+      elif [[ "$type" == "files" ]]; then
         _path_files -f
       elif [[ "$type" == "restart" ]]; then
         # N.B. only emitted if there is a -- token

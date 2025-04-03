@@ -12,11 +12,11 @@ _cmdliner_generic() {
     while read type; do
       if [[ $type == "group" ]]; then
         read group
-      elif [[ $type == "dir" ]] && (type compopt &> /dev/null); then
+      elif [[ $type == "dirs" ]] && (type compopt &> /dev/null); then
         if [[ $prefix != -* ]]; then
           COMPREPLY+=( $(compgen -d "$prefix") )
         fi
-      elif [[ $type == "file" ]] && (type compopt &> /dev/null); then
+      elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
         if [[ $prefix != -* ]]; then
           COMPREPLY+=( $(compgen -f "$prefix") )
         fi

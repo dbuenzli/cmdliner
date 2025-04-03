@@ -13,11 +13,11 @@ let bash_generic_completion =
     while read type; do
       if [[ $type == "group" ]]; then
         read group
-      elif [[ $type == "dir" ]] && (type compopt &> /dev/null); then
+      elif [[ $type == "dirs" ]] && (type compopt &> /dev/null); then
         if [[ $prefix != -* ]]; then
           COMPREPLY+=( $(compgen -d "$prefix") )
         fi
-      elif [[ $type == "file" ]] && (type compopt &> /dev/null); then
+      elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
         if [[ $prefix != -* ]]; then
           COMPREPLY+=( $(compgen -f "$prefix") )
         fi
@@ -54,9 +54,9 @@ let zsh_generic_completion =
         read -r item;
         read -r item_doc;
         completions+=("$item":"$item_doc")
-      elif [[ "$type" == "dir" ]]; then
+      elif [[ "$type" == "dirs" ]]; then
         _path_files -/
-      elif [[ "$type" == "file" ]]; then
+      elif [[ "$type" == "files" ]]; then
         _path_files -f
       elif [[ "$type" == "restart" ]]; then
         # N.B. only emitted if there is a -- token
