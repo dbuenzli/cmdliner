@@ -111,5 +111,7 @@ let pp_backtrace ppf ei e bt =
     let len = String.length bt in
     if len > 0 then String.sub bt 0 (len - 1) (* remove final '\n' *) else bt
   in
-  Fmt.pf ppf "@[%a @[internal error, uncaught exception:@\n%a@]@]@."
-    pp_exec_msg ei Fmt.lines (String.concat "\n" [Printexc.to_string e; bt])
+  Fmt.pf ppf "@[%a @[internal error, %a:@\n%a@]@]@."
+    pp_exec_msg ei
+    Fmt.ereason "uncaught exception"
+    Fmt.lines (String.concat "\n" [Printexc.to_string e; bt])
