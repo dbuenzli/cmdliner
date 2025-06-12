@@ -1,7 +1,8 @@
 let bash_generic_completion =
 {|_cmdliner_generic() {
   local prefix="${COMP_WORDS[COMP_CWORD]}"
-  COMP_WORDS[COMP_CWORD]="+cmdliner_complete:${COMP_WORDS[COMP_CWORD]}"
+  COMP_WORDS[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
+  COMP_WORDS=("${COMP_WORDS[@]:0:1}" "--__complete" "${COMP_WORDS[@]:1}")
   local line="${COMP_WORDS[@]}"
   local version type group item item_doc
   {
@@ -33,7 +34,8 @@ let bash_generic_completion =
 
 let zsh_generic_completion =
 {|function _cmdliner_generic {
-  words[CURRENT]="+cmdliner_complete:${words[CURRENT]}"
+  words[CURRENT]="--__complete=${words[CURRENT]}"
+  words=("${words[@]:0:1}" "--__complete" "${words[@]:1}")
   local line="${(@)words}"
   local -a completions
   local version type group item item_doc

@@ -240,8 +240,10 @@ let find_term ~legacy_prefixes args cmd =
   in
   loop [] [] cmd args
 
-let remove_exec argv =
-  try List.tl (Array.to_list argv) with Failure _ -> invalid_arg err_argv
+let cli_args_of_argv argv = match Array.to_list argv with
+| [] -> invalid_arg err_argv
+| exec :: "--__complete" :: args -> true, args
+| exec :: args -> false, args
 
 let do_deprecated_msgs ~env err_ppf cl ei =
   let cmd = Cmdliner_info.Eval.cmd ei in
@@ -272,15 +274,18 @@ let eval_value
     ?(catch = true) ?(env = Sys.getenv_opt) ?(argv = Sys.argv) cmd
   =
   let legacy_prefixes = Cmdliner_trie.legacy_prefixes ~env in
+  let for_completion, cli_args = cli_args_of_argv argv in
   let args, f, cmd, parents, children, res =
-    find_term ~legacy_prefixes (remove_exec argv) cmd
+    find_term ~legacy_prefixes cli_args cmd
   in
   let ei = Cmdliner_info.Eval.make ~cmd ~parents ~env ~err_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args (Cmdliner_info.Eval.cmd ei) in
   let res = match res with
   | Error msg -> (* Command lookup error, we still prioritize stdargs *)
-      begin match Cmdliner_cline.create ~legacy_prefixes term_args args with
+      begin match
+        Cmdliner_cline.create ~legacy_prefixes ~for_completion term_args args
+      with
       | `Completion compl ->
           let children = List.map Cmdliner_cmd.get_info children in
           Error (`Complete (term_args, cmd, children, compl))
@@ -291,7 +296,9 @@ let eval_value
           end
       end
   | Ok () ->
-      match Cmdliner_cline.create ~legacy_prefixes term_args args with
+      match
+        Cmdliner_cline.create ~legacy_prefixes ~for_completion term_args args
+      with
       | `Completion compl ->
           let children = List.map Cmdliner_cmd.get_info children in
           Error (`Complete (term_args, cmd, children, compl))
@@ -321,14 +328,12 @@ let eval_peek_opts
   let ei = Cmdliner_info.Eval.make ~cmd ~parents:[] ~env ~err_ppf:null_ppf in
   let help, version, ei = add_stdopts ei in
   let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
-  let cli_args =
-    (* TODO remove the completion token *)
-    remove_exec argv
-  in
+  let for_completion, cli_args = cli_args_of_argv argv in
   let legacy_prefixes = Cmdliner_trie.legacy_prefixes ~env in
   let v, ret =
     match
-      Cmdliner_cline.create ~peek_opts:true ~legacy_prefixes term_args cli_args
+      Cmdliner_cline.create
+        ~peek_opts:true ~legacy_prefixes ~for_completion term_args cli_args
     with
     | `Completion arg -> None, (Error (`Complete (term_args, cmd, [], arg)))
     | `Error (e, cl) ->

@@ -36,6 +36,8 @@
 
 ### API changes
 
+- Reserve the `--__complete` option for library use.
+
 - Documentation language, `$(cmd)`, `$(cmdname)` and `$(tool)` can be
   used and should be prefered instead of `$(iname)`, `$(tname)` and
   `$(mname)`.

@@ -1,5 +1,6 @@
 function _cmdliner_generic {
-  words[CURRENT]="+cmdliner_complete:${words[CURRENT]}"
+  words[CURRENT]="--__complete=${words[CURRENT]}"
+  words=("${words[@]:0:1}" "--__complete" "${words[@]:1}")
   local line="${(@)words}"
   local -a completions
   local version type group item item_doc

@@ -89,7 +89,9 @@ let snap_help ?env retv cmd args exp =
   Test.eq (t_eval_result Test.T.any) ret retv ~__POS__:loc;
   Snap.lines help exp
 
-let snap_completion ?env cmd args exp = snap_help ?env (Ok `Help) cmd args exp
+let snap_completion ?env cmd args exp =
+  snap_help ?env (Ok `Help) cmd ("--__complete" :: args) exp
+
 let snap_man ?env ?(args = ["--help=plain"]) cmd exp =
   snap_help ?env (Ok `Help) cmd args exp
 

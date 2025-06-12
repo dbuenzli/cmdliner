@@ -17,8 +17,9 @@ type completion =
            | `Any ] }
 
 val create :
-  ?peek_opts:bool -> legacy_prefixes:bool -> Cmdliner_info.Arg.Set.t ->
-  string list -> [ `Ok of t | `Completion of completion | `Error of string * t ]
+  ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
+  Cmdliner_info.Arg.Set.t -> string list ->
+  [ `Ok of t | `Completion of completion | `Error of string * t ]
 
 val opt_arg : t -> Cmdliner_info.Arg.t -> (int * string * (string option)) list
 val pos_arg : t -> Cmdliner_info.Arg.t -> string list

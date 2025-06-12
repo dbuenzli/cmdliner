@@ -101,7 +101,8 @@ Using the cmdliner library puts the following constraints on your
 command line interface:
 
 {ul
-{- The option name [--cmdliner] is reserved by the library.}
+{- The option names [--cmdliner] and [--__complete] are reserved by the
+   library.}
 {- The option name [--help], (and [--version] if you specify a version
    string) is reserved by the library. Using it as a term or option
    name may result in undefined behaviour.}
@@ -358,8 +359,15 @@ cmdliner based {e tool} is as follows:
 
 {ol
 {- When completion is requested the script invokes the tool with a
-   modified command line, replacing an argument [ARG] on which completion is
-   requested with the special argument [+cmdliner_complete:ARG].}
+   modified command line:
+   {ul
+   {- The first argument to the tool ([Sys.argv.(1)]) must be the
+       option [--__complete].}
+   {- The (possibly empty) argument [ARG] on which the completion is
+      requested must be replaced by {e exactly} [--__complete=ARG]. Note
+      that this can happen after the [--] token, this is the reason
+      why we have an explicit [--__complete] argument in [Sys.argv.(1)]:
+      it indicates the command line parser must operate in a special mode.}}}
 {- The tool responds by writing on standard output a list of
    completion directives which match the [completions] rule of the grammar
    given below.}
@@ -409,6 +417,13 @@ The semantics of directives is as follows:
    [--] disambiguation token. The directive never gets emited if
    there is no [--] on the command line.}}
 
+You can easily inspect the completions of any cmdliner based tool by
+invoking it like the protocol suggests. For example for the [cmdliner]
+tool itself:
+
+{@shell[
+cmdliner --__complete --__complete=
+]}
 
 {1:legacy_prefix_specification Legacy prefix specification}
 
