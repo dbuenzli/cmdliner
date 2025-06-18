@@ -95,6 +95,10 @@
   installation. See the command line interface manual of the library
   for more information (#187).
 
+- Install all source files for `odoc` and goto definition editor
+  functionality. Thanks to Emile Trotignon and Paul-Elliot Anglès
+  d'Auriac for noticing and suggesting (#225).
+
 - Added a proper test suite to the library to check for regressions.
   Replaces most of the test executables that had to be run and inspected
   manually (#205).

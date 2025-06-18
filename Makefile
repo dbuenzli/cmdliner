@@ -32,16 +32,17 @@ TOOL=$(TOOLBDIR)/cmdliner
 ifeq ($(NATIVE),true)
 	BUILD-EXE=build-native-exe
 	BUILD-TARGETS=build-byte build-native build-native-exe build-completions
-	INSTALL-TARGETS=install-common install-byte install-native install-exe \
-	                install-completions
+	INSTALL-TARGETS=install-common install-srcs install-byte install-native \
+	                install-exe install-completions
 	ifeq ($(NATDYNLINK),true)
 	  BUILD-TARGETS += build-native-dynlink
 	  INSTALL-TARGETS += install-native-dynlink
 	endif
 else
 	BUILD-EXE=build-byte-exe
-	BUILD-TARGETS=build-byte build-byte-exe build-completions
-	INSTALL-TARGETS=install-common install-byte install-exe install-completions
+	BUILD-TARGETS=build-srcs build-byte build-byte-exe build-completions
+	INSTALL-TARGETS=install-common install-srcs install-byte install-exe \
+	                install-completions
 endif
 
 all: $(BUILD-TARGETS)
@@ -76,15 +77,19 @@ prepare-prefix:
 	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
 
 install-common: prepare-prefix
-	$(INSTALL) -m 644 pkg/META $(BASE).mli $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
+	$(INSTALL) -m 644 pkg/META $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
 	$(INSTALL) -m 644 cmdliner.opam "$(LIBDIR)/opam"
+
+install-srcs: prepare-prefix
+	$(INSTALL) -m 644 $(wildcard $(BASE)*.mli) $(wildcard $(BASE)*.ml) \
+	  "$(LIBDIR)"
 
 install-byte: prepare-prefix
 	$(INSTALL) -m 644 $(BASE).cma "$(LIBDIR)"
 
 install-native: prepare-prefix
-	$(INSTALL) -m 644 $(BASE).cmxa $(BASE)$(EXT_LIB) \
-	  $(wildcard -m 644 $(BASE)*.cmx) "$(LIBDIR)"
+	$(INSTALL) -m 644 $(BASE).cmxa $(BASE)$(EXT_LIB) $(wildcard $(BASE)*.cmx) \
+	  "$(LIBDIR)"
 
 install-native-dynlink: prepare-prefix
 	$(INSTALL) -m 644 $(BASE).cmxs "$(LIBDIR)"
