@@ -40,7 +40,7 @@ ifeq ($(NATIVE),true)
 	endif
 else
 	BUILD-EXE=build-byte-exe
-	BUILD-TARGETS=build-srcs build-byte build-byte-exe build-completions
+	BUILD-TARGETS=build-byte build-byte-exe build-completions
 	INSTALL-TARGETS=install-common install-srcs install-byte install-exe \
 	                install-completions
 endif
