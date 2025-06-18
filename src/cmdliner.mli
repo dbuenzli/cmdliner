@@ -618,7 +618,7 @@ module Arg : sig
   (** Argument completion.
 
       This modules provides a type to describe how argument values
-      described by {{!Arg.conv}argument converters} can be completed.
+      described by {{!Arg.type-conv}argument converters} can be completed.
       They define which completion directives from the
       {{!page-cli.completion_protocol}protocol} get emitted by
       cmdliner for the argument. *)
@@ -1058,13 +1058,13 @@ module Arg : sig
   (** Deprecated. Use {!Conv.make} instead. *)
 
   val conv_parser : 'a conv -> (string -> ('a, [`Msg of string]) result)
-  (** Deprecated. Use {!Conv.parser}. *)
+  (** Deprecated. Use {!Conv.val-parser}. *)
 
   val conv_printer : 'a conv -> 'a Conv.fmt
-  (** Deprecated. Use {!Conv.pp}. *)
+  (** Deprecated. Use {!Conv.val-pp}. *)
 
   val conv_docv : 'a conv -> string
-  (** Deprecated. Use {!Conv.docv}. *)
+  (** Deprecated. Use {!Conv.val-docv}. *)
 
   val parser_of_kind_of_string :
     kind:string -> (string -> 'a option) ->
