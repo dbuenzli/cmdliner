@@ -204,7 +204,7 @@ module Term : sig
     (** [( let+ )] is {!map}. *)
 
     val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
-    (** [( and* )] is {!product}. *)
+    (** [( and+ )] is {!product}. *)
   end
 
   (** {1 Interacting with {!Cmd.t} evaluation}
