@@ -205,8 +205,8 @@ This version of cmdliner deprecates the `Term.eval*` evaluation
 functions and `Term.info` information values in favor of the new
 `Cmdliner.Cmd` module. 
 
-The `Cmd` module generalizes the existing sub command support to allow
-arbitrarily nested sub commands each with its own man page and command
+The `Cmd` module generalizes the existing subcommand support to allow
+arbitrarily nested subcommands each with its own man page and command
 line syntax represented by a `Term.t` value.
 
 The mapping between the old interface and the new one should be rather
@@ -221,7 +221,7 @@ However in this transition the following things are changed or added:
   * The `?exits` argument which defaults to `Cmd.Exit.defaults`
     rather than the empty list.
   * The `?man_xrefs` which defaults to the list ``[`Main]`` rather
-    than the empty list (this means that by default sub commands 
+    than the empty list (this means that by default subcommands 
     at any level automatically cross-reference the main command).
   * The `?sdocs` argument which defaults to `Manpage.s_common_options`
     rather than `Manpage.s_options`.
@@ -241,9 +241,9 @@ However in this transition the following things are changed or added:
   or `Term.term_result`.
   
 Finally be aware that if you replace, in an existing tool, an encoding
-of sub commands as positional arguments you will effectively break the
+of subcommands as positional arguments you will effectively break the
 command line compatibility of your tool since options can no longer be
-specified before the sub commands, i.e. your tool synopsis moves from:
+specified before the subcommands, i.e. your tool synopsis moves from:
 
 ```
 tool cmd [OPTION]… SUBCMD [ARG]…
@@ -472,7 +472,7 @@ v0.9.6 2014-11-18 La Forclaz (VS)
   the sense that only more command lines are parsed. Thanks to Hugo
   Heuzard for the patch.
 - End user error message improvements using heuristics and edit
-  distance search in the optional argument and sub command name
+  distance search in the optional argument and subcommand name
   spaces. Thanks to Hugo Heuzard for the patch.
 - Adds `Arg.doc_{quote,alts,alts_enum}`, documentation string
   helpers.

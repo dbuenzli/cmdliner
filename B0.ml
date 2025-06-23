@@ -95,8 +95,9 @@ let default =
     |> ~~ B0_opam.build {|[[ make "all" "PREFIX=%{prefix}%" ]]|}
     |> ~~ B0_opam.install
 {|[[make "install" "BINDIR=%{_:bin}%" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"
-         "SHAREDIR=%{share}%"]
-   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]]|}
+         "SHAREDIR=%{share}%" "MANDIR=%{man}%"]
+   [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"
+         "SHAREDIR=%{share}%" "MANDIR=%{man}%"]]|}
     |> B0_meta.tag B0_opam.tag
   in
   let locked = false (* So that it looks up b0.std *) in

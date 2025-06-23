@@ -17,6 +17,7 @@ BINDIR=$(DESTDIR)$(PREFIX)/bin
 LIBDIR=$(DESTDIR)$(PREFIX)/lib/ocaml/cmdliner
 SHAREDIR=$(DESTDIR)$(PREFIX)/share
 DOCDIR=$(SHAREDIR)/doc/cmdliner
+MANDIR=$(SHAREDIR)/man
 BASHCOMPDIR=$(SHAREDIR)/bash-completion/completions
 ZSHCOMPDIR=$(SHAREDIR)/zsh/site-functions
 NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
@@ -31,7 +32,8 @@ TOOL=$(TOOLBDIR)/cmdliner
 
 ifeq ($(NATIVE),true)
 	BUILD-EXE=build-native-exe
-	BUILD-TARGETS=build-byte build-native build-native-exe build-completions
+	BUILD-TARGETS=build-byte build-native build-native-exe build-completions \
+	              build-man
 	INSTALL-TARGETS=install-common install-srcs install-byte install-native \
 	                install-exe install-completions
 	ifeq ($(NATDYNLINK),true)
@@ -40,7 +42,8 @@ ifeq ($(NATIVE),true)
 	endif
 else
 	BUILD-EXE=build-byte-exe
-	BUILD-TARGETS=build-byte build-byte-exe build-completions
+	BUILD-TARGETS=build-byte build-byte-exe build-completions \
+	              build-man
 	INSTALL-TARGETS=install-common install-srcs install-byte install-exe \
 	                install-completions
 endif
@@ -73,6 +76,9 @@ build-completions: $(BUILD-EXE)
 	$(TOOL) generic-completion zsh > $(TOOLBDIR)/zsh-completion.sh
 	$(TOOL) tool-completion zsh cmdliner > $(TOOLBDIR)/zsh-cmdliner.sh
 
+build-man: $(BUILD-EXE)
+	$(TOOL) install tool-manpages $(TOOLBDIR)/cmdliner $(TOOLBDIR)/man
+
 prepare-prefix:
 	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
 
@@ -95,9 +101,11 @@ install-native-dynlink: prepare-prefix
 	$(INSTALL) -m 644 $(BASE).cmxs "$(LIBDIR)"
 
 install-exe:
-	$(INSTALL) -m 755 "$(B)/src/tool/cmdliner" "$(BINDIR)/cmdliner"
+	$(INSTALL) -m 755 "$(TOOLBDIR)/cmdliner" "$(BINDIR)/cmdliner"
 
 install-doc:
+	$(INSTALL) -d "$(MANDIR)/man1"
+	$(INSTALL) -m 644 $(wildcard $(TOOLBDIR)/man/man1/*.1) "$(MANDIR)/man1"
 	$(INSTALL) -d "$(DOCDIR)/odoc-pages"
 	$(INSTALL) -m 644 CHANGES.md LICENSE.md README.md "$(DOCDIR)"
 	$(INSTALL) -m 644 doc/index.mld doc/cli.mld doc/examples.mld \
@@ -116,4 +124,4 @@ install-completions:
 .PHONY: all install install-doc clean build-byte build-native \
 	build-native-dynlink build-byte-exe build-native-exe build-completions \
 	prepare-prefix install-common install-byte install-native install-dynlink \
-	install-exe install-completions
+	install-exe install-completions build-man

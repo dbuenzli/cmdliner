@@ -37,8 +37,16 @@ install: [
     "LIBDIR=%{_:lib}%"
     "DOCDIR=%{_:doc}%"
     "SHAREDIR=%{share}%"
+    "MANDIR=%{man}%"
   ]
-  [make "install-doc" "LIBDIR=%{_:lib}%" "DOCDIR=%{_:doc}%"]
+  [
+    make
+    "install-doc"
+    "LIBDIR=%{_:lib}%"
+    "DOCDIR=%{_:doc}%"
+    "SHAREDIR=%{share}%"
+    "MANDIR=%{man}%"
+  ]
 ]
 dev-repo: "git+https://erratique.ch/repos/cmdliner.git"
 x-maintenance-intent: ["(latest)"]

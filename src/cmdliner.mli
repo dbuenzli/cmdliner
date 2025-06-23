@@ -270,7 +270,7 @@ module Term : sig
       {- [`Help (format, name)], the evaluation fails and [Cmdliner] prints
          a manpage in format [format]. If [name] is [None] this is the
          the main command's manpage. If [name] is [Some c] this is
-         the man page of the sub command [c] of the main command.}} *)
+         the man page of the subcommand [c] of the main command.}} *)
 end
 
 (** Commands.
@@ -279,7 +279,7 @@ end
     values. A command value binds a term and its documentation to a
     command name.
 
-    A command can group a list of sub commands (and recursively). In this
+    A command can group a list of subcommands (and recursively). In this
     case your tool defines a tree of commands, each with its own command
     line syntax. The root of that tree is called the {e main command};
     it represents your tool and its name. *)
@@ -456,10 +456,10 @@ module Cmd : sig
 
   val group : ?default:'a Term.t -> info -> 'a t list -> 'a t
   (** [group i ?default cmds] is a command with information [i] that
-      groups sub commands [cmds]. [default] is the command line syntax
-      to parse if no sub command is specified on the command line. If
-      [default] is [None] (default), the tool errors when no sub
-      command is specified. *)
+      groups subcommands [cmds]. [default] is the command line syntax
+      to parse if no subcommand is specified on the command line. If
+      [default] is [None] (default), the tool errors when no subcommand
+      is specified. *)
 
   val name : 'a t -> string
   (** [name c] is the name of [c]. *)

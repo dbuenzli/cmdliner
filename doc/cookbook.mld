@@ -76,7 +76,7 @@ a form of labelled arguments which can clarify invocations in scripts.
 
 Unless your tool is very simple, avoid making manpages the main
 documentation medium of your tool. The medium is rather limited and
-even though you can convert them to HTML, their cross references
+even though you can convert them to HTML, its cross references
 capabilities are rather limited which makes discussing your tool
 online more difficult.
 
@@ -170,6 +170,37 @@ let tool =
 let main () = Cmd.value' tool
 let () = if !Sys.interactive then () else exit (main ())
 ]}
+
+{2:tip_tool_support Installing completions and manpages}
+
+The [cmdliner] tool can be used to install completion scripts and
+manpages for you tool and its subcommands by using the dedicated
+{{!page-cli.install_tool_completion}[install tool-completion]} and
+{{!page-cli.install_tool_manpages}[install tool-manpages]} subcommands.
+
+To install both directly (and possibly other support files in the future)
+it is more concise to use the [install
+tool-support] command. Invoke with [--help] for more information.
+
+If you are installing your package for [thetool] with [opam] and have
+[cmdliner] as a direct dependency and the tool is located in the
+build at the path [$BUILD/thetool], you can add the following
+[install:] instruction (also works if your build system is using a
+[.install] file).
+
+{@sh[
+install: ["cmdliner" "install" "tool-support"
+          "--sharedir=%{share}%" "--mandir=%{man}%"
+          "$BUILD/thetool" "%{prefix}%"]
+]}
+
+Note that you need to specify the path to the built executable, trying
+to lookup the tool in the [PATH] does not work as the install does not
+see it yet. Also more than one tool can be specified and there is a
+syntax for specifying the actual tool name if it is renamed when
+installed; see [--help] for more details.  If [cmdliner] is only an
+optional dependency use the opam filter [{cmdliner:installed}] on the
+command invocation.
 
 {1:conventions Conventions}
 
@@ -453,8 +484,8 @@ in your tool function.
 
 The command line interface manual has all
 {{!page-cli.cli_completion}the details} and
-{{!page-cli.install_completion_tool} specific instructions} for
-complementing your tool install.
+{{!page-cli.install_tool_completion} specific instructions} for
+complementing your tool install, see also {!tip_tool_support}.
 
 {2:cmds_listing How can I list all the commands of my tool?}
 
@@ -485,7 +516,6 @@ like
 {{:https://erratique.ch/software/b0/doc/B0_std/Fmt/index.html#val-strip_styles}
 this one} has been applied that automatically strips the styling.
 
-
 {1:manpage Manpages}
 
 {3:manpage_hide How do I prevent an item from being automatically listed?}
@@ -513,25 +543,11 @@ let man = [
  `P "Without a command $(cmd) invokes $(i,TOOL)"; ]
 ]}
 
-{2:manpage_gen How can I generate all the command manpages of my tool?}
+{2:manpage_install How can I install all the manpages of my tool?}
 
-The [tool-commands] command of the [cmdliner] tool allows to list
-all the commands of a cmdliner based tool. The following shell snippet
-generates all the manpages in the current working directory (note it
-assumes that the manual section of each command is [1]):
-{@shell[
-TOOL=mytool
-$TOOL --help=groff > $TOOL.1
-while IFS= read -r SUB; do
-  $TOOL $SUB --help=groff > $TOOL-$(echo $SUB | tr ' ' '-').1
-done < <(cmdliner tool-commands $TOOL)
-]}
-
-See also {!manpage_install}.
-
-{2:manpage_install How can I install all the command manpages of my tool?}
-
-TODO
+The command line interface manual
+{{!page-cli.install_tool_manpages}the details} on how to install the manpages
+of your tool and its subcommands. See also {!tip_tool_support}.
 
 {1:blueprints Blueprints}
 

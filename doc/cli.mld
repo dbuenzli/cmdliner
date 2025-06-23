@@ -5,7 +5,7 @@ with shells when you use Cmdliner.
 
 {1:invocation Tool invocation}
 
-For tools evaluating a command without sub commands the most general
+For tools evaluating a command without subcommands the most general
 form of invocation is:
 
 {v
@@ -25,7 +25,7 @@ ambiguities. The special {{!posargs} token [--]} can be used to
 resolve them: anything that follows it is treated as a positional
 argument.
 
-Tools evaluating commands with sub commands have this form of invocation
+Tools evaluating commands with subcommands have this form of invocation
 
 {v
 tool [COMMAND]… [OPTION]… [ARG]…
@@ -34,7 +34,7 @@ v}
 Commands automatically respond to the [--help] option by printing
 {{!help}their help}. The sequence of [COMMAND] strings must be the first
 strings following the tool name – as soon as an optional argument is
-seen the search for a sub command stops.
+seen the search for a subcommand stops.
 
 {1:args Arguments}
 
@@ -130,8 +130,8 @@ Note that environment variables are not supported for
 
 {1:help Help and man pages}
 
-Help and man pages are are generated when you call your tool or a sub
-command with [--help]. By default, if the [TERM] environment variable
+Help and man pages are are generated when you call your tool or a subcommand
+with [--help]. By default, if the [TERM] environment variable
 is not [dumb] or unset, the tool tries to {{!paging}page} the manual
 so that you can directly search it. Otherwise it outputs the manual
 as plain text.
@@ -159,6 +159,35 @@ Regardless of the pager, it is invoked with [LESS=FRX] set in the
 environment unless, the [LESS] environment variable is set in your
 environment.
 
+{2:install_tool_manpages Install}
+
+The manpages of a tool and its subcommands can be installed to a root
+[man] directory [$MANDIR] by invoking:
+
+{@shell[
+cmdliner install tool-manpages thetool $MANDIR
+]}
+
+This looks up [thetool] in the [PATH]. Use an explicit file path like
+[./thetool] to directly specify an executable.
+
+If your are installing your package for [thetool] with [opam]
+and have [cmdliner] as a direct dependency and your tool is located
+in the build at the path [$BUILD/thetool] you can add the following
+[install:] instruction (also works if your build system is using
+a [.install] file).
+{@sh[
+install: ["cmdliner" "install" "tool-manpages" "$BUILD/thetool" "%{man}%"]
+]}
+Note that you need to specify the path to the built executable, trying
+to lookup the tool in the [PATH] does not work as the install does not
+see it yet. If [cmdliner] is only an optional dependency use the
+[{cmdliner:installed}] opam filter on the command invocation.
+
+If you are also {{!install_tool_completion}installing completions} rather
+use the [install tool-support] command, see this
+{{!page-cookbook.tip_tool_support}cookbook tip}.
+
 {1:cli_completion Command line completion}
 
 Cmdliner programs automatically get support for shell command line
@@ -169,7 +198,7 @@ which is interpreted by generic shell completion scripts that are
 installed by the library. For now the [zsh] and [bash] shells are
 supported.
 
-Tool developers can easily {{!install_completion_tool}install}
+Tool developers can easily {{!install_tool_completion}install}
 completion definitions that invoke these completion scripts. Tool
 end-users need to {{!user_configuration}make sure} these definitions are
 looked up by their shell.
@@ -212,12 +241,12 @@ _cmdliner_generic:1: words: assignment to invalid subscript range
 
 If the function cannnot be found make sure the [cmdliner] library is
 installed, that the generic scripts were
-{{!install_completion_generic}installed} and that the
+{{!install_generic_completion}installed} and that the
 [_cmdliner_generic] file can be found in one of the directories
 mentioned in the [FPATH] variable.
 
 With this setup, if you are using a cmdliner based tool named
-[thetool] that did not {{!install_completion_tool}install} a completion
+[thetool] that did not {{!install_tool_completion}install} a completion
 definition. You can always do it yourself by invoking:
 
 {@sh[
@@ -253,11 +282,11 @@ Found!
 
 If the function cannot be found make sure the [cmdliner] library is
 installed, that the generic scripts were
-{{!install_completion_generic}installed} and that the
+{{!install_generic_completion}installed} and that the
 [_cmdliner_generic] file can be looked up by [_completion_loader].
 
 With this setup, if you are using a cmdliner based tool named
-[thetool] that did not {{!install_completion_tool}install} a completion
+[thetool] that did not {{!install_tool_completion}install} a completion
 definition. You can always do it yourself by invoking:
 
 {@sh[
@@ -291,7 +320,7 @@ If that is unsatisfying you can output the completion scripts directly
 where you want with the [cmdliner generic-completion] and
 [cmdliner tool-completion] commands.
 
-{3:install_completion_generic Generic completion scripts}
+{3:install_generic_completion Generic completion scripts}
 
 The generic completion scripts must be installed by the
 [cmdliner] library. They should not be part of your tool install.  If
@@ -307,10 +336,10 @@ cmdliner install generic-completion --shell zsh $SHAREDIR # Only zsh
 Directories are created as needed. Use option [--dry-run] to see which
 paths would be written by an [install] invocation.
 
-{3:install_completion_tool Tool completion scripts}
+{3:install_tool_completion Tool completion scripts}
 
 If your tool named [thetool] uses Cmdliner you should install completion
-definitions for them. They rely on the {{!install_completion_generic}generic
+definitions for them. They rely on the {{!install_generic_completion}generic
 scripts} to be installed. These tool specific scripts can be inspected
 and installed via these invocations:
 
@@ -333,12 +362,12 @@ using a [.install] file):
 install: [ "cmdliner" "install" "tool-completion" "thetool" "%{share}%"]
 ]}
 
-If [cmdliner] is only an optional dependency use:
+If [cmdliner] is only an optional dependency use the [{cmdliner:installed}]
+filter on the command invocation.
 
-{@sh[
-install: [ "cmdliner" "install" "tool-completion" "thetool" "%{share}%"
-           {cmdliner:installed} ]
-]}
+If you are also {{!install_tool_manpages}installing manpages} rather
+use the [install tool-support] command, see this
+{{!page-cookbook.tip_tool_support}cookbook tip}.
 
 {2:completion_protocol Completion protocol}
 
