@@ -4,6 +4,7 @@
   ---------------------------------------------------------------------------*)
 
 let strf = Printf.sprintf
+let error_to_failure = function Ok v -> v | Error e -> failwith e
 
 let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   (* On Windows -p does not exist we do it ourselves on all platforms. *)
@@ -37,6 +38,61 @@ let write_file file s =
 let with_binary_stdout f =
   try let () = set_binary_mode_out stdout true in f () with
   | Sys_error e | Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
+
+let exec_stdout cmd =
+  try
+    let tmp = Filename.temp_file "cmd" "stdout" in
+    let exec = String.concat " > " [cmd; Filename.quote tmp] in
+    match Sys.command exec with
+    | 0 ->
+        let ic = open_in_bin tmp in
+        let finally () = close_in_noerr ic in
+        let len = in_channel_length ic in
+        Fun.protect ~finally @@ fun () ->
+        let stdout = really_input_string ic len in
+        Sys.remove tmp;
+        Ok stdout
+    | exit -> Error (strf "%s: exited with %d" exec exit)
+  with
+  | Sys_error e -> Error e
+
+(* Tool command list *)
+
+let tool_commands tool =
+  try
+    let subcommands cmd =
+      let rec find_subs = function
+      | "group" :: "Subcommands" :: lines ->
+          let rec subs acc = function
+          | "group" :: _ | [] -> acc
+          | "item" :: sub :: lines ->
+              let sub =
+                if cmd = "" then sub else String.concat " " [cmd; sub]
+              in
+              subs (sub :: acc) lines
+          | _ :: lines -> subs acc lines
+          in
+          subs [] lines
+      | _ :: lines -> find_subs lines
+      | [] -> []
+      in
+      let exec = strf "%s --__complete %s --__complete=" tool cmd in
+      let comps = exec_stdout exec |> error_to_failure in
+      find_subs (String.split_on_char '\n' comps)
+    in
+    let rec loop acc = function
+    | cmd :: cmds ->
+        let subs = subcommands cmd in
+        loop (if cmd <> "" then cmd :: acc else acc) (List.rev_append subs cmds)
+    | [] -> List.sort String.compare acc
+    in
+    List.iter print_endline (loop [] [""]);
+    Cmdliner.Cmd.Exit.ok
+  with
+  | Failure e ->
+      prerr_endline e;
+      prerr_endline "Are you sure this a cmdliner based tool?";
+      Cmdliner.Cmd.Exit.some_error
 
 (* File path actions *)
 
@@ -188,6 +244,21 @@ let generic_completion_cmd =
   let+ shell = shell_pos0 in
   generic_completion shell
 
+let tool_commands_cmd =
+  let doc = "Output all commands of a cmdliner tool" in
+  let man =
+    [ `S Manpage.s_description;
+      `P "$(cmd) $(i,TOOL) outputs all the commands of the cmdliner based \
+          tool, one per line.";
+    ]
+  in
+  Cmd.make (Cmd.info "tool-commands" ~doc ~man) @@
+  let+ tool =
+    Arg.(required & pos 0 (some filepath) None & info [] ~docv:"TOOL")
+  in
+  tool_commands tool
+
+
 let tool_completion_cmd =
   let doc = "Output tool completion scripts" in
   let man =
@@ -259,7 +330,7 @@ let main_cmd =
           subcommands with $(b,--help) for more details."; ]
   in
   Cmd.group (Cmd.info "cmdliner" ~version:"%%VERSION%%" ~doc ~man) ~default @@
-  [generic_completion_cmd; tool_completion_cmd; install_cmd]
+  [generic_completion_cmd; tool_commands_cmd; tool_completion_cmd; install_cmd]
 
 let main () = Cmd.eval' main_cmd
 let () = if !Sys.interactive then () else exit (main ())

@@ -456,7 +456,12 @@ The command line interface manual has all
 {{!page-cli.install_completion_tool} specific instructions} for
 complementing your tool install.
 
-{2:cmd_errmsg_styling How can I suppress error message styling?}
+{2:cmds_listing How can I list all the commands of my tool?}
+
+In a shell the invocation [cmdliner tool-commands $TOOL] lists every
+command of the tool $TOOL.
+
+{2:cmds_errmsg_styling How can I suppress error message styling?}
 
 Since Cmdliner 2.0, error message printed on [stderr] use styled text
 with ANSI escapes. Styled text is disabled if the [TERM] environment
@@ -469,7 +474,7 @@ example it's not when you page output but you likely want colors there
 too). None of these options are very good in practice and supporting
 them adds cruft and wastes development time. The point can be made
 that selective tool ANSI style stripping should be a functionality
-provided by your shell.
+provided by your shell (also the {{:https://repology.org/project/ansifilter/versions}[ansifilter]} tool can be useful).
 
 To sum up the format of error messages of Cmdliner on [stderr] is not
 plain text, it is styled text. If you are unhappy about this or want
@@ -479,6 +484,7 @@ evaluation} functions with a suitable formatter on which a function
 like
 {{:https://erratique.ch/software/b0/doc/B0_std/Fmt/index.html#val-strip_styles}
 this one} has been applied that automatically strips the styling.
+
 
 {1:manpage Manpages}
 
@@ -506,6 +512,26 @@ let man = [
  `S Manpage.s_description;
  `P "Without a command $(cmd) invokes $(i,TOOL)"; ]
 ]}
+
+{2:manpage_gen How can I generate all the command manpages of my tool?}
+
+The [tool-commands] command of the [cmdliner] tool allows to list
+all the commands of a cmdliner based tool. The following shell snippet
+generates all the manpages in the current working directory (note it
+assumes that the manual section of each command is [1]):
+{@shell[
+TOOL=mytool
+$TOOL --help=groff > $TOOL.1
+while IFS= read -r SUB; do
+  $TOOL $SUB --help=groff > $TOOL-$(echo $SUB | tr ' ' '-').1
+done < <(cmdliner tool-commands $TOOL)
+]}
+
+See also {!manpage_install}.
+
+{2:manpage_install How can I install all the command manpages of my tool?}
+
+TODO
 
 {1:blueprints Blueprints}
 

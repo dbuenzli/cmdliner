@@ -92,8 +92,8 @@
 ### Other
 
 - Install a `cmdliner` tool to help with completion script
-  installation. See the command line interface manual of the library
-  for more information (#187).
+  installation and cmdliner based tool introspection. See the command line
+  interface manual of the library for more information (#187, #227).
 
 - Install all source files for `odoc` and goto definition editor
   functionality. Thanks to Emile Trotignon and Paul-Elliot Anglès
