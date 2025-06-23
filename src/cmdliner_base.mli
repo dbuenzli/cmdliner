@@ -32,6 +32,7 @@ module Fmt : sig
   val styled_text : string t
   val lines : string t
   val tokens : spaces:bool -> string t
+  val text : string t
   val code : string t
   val code_var : string t
   val code_or_quote : string t

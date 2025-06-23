@@ -3,7 +3,7 @@ function _cmdliner_generic {
   words=("${words[@]:0:1}" "--__complete" "${words[@]:1}")
   local line="${(@)words}"
   local -a completions
-  local version type group item item_doc
+  local version type group item item_line item_doc
   eval $line | {
     read -r version
     if [[ $version != "1" ]]; then
@@ -19,7 +19,19 @@ function _cmdliner_generic {
         read -r group
       elif [[ "$type" == "item" ]]; then
         read -r item;
-        read -r item_doc;
+        item_doc="";
+        while read -r item_line; do
+            if [[ "$item_line" == "item-end" ]]; then
+                break
+            fi
+            if [[ -n "$item_doc" ]]; then
+                # Sadly it seems impossible to make multiline
+                # doc strings if you know any better get in touch.
+                item_doc+=" $item_line"
+            else
+                item_doc=$item_line
+            fi
+        done
         completions+=("$item":"$item_doc")
       elif [[ "$type" == "dirs" ]]; then
         _path_files -/

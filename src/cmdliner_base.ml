@@ -85,6 +85,7 @@ module Fmt = struct
   let comma ppf () = char ppf ','; sp ppf ()
   let indent ppf c = for i = 1 to c do char ppf ' ' done
   let list ?sep pp_v ppf l = Format.pp_print_list ?pp_sep:sep pp_v ppf l
+  let text = Format.pp_print_text
   let lines ppf s =
     let rec stop_at sat ~start ~max s =
       if start > max then start else

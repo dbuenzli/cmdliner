@@ -398,7 +398,7 @@ module Cmd : sig
     ?deprecated:string -> ?man_xrefs:Manpage.xref list ->
     ?man:Manpage.block list -> ?envs:Env.info list -> ?exits:Exit.info list ->
     ?sdocs:Manpage.section_name -> ?docs:Manpage.section_name -> ?doc:string ->
-    ?version:string ->string -> info
+    ?version:string -> string -> info
   (** [info ?sdocs ?man ?docs ?doc ?version name] is a term information
       such that:
       {ul

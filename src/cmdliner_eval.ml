@@ -92,12 +92,10 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
   let pp_group ppf s = pp_line ppf "group"; pp_line ppf s in
   let pp_item ppf ~prefix (name, doc) =
     if Cmdliner_base.string_has_prefix ~prefix name then begin
-      let on_single_line s = (* FIXME can we avoid that ? *)
-        String.map (fun c -> if Cmdliner_base.is_space c then ' ' else c) s
-      in
       pp_line ppf "item";
       pp_line ppf name;
-      pp_line ppf (on_single_line doc)
+      Cmdliner_base.Fmt.(pf ppf "@[%a@]@," text doc);
+      pp_line ppf "item-end";
     end
   in
   let pp_option ppf arginfo _ =

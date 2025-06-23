@@ -394,9 +394,9 @@ directives = *(directive nl)
 directive = group / %s"files" / %s"dirs" / %"restart"
 group = %s"group" nl group_name nl *item
 group_name = *pchar
-item = %s"item" nl completion nl description
+item = %s"item" nl completion nl item_doc nl %s"item-end"
 completion = *pchar
-description = *pchar
+item_doc = *(pchar / nl)
 nl = %0A
 pchar = %20-%7E / %8A-%FF
 ]}
@@ -406,8 +406,10 @@ The semantics of directives is as follows:
 {ul
 {- A [group] directive defines an informational [group_name]
    followed by a possibly empty list of completion items that are part of
-   the group. An item provides a [completion] value followed by a single line
-   [description] which can include ANSI escapes.}
+   the group. An item provides a [completion] value followed by an
+   [item_doc] string which can include ANSI escapes and be made of
+   multiple lines but cannot have a line made of the literal [item-end]
+   which is used to signal the end of item.}
 {- A [file] directive indicates that the script should add existing
    files staring with [ARG] to completion values.}
 {- A [dir] directive indicates that the script should add existing

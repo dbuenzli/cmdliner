@@ -3,7 +3,7 @@ _cmdliner_generic() {
   COMP_WORDS[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
   COMP_WORDS=("${COMP_WORDS[@]:0:1}" "--__complete" "${COMP_WORDS[@]:1}")
   local line="${COMP_WORDS[@]}"
-  local version type group item item_doc
+  local version type group item item_line item_doc
   {
     read version
     if [[ $version != "1" ]]; then
@@ -23,7 +23,19 @@ _cmdliner_generic() {
         fi
       elif [[ $type == "item" ]]; then
         read item;
-        read item_doc;
+        item_doc="";
+        while read item_line; do
+            if [[ "$item_line" == "item-end" ]]; then
+                break
+            fi
+            if [[ -n "$item_doc" ]]; then
+                item_doc+=$'\n'"$item_line"
+            else
+                item_doc=$item_line
+            fi
+        done
+        # Sadly it seems bash does not support doc strings. If you now
+        # any better get in touch.
         COMPREPLY+=($item)
       fi
     done } < <(eval $line)
