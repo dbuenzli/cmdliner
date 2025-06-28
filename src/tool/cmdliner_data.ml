@@ -46,9 +46,9 @@ let bash_generic_completion =
 
 let zsh_generic_completion =
 {|function _cmdliner_generic {
-  words[CURRENT]="--__complete=${words[CURRENT]}"
-  words=("${words[@]:0:1}" "--__complete" "${words[@]:1}")
-  local line="${(@)words}"
+  local w=("${words[@]}") # Keep words intact for restart completion
+  w[CURRENT]="--__complete=${words[CURRENT]}"
+  local line="${w[@]:0:1} --__complete ${w[@]:1}"
   local -a completions
   local version type group item item_line item_doc
   eval $line | {
