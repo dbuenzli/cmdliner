@@ -27,15 +27,19 @@ let test_groups =
      item\n\
      birds\n\
      Operate on birds.\n\
+     item-end\n\
      item\n\
      mammals\n\
      Operate on mammals.\n\
+     item-end\n\
      item\n\
      fishs\n\
      Operate on fishs.\n\
+     item-end\n\
      item\n\
      camels\n\
-     Operate on camels.\n";
+     Operate on camels.\n\
+     item-end\n";
   complete ["birds"; "--__complete="] @@  __POS_OF__
     "1\n\
      group\n\
@@ -43,9 +47,11 @@ let test_groups =
      item\n\
      fly\n\
      Fly birds.\n\
+     item-end\n\
      item\n\
      land\n\
-     Land birds.\n";
+     Land birds.\n\
+     item-end\n";
   ()
 
 let test_no_options_after_dashsash =
@@ -56,7 +62,8 @@ let test_no_options_after_dashsash =
      Options\n\
      item\n\
      --speed\n\
-     Movement \u{001B}[04mSPEED\u{001B}[m in m/s\n";
+     Movement \u{001B}[04mSPEED\u{001B}[m in m/s\n\
+     item-end\n";
   complete ["birds"; "fly"; "--"; "--__complete="] @@ __POS_OF__
     "1\n";
   ()
@@ -86,14 +93,17 @@ let test_restart_restricted_tool =
      item\n\
      git\n\
      \n\
+     item-end\n\
      item\n\
      hg\n\
      \n\
+     item-end\n\
      group\n\
      Options\n\
      item\n\
      --verbose\n\
-     \n";
+     \n\
+     item-end\n";
   complete ["--__complete=g"] @@ __POS_OF__
     "1\n\
      group\n\
@@ -101,6 +111,7 @@ let test_restart_restricted_tool =
      item\n\
      git\n\
      \n\
+     item-end\n\
      group\n\
      Options\n";
   (* Note no reset here: as there is no -- token *)
@@ -110,7 +121,8 @@ let test_restart_restricted_tool =
      Options\n\
      item\n\
      --verbose\n\
-     \n";
+     \n\
+     item-end\n";
   complete ["--"; "git"; "--__complete="] @@ __POS_OF__
     "1\n\
      restart\n";
@@ -136,7 +148,8 @@ let test_restart_any_tool =
      Options\n\
      item\n\
      --verbose\n\
-     \n";
+     \n\
+     item-end\n";
   (* The following two do not restart because -- is missing *)
   complete ["--__complete=gi"] @@ __POS_OF__
     "1\n\
@@ -148,7 +161,8 @@ let test_restart_any_tool =
      Options\n\
      item\n\
      --verbose\n\
-     \n";
+     \n\
+     item-end\n";
   (* These must restart *)
   complete ["--"; "--__complete=gi"] @@ __POS_OF__
     "1\n\
