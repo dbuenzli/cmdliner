@@ -39,7 +39,7 @@ let arg_info_indexes args =
      their arg_info, a list with all arg_info for positional arguments and
      a cmdline mapping each arg_info to an empty [arg]. *)
   let rec loop optidx posidx cl = function
-  | [] -> optidx, List.rev posidx, cl
+  | [] -> optidx, posidx, cl
   | a :: l ->
       match Cmdliner_info.Arg.is_pos a with
       | true -> loop optidx (a :: posidx) (Amap.add a (P []) cl) l
