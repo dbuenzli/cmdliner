@@ -90,7 +90,13 @@ let get_tool_commands tool =
       in
       let exec = strf "%s --__complete %s --__complete=" tool cmd in
       let comps = exec_stdout exec |> error_to_failure in
-      find_subs (String.split_on_char '\n' comps)
+      let comps = String.split_on_char '\n' comps in
+      match comps with
+      | "1" :: comps -> find_subs comps
+      | version :: comps ->
+          failwith (strf "Unsupported cmdliner completion protocol: %S" version)
+      | [] ->
+          failwith "Could not parse cmdliner completion protocol"
     in
     let rec loop acc = function
     | cmd :: cmds ->
