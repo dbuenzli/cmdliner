@@ -43,6 +43,20 @@ let test_groups =
   complete ["birds"; "--__complete="] @@  __POS_OF__
     "1\n\
      group\n\
+     Options\n\
+     item\n\
+     -k\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --kind\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --can-fly\n\
+     \u{001B}[04mBOOL\u{001B}[m indicates if the entity can fly.\n\
+     item-end\n\
+     group\n\
      Subcommands\n\
      item\n\
      fly\n\
