@@ -56,9 +56,13 @@ error prone and painful:
 tool --opt
 ]}
 
-There is more than on way but the easiest here is to specify it as
-[tool --opt -- FILE]. This would have been a careless refinement if [--opt]
-did not have a default option value.
+There is more than one way but the easiest way is to specify:
+{@sh[
+tool --opt -- FILE
+]}
+which is not obvious unless you have [tool]'s cli hard wired in your
+brain.  This would have been a careless refinement if [--opt] did not
+have a default option value.
 
 {2:tip_avoid_required_opt Avoid required optional arguments}
 
@@ -69,8 +73,9 @@ surprising for your users. Use required positional arguments if
 arguments are required by your command invocation.
 
 Required optional arguments can be useful though if your tool is not
-meant to be invoked manually and has many required arguments, they become
-a form of labelled arguments which can clarify invocations in scripts.
+meant to be invoked manually but rather through scripts and has many
+required arguments. In this case they become a form of labelled
+arguments which can make invocations easier to understand.
 
 {2:tip_avoid_manpages Avoid making manpages your main documentation}
 
@@ -182,16 +187,16 @@ To install both directly (and possibly other support files in the future)
 it is more concise to use the [install
 tool-support] command. Invoke with [--help] for more information.
 
-If you are installing your package for [thetool] with [opam] and have
+If you are installing your package for a tool named [tool] with [opam] and have
 [cmdliner] as a direct dependency and the tool is located in the
-build at the path [$BUILD/thetool], you can add the following
+build at the path [$BUILD/tool], you can add the following
 [install:] instruction (also works if your build system is using a
 [.install] file).
 
 {@sh[
 install: ["cmdliner" "install" "tool-support"
           "--sharedir=%{share}%" "--mandir=%{man}%"
-          "$BUILD/thetool" "%{prefix}%"]
+          "$BUILD/tool" "%{prefix}%"]
 ]}
 
 Note that you need to specify the path to the built executable, trying
@@ -270,7 +275,7 @@ command line. The environment variable should be seen as providing
 the default value when the argument is absent.
 
 This is exactly what Cmdliner's support for environment variables does,
-see {!env_args}.
+see {!env_args}
 
 {1:args Arguments}
 
@@ -485,7 +490,7 @@ in your tool function.
 The command line interface manual has all
 {{!page-cli.cli_completion}the details} and
 {{!page-cli.install_tool_completion} specific instructions} for
-complementing your tool install, see also {!tip_tool_support}.
+complementing your tool install. See also {!tip_tool_support}.
 
 {2:cmds_listing How can I list all the commands of my tool?}
 
@@ -499,7 +504,7 @@ with ANSI escapes. Styled text is disabled if the [TERM] environment
 variable is [dumb] or unset.
 
 We feel that this is sufficient, in particular we see no good reason
-to support the [NO_COLOR] "standard", tool specific environment
+to support the unuseful [NO_COLOR] standard, tool specific environment
 variables, tool specific options or to check if [stderr] [isatty] (for
 example it's not when you page output but you likely want colors there
 too). None of these options are very good in practice and supporting
@@ -518,7 +523,7 @@ this one} has been applied that automatically strips the styling.
 
 {1:manpage Manpages}
 
-{3:manpage_hide How do I prevent an item from being automatically listed?}
+{2:manpage_hide How do I prevent an item from being automatically listed?}
 
 In general it's not a good idea to hide stuff from your users but in
 case an item needs to be hidden you can use the special

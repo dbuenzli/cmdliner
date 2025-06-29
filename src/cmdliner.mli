@@ -664,7 +664,7 @@ module Arg : sig
         completion scripts only if the [TOOL] is specified after the
         token. Educate your users to use the [--] (e.g. mention them
         in user {{!page-cookbook.manpage_synopsis}user defined
-        synopses}) it's good cli sepcication hygiene anyways. *)
+        synopses}) it's good cli specification hygiene anyways. *)
   end
 
   (** Argument converters.
