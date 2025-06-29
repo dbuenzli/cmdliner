@@ -4,6 +4,7 @@
   ---------------------------------------------------------------------------*)
 
 val is_opt : string -> bool
+val has_complete_prefix : string -> bool
 
 (** Command lines. *)
 

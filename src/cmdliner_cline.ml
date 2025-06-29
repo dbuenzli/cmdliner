@@ -91,7 +91,7 @@ let complete_prefix = "--__complete="
 let has_complete_prefix s =
   Cmdliner_base.string_has_prefix ~prefix:complete_prefix s
 
-let maybe_complete_token ~for_completion s =
+let maybe_token_to_complete ~for_completion s =
   if not for_completion then None else
   Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
 
@@ -127,7 +127,9 @@ let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
               | [] -> None, args
               | v :: rest -> if is_opt v then None, args else Some v, rest
           in
-          (match Option.bind value (maybe_complete_token ~for_completion) with
+          (match Option.bind value
+                   (maybe_token_to_complete ~for_completion)
+          with
           | Some prefix ->
               let c = { prefix; after_dashdash = false; kind = `Opt a } in
               raise (Completion_requested c)
@@ -145,24 +147,24 @@ let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
           let err = Cmdliner_base.err_ambiguous ~kind:"option" name ~ambs in
           loop (err :: errs) (k + 1) cl pargs args
   in
-  let errs, cl, after_dashdash, pargs = loop [] 0 cl [] args in
-  if errs = [] then Ok (cl, after_dashdash, pargs) else
+  let errs, cl, has_dashdash, pargs = loop [] 0 cl [] args in
+  if errs = [] then Ok (cl, has_dashdash, pargs) else
   let err = String.concat "\n" errs in
-  Error (err, cl, after_dashdash, pargs)
+  Error (err, cl, has_dashdash, pargs)
 
 let take_range ~for_completion start stop l =
   let rec loop i acc = function
   | [] -> `Range (List.rev acc)
   | v :: vs ->
       if i < start then loop (i + 1) acc vs else
-      if i <= stop then match maybe_complete_token ~for_completion v with
+      if i <= stop then match maybe_token_to_complete ~for_completion v with
       | Some prefix -> `Complete prefix
       | None -> loop (i + 1) (v :: acc) vs
       else `Range (List.rev acc)
   in
   loop 0 [] l
 
-let process_pos_args ~for_completion posidx cl ~after_dashdash pargs =
+let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
   (* returns an updated [cl] cmdline in which each positional arg mentioned
      in the list index posidx, is given a value according the list
      of positional arguments values [pargs]. *)
@@ -188,7 +190,7 @@ let process_pos_args ~for_completion posidx cl ~after_dashdash pargs =
         match take_range ~for_completion start stop pargs with
         | `Range args -> args
         | `Complete prefix ->
-            let c = { prefix; after_dashdash; kind = `Arg a } in
+            let c = { prefix; after_dashdash = has_dashdash; kind = `Arg a } in
             raise (Completion_requested c)
       in
       let max_spec = max stop max_spec in
@@ -204,7 +206,7 @@ let process_pos_args ~for_completion posidx cl ~after_dashdash pargs =
     match take_range ~for_completion (max_spec + 1) last pargs with
     | `Range args -> args
     | `Complete prefix ->
-        let c = { prefix; after_dashdash; kind = `Any } in
+        let c = { prefix; after_dashdash = has_dashdash; kind = `Any } in
         raise (Completion_requested c)
   in
   if misses <> [] then begin
@@ -219,20 +221,39 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
   try match
     parse_opt_args ~for_completion ~peek_opts ~legacy_prefixes optidx cl args
   with
-  | Ok (cl, after_dashdash, _) when peek_opts -> `Ok cl
-  | Ok (cl, after_dashdash, pargs) ->
-      begin match
-        process_pos_args ~for_completion posidx cl ~after_dashdash pargs
-      with
+  | Ok (cl, has_dashdash, _) when peek_opts -> `Ok cl
+  | Ok (cl, has_dashdash, pargs) ->
+      let res =
+        process_pos_args ~for_completion posidx cl ~has_dashdash pargs
+      in
+      if for_completion
+      then (* Normally [Completion_requested] should have been raised. This
+              may fail to happen if pos args are ill defined: we may miss the
+              completion token. Just make sure we do a completion. N.B.
+              this should be improved it would likely be better to
+              have completion dealt with separately. *)
+        begin match List.find_opt has_complete_prefix pargs with
+        | None -> assert false
+        | Some arg ->
+            match maybe_token_to_complete ~for_completion:true arg with
+            | None -> assert false
+            | Some prefix ->
+                let c = { prefix; after_dashdash = has_dashdash;
+                          kind = `Any }
+                in
+                raise (Completion_requested c)
+        end
+      else begin match res with
       | Ok v -> `Ok v
       | Error v -> `Error v
       end
-  | Error (errs, cl, after_dashdash, pargs) ->
+  | Error (errs, cl, has_dashdash, pargs) ->
       let _ : _ result =
-        process_pos_args ~for_completion posidx cl ~after_dashdash pargs
+        process_pos_args ~for_completion posidx cl ~has_dashdash pargs
       in
       `Error (errs, cl)
   with Completion_requested c -> `Completion c
+
 
 (* Deprecations *)
 
