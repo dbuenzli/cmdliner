@@ -1,14 +1,14 @@
 let bash_generic_completion =
 {|_cmdliner_generic() {
   local prefix="${COMP_WORDS[COMP_CWORD]}"
-  COMP_WORDS[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
-  COMP_WORDS=("${COMP_WORDS[@]:0:1}" "--__complete" "${COMP_WORDS[@]:1}")
-  local line="${COMP_WORDS[@]}"
+  local w=("${COMP_WORDS[@]}") # Keep COMP_WORDS intact for restart completion
+  w[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
+  local line="${w[@]:0:1} --__complete ${w[@]:1}"
   local version type group item item_line item_doc
   {
     read version
     if [[ $version != "1" ]]; then
-      printf "\nUnsupported Cmdliner completion protocol version: $version" >&2
+      printf "\nUnsupported cmdliner completion protocol: $version" >&2
       return 1
     fi
     while read type; do
@@ -35,9 +35,17 @@ let bash_generic_completion =
                 item_doc=$item_line
             fi
         done
-        # Sadly it seems bash does not support doc strings. If you now
-        # any better get in touch.
+        # Sadly it seems bash does not support doc strings, so we only
+        # add item to to the reply. If you know any better get in touch.
         COMPREPLY+=($item)
+      elif [[ $type == "restart" ]]; then
+          # N.B. only emitted if there is a -- token
+          for ((i = 0; i < ${#COMP_WORDS[@]}; i++)); do
+              if [[ "${COMP_WORDS[i]}" == "--" ]]; then
+                  _comp_command_offset $((i+1))
+                  return
+              fi
+          done
       fi
     done } < <(eval $line)
   return 0
@@ -54,7 +62,7 @@ let zsh_generic_completion =
   eval $line | {
     read -r version
     if [[ $version != "1" ]]; then
-      _message -r "Unsupported Cmdliner completion protocol version: $version"
+      _message -r "Unsupported cmdliner completion protocol: $version"
       return 1
     fi
     while IFS= read -r type; do
