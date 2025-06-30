@@ -674,6 +674,8 @@ module Arg : sig
       are provided for many types of the standard library. *)
   module Conv : sig
 
+    (** {1:converters Converters} *)
+
     type 'a parser = string -> ('a, string) result
     (** The type for parsing arguments to values of type ['a]. *)
 
@@ -681,7 +683,7 @@ module Arg : sig
     (** The type for formatting values of type ['a]. *)
 
     type 'a t
-    (** The type for convertering arguments to values of type ['a]. *)
+    (** The type for converting arguments to values of type ['a]. *)
 
     val make :
       ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
@@ -694,6 +696,8 @@ module Arg : sig
       ?parser:'a parser -> ?pp:'a fmt -> unit -> 'a t
     (** [of_conv conv ()] is a new converter with given unspecified
         properties defaulting to those of [conv]. *)
+
+    (** {1:properties Properties} *)
 
     val docv : 'a t -> string
     (** [docv c] is [c]'s documentation meta-variable. This value can
@@ -995,29 +999,29 @@ module Arg : sig
 
   (** {b Note.} The following converters report errors whenever the
       requested file system object does not exist. This is only mildly
-      useful since nothing guarantees you it will still exist at the
-      time you act upon them, so you will have to treat these error
-      anyways in your tool function. It is also unhelpful the file
-      system object may be created by your tool, use {!filpath}
-      and {!dirpath} in this case. *)
+      useful since nothing guarantees they will still exist at the
+      time you act upon them. So you will have to treat these error
+      cases anyways in your tool function. It is also unhelpful if the file
+      system object may be created by your tool. Rather use
+      {!filepath} and {!dirpath}. *)
 
   val file : string conv
   (** [file] converts a value with the identity function and checks
       with {!Sys.file_exists} that a file with that name exists.  The
-      string ["-"] is parsed without checking it represents [stdio].
-      It completes with both files directories. *)
+      string ["-"] is parsed without checking: it represents [stdio].
+      It completes both files directories. *)
 
   val dir : string conv
   (** [dir] converts a value with the identity function and checks
       with {!Sys.file_exists} and {!Sys.is_directory} that a directory
-      with that name exists. It completes with directories. *)
+      with that name exists. It completes directories. *)
 
   val non_dir_file : string conv
   (** [non_dir_file] converts a value with the identity function and
       checks with {!Sys.file_exists} and {!Sys.is_directory} that a
       non directory file with that name exists. The string ["-"] is
       parsed without checking it represents [stdio].  It completes
-      with files. *)
+      files. *)
 
   (** {1:doc_helpers Documentation formatting helpers} *)
 
