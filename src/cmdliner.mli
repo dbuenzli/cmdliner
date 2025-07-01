@@ -953,7 +953,8 @@ module Arg : sig
   val enum : ?docv:string -> (string * 'a) list -> 'a conv
   (** [enum l p] converts values such that string names in [l] map to
       the corresponding value of type ['a]. [docv] is the converter's
-      documentation meta-variable, it defaults to [ENUM]
+      documentation meta-variable, it defaults to [ENUM].  A
+      {{!Completion.make}completion} is added for the names.
 
       {b Warning.} The type ['a] must be comparable with {!Stdlib.compare}.
 

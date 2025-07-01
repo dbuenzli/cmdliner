@@ -39,20 +39,14 @@ let test_cmd =
   parse_legacy ["mamma"] @@ __POS_OF__ ();
   (**)
   error_nolegacy `Term ["bir"] @@ __POS_OF__
-"test_group: \x1B[31munknown\x1B[m command \x1B[01mbir\x1B[m. Did you mean \x1B[01mbirds\x1B[m?
-Usage: \x1B[01mtest_group\x1B[m \x1B[04mCOMMAND\x1B[m …
-Try \x1B[01mtest_group --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
+test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mbir\u{001B}[m. Did you mean \u{001B}[01mbirds\u{001B}[m?\n";
   error_nolegacy `Term ["birds"; "fl"] @@ __POS_OF__
-"test_group: \x1B[31munknown\x1B[m command \x1B[01mfl\x1B[m. Did you mean \x1B[01mfly\x1B[m?
-Usage: \x1B[01mtest_group birds\x1B[m [\x1B[04mCOMMAND\x1B[m] …
-Try \x1B[01mtest_group birds --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
-";
-  error_nolegacy `Term ["mam"] @@ __POS_OF__
-"test_group: \x1B[31munknown\x1B[m command \x1B[01mmam\x1B[m. Must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or \x1B[01mmammals\x1B[m
-Usage: \x1B[01mtest_group\x1B[m \x1B[04mCOMMAND\x1B[m …
-Try \x1B[01mtest_group --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_group birds\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mCOMMAND\u{001B}[m] …\n\
+test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mfl\u{001B}[m. Did you mean \u{001B}[01mfly\u{001B}[m?\n";
+  error_nolegacy `Term ["mam"] @@ __POS_OF__ "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
+                                              test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mmam\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m or\n\
+                                             \            \u{001B}[01mmammals\u{001B}[m\n";
   ()
 
 let test_cmd =
@@ -60,15 +54,11 @@ let test_cmd =
   parse_legacy ["birds"; "fly"; "--sp"; "3"] @@ __POS_OF__ ();
   (**)
   error_nolegacy `Term ["birds"; "fly"; "--sp"; ] @@ __POS_OF__
-"test_group: \x1B[31munknown\x1B[m option \x1B[01m--sp\x1B[m
-Usage: \x1B[01mtest_group birds fly\x1B[m [\x1B[01m--speed\x1B[m=\x1B[04mSPEED\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mBIRD\x1B[m]
-Try \x1B[01mtest_group birds fly --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_group birds fly\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--speed\u{001B}[m=\u{001B}[04mSPEED\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mBIRD\u{001B}[m]\n\
+test_group: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m--sp\u{001B}[m\n";
   error_nolegacy `Term ["birds"; "fly"; "--spe"; ] @@ __POS_OF__
-"test_group: \x1B[31munknown\x1B[m option \x1B[01m--spe\x1B[m. Did you mean \x1B[01m--speed\x1B[m?
-Usage: \x1B[01mtest_group birds fly\x1B[m [\x1B[01m--speed\x1B[m=\x1B[04mSPEED\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mBIRD\x1B[m]
-Try \x1B[01mtest_group birds fly --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_group birds fly\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--speed\u{001B}[m=\u{001B}[04mSPEED\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mBIRD\u{001B}[m]\n\
+test_group: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m--spe\u{001B}[m. Did you mean \u{001B}[01m--speed\u{001B}[m?\n";
   ()
 
 let main () =

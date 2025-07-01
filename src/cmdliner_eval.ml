@@ -163,7 +163,7 @@ let do_result ~env help_ppf err_ppf ei = function
     | `Std_version ->
         Cmdliner_msg.pp_version help_ppf ei; Ok `Version
     | `Parse err ->
-        Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:false ~err;
+        Cmdliner_msg.pp_usage_and_err err_ppf ei ~err;
         Error `Parse
     | `Complete (args, cmd, cmd_children, comp) ->
         do_completion help_ppf err_ppf ei
@@ -171,12 +171,9 @@ let do_result ~env help_ppf err_ppf ei = function
     | `Help (fmt, cmd) -> do_help ~env help_ppf err_ppf ei fmt cmd; Ok `Help
     | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->
-          (* I think the idea of this is that we preserve the user's
-             err layout. *)
         (if usage
-         then Cmdliner_msg.pp_err_usage err_ppf ei ~err_lines:true ~err
-         else Cmdliner_base.(Fmt.pf err_ppf "@[%a @[%a@]@."
-                               Cmdliner_msg.pp_exec_msg ei Fmt.lines err));
+         then Cmdliner_msg.pp_usage_and_err err_ppf ei ~err
+         else Cmdliner_msg.pp_err err_ppf ei ~err);
         Error `Term
 
 let cmd_name_trie cmds =

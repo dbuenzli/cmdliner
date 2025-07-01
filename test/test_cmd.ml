@@ -35,26 +35,18 @@ let test_groups =
     "test_group: \u{001B}[33mdeprecated\u{001B}[m command \u{001B}[01mcamels\u{001B}[m: Use \u{001B}[01mmammals\u{001B}[m instead.\n";
   (**)
   error `Term [] @@ __POS_OF__
-  "test_group: required \x1B[04mCOMMAND\x1B[m name is \x1B[31mmissing\x1B[m, must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or
-            \x1B[01mmammals\x1B[m
-Usage: \x1B[01mtest_group\x1B[m \x1B[04mCOMMAND\x1B[m …
-Try \x1B[01mtest_group --help\x1B[m for more information.
-";
-  error `Term ["bla"] @@ __POS_OF__
-"test_group: \x1B[31munknown\x1B[m command \x1B[01mbla\x1B[m. Must be one of \x1B[01mbirds\x1B[m, \x1B[01mcamels\x1B[m, \x1B[01mfishs\x1B[m or \x1B[01mmammals\x1B[m
-Usage: \x1B[01mtest_group\x1B[m \x1B[04mCOMMAND\x1B[m …
-Try \x1B[01mtest_group --help\x1B[m for more information.
-";
+  "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
+   test_group: required \u{001B}[04mCOMMAND\u{001B}[m name is \u{001B}[31mmissing\u{001B}[m, must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m,\n\
+  \            \u{001B}[01mfishs\u{001B}[m or \u{001B}[01mmammals\u{001B}[m\n";
+  error `Term ["bla"] @@ __POS_OF__ "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
+                                     test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mbla\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m or\n\
+                                    \            \u{001B}[01mmammals\u{001B}[m\n";
   error `Parse ["birds"; "-k"] @@ __POS_OF__
-"test_group: option \x1B[01m-k\x1B[m \x1B[31mneeds an argument\x1B[m
-Usage: \x1B[01mtest_group birds\x1B[m [\x1B[04mCOMMAND\x1B[m] …
-Try \x1B[01mtest_group birds --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_group birds\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mCOMMAND\u{001B}[m] …\n\
+test_group: option \u{001B}[01m-k\u{001B}[m \u{001B}[31mneeds an argument\u{001B}[m\n";
   error `Term ["mammals"; "land"] @@ __POS_OF__
-"test_group: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01mland\x1B[m
-Usage: \x1B[01mtest_group mammals\x1B[m [\x1B[04mOPTION\x1B[m]…
-Try \x1B[01mtest_group mammals --help\x1B[m or \x1B[01mtest_group --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_group mammals\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]…\n\
+test_group: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01mland\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME

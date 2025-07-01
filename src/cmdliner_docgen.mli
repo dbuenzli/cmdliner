@@ -8,5 +8,5 @@ val pp_man :
   errs:Format.formatter -> Cmdliner_manpage.format -> Format.formatter ->
   Cmdliner_info.Eval.t -> unit
 
-val pp_styled_synopsis :
-  errs:Format.formatter -> Format.formatter -> Cmdliner_info.Eval.t -> unit
+val styled_usage_synopsis :
+  errs:Format.formatter -> Cmdliner_info.Eval.t -> string

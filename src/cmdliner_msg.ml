@@ -82,28 +82,17 @@ let pp_version ppf ei =
   | None -> assert false
   | Some v -> Fmt.pf ppf "@[%s@]@." v
 
-let pp_try_help ppf ei =
-  let rcmds = Cmdliner_info.Eval.(cmd ei :: parents ei) in
-  let with_help s = s ^ " --help" in
-  match List.rev_map Cmdliner_info.Cmd.name rcmds with
-  | [] -> assert false
-  | [n] ->
-      Fmt.pf ppf "@[<2>Try %a for more information.@]"
-        Fmt.code_or_quote (with_help n)
-  | tool :: _ as cmds ->
-      let cmds = String.concat " " cmds in
-      Fmt.pf ppf "@[<2>Try %a or %a for more information.@]"
-        Fmt.code_or_quote (with_help cmds)
-        Fmt.code_or_quote (with_help tool)
-
 let exec_name ei = Cmdliner_info.Cmd.name (Cmdliner_info.Eval.main ei)
 
 let pp_exec_msg ppf ei = Fmt.pf ppf "%s:" (exec_name ei)
-let pp_err_usage ppf ei ~err_lines ~err =
-  let pp_err = if err_lines then Fmt.lines else Fmt.styled_text in
-  Fmt.pf ppf "@[<v>%a @[%a@]@,@[Usage: @[%a@]@]@,%a@]@."
-    pp_exec_msg ei pp_err err (Cmdliner_docgen.pp_styled_synopsis ~errs:ppf) ei
-    pp_try_help ei
+
+let pp_err ppf ei ~err =
+  Fmt.pf ppf "@[%a @[%a@]@]@." pp_exec_msg ei Fmt.styled_text err
+
+let pp_usage_and_err ppf ei ~err =
+  Fmt.pf ppf "@[Usage: @[%a@]@]@."
+    Fmt.styled_text (Cmdliner_docgen.styled_usage_synopsis ~errs:ppf ei);
+  pp_err ppf ei ~err
 
 let pp_backtrace ppf ei e bt =
   let bt = Printexc.raw_backtrace_to_string bt in

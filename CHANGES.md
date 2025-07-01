@@ -26,6 +26,11 @@
   or undefined (#144). Quoted and typewriter text is in bold. Variables
   are written as underlines. Key words of error messages are in red.
 
+- Output error messages after the usage line and remove the `Try with
+  $(tool)--help for more information` message. Instead we explicitely
+  indicate the `--help` option in the usage line. Having the error message
+  at the end makes it easier to spot.
+
 - Make `--help` request work in any context, except after `--`. Since
   the option has an optional argument value, one had to be carefull
   that it would not pickup the next argument and try to parse it
@@ -91,9 +96,9 @@
 
 ### Other
 
-- Install a `cmdliner` tool to help with completion script
-  installation and cmdliner based tool introspection. See the command line
-  interface manual of the library for more information (#187, #227).
+- Install a `cmdliner` tool to help with manpage and completion script
+  installation. See the command line interface manual of the library
+  for more information (#187, #227, #228).
 
 - Install all source files for `odoc` and goto definition editor
   functionality. Thanks to Emile Trotignon and Paul-Elliot Anglès

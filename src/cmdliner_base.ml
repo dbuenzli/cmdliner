@@ -179,12 +179,22 @@ module Fmt = struct
 
   let puterr ppf () = st [`Bold; `Fg `Red] ppf "Error"; char ppf ':'
 
-  let styled_text ppf s = (* Detects ANSI escapes and prints as 0 width *)
+  let styled_text ppf s =
+    (* Detects ANSI escapes and prints them as 0 width. Collapses spaces
+       and newlines to single space except for blank lines which are
+       preserved. *)
     let rec loop ppf s i max =
       if i > max then () else
       let ansi = s.[i] = '\x1B' && i + 1 < max && s.[i+1] = '[' in
       if not ansi then begin
-        if s.[i] = ' ' || s.[i] = '\n' then sp ppf () else char ppf s.[i];
+        begin match s.[i] with
+        | ' ' when i = max || s.[i+1] = ' ' || s.[i+1] = '\n' -> ()
+        | ' ' -> sp ppf ()
+        | '\n' when i = max || s.[i+1] = ' ' -> ()
+        | '\n' when s.[i+1] = '\n' -> Format.pp_force_newline ppf ()
+        | '\n' -> sp ppf ()
+        | c -> char ppf s.[i]
+        end;
         loop ppf s (i + 1) max
       end else begin
         let k = ref (i + 2) in

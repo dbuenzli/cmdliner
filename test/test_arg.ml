@@ -37,10 +37,8 @@ let test_pos_all =
   parse ["0";"--"; "1"] @@ __POS_OF__ ["0"; "1"];
   (**)
   error `Term ["--opt"] @@ __POS_OF__
-  "test_pos_all: \x1B[31munknown\x1B[m option \x1B[01m--opt\x1B[m
-Usage: \x1B[01mtest_pos_all\x1B[m [\x1B[04mOPTION\x1B[m]… [\x1B[04mTHEARG\x1B[m]…
-Try \x1B[01mtest_pos_all --help\x1B[m for more information.
-";
+  "Usage: \u{001B}[01mtest_pos_all\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mTHEARG\u{001B}[m]…\n\
+   test_pos_all: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m--opt\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -82,10 +80,8 @@ let test_pos_left =
   parse ["0"; "1" ] @@ __POS_OF__ ["0"; "1"];
   (**)
   error `Term ["0"; "1"; "2"] @@ __POS_OF__
-  "test_pos_left: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01m2\x1B[m
-Usage: \x1B[01mtest_pos_left\x1B[m [\x1B[04mOPTION\x1B[m]… [\x1B[04mLEFT\x1B[m] [\x1B[04mLEFT\x1B[m]
-Try \x1B[01mtest_pos_left --help\x1B[m for more information.
-";
+  "Usage: \u{001B}[01mtest_pos_left\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mLEFT\u{001B}[m] [\u{001B}[04mLEFT\u{001B}[m]\n\
+   test_pos_left: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01m2\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -131,25 +127,17 @@ let test_pos_req =
   (**)
   let error = Testing_cmdliner.snap_eval_error `Term cmd in
   error [] @@ __POS_OF__
-"test_pos_req: required arguments \x1B[04mR1\x1B[m, \x1B[04mR2\x1B[m, \x1B[04mR3\x1B[m, \x1B[04mRIGHT\x1B[m are \x1B[31mmissing\x1B[m
-Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
-Try \x1B[01mtest_pos_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
+test_pos_req: required arguments \u{001B}[04mR1\u{001B}[m, \u{001B}[04mR2\u{001B}[m, \u{001B}[04mR3\u{001B}[m, \u{001B}[04mRIGHT\u{001B}[m are \u{001B}[31mmissing\u{001B}[m\n";
   error ["r1"] @@ __POS_OF__
-"test_pos_req: required arguments \x1B[04mR2\x1B[m, \x1B[04mR3\x1B[m, \x1B[04mRIGHT\x1B[m are \x1B[31mmissing\x1B[m
-Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
-Try \x1B[01mtest_pos_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
+test_pos_req: required arguments \u{001B}[04mR2\u{001B}[m, \u{001B}[04mR3\u{001B}[m, \u{001B}[04mRIGHT\u{001B}[m are \u{001B}[31mmissing\u{001B}[m\n";
   error ["r1"; "r2"] @@ __POS_OF__
-"test_pos_req: required arguments \x1B[04mR3\x1B[m, \x1B[04mRIGHT\x1B[m are \x1B[31mmissing\x1B[m
-Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
-Try \x1B[01mtest_pos_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
+test_pos_req: required arguments \u{001B}[04mR3\u{001B}[m, \u{001B}[04mRIGHT\u{001B}[m are \u{001B}[31mmissing\u{001B}[m\n";
   error ["r1"; "r2"; "r3"] @@ __POS_OF__
-"test_pos_req: required argument \x1B[04mRIGHT\x1B[m is \x1B[31mmissing\x1B[m
-Usage: \x1B[01mtest_pos_req\x1B[m [\x1B[04mOPTION\x1B[m]… \x1B[04mR1\x1B[m \x1B[04mR2\x1B[m \x1B[04mR3\x1B[m \x1B[04mRIGHT\x1B[m…
-Try \x1B[01mtest_pos_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
+test_pos_req: required argument \u{001B}[04mRIGHT\u{001B}[m is \u{001B}[31mmissing\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -281,25 +269,17 @@ let test_opt_required =
   (**)
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   error `Parse [] @@ __POS_OF__
-"test_opt_req: required option \x1B[01m--req\x1B[m is \x1B[31mmissing\x1B[m
-Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
-Try \x1B[01mtest_opt_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
+test_opt_req: required option \u{001B}[01m--req\u{001B}[m is \u{001B}[31mmissing\u{001B}[m\n";
     error `Term ["a"] @@ __POS_OF__
-"test_opt_req: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01ma\x1B[m
-Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
-Try \x1B[01mtest_opt_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
+test_opt_req: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01ma\u{001B}[m\n";
     error `Term ["-ra"; "a"] @@ __POS_OF__
-"test_opt_req: \x1B[31mtoo many arguments\x1B[m, don't know what to do with \x1B[01ma\x1B[m
-Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
-Try \x1B[01mtest_opt_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
+test_opt_req: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01ma\u{001B}[m\n";
     error `Parse ["-r"] @@ __POS_OF__
-"test_opt_req: option \x1B[01m-r\x1B[m \x1B[31mneeds an argument\x1B[m
-Usage: \x1B[01mtest_opt_req\x1B[m \x1B[01m--req\x1B[m=\x1B[04mARG\x1B[m [\x1B[04mOPTION\x1B[m]…
-Try \x1B[01mtest_opt_req --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
+test_opt_req: option \u{001B}[01m-r\u{001B}[m \u{001B}[31mneeds an argument\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -339,10 +319,8 @@ let test_arg_info_docv =
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
-"test_arg_docv: \x1B[31munknown\x1B[m option \x1B[01m-z\x1B[m
-Usage: \x1B[01mtest_arg_docv\x1B[m [\x1B[01m--field\x1B[m=\x1B[04mVAL\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mARG\x1B[m]…
-Try \x1B[01mtest_arg_docv --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_arg_docv\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--field\u{001B}[m=\u{001B}[04mVAL\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mARG\u{001B}[m]…\n\
+test_arg_docv: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m-z\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -383,10 +361,8 @@ let test_conv_docv =
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
-"test_conv_docv: \x1B[31munknown\x1B[m option \x1B[01m-z\x1B[m
-Usage: \x1B[01mtest_conv_docv\x1B[m [\x1B[01m--field\x1B[m=\x1B[04mFIELD\x1B[m] [\x1B[04mOPTION\x1B[m]… [\x1B[04mFIELD\x1B[m]…
-Try \x1B[01mtest_conv_docv --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_conv_docv\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--field\u{001B}[m=\u{001B}[04mFIELD\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mFIELD\u{001B}[m]…\n\
+test_conv_docv: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m-z\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME
@@ -427,10 +403,8 @@ let test_arg_file =
   parse ["-"] @@ __POS_OF__ ["-"];
   (**)
   error `Term ["-z"; "a"] @@ __POS_OF__
-"test_arg_file: \x1B[31munknown\x1B[m option \x1B[01m-z\x1B[m
-Usage: \x1B[01mtest_arg_file\x1B[m [\x1B[04mOPTION\x1B[m]… [\x1B[04mPATH\x1B[m]…
-Try \x1B[01mtest_arg_file --help\x1B[m for more information.
-";
+"Usage: \u{001B}[01mtest_arg_file\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mPATH\u{001B}[m]…\n\
+test_arg_file: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m-z\u{001B}[m\n";
   (**)
   Testing_cmdliner.snap_man cmd @@ __POS_OF__
 {|NAME

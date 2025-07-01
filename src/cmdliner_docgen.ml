@@ -79,51 +79,54 @@ let synopsis_opt_arg a n =
 let deprecated cmd = match Cmdliner_info.Cmd.deprecated cmd with
 | None -> "" | Some _ -> "(Deprecated) "
 
-let synopsis ?parents cmd = match Cmdliner_info.Cmd.children cmd with
-| [] ->
-    let rev_cli_order (a0, _) (a1, _) =
-      Cmdliner_info.Arg.rev_pos_cli_order a0 a1
-    in
-    let args = Cmdliner_info.Cmd.args cmd in
-    let oargs, pargs =
-      Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args)
-    in
-    let oargs =
-      (* Keep only those that are listed in the s_options section and
-         that are not [--version] or [--help]. * *)
-      let keep a _ =
+let synopsis ?(show_help = false) ?parents cmd =
+  let show_help = if show_help then " [$(b,--help)]" else "" in
+  match Cmdliner_info.Cmd.children cmd with
+  | [] ->
+      let rev_cli_order (a0, _) (a1, _) =
+        Cmdliner_info.Arg.rev_pos_cli_order a0 a1
+      in
+      let args = Cmdliner_info.Cmd.args cmd in
+      let oargs, pargs =
+        Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args)
+      in
+      let oargs =
+        (* Keep only those that are listed in the s_options section and
+           that are not [--version] or [--help]. * *)
+        let keep a _ =
           let drop_names n = n = "--help" || n = "--version" in
           Cmdliner_info.Arg.docs a = Cmdliner_manpage.s_options &&
           not (List.exists drop_names (Cmdliner_info.Arg.opt_names a))
+        in
+        let oargs = Cmdliner_info.Arg.Set.(elements (filter keep oargs)) in
+        let count = List.length oargs in
+        let any_option = "[$(i,OPTION)]…" in
+        if count = 0 || count > 3 then any_option else
+        let syn a =
+          let syn = synopsis_opt_arg a (Cmdliner_info.Arg.opt_name_sample a) in
+          if Cmdliner_info.Arg.is_req a
+          then syn
+          else strf "[%s]" syn
+        in
+        let oargs = List.sort order_args oargs in
+        let oargs = String.concat " " (List.map syn oargs) in
+        String.concat " " [oargs; any_option]
       in
-      let oargs = Cmdliner_info.Arg.Set.(elements (filter keep oargs)) in
-      let count = List.length oargs in
-      let any_option = "[$(i,OPTION)]…" in
-      if count = 0 || count > 3 then any_option else
-      let syn a =
-        let syn = synopsis_opt_arg a (Cmdliner_info.Arg.opt_name_sample a) in
-        if Cmdliner_info.Arg.is_req a
-        then syn
-        else strf "[%s]" syn
+      let pargs =
+        let pargs = Cmdliner_info.Arg.Set.elements pargs in
+        if pargs = [] then "" else
+        let pargs = List.map (fun a -> a, synopsis_pos_arg a) pargs in
+        let pargs = List.sort rev_cli_order pargs in
+        String.concat " " ("" (* add a space *) :: List.rev_map snd pargs)
       in
-      let oargs = List.sort order_args oargs in
-      let oargs = String.concat " " (List.map syn oargs) in
-      String.concat " " [oargs; any_option]
-    in
-    let pargs =
-      let pargs = Cmdliner_info.Arg.Set.elements pargs in
-      if pargs = [] then "" else
-      let pargs = List.map (fun a -> a, synopsis_pos_arg a) pargs in
-      let pargs = List.sort rev_cli_order pargs in
-      String.concat " " ("" (* add a space *) :: List.rev_map snd pargs)
-    in
-    strf "%s$(b,%s) %s%s"
-      (deprecated cmd) (invocation ?parents cmd) oargs pargs
-| _cmds ->
-    let subcmd = match Cmdliner_info.Cmd.has_args cmd with
-    | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
-    in
-    strf "%s$(b,%s) %s …" (deprecated cmd) (invocation ?parents cmd) subcmd
+      strf "%s$(b,%s)%s %s%s"
+        (deprecated cmd) (invocation ?parents cmd) show_help oargs pargs
+  | _cmds ->
+      let subcmd = match Cmdliner_info.Cmd.has_args cmd with
+      | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
+      in
+      strf "%s$(b,%s)%s %s …" (deprecated cmd) (invocation ?parents cmd)
+        show_help subcmd
 
 let cmd_doc cmd =
   let depr = match Cmdliner_info.Cmd.deprecated cmd with
@@ -373,10 +376,9 @@ let pp_man ~env ~errs fmt ppf ei =
 
 (* Plain synopsis for usage *)
 
-let pp_styled_synopsis ~errs ppf ei =
+let styled_usage_synopsis ~errs ei =
   let subst = Cmdliner_info.Eval.doclang_subst ei in
   let cmd = Cmdliner_info.Eval.cmd ei in
   let parents = Cmdliner_info.Eval.parents ei in
-  let synopsis = synopsis ~parents cmd in
-  let syn = Cmdliner_manpage.doc_to_styled ~errs ~subst synopsis in
-  Format.fprintf ppf "@[%s@]" syn
+  let synopsis = synopsis ~show_help:true ~parents cmd in
+  Cmdliner_manpage.doc_to_styled ~errs ~subst synopsis
