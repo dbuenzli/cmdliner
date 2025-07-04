@@ -29,7 +29,7 @@ function _cmdliner_generic {
                 # doc strings. Get in touch if you know any better.
                 item_doc+=" $item_line"
             else
-                item_doc=$item_line
+                item_doc="$item_line"
             fi
         done
         # Sadly trying to use ANSI styling sequences breaks in all sorts
