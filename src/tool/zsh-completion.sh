@@ -32,11 +32,7 @@ function _cmdliner_generic {
                 item_doc="$item_line"
             fi
         done
-        # Sadly trying to use ANSI styling sequences breaks in all sorts
-        # of ways. Get in touch if you know any better. Note this is
-        # not general the protocol allows any escape but these are
-        # the ones cmdliner currently outputs.
-        item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
+        # item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
         completions+=("$item":"$item_doc")
       elif [[ "$type" == "dirs" ]]; then
         _path_files -/
