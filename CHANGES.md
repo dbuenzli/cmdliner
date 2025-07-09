@@ -55,6 +55,8 @@
 - Add `Cmd.make` which should be preferred to `Cmd.v` (`M.v` is nice
   for simulating literals, not for heavy constructor).
 
+- Add `Cmd.Env.info_var`.
+
 - Add `Arg.Completion` a module to define argument completion 
   strategies (#1, #187). 
   

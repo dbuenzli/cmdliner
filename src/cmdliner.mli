@@ -389,6 +389,9 @@ module Cmd : sig
            looked up for.}
         {- [$(env)], the value of [var].}
         {- The variables mentioned in the doc string of {!Cmd.val-info}.}} *)
+
+    val info_var : info -> var
+    (** [info_var info] is the variable described by [info]. *)
   end
 
   type info
