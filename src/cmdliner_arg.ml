@@ -398,11 +398,17 @@ let enum ?(docv = "ENUM") sl =
   let completion = Completion.make ~complete () in
   Conv.make ~docv ~parser ~pp ~completion ()
 
-let filepath =
+let path =
   let parser s = Ok s in
   let pp ppf s = Fmt.string ppf (Filename.quote s) in
   let completion = Completion.make ~dirs:true ~files:true () in
   Conv.make ~docv:"PATH" ~parser ~pp ~completion ()
+
+let filepath =
+  let parser s = Ok s in
+  let pp ppf s = Fmt.string ppf (Filename.quote s) in
+  let completion = Completion.make ~files:true () in
+  Conv.make ~docv:"FILE" ~parser ~pp ~completion ()
 
 let dirpath =
   let parser s = Ok s in

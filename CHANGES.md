@@ -63,7 +63,7 @@
 - Add `Arg.Conv` module to define converters. This should be used in
   new code. 
 
-- Add `Arg.{file,dir}path` string converters equiped with appropriate
+- Add `Arg.{file,dir,}path` string converters equiped with appropriate
   file system completions.
 
 - Add `docv` optional parameter to `Arg.enum`.

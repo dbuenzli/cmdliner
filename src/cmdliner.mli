@@ -993,9 +993,13 @@ module Arg : sig
 
   (** {2:files Files and directories} *)
 
+  val path : string conv
+  (** [path] is like {!string} but prints using {!Filename.quote}
+      and completes both files and directories. *)
+
   val filepath : string conv
   (** [filepath] is like {!string} but prints using {!Filename.quote}
-      and completes both files and directories. *)
+      and completes files. *)
 
   val dirpath : string conv
   (** [dirpath] is like {!string} but prints using {!Filename.quote}
