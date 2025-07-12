@@ -387,7 +387,7 @@ let tool_commands_cmd =
       "$(docv) is the tool executable. Searched in the $(b,PATH) unless \
        an explicit file path is specified."
     in
-    Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:"TOOLEXEC")
+    Arg.(required & pos 0 (some filepath) None & info [] ~doc ~docv:"TOOLEXEC")
   in
   tool_commands tool
 
