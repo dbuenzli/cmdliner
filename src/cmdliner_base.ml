@@ -127,12 +127,14 @@ module Fmt = struct
   (* Text styling *)
 
   type styler = Ansi | Plain
-
   let styler' =
-    ref begin match Sys.getenv_opt "TERM" with
-    | None when Sys.backend_type = Other "js_of_ocaml" -> Ansi
-    | None | Some "dumb" -> Plain
-    | _ -> Ansi
+    ref begin match Sys.getenv_opt "NO_COLOR" with
+    | Some s when s <> "" -> Plain
+    | _ ->
+        match Sys.getenv_opt "TERM" with
+        | Some "dumb" -> Plain
+        | None when Sys.backend_type <> Other "js_of_ocaml" -> Plain
+        | _ -> Ansi
     end
 
   let set_styler styler = styler' := styler

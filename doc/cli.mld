@@ -456,6 +456,20 @@ tool itself:
 cmdliner --__complete --__complete=
 ]}
 
+{1:error_message_styling Error message ANSI styling}
+
+Since Cmdliner 2.0, error messages printed on [stderr] use styled text
+with ANSI escapes unless one of the following conditions is met:
+
+{ul
+{- The [NO_COLOR] environment variable is set and different
+   from the empty string. Yes, even if you have [NO_COLOR=false], that's
+   what the particularly dumb {:https://no-color.org} standard says.}
+{- The [TERM] environment variable is [dumb].}
+{- The [TERM] environment variable is unset and {!Sys.backend_type} is
+   not [Other "js_of_ocaml"] (browser consoles support
+   ANSI escapes, yes you can run Cmdliner in your browser).}}
+
 {1:legacy_prefix_specification Legacy prefix specification}
 
 Before Cmdliner 2.0, command names, long option names and

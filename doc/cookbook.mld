@@ -500,25 +500,14 @@ command of the tool $TOOL.
 {2:cmds_errmsg_styling How can I suppress error message styling?}
 
 Since Cmdliner 2.0, error message printed on [stderr] use styled text
-with ANSI escapes. Styled text is disabled if the [TERM] environment
-variable is [dumb] or unset.
+with ANSI escapes. Styled text is disabled if one of the conditions
+mentioned {{!page-cli.error_message_styling}here} is met.
 
-We feel that this is sufficient, in particular we see no good reason
-to support the unuseful [NO_COLOR] standard, tool specific environment
-variables, tool specific options or to check if [stderr] [isatty] (for
-example it's not when you page output but you likely want colors there
-too). None of these options are very good in practice and supporting
-them adds cruft and wastes development time. The point can be made
-that selective tool ANSI style stripping should be a functionality
-provided by your shell (also the {{:https://repology.org/project/ansifilter/versions}[ansifilter]} tool can be useful).
-
-To sum up the format of error messages of Cmdliner on [stderr] is not
-plain text, it is styled text. If you are unhappy about this or want
-to integrate with your own color environment variable you can use the
+If you want to be more aggressive in suppressing them you can use the
 [err] formatter argument of {{!Cmdliner.Cmd.section-eval}command
 evaluation} functions with a suitable formatter on which a function
 like
-{{:https://erratique.ch/software/b0/doc/B0_std/Fmt/index.html#val-strip_styles}
+{{:https://erratique.ch/software/more/doc/More/Fmt/index.html#val-strip_styles}
 this one} has been applied that automatically strips the styling.
 
 {1:manpage Manpages}
