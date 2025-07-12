@@ -22,9 +22,9 @@
 
 - Fix synopsis rendering of required optional arguments (#203).
 
-- Output error messages on `stderr` with styled text unless `TERM` is `dumb`
-  or undefined (#144). Quoted and typewriter text is in bold. Variables
-  are written as underlines. Key words of error messages are in red.
+- Output error messages on `stderr` with styled text (#144). Quoted
+  and typewriter text is in bold. Variables are written as
+  underlines. Key words of error messages are in red.
 
 - Output error messages after the usage line and remove the `Try with
   $(tool)--help for more information` message. Instead we explicitely
