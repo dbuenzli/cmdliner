@@ -68,6 +68,9 @@
 
 - Add `docv` optional parameter to `Arg.enum`.
 
+- Add `Term.env` which provides access to the environment access 
+  function provided to evaluation functions.
+
 - Clarify the semantics of the `deprecated` argument of
   `Cmdliner.Cmd.info`, `Cmdliner.Arg.info` and
   `Cmdliner.Cmd.Env.info`. First, the language markup is now supported

@@ -140,6 +140,17 @@ EXIT STATUS
 |};
   ()
 
+let test_env =
+  Test.test "Term.env" @@ fun () ->
+  let env = function "HEYHO" -> Some "Let's go" | _ -> None in
+  let cmd =
+    Cmd.make (Cmd.info "test_env" ~doc:"Test Term.env") @@
+    let+ env = Term.env in
+    Test.(option T.string) (env "HEYHO") (Some "Let's go")
+  in
+  Testing_cmdliner.test_eval_result ~env Test.T.unit cmd [] (Ok (`Ok ()));
+  ()
+
 
 let main () =
   let doc = "Test term specifications" in

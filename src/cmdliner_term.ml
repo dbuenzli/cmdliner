@@ -91,3 +91,7 @@ let with_used_args (al, v) : (_ * string list) t =
         let used = List.rev (Cmdliner_info.Arg.Set.fold actual_args al []) in
         Ok (x, used)
     | Error _ as e -> e
+
+
+let env =
+  Cmdliner_info.Arg.Set.empty, (fun ei _ -> Ok (Cmdliner_info.Eval.env_var ei))

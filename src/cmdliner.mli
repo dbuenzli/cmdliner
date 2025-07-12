@@ -271,6 +271,12 @@ module Term : sig
          a manpage in format [format]. If [name] is [None] this is the
          the main command's manpage. If [name] is [Some c] this is
          the man page of the subcommand [c] of the main command.}} *)
+
+  val env : (string -> string option) t
+  (** [env] is the [env] argument given to {{!Cmd.section-eval}command
+      evaluation functions}. If you need to refine the environment
+      lookup done by Cmdliner's machinery you should use this rather
+      than direct calls to {!Sys.getenv_opt}. *)
 end
 
 (** Commands.
@@ -823,8 +829,9 @@ module Arg : sig
       command line and the value [v]{_k} if the name under which it appears
       is in [i]{_k}.
 
-      {b Note.} Environment variable lookup is unsupported for
-      for these arguments. *)
+      {b Note.} Automatic environment variable lookup is unsupported for
+      for these arguments but an [env] in an info will be documented.
+      Use an option and {!Term.env} for manually looking something up. *)
 
   val vflag_all : 'a list -> ('a * info) list -> 'a list t
   (** [vflag_all v l] is like {!vflag} except the flag may appear more
@@ -833,8 +840,9 @@ module Arg : sig
       corresponding value per occurrence of the flag, in the order found on
       the command line.
 
-      {b Note.} Environment variable lookup is unsupported for
-      for these arguments. *)
+      {b Note.} Automatic environment variable lookup is unsupported for
+      for these arguments but an [env] in an info will be documented.
+      Use an option and {!Term.env} for manually looking something up. *)
 
   val opt : ?vopt:'a -> 'a conv -> 'a -> info -> 'a t
   (** [opt vopt c v i] is an ['a] argument defined by the value of

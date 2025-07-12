@@ -45,3 +45,4 @@ val cli_parse_result' : ('a, string) result t -> 'a t
 val main_name : string t
 val choice_names : string list t
 val with_used_args : 'a t -> ('a * string list) t
+val env : (string -> string option) t
