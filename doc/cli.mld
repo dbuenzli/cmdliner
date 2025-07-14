@@ -458,7 +458,7 @@ cmdliner --__complete --__complete=
 
 {1:error_message_styling Error message ANSI styling}
 
-Since Cmdliner 2.0, error messages printed on [stderr] use styled text
+Since Cmdliner 2.0 error messages printed on [stderr] use styled text
 with ANSI escapes unless one of the following conditions is met:
 
 {ul
@@ -467,8 +467,8 @@ with ANSI escapes unless one of the following conditions is met:
    what the particularly dumb {:https://no-color.org} standard says.}
 {- The [TERM] environment variable is [dumb].}
 {- The [TERM] environment variable is unset and {!Sys.backend_type} is
-   not [Other "js_of_ocaml"] (browser consoles support
-   ANSI escapes, yes you can run Cmdliner in your browser).}}
+   not [Other "js_of_ocaml"]. Yes, browser consoles support
+   ANSI escapes. Yes, you can run Cmdliner in your browser.}}
 
 {1:legacy_prefix_specification Legacy prefix specification}
 
