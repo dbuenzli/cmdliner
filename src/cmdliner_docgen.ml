@@ -24,9 +24,7 @@ let order_args a0 a1 =
   | true, false -> -1 (* positional first *)
   | false, true -> 1  (* optional after *)
 
-
 let esc = Cmdliner_manpage.escape
-
 
 let sorted_items_to_blocks ~boilerplate:b items =
   (* Items are sorted by section and then rev. sorted by appearance.
@@ -260,11 +258,13 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
     let envs = (Cmdliner_info.Env.info_docs e, `I (var, doc)) :: envs in
     seen, envs
   in
-  let add_arg_env a _ acc = match Cmdliner_info.Arg.env a with
-  | None -> acc
-  | Some e ->
-      let subst = Cmdliner_info.Arg.doclang_subst ~subst a in
-      add_env_item ~subst acc e
+  let add_arg_envs a _ acc =
+    let envs = Cmdliner_info.Arg.doc_envs a in
+    let envs = match Cmdliner_info.Arg.env a with
+    | None -> envs | Some e -> e :: envs
+    in
+    let subst = Cmdliner_info.Arg.doclang_subst ~subst a in
+    List.fold_left (add_env_item ~subst) acc envs
   in
   let add_env acc e =
     let subst = Cmdliner_info.Env.doclang_subst ~subst e in
@@ -279,7 +279,7 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
   let args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
   let tenvs = Cmdliner_info.Cmd.envs @@ Cmdliner_info.Eval.cmd ei in
   let init = Cmdliner_info.Env.Set.empty, [] in
-  let acc = Cmdliner_info.Arg.Set.fold add_arg_env args init in
+  let acc = Cmdliner_info.Arg.Set.fold add_arg_envs args init in
   let _, envs = List.fold_left add_env acc tenvs in
   let envs = List.sort by_sec_by_rev_name envs in
   let envs = (envs :> (string * Cmdliner_manpage.block) list) in

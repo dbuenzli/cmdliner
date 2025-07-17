@@ -105,6 +105,7 @@ module Arg = struct
       env : Env.info option; (* environment variable for default value. *)
       doc : string; (* help. *)
       docv : string; (* variable name for the argument in help. *)
+      doc_envs : Env.info list; (* environment that needs to be added to docs *)
       docs : string; (* title of help section where listed. *)
       pos : pos_kind; (* positional arg kind. *)
       opt_kind : opt_kind; (* optional arg kind. *)
@@ -113,7 +114,9 @@ module Arg = struct
 
   let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
-  let make ?deprecated ?(absent = "") ?docs ?(docv = "") ?(doc = "") ?env names
+  let make
+      ?deprecated ?(absent = "") ?docs ?(doc_envs = []) ?(docv = "")
+      ?(doc = "") ?env names
     =
     let dash n = if String.length n = 1 then "-" ^ n else "--" ^ n in
     let opt_names = List.map dash names in
@@ -125,8 +128,8 @@ module Arg = struct
         | _ -> Cmdliner_manpage.s_options
     in
     { id = Cmdliner_base.uid (); deprecated; absent = Doc absent;
-      env; doc; docv; docs; pos = dumb_pos; opt_kind = Flag; opt_names;
-      opt_all = false; }
+      env; doc; docv; doc_envs; docs; pos = dumb_pos;
+      opt_kind = Flag; opt_names; opt_all = false; }
 
   let id i = i.id
   let deprecated i = i.deprecated
@@ -134,6 +137,7 @@ module Arg = struct
   let env i = i.env
   let doc i = i.doc
   let docv i = i.docv
+  let doc_envs i = i.doc_envs
   let docs i = i.docs
   let pos_kind i = i.pos
   let opt_kind i = i.opt_kind

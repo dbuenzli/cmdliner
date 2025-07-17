@@ -47,15 +47,25 @@
   used and should be prefered instead of `$(iname)`, `$(tname)` and
   `$(mname)`.
 
-- Make `Cmdliner.Arg.conv` abstract. Thanks to Andrey Popp for
+- Make `Cmdliner.Arg.conv` abstract.  Thanks to Andrey Popp for
   the patch (#206).
+
+- Thanks to the previous point, use the `docv` parameter of argument
+  converters can now be used to define the default value used by `docv` in
+  `Arg.info`. See `Arg.Conv.docv`.
 
 - Add `Manpage.section_name` type alias (#202).
 
-- Add `Cmd.make` which should be preferred to `Cmd.v` (`M.v` is nice
-  for simulating literals, not for heavy constructor).
+- Add `Cmd.make` which should be preferred to `Cmd.v` (The `M.v` notation is
+  nice for simulating literals, not for heavy constructor).
 
-- Add `Cmd.Env.info_var`.
+- Add `Cmd.Env.info_var`. To get back the environment variable name
+  from a variable info.
+
+- Add optional `doc_envs` argument to `Arg.info` for adding the given
+  environment variables info to the command in which the argument is used.
+  Sometimes more than one variable make sense and the `env` argument is
+  not directly used.
 
 - Add `Arg.Completion` a module to define argument completion 
   strategies (#1, #187). 

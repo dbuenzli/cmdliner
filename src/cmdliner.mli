@@ -757,7 +757,8 @@ module Arg : sig
 
   val info :
     ?deprecated:string -> ?absent:string -> ?docs:Manpage.section_name ->
-    ?docv:string -> ?doc:string -> ?env:Cmd.Env.info -> string list -> info
+    ?doc_envs:Cmd.Env.info list -> ?docv:string -> ?doc:string ->
+    ?env:Cmd.Env.info -> string list -> info
   (** [info docs docv doc env names] defines information for
       an argument.
       {ul
@@ -774,7 +775,11 @@ module Arg : sig
          {{!doc_helpers}These functions} can help with formatting argument
          values.}
       {- [docv] is for positional and non-flag optional arguments.
-         It is a variable name used in the man page to stand for their value.}
+         It is a variable name used in the man page to stand for their value.
+         If unspecified is taken from the argument converter's, see
+         {!Conv.docv}.}
+      {- [doc_envs] is a list of environment variable that are
+         added to the manual of the command when the argument is used.}
       {- [docs] is the title of the man page section in which the argument
          will be listed. For optional arguments this defaults
          to {!Manpage.s_options}. For positional arguments this defaults

@@ -77,8 +77,9 @@ module Arg : sig
 
   type t
   val make :
-    ?deprecated:string -> ?absent:string -> ?docs:string -> ?docv:string ->
-    ?doc:string -> ?env:Env.info -> string list -> t
+    ?deprecated:string -> ?absent:string -> ?docs:string ->
+    ?doc_envs:Env.info list -> ?docv:string -> ?doc:string ->
+    ?env:Env.info -> string list -> t
 
   val id : t -> int
   val deprecated : t -> string option
@@ -86,6 +87,7 @@ module Arg : sig
   val env : t -> Env.info option
   val doc : t -> string
   val docv : t -> string
+  val doc_envs : t -> Env.info list
   val docs : t -> string
   val opt_names : t -> string list (* has dashes *)
   val opt_name_sample : t -> string (* warning must be an opt arg *)
