@@ -26,10 +26,10 @@ let ho_cmd =
   let+ unit = Term.const () in
   ho unit
 
-let tool_cmd =
+let cmd =
   let doc = "The tool synopsis is TODO" in
   Cmd.group (Cmd.info "TODO-toolname" ~version:"%%VERSION%%" ~doc) @@
   [hey_cmd; ho_cmd]
 
-let main () = Cmd.eval' tool_cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())

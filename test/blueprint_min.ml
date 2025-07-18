@@ -8,11 +8,11 @@ let tool () = Cmdliner.Cmd.Exit.ok
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-let tool_cmd =
+let cmd =
   let doc = "The tool synopsis is TODO" in
   Cmd.make (Cmd.info "TODO-toolname" ~doc) @@
   let+ unit = Term.const () in
   tool unit
 
-let main () = Cmd.eval' tool_cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())

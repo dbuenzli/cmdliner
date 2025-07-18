@@ -131,8 +131,8 @@ let tool … = …; exit_ok
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-let tool_cmd = … (* Has a term that invokes [tool] *)
-let main () = Cmd.eval' tool_cmd
+let cmd = … (* Has a term that invokes [tool] *)
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
@@ -167,12 +167,12 @@ val cmd : int Cmdliner.Cmd.t
 
 And the [tool_main.ml] gathers them with a {!Cmdliner.Cmd.group}:
 {[
-let tool =
+let cmd =
   let default = Term.(ret (const (`Help (`Auto, None)))) (* show help *) in
   Cmd.group (Cmd.info "tool") ~default @@
   [Cmd_import.cmd; Cmd_serve.cmd; Cmd_user.cmd]
 
-let main () = Cmd.value' tool
+let main () = Cmd.value' cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
@@ -408,7 +408,8 @@ you use the argument's term in the command's term.
 
 However if your command implementation looks up other variables and you
 wish to document them in the command's man page, use the [envs]
-argument of {!Cmdliner.Cmd.val-info}.
+argument of {!Cmdliner.Cmd.val-info} or the [docs_env] argument
+of {!Cmdliner.Arg.val-info}.
 
 This documents in the {!Cmdliner.Manpage.s_environment} manual section
 of [tool] that [EDITOR] is looked up to find the tool to invoke to
@@ -417,7 +418,7 @@ edit the files:
 {[
 let editor_env = "EDITOR"
 let tool … = … Sys.getenv_opt editor_env
-let tool_cmd =
+let cmd =
    let env = Cmd.Env.info editor_env ~doc:"The editor used to edit files." in
    Cmd.make (Cmd.info "tool" ~envs:[env]) @@
    …
@@ -449,7 +450,7 @@ While it is usually {{!tip_avoid_default_command}not advised} to have a default
 command in a group, just showing docs is acceptable. A term can request
 Cmdliner's generated help by using {!Cmdliner.Term.val-ret}:
 {[
-let group =
+let group_cmd =
   let default = Term.(ret (const (`Help (`Auto, None)))) (* show help *) in
   Cmd.group (Cmd.info "group") ~default @@
   [first_cmd; second_cmd]
@@ -567,12 +568,12 @@ let tool () = Cmdliner.Cmd.Exit.ok
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-let tool_cmd =
+let cmd =
   Cmd.make (Cmd.info "TODO" ~version:"%%VERSION%%") @@
   let+ unit = Term.const () in
   tool unit
 
-let main () = Cmd.eval' tool_cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
@@ -593,7 +594,7 @@ let infile =
   let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
   Arg.(value & pos 0 string "-" & info [] ~doc ~docv:"FILE")
 
-let tool_cmd =
+let cmd =
   let doc = "The tool synopsis is TODO" in
   let man = [
     `S Manpage.s_description;
@@ -607,7 +608,7 @@ let tool_cmd =
   let+ flag and+ infile in
   tool ~flag ~infile
 
-let main () = Cmd.eval' tool_cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
@@ -641,11 +642,11 @@ let ho_cmd =
   let+ unit = Term.const () in
   ho unit
 
-let tool_cmd =
+let cmd =
   let doc = "The tool synopsis is TODO" in
   Cmd.group (Cmd.info "TODO" ~version:"%%VERSION%%" ~doc) @@
   [hey_cmd; ho_cmd]
 
-let main () = Cmd.eval' tool_cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
