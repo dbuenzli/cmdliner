@@ -28,13 +28,13 @@ let id =
   Arg.(value & opt int ~vopt:10 0 & info ["id"; "i"] ~env ~docv:"ID)" ~doc)
 
 let miaouw =
-  let doc = "See option $(opt). These are term names $(tool) $(cmdname)" in
+  let doc = "See option $(opt). These are term names $(tool) $(cmd.name)" in
   let docs = "MIAOUW SECTION (non-standard unpositioned do not do this)" in
   let env = Cmd.Env.info "TEST_MIAOUW" ~doc ~docs in
   let doc = "Whatever this is the doc var $(docv) this is the env var $(env) \
              this is the opt $(opt) and this is $(i,italic) and this is
              $(b,bold) and this $(b,\\$(opt\\)) is \\$(opt) in bold and this
-             \\$ is a dollar. $(tool) is the main command name, $(cmdname) \
+             \\$ is a dollar. $(tool) is the main command name, $(cmd.name) \
              is the subcommand name and $(cmd) the command invocation."
   in
   Arg.(value & opt string "miaouw" & info ["m";] ~env ~docv:"MIAOUW" ~doc)
@@ -47,15 +47,15 @@ let man_test_t = Term.(const test $ hey $ repodir $ id $ miaouw)
 
 let info =
   let doc = "UTF-8 test: \u{1F42B} íöüóőúűéáăîâșț ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝" in
-  let envs = [ Cmd.Env.info "TEST_IT" ~doc:"This is $(env) for $(cmdname)" ] in
-  let exits = (Cmd.Exit.info ~doc:"This is a $(status) for $(cmdname)" 1 ::
+  let envs = [ Cmd.Env.info "TEST_IT" ~doc:"This is $(env) for $(cmd.name)" ] in
+  let exits = (Cmd.Exit.info ~doc:"This is a $(status) for $(cmd.name)" 1 ::
                Cmd.Exit.info ~doc:"Ranges from $(status) to $(status_max)"
                  ~max:10 2 ::
                Cmd.Exit.defaults)
   in
   let man = [
     `S "THIS IS A SECTION FOR $(tool)";
-    `P "$(cmdname) subst at begin and end $(tool)";
+    `P "$(cmd.name) subst at begin and end $(tool)";
     `P "$(i,italic) and $(b,bold)";
     `P "\\$ escaped \\$\\$ escaped \\$";
     `P "This does not fail \\$(a)";

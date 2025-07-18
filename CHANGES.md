@@ -27,7 +27,7 @@
   underlines. Key words of error messages are in red.
 
 - Output error messages after the usage line and remove the `Try with
-  $(tool)--help for more information` message. Instead we explicitely
+  $(tool) --help for more information` message. Instead we explicitly
   indicate the `--help` option in the usage line. Having the error message
   at the end makes it easier to spot.
 
@@ -43,9 +43,10 @@
 
 - Reserve the `--__complete` option for library use.
 
-- Documentation language, `$(cmd)`, `$(cmdname)` and `$(tool)` can be
-  used and should be prefered instead of `$(iname)`, `$(tname)` and
-  `$(mname)`.
+- Documentation language, `$(cmd)`, `$(cmd.name)` and `$(tool)` can be
+  used and should be prefered over of `$(iname)`, `$(tname)` and
+  `$(mname)`. `$(cmd.parent)` is added to refer to a command's parent
+  or itself at the root.
 
 - Make `Cmdliner.Arg.conv` abstract.  Thanks to Andrey Popp for
   the patch (#206).

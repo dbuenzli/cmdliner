@@ -102,7 +102,8 @@ open Cmdliner.Term.Syntax
 
 let sample_group_cmd =
   let man = [ `P "Invoke command with $(cmd), the command name is \
-                  $(cmdname), the tool name is $(tool)." ] in
+                  $(cmd.name), the parent is $(cmd.parent) and the tool \
+                  name is $(tool)." ] in
   let kind =
     let doc = "Kind of entity" in
     Arg.(value & opt (some string) None & info ["k";"kind"] ~doc)

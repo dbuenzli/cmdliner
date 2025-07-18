@@ -288,12 +288,18 @@ module Eval = struct
   let main i = match List.rev i.parents with [] -> i.cmd | m :: _ -> m
   let with_cmd i cmd = { i with cmd }
 
+  let doclang_name n = strf "$(b,%s)" (Cmd.escaped_name n)
+  let doclang_names names =
+    strf "$(b,%s)" (Cmdliner_manpage.escape (String.concat " " names))
+
   let doclang_subst ei = function
-  | "tname" | "cmdname" -> Some (strf "$(b,%s)" (Cmd.escaped_name ei.cmd))
-  | "mname" | "tool" -> Some (strf "$(b,%s)" (Cmd.escaped_name (main ei)))
+  | "tname" | "cmd.name" -> Some (doclang_name ei.cmd)
+  | "mname" | "tool" -> Some (doclang_name (main ei))
+  | "cmd.parent" ->
+      let parents = parents ei in
+      if parents = [] then Some (doclang_name (main ei)) else
+      Some (doclang_names (List.rev_map Cmd.name parents))
   | "iname" | "cmd" ->
-      let cmd = cmd ei :: parents ei in
-      let cmd = String.concat " " (List.rev_map Cmd.name cmd) in
-      Some (strf "$(b,%s)" (Cmdliner_manpage.escape cmd))
+      Some (doclang_names (List.rev_map Cmd.name (cmd ei :: parents ei)))
   | _ -> None
 end

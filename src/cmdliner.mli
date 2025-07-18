@@ -439,15 +439,17 @@ module Cmd : sig
       [doc], [deprecated], [man], [envs], [exits] support the
       {{!page-tool_man.doclang} documentation markup language} in which the
       following variables are recognized:
+
       {ul
-      {- [$(cmdname)] the command's name}
       {- [$(tool)] the main, topmost, command name.}
       {- [$(cmd)] the command invocation from main command to the
-         command name.}}
+         command name.}
+      {- [$(cmd.name)] the command's name.}
+      {- [$(cmd.parent)] the command's parent or the main command if none.}}
 
-      Previously these names were refered to as [$(tname)], [$(mname)]
-      and [$(iname)], they still work but do not use them, they
-      are obscure. *)
+      Previously some of these names were refered to as [$(tname)],
+      [$(mname)] and [$(iname)], they still work but do not use them,
+      they are obscure. *)
 
 
   (** {1:cmds Commands} *)

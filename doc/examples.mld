@@ -76,7 +76,7 @@ let rm_cmd =
         $(b,-foo), use one of these commands:";
     `Pre "$(cmd) $(b,-- -foo)"; `Noblank;
     `Pre "$(cmd) $(b,./-foo)";
-    `P "$(cmdname) removes symbolic links, not the files referenced by the
+    `P "$(cmd.name) removes symbolic links, not the files referenced by the
         links.";
     `S Manpage.s_bugs; `P "Report bugs to <bugs@example.org>.";
     `S Manpage.s_see_also; `P "$(b,rmdir)(1), $(b,unlink)(2)" ]

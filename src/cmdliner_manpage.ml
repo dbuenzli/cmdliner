@@ -517,8 +517,8 @@ let pp_to_pager env print ppf v = match find_pager env with
         | None -> None
         | Some f when Sys.win32 ->
             (* For some obscure reason the pipe below does not
-                 work. We need to use a temporary file.
-                 https://github.com/dbuenzli/cmdliner/issues/166 *)
+               work. We need to use a temporary file.
+               https://github.com/dbuenzli/cmdliner/issues/166 *)
             begin match tmp_file_for_pager () with
             | None -> None
             | Some tmp ->
