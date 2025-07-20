@@ -6,6 +6,24 @@
 let strf = Printf.sprintf
 let error_to_failure = function Ok v -> v | Error e -> failwith e
 
+let find_sub ?(start = 0) ~sub s =
+  (* naive algorithm, worst case O(length sub * length s) *)
+  let len_sub = String.length sub in
+  let len_s = String.length s in
+  let max_idx_sub = len_sub - 1 in
+  let max_idx_s = if len_sub <> 0 then len_s - len_sub else len_s - 1 in
+  let rec loop i k =
+    if i > max_idx_s then None else
+    if k > max_idx_sub then Some i else
+    if k > 0 then
+      if String.get sub k = String.get s (i + k)
+      then loop i (k + 1) else loop (i + 1) 0
+    else
+    if String.get sub 0 = String.get s i
+    then loop i 1 else loop (i + 1) 0
+  in
+  loop start 0
+
 let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   (* On Windows -p does not exist we do it ourselves on all platforms. *)
   let err_cmd exit cmd =
@@ -20,6 +38,28 @@ let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   let parent = Filename.dirname dir in
   (if String.equal dir parent then () else mkdir (Filename.dirname dir));
   (if Sys.file_exists dir then () else run_cmd ["mkdir"; dir])
+
+let read_file file =
+  (* In_channel is < 4.14 *)
+  let read file ic =
+    try
+      (* This fails on `stdin` or large files on 32-bit. Once we require
+         4.14 In_channel.input_all handles these quirks. *)
+      let len = in_channel_length ic in
+      let buf = Bytes.create len in
+      really_input ic buf 0 len; close_in ic;
+      Ok (Bytes.unsafe_to_string buf)
+    with
+    | Sys_error e -> Error (Printf.sprintf "%s: %s" file e)
+  in
+  let binary_stdin () = set_binary_mode_in stdin true in
+  try match file with
+  | "-" -> binary_stdin (); read file stdin
+  | file ->
+      let ic = open_in_bin file in
+      let finally () = close_in_noerr ic in
+      Fun.protect ~finally @@ fun () -> read file ic
+  with Sys_error e -> Error e
 
 let write_file file s =
   (* Out_channel is < 4.14 *)
@@ -55,6 +95,42 @@ let exec_stdout cmd =
     | exit -> Error (strf "%s: exited with %d" exec exit)
   with
   | Sys_error e -> Error e
+
+(* Opam .install file updating *)
+
+let update_opam_install_section ~opam_src ~section moves =
+  (* Can fail in all sorts of ways if the '$(section):' string appears
+     in the file moves of [opam_src] *)
+  let move_to_string (src, dst) = Printf.sprintf "  %S {%S}" src dst in
+  let open_section ~section opam_src =
+    let section = section ^ ":" in
+    match find_sub ~sub:section opam_src with
+    | None -> (strf "%s\n%s [" opam_src section), " ]"
+    | Some start ->
+        match String.index_from_opt opam_src start '[' with
+        | None ->
+            failwith (strf "Could not open section %s in opam file" section)
+        | Some i ->
+            let j = i + 1 in
+            String.sub opam_src 0 j,
+            String.sub opam_src j (String.length opam_src - j)
+  in
+  let before, after = open_section ~section opam_src in
+  let moves = List.rev_map move_to_string moves in
+  let moves = String.concat "\n" ("" :: moves) in
+  String.concat "" [before; moves; after]
+
+let maybe_update_opam_install_file ~update_opam_install section moves =
+  match update_opam_install with
+  | None -> ()
+  | Some "-" -> failwith "- is stdin, it cannot be updated"
+  | Some file ->
+      let opam_src =
+        if not (Sys.file_exists file) then "" else
+        read_file file |> error_to_failure
+      in
+      let src = update_opam_install_section ~opam_src ~section moves in
+      write_file file src |> error_to_failure
 
 (* Cmdliner based tool introspection.
 
@@ -134,10 +210,7 @@ let get_tool_manpages tool ~name = match get_tool_commands tool with
 | Error _ as e -> e
 | Ok cmds ->
     try
-      let man cmd = match get_tool_command_man tool ~name cmd with
-      | Error e -> failwith e
-      | Ok man -> man
-      in
+      let man cmd = get_tool_command_man tool ~name cmd |> error_to_failure in
       Ok (List.sort compare (List.map man ("" :: cmds)))
     with
     | Failure e -> Error e
@@ -213,66 +286,82 @@ let tool_completion (module Shell : SHELL) ~toolname =
 
 (* Install commands *)
 
-let install_generic_completion ~dry_run shells sharedir =
+let install_generic_completion ~dry_run ~update_opam_install shells sharedir =
   with_binary_stdout @@ fun () ->
-  let install ~dry_run sharedir (module Shell : SHELL) =
+  let install ~dry_run sharedir acc (module Shell : SHELL) =
+    let rel_path = Filename.concat Shell.sharedir Shell.generic_script_name in
     let dest = Filename.concat sharedir Shell.sharedir in
-    let path = Filename.concat dest Shell.generic_script_name in
+    let path = Filename.concat sharedir rel_path in
     mkdir ~dry_run dest;
     write_file ~dry_run path Shell.generic_completion;
+    (path, rel_path) :: acc
   in
-  List.iter (install ~dry_run sharedir) shells;
-  Cmdliner.Cmd.Exit.ok
+  try
+    let moves = List.fold_left (install ~dry_run sharedir) [] shells in
+    maybe_update_opam_install_file ~update_opam_install "share_root" moves;
+    Cmdliner.Cmd.Exit.ok
+  with Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
 
-let install_tool_completion ~dry_run ~shells ~toolnames ~sharedir =
+let install_tool_completion
+    ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
+  =
   with_binary_stdout @@ fun () ->
-  let install ~dry_run ~toolnames sharedir (module Shell : SHELL) =
-    let dest = Filename.concat sharedir Shell.sharedir in
-    let write toolname =
-      let path = Filename.concat dest (Shell.tool_script_name ~toolname) in
-      write_file ~dry_run path (Shell.tool_completion ~toolname)
+  let install ~dry_run ~toolnames sharedir acc (module Shell : SHELL) =
+    let write acc toolname =
+      let rel_path =
+        Filename.concat Shell.sharedir (Shell.tool_script_name ~toolname)
+      in
+      let path = Filename.concat sharedir rel_path  in
+      write_file ~dry_run path (Shell.tool_completion ~toolname);
+      (path, rel_path) :: acc
     in
-    mkdir ~dry_run dest;
-    List.iter write toolnames
+    mkdir ~dry_run (Filename.concat sharedir Shell.sharedir);
+    List.fold_left write acc toolnames
   in
-  List.iter (install ~dry_run ~toolnames sharedir) shells;
-  Cmdliner.Cmd.Exit.ok
+  let moves = List.fold_left (install ~dry_run ~toolnames sharedir) [] shells in
+  try
+    maybe_update_opam_install_file ~update_opam_install "share_root" moves;
+    Cmdliner.Cmd.Exit.ok
+  with Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
 
-let install_tool_manpages ~dry_run ~tools ~mandir =
+let install_tool_manpages ~dry_run ~update_opam_install ~tools ~mandir =
   (* Note this correctly handles manpages sections but at the moment
      all manpages for tool and commands are in section 1. *)
   let rec get_mans tool =
     let tool, name = split_toolname tool in
-    match get_tool_manpages tool ~name with
-    | Ok mans -> mans
-    | Error e -> failwith e
+    get_tool_manpages tool ~name |> error_to_failure
   in
   try
     let mans = List.sort compare (List.concat (List.map get_mans tools)) in
-    let rec install ~dry_run ~last_sec = function
+    let rec install ~dry_run ~last_sec acc = function
     | (sec, basename, man) :: mans ->
-        let mandir = Filename.concat mandir (strf "man%d" sec) in
-        let manfile = Filename.concat mandir (strf "%s.%d" basename sec) in
-        if last_sec <> sec then mkdir ~dry_run mandir;
-        write_file ~dry_run manfile man;
-        install ~dry_run ~last_sec:sec mans
-    | [] -> ()
+        let secdir = strf "man%d" sec in
+        let rel_path = Filename.concat secdir (strf "%s.%d" basename sec) in
+        let path = Filename.concat mandir rel_path in
+        if last_sec <> sec then mkdir ~dry_run (Filename.concat mandir secdir);
+        write_file ~dry_run path man;
+        install ~dry_run ~last_sec:sec ((path, rel_path) :: acc) mans
+    | [] -> acc
     in
-    install ~dry_run ~last_sec:(-1) mans;
+    let moves = install ~dry_run ~last_sec:(-1) [] mans in
+    maybe_update_opam_install_file ~update_opam_install "man" moves;
     Cmdliner.Cmd.Exit.ok
   with Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
 
-let install_tool_support ~dry_run tools shells ~prefix ~sharedir ~mandir =
+let install_tool_support
+    ~dry_run ~update_opam_install tools shells ~prefix ~sharedir ~mandir
+  =
   let sharedir = match sharedir with
   | None -> Filename.concat prefix "share" | Some sharedir -> sharedir
   in
   let mandir = match mandir with
   | None -> Filename.concat sharedir "man" | Some mandir -> mandir
   in
-  let rc = install_tool_manpages ~dry_run ~tools ~mandir in
+  let rc = install_tool_manpages ~dry_run ~update_opam_install ~tools ~mandir in
   if rc <> Cmdliner.Cmd.Exit.ok then rc else
   let toolnames = List.map snd (List.map split_toolname tools) in
-  install_tool_completion ~dry_run ~shells ~toolnames ~sharedir
+  install_tool_completion
+    ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
 
 (* Tool command listing command *)
 
@@ -288,6 +377,15 @@ open Cmdliner.Term.Syntax
 let dry_run =
   let doc = "Do not install, output paths that would be written." in
   Arg.(value & flag & info ["dry-run"] ~doc)
+
+let update_opam_install =
+  let doc =
+    "Update or create an opam $(b,.install) file $(docv) with install moves \
+     from the installed files to the corresponding opam install sections. \
+     Also performed if $(b,--dry-run) is specified."
+  in
+  Arg.(value & opt (some filepath) None &
+       info ["update-opam-install"] ~doc ~docv:"PKG.install")
 
 let prefix =
   let doc = "$(docv) is the install prefix. For example $(b,/usr/local)." in
@@ -425,9 +523,9 @@ let install_generic_completion_cmd =
   in
   Cmd.make (Cmd.info "generic-completion" ~doc ~man) @@
   (* No let punning in < 4.13 *)
-  let+ dry_run = dry_run and+ shells = shells_opt
+  let+ dry_run = dry_run and+ shells = shells_opt and+ update_opam_install
   and+ sharedir_pos0 = sharedir_pos0 in
-  install_generic_completion ~dry_run shells sharedir_pos0
+  install_generic_completion ~dry_run ~update_opam_install shells sharedir_pos0
 
 let install_tool_completion_cmd =
   let doc = "Install tool completion scripts" in
@@ -448,9 +546,10 @@ let install_tool_completion_cmd =
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
   (* No let punning in < 4.13 *)
-  let+ dry_run = dry_run and+ shells = shells_opt
+  let+ dry_run = dry_run and+ shells = shells_opt and+ update_opam_install
   and+ toolnames = toolnames_posleft and+ sharedir = sharedir_poslast in
-  install_tool_completion ~dry_run ~shells ~toolnames ~sharedir
+  install_tool_completion
+    ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
 
 let install_tool_manpages_cmd =
   let doc = "Install tool and subcommand manpages" in
@@ -467,9 +566,9 @@ let install_tool_manpages_cmd =
   ]
   in
   Cmd.make (Cmd.info "tool-manpages" ~doc ~man) @@
-  let+ dry_run = dry_run
+  let+ dry_run = dry_run and+ update_opam_install
   and+ tools = tools_posleft and+ mandir = mandir_poslast in
-  install_tool_manpages ~dry_run ~tools ~mandir
+  install_tool_manpages ~dry_run ~update_opam_install ~tools ~mandir
 
 let install_tool_support_cmd =
   let doc = "Install both tool completion and manpages" in
@@ -483,13 +582,17 @@ let install_tool_support_cmd =
         not the case (e.g. in $(b,opam) as of writing).
         Use option $(b,--dry-run) to see which paths would be written. \
         Example:";
-    `Pre "$(cmd) $(b,./mytool) $(b,/usr/local)"; ]
+    `Pre "$(cmd) $(b,./mytool /usr/local)"; `Noblank;
+    `Pre "$(cmd) $(b,--update-opam-install=mypkg.install) \\\\ \n\
+          \         $(b,_build/mytool _build/prefix)";
+  ]
   in
   Cmd.make (Cmd.info "tool-support" ~doc ~man) @@
-  let+ dry_run = dry_run and+ shells = shells_opt
+  let+ dry_run = dry_run and+ update_opam_install and+ shells = shells_opt
   and+ tools = tools_posleft and+ sharedir = sharedir_opt
   and+ mandir = mandir_opt and+ prefix = prefix in
-  install_tool_support ~dry_run tools shells ~prefix ~sharedir ~mandir
+  install_tool_support
+    ~dry_run ~update_opam_install tools shells ~prefix ~sharedir ~mandir
 
 let install_cmd =
   let doc = "Install support files for cmdliner tools" in
@@ -503,7 +606,7 @@ let install_cmd =
   [install_generic_completion_cmd; install_tool_completion_cmd;
    install_tool_manpages_cmd; install_tool_support_cmd]
 
-let main_cmd =
+let cmd =
   let doc = "Helper tool for cmdliner based tools" in
   let default = Term.(ret (const (`Help (`Pager, None)))) in
   let man =
@@ -516,5 +619,5 @@ let main_cmd =
   Cmd.group (Cmd.info "cmdliner" ~version:"%%VERSION%%" ~doc ~man) ~default @@
   [generic_completion_cmd; tool_commands_cmd; tool_completion_cmd; install_cmd]
 
-let main () = Cmd.eval' main_cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())

@@ -171,22 +171,10 @@ cmdliner install tool-manpages thetool $MANDIR
 This looks up [thetool] in the [PATH]. Use an explicit file path like
 [./thetool] to directly specify an executable.
 
-If your are installing your package for [thetool] with [opam]
-and have [cmdliner] as a direct dependency and your tool is located
-in the build at the path [$BUILD/thetool] you can add the following
-[install:] instruction (also works if your build system is using
-a [.install] file).
-{@sh[
-install: ["cmdliner" "install" "tool-manpages" "$BUILD/thetool" "%{man}%"]
-]}
-Note that you need to specify the path to the built executable, trying
-to lookup the tool in the [PATH] does not work as the install does not
-see it yet. If [cmdliner] is only an optional dependency use the
-[{cmdliner:installed}] opam filter on the command invocation.
-
-If you are also {{!install_tool_completion}installing completions} rather
-use the [install tool-support] command, see this
-{{!page-cookbook.tip_tool_support}cookbook tip}.
+If you are also {{!install_tool_completion}installing completions}
+rather use the [install tool-support] command, see this
+{{!page-cookbook.tip_tool_support}cookbook tip} which also has
+instructions on how to install if you are using [opam].
 
 {1:cli_completion Command line completion}
 
@@ -228,7 +216,10 @@ compinit -u
 
 Also make sure this {b happens before} [opam]'s [zsh] init script
 inclusion, see {{:https://github.com/ocaml/opam/issues/6428}this
-issue}.
+issue}. Note that these instruction do not react dynamically
+to [opam] switches changes so you may see odd completion behaviours
+when you do so, see this {{:https://github.com/ocaml/opam/issues/6427}this
+opam issue}.
 
 After this, to test everything is right, check that the [_cmdliner_generic]
 function can be looked by invoking it (this will result in an error).
@@ -270,6 +261,11 @@ you are using [opam]. You should add something like this to your
 {@sh[
 XDG_DATA_DIRS="$(opam var share):${XDG_DATA_DIRS}"
 ]}
+
+Note that these instruction do not react dynamically to [opam]
+switches changes so you may see odd completion behaviours when you do
+so, see this {{:https://github.com/ocaml/opam/issues/6427}this opam
+issue}.
 
 After this, to test everything is right, check that the [_cmdliner_generic]
 function can be looked up:
@@ -352,22 +348,10 @@ cmdliner install tool-completion --shell zsh thetool $SHAREDIR # Only zsh
 Directories are created as needed. Use option [--dry-run] to see which
 paths would be written by an [install] invocation.
 
-If you are installing your package for [thetool] with [opam] and have
-[cmdliner] as a direct dependency you can add the following to your
-[install:] instructions. It will install completion support for all
-shells supported by [cmdliner] (also works if your build system is
-using a [.install] file):
-
-{@sh[
-install: [ "cmdliner" "install" "tool-completion" "thetool" "%{share}%"]
-]}
-
-If [cmdliner] is only an optional dependency use the [{cmdliner:installed}]
-filter on the command invocation.
-
 If you are also {{!install_tool_manpages}installing manpages} rather
 use the [install tool-support] command, see this
-{{!page-cookbook.tip_tool_support}cookbook tip}.
+{{!page-cookbook.tip_tool_support}cookbook tip} which also has
+instructions on how to install if you are using [opam].
 
 {2:completion_protocol Completion protocol}
 
