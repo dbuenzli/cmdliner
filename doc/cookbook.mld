@@ -228,7 +228,7 @@ build: [
    ["cmdliner" "install" "tool-support"
                "--update-opam-install=%{_:name}%.install"
                "_build/default/install/bin/tool" "{os != "win32"}"
-               "_build/default/install/bin/tool.exe" "{os != "win32"}"
+               "_build/default/install/bin/tool.exe" "{os = "win32"}"
                "_build/cmdliner-install"]]
 ]}
 
