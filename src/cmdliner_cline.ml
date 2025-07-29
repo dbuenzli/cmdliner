@@ -254,7 +254,6 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
       `Error (errs, cl)
   with Completion_requested c -> `Completion c
 
-
 (* Deprecations *)
 
 type deprecated = Cmdliner_info.Arg.t * arg

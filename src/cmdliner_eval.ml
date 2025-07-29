@@ -176,69 +176,6 @@ let do_result ~env help_ppf err_ppf ei = function
          else Cmdliner_msg.pp_err err_ppf ei ~err);
         Error `Term
 
-let cmd_name_trie cmds =
-  let add acc cmd =
-    let i = Cmdliner_cmd.get_info cmd in
-    let name = Cmdliner_info.Cmd.name i in
-    match Cmdliner_trie.add acc name cmd with
-    | `New t -> t
-    | `Replaced (cmd', _) ->
-        let i' = Cmdliner_cmd.get_info cmd' and kind = "command" in
-        invalid_arg @@
-        Cmdliner_base.err_multi_def ~kind name Cmdliner_info.Cmd.doc i i'
-  in
-  List.fold_left add Cmdliner_trie.empty cmds
-
-let cmd_name_dom cmds =
-  let cmd_name c = Cmdliner_info.Cmd.name (Cmdliner_cmd.get_info c) in
-  List.sort String.compare (List.rev_map cmd_name cmds)
-
-let find_parser ~legacy_prefixes ~for_completion args cmd =
-  let stop args parents cmd =
-    match (cmd : 'a Cmdliner_cmd.t) with
-    | Cmd (i, parser) -> args, i, parents, Ok parser
-    | Group (i, (Some parser, _)) -> args, i, parents, Ok parser
-    | Group (i, (None, children)) ->
-        let dom = cmd_name_dom children in
-        let err = Cmdliner_msg.err_cmd_missing ~dom in
-        args, i, parents, Error (`Parse err)
-  in
-  let rec loop parents cmd = function
-  | ("--" :: _ | [] as rest) -> stop rest parents cmd
-  | (arg :: args) as rest
-    when for_completion && Cmdliner_cline.has_complete_prefix arg ->
-      begin match cmd with
-      | Cmd _ -> (* arg completion *) stop rest parents cmd
-      | Group (i, group) -> rest, i, parents, Error (`Complete group)
-      end
-  | (arg :: _ as rest) when Cmdliner_cline.is_opt arg -> stop rest parents cmd
-  | (arg :: args) as rest ->
-      match cmd with
-      | Cmd (i, parser) -> rest, i, parents, Ok parser
-      | Group (i, (_, children)) ->
-          let cmd_index = cmd_name_trie children in
-          match Cmdliner_trie.find ~legacy_prefixes cmd_index arg with
-          | Ok cmd -> loop (i :: parents) cmd args
-          | Error `Not_found ->
-              let all = Cmdliner_trie.ambiguities cmd_index "" in
-              let hints = Cmdliner_base.suggest arg all in
-              let dom = cmd_name_dom children in
-              let kind = "command" in
-              let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
-              rest, i, parents, Error (`Parse err)
-          | Error `Ambiguous (* Only on legacy prefixes *)  ->
-              let ambs = Cmdliner_trie.ambiguities cmd_index arg in
-              let ambs = List.sort compare ambs in
-              let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
-              rest, i, parents, Error (`Parse err)
-  in
-  loop [] cmd args
-
-let cli_args_of_argv argv = match Array.to_list argv with
-| exec :: "--__complete" :: args -> true, args
-| exec :: args -> false, args
-| [] -> invalid_arg err_argv
-
 let do_deprecated_msgs ~env err_ppf cl ei =
   let cmd = Cmdliner_info.Eval.cmd ei in
   let deprecated = Cmdliner_cline.deprecated ~env cl in
@@ -262,6 +199,67 @@ let do_deprecated_msgs ~env err_ppf cl ei =
       Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
         Cmdliner_msg.pp_exec_msg ei pp_cmd_msg cmd pp_sep () pp_deprs deprs
 
+let cmd_name_dom cmds =
+  let cmd_name c = Cmdliner_info.Cmd.name (Cmdliner_cmd.get_info c) in
+  List.sort String.compare (List.rev_map cmd_name cmds)
+
+let find_parser ~legacy_prefixes ~for_completion args cmd =
+  let stop args parents cmd =
+    match (cmd : 'a Cmdliner_cmd.t) with
+    | Cmd (i, parser) -> args, i, parents, Ok parser
+    | Group (i, (Some parser, _)) -> args, i, parents, Ok parser
+    | Group (i, (None, children)) ->
+        let dom = cmd_name_dom children in
+        let err = Cmdliner_msg.err_cmd_missing ~dom in
+        let try_stdopts = true in
+        args, i, parents, Error (`Parse (try_stdopts, err))
+  in
+  let rec loop parents cmd = function
+  | ("--" :: _ | [] as rest) -> stop rest parents cmd
+  | (arg :: args) as rest
+    when for_completion && Cmdliner_cline.has_complete_prefix arg ->
+      begin match cmd with
+      | Cmd _ -> (* arg completion *) stop rest parents cmd
+      | Group (i, group) -> rest, i, parents, Error (`Complete group)
+      end
+  | (arg :: _ as rest) when Cmdliner_cline.is_opt arg -> stop rest parents cmd
+  | (arg :: args) as rest ->
+      match cmd with
+      | Cmd (i, parser) -> rest, i, parents, Ok parser
+      | Group (i, (_, children)) ->
+          let cmd_index = Cmdliner_cmd.name_trie children in
+          match Cmdliner_trie.find ~legacy_prefixes cmd_index arg with
+          | Ok cmd -> loop (i :: parents) cmd args
+          | Error `Not_found ->
+              let all = Cmdliner_trie.ambiguities cmd_index "" in
+              let hints = Cmdliner_base.suggest arg all in
+              let dom = cmd_name_dom children in
+              let kind = "command" in
+              let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
+              let try_stdopts =
+                (* When we users writes cmd no_such_cmd --help it's
+                   better to show the unknown command error message
+                   rather than get into the help of the parent command.
+                   Otherwise one gets confused into thinking the
+                   command exists and/or annoyed not be reading the right
+                   man page. *)
+                false
+              in
+              rest, i, parents, Error (`Parse (try_stdopts, err))
+          | Error `Ambiguous (* Only on legacy prefixes *)  ->
+              let ambs = Cmdliner_trie.ambiguities cmd_index arg in
+              let ambs = List.sort compare ambs in
+              let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
+              let try_stdopts = true in
+              rest, i, parents, Error (`Parse (try_stdopts, err))
+  in
+  loop [] cmd args
+
+let cli_args_of_argv argv = match Array.to_list argv with
+| exec :: "--__complete" :: args -> true, args
+| exec :: args -> false, args
+| [] -> invalid_arg err_argv
+
 let eval_value
     ?help:(help_ppf = Format.std_formatter)
     ?err:(err_ppf = Format.err_formatter)
@@ -279,11 +277,12 @@ let eval_value
     Cmdliner_cline.create ~legacy_prefixes ~for_completion term_args args
   in
   let res = match res with
-  | Error (`Parse msg) ->
-      (* Command lookup error, still prioritize stdargs *)
+  | Error (`Parse (try_stdopts, msg)) ->
+      (* Command lookup error, we may still prioritize stdargs *)
       begin match cline with
       | `Completion compl -> Error (`Complete (term_args, cmd, [], compl))
       | `Error (_, cl) | `Ok cl ->
+          if not try_stdopts then Error (`Error (true, msg)) else
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
           | None -> Error (`Error (true, msg))

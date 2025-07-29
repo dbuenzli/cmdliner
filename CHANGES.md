@@ -31,11 +31,13 @@
   indicate the `--help` option in the usage line. Having the error message
   at the end makes it easier to spot.
 
-- Make `--help` request work in any context, except after `--`. Since
-  the option has an optional argument value, one had to be carefull
-  that it would not pickup the next argument and try to parse it
-  according to `FMT`. This is no longer the case. If the argument
-  fails to parse `--help=auto` is assumed. (#201).
+- Make `--help` request work in any context, except after `--` or on
+  the arguments after an unknown command error in which case that
+  error is reported (less confusing). Since the option has an optional
+  argument value, one had to be carefull that it would not pickup the
+  next argument and try to parse it according to `FMT`. This is no
+  longer the case. If the argument fails to parse `--help=auto` is
+  assumed. (#201).
   
 - Deprecation messages are now prepended to the doc strings in the manpage.
 
