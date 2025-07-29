@@ -99,7 +99,7 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
     end
   in
   let pp_option ppf arginfo _ =
-    (* FIXME should we list a single name ? *)
+    (* XXX should we rather list a single name ? *)
     let names = Cmdliner_info.Arg.opt_names arginfo in
     let subst = Cmdliner_info.Arg.doclang_subst ~subst arginfo in
     let doc = Cmdliner_info.Arg.styled_doc ~errs:err_ppf ~subst arginfo in
@@ -194,8 +194,7 @@ let cmd_name_dom cmds =
   List.sort String.compare (List.rev_map cmd_name cmds)
 
 let find_parser ~legacy_prefixes ~for_completion args cmd =
-  let stop args_rest args_rev parents cmd =
-    let args = List.rev_append args_rev args_rest in
+  let stop args parents cmd =
     match (cmd : 'a Cmdliner_cmd.t) with
     | Cmd (i, parser) -> args, i, parents, Ok parser
     | Group (i, (Some parser, _)) -> args, i, parents, Ok parser
@@ -204,43 +203,36 @@ let find_parser ~legacy_prefixes ~for_completion args cmd =
         let err = Cmdliner_msg.err_cmd_missing ~dom in
         args, i, parents, Error (`Parse err)
   in
-  let rec loop args_rev parents cmd = function
-  | ("--" :: _ | [] as rest) -> stop rest args_rev parents cmd
+  let rec loop parents cmd = function
+  | ("--" :: _ | [] as rest) -> stop rest parents cmd
   | (arg :: args) as rest
     when for_completion && Cmdliner_cline.has_complete_prefix arg ->
       begin match cmd with
-      | Cmd _ -> (* arg completion *) stop rest args_rev parents cmd
-      | Group (i, group) ->
-          let args = List.rev_append args_rev rest in
-          args, i, parents, Error (`Complete group)
+      | Cmd _ -> (* arg completion *) stop rest parents cmd
+      | Group (i, group) -> rest, i, parents, Error (`Complete group)
       end
-  | (arg :: _ as rest) when Cmdliner_cline.is_opt arg ->
-      stop rest args_rev parents cmd
+  | (arg :: _ as rest) when Cmdliner_cline.is_opt arg -> stop rest parents cmd
   | (arg :: args) as rest ->
       match cmd with
-      | Cmd (i, parser) ->
-          let args = List.rev_append args_rev rest in
-          args, i, parents, Ok parser
+      | Cmd (i, parser) -> rest, i, parents, Ok parser
       | Group (i, (_, children)) ->
           let cmd_index = cmd_name_trie children in
           match Cmdliner_trie.find ~legacy_prefixes cmd_index arg with
-          | Ok cmd -> loop args_rev (i :: parents) cmd args
+          | Ok cmd -> loop (i :: parents) cmd args
           | Error `Not_found ->
-              let args = List.rev_append args_rev (arg :: args) in
               let all = Cmdliner_trie.ambiguities cmd_index "" in
               let hints = Cmdliner_base.suggest arg all in
               let dom = cmd_name_dom children in
               let kind = "command" in
               let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
-              args, i, parents, Error (`Parse err)
+              rest, i, parents, Error (`Parse err)
           | Error `Ambiguous (* Only on legacy prefixes *)  ->
-              let args = List.rev_append args_rev (arg :: args) in
               let ambs = Cmdliner_trie.ambiguities cmd_index arg in
               let ambs = List.sort compare ambs in
               let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
-              args, i, parents, Error (`Parse err)
+              rest, i, parents, Error (`Parse err)
   in
-  loop [] [] cmd args
+  loop [] cmd args
 
 let cli_args_of_argv argv = match Array.to_list argv with
 | exec :: "--__complete" :: args -> true, args
