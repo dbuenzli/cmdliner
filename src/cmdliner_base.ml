@@ -51,7 +51,7 @@ let suggest s candidates =
 
 let is_space = function ' ' | '\n' | '\r' | '\t' -> true | _ -> false
 
-let string_has_prefix ~prefix s =
+let string_starts_with ~prefix s = (* available in 4.13 *)
   let prefix_len = String.length prefix in
   let s_len = String.length s in
   if prefix_len > s_len then false else
@@ -62,11 +62,10 @@ let string_has_prefix ~prefix s =
   in
   loop 0
 
-let string_drop_prefix ~prefix s =
-  if string_has_prefix ~prefix s then
-    let drop = String.length prefix in
-    Some (String.sub s drop (String.length s - drop))
-  else None
+let string_drop_first n s =
+  if n <= 0 then s else
+  if n >= String.length s then "" else
+  String.sub s n (String.length s - n)
 
 (* Invalid argument strings *)
 

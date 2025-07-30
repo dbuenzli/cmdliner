@@ -91,7 +91,7 @@ let do_completion help_ppf err_ppf ei cmd_args_info cmd comp =
   let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
   let pp_group ppf s = pp_line ppf "group"; pp_line ppf s in
   let pp_item ppf ~prefix (name, doc) =
-    if Cmdliner_base.string_has_prefix ~prefix name then begin
+    if Cmdliner_base.string_starts_with ~prefix name then begin
       pp_line ppf "item";
       pp_line ppf name;
       Cmdliner_base.Fmt.(pf ppf "@[%a@]@," text doc);
@@ -142,8 +142,8 @@ let do_completion help_ppf err_ppf ei cmd_args_info cmd comp =
   in
   let pp_completions ppf () =
     begin match comp.kind with
-    | `Opt a -> pp_complete_arg_values ~after_dashdash ppf a
-    | `Arg a ->
+    | `Opt_value a -> pp_complete_arg_values ~after_dashdash ppf a
+    | `Pos_value a ->
         pp_complete_arg_values ~after_dashdash ppf a;
         if not after_dashdash then pp_complete_opt_names ppf cmd
     | `Any ->
@@ -204,9 +204,9 @@ let find_cmd_and_parser ~legacy_prefixes ~for_completion args cmd =
      is [true] whether we may need to add the subcommand names to the
      completions. *)
   let stop ~ancestors ~cmd args = match (cmd : 'a Cmdliner_cmd.t) with
-  | Cmd (info, parser) -> ancestors, cmd, args, Ok parser
-  | Group (info, (Some parser, _)) -> ancestors, cmd, args, Ok parser
-  | Group (info, (None, children)) ->
+  | Cmd (_, parser) -> ancestors, cmd, args, Ok parser
+  | Group (_, (Some parser, _)) -> ancestors, cmd, args, Ok parser
+  | Group (_, (None, children)) ->
       let dom = Cmdliner_cmd.list_names children in
       let err = Cmdliner_msg.err_cmd_missing ~dom in
       let try_stdopts = true in
@@ -218,12 +218,10 @@ let find_cmd_and_parser ~legacy_prefixes ~for_completion args cmd =
                           Cmdliner_cline.has_complete_prefix arg ->
       begin match current_cmd with
       | Cmd _ -> (* arg completion *) stop ~ancestors ~cmd:current_cmd args
-      | Group (i, cmds) ->
-          (* Technically we could check here whether the thing to complete
-             is not already an option but it is harmless to suggest to always
-             suggest to complete commands here it eventually gets filtered
-             out when the protocol is output and prefixes are checked. *)
-          ancestors, current_cmd, args, Error `Complete
+      | Group (_, (parser, _))  ->
+          let is_opt = Cmdliner_cline.(is_opt (get_token_to_complete arg)) in
+          if not is_opt then ancestors, current_cmd, args, Error `Complete else
+          stop ~ancestors ~cmd:current_cmd args
       end
   | arg :: _ as args when Cmdliner_cline.is_opt arg ->
       stop ~ancestors ~cmd:current_cmd args

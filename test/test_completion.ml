@@ -82,6 +82,102 @@ let test_no_options_after_dashsash =
     "1\n";
   ()
 
+let test_opts_starts =
+  Test.test "Complete optional argument values" @@ fun () ->
+  complete ["birds"; "--__complete=-"] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Options\n\
+     item\n\
+     -k\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --kind\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --can-fly\n\
+     \u{001B}[04mBOOL\u{001B}[m indicates if the entity can fly.\n\
+     item-end\n\
+     group\n\
+     Subcommands\n";
+  complete ["birds"; "--__complete=--"] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Options\n\
+     item\n\
+     --kind\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --can-fly\n\
+     \u{001B}[04mBOOL\u{001B}[m indicates if the entity can fly.\n\
+     item-end\n";
+  ()
+
+let test_opt_value =
+  Test.test "Complete optional argument values" @@ fun () ->
+  (* Glued *)
+  complete ["birds"; "--__complete=--can-fly="] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Values\n\
+     item\n\
+     true\n\
+     \n\
+     item-end\n\
+     item\n\
+     false\n\
+     \n\
+     item-end\n";
+  (* next token *)
+  complete ["birds"; "--can-fly"; "--__complete="] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Values\n\
+     item\n\
+     true\n\
+     \n\
+     item-end\n\
+     item\n\
+     false\n\
+     \n\
+     item-end\n";
+  complete ["birds"; "--can-fly=true"; "--__complete="] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Options\n\
+     item\n\
+     -k\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --kind\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --can-fly\n\
+     \u{001B}[04mBOOL\u{001B}[m indicates if the entity can fly.\n\
+     item-end\n";
+  complete ["birds"; "--can-fly"; "true"; "--__complete="] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Options\n\
+     item\n\
+     -k\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --kind\n\
+     Kind of entity\n\
+     item-end\n\
+     item\n\
+     --can-fly\n\
+     \u{001B}[04mBOOL\u{001B}[m indicates if the entity can fly.\n\
+     item-end\n";
+  ()
+
 let test_restart_restricted_tool =
   Test.test "Restart restricted tool" @@ fun () ->
   let cmd =

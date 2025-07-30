@@ -15,16 +15,22 @@
 
 let complete_prefix = "--__complete="
 let has_complete_prefix s =
-  Cmdliner_base.string_has_prefix ~prefix:complete_prefix s
+  Cmdliner_base.string_starts_with ~prefix:complete_prefix s
+
+let get_token_to_complete s =
+  Cmdliner_base.string_drop_first (String.length complete_prefix) s
+
+let is_opt_to_complete s = (* assert (has_complete_prefix s) *)
+  String.length s > String.length complete_prefix &&
+  s.[String.length complete_prefix] = '-'
 
 let maybe_token_to_complete ~for_completion s =
-  if for_completion
-  then Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
-  else None
+  if not for_completion || not (has_complete_prefix s) then None else
+  Some (get_token_to_complete s)
 
 type completion_kind =
-  [ `Opt of Cmdliner_info.Arg.t
-  | `Arg of Cmdliner_info.Arg.t
+  [ `Opt_value of Cmdliner_info.Arg.t
+  | `Pos_value of Cmdliner_info.Arg.t
   | `Any ]
 
 type completion =
@@ -36,7 +42,6 @@ type completion =
 exception Completion_requested of completion
 
 (* Command lines *)
-
 
 let err_multi_opt_name_def name a a' =
   Cmdliner_base.err_multi_def
@@ -86,15 +91,20 @@ let arg_info_indexes args =
 let is_opt s = String.length s > 1 && s.[0] = '-'
 let is_short_opt s = String.length s = 2 && s.[0] = '-'
 
-let parse_opt_arg s = (* (name, value) of opt arg, assert len > 1. *)
+let parse_opt_arg s =
+  (* (name, value) of opt arg, assert len > 1. except if complete *)
+  let do_complete = has_complete_prefix s in
+  let s = if do_complete then get_token_to_complete s else s in
   let l = String.length s in
+  if l <= 1 then "-", None, do_complete else
   if s.[1] <> '-' then (* short opt *)
-    if l = 2 then s, None else
-    String.sub s 0 2, Some (String.sub s 2 (l - 2)) (* with glued opt arg *)
+    if l = 2 then s, None, do_complete else
+    String.sub s 0 2, Some (String.sub s 2 (l - 2)) (* with glued opt arg *),
+    do_complete
   else try (* long opt *)
     let i = String.index s '=' in
-    String.sub s 0 i, Some (String.sub s (i + 1) (l - i - 1))
-  with Not_found -> s, None
+    String.sub s 0 i, Some (String.sub s (i + 1) (l - i - 1)), do_complete
+  with Not_found -> s, None, do_complete
 
 let hint_matching_opt optidx s =
   (* hint options that could match [s] in [optidx]. FIXME explain this is
@@ -105,14 +115,21 @@ let hint_matching_opt optidx s =
     then s, Printf.sprintf "-%s" s
     else String.sub s 1 (String.length s - 1), s
   in
-  let short_opt, _ = parse_opt_arg short_opt in
-  let long_opt, _ = parse_opt_arg long_opt in
+  let short_opt, _, _ = parse_opt_arg short_opt in
+  let long_opt, _, _ = parse_opt_arg long_opt in
   let all = Cmdliner_trie.ambiguities optidx "-" in
   match List.mem short_opt all, Cmdliner_base.suggest long_opt all with
   | false, [] -> []
   | false, l -> l
   | true, [] -> [short_opt]
   | true, l -> if List.mem short_opt l then l else short_opt :: l
+
+(* Note on option completion. Technically when trying to complete
+   an option we could try to avoid mentioning names that have
+   already be mentioned and that are not repeatable. Sometimes
+   not being able to complete that we know exists ends up
+   being more confusing than enlightening so we don't do that
+   for now. *)
 
 let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
   (* returns an updated [cl] cmdline according to the options found in [args]
@@ -122,34 +139,98 @@ let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
   | [] -> List.rev errs, cl, false, List.rev pargs
   | "--" :: args -> List.rev errs, cl, true, (List.rev_append pargs args)
   | s :: args ->
-      if not (is_opt s) || has_complete_prefix s
+      let is_opt' =
+        is_opt s &&
+        (if not for_completion then true else
+         if not (has_complete_prefix s) then true else
+         is_opt_to_complete s)
+      in
+      if not is_opt'
       then loop errs (k + 1) cl (s :: pargs) args else
-      let name, value = parse_opt_arg s in
+      let name, value, do_complete = parse_opt_arg s in
       match Cmdliner_trie.find ~legacy_prefixes optidx name with
       | Ok a ->
-          let value, args = match value, Cmdliner_info.Arg.opt_kind a with
-          | Some v, Cmdliner_info.Arg.Flag when is_short_opt name ->
-              None, ("-" ^ v) :: args (* short flag dash sharing *)
-          | Some _, _ -> value, args
-          | None, Cmdliner_info.Arg.Flag -> value, args
-          | None, _ ->
-              match args with
-              | [] -> None, args
-              | v :: rest -> if is_opt v then None, args else Some v, rest
-          in
-          (match Option.bind value
-                   (maybe_token_to_complete ~for_completion)
-          with
-          | Some prefix ->
-              let c =
-                { prefix; after_dashdash = false; subcmds = false;
-                  kind = `Opt a }
-              in
-              raise (Completion_requested c)
-          | None ->
-              let arg = O ((k, name, value) :: opt_arg cl a) in
-              loop errs (k + 1) (Amap.add a arg cl) pargs args)
-      | Error `Not_found when peek_opts -> loop errs (k + 1) cl pargs args
+          if not do_complete then begin
+            let value, args = match value, Cmdliner_info.Arg.opt_kind a with
+            | Some v, Cmdliner_info.Arg.Flag when is_short_opt name ->
+                None, ("-" ^ v) :: args (* short flag dash sharing *)
+            | Some _, _ -> value, args
+            | None, Cmdliner_info.Arg.Flag -> value, args
+            | None, _ ->
+                match args with
+                | [] -> None, args
+                | v :: rest ->
+                    let cleaned_v, do_complete =
+                      (* perhaps completing non-glued form *)
+                      if for_completion && has_complete_prefix v
+                      then get_token_to_complete v, true
+                      else v, false
+                    in
+                    if is_opt cleaned_v
+                    then None, args else
+                    if not do_complete then Some v, rest else
+                    let comp =
+                      { prefix = cleaned_v; after_dashdash = false;
+                        subcmds = false; kind = `Opt_value a }
+                    in
+                    raise (Completion_requested comp)
+            in
+            let arg = O ((k, name, value) :: opt_arg cl a) in
+            loop errs (k + 1) (Amap.add a arg cl) pargs args
+          end else begin
+            match Cmdliner_info.Arg.opt_kind a with
+            | Cmdliner_info.Arg.Flag ->
+                begin match value with
+                | Some v when is_short_opt name ->
+                    (* short flag dash sharing, push the completion *)
+                    let arg = O ((k, name, None) :: opt_arg cl a) in
+                    let args = (complete_prefix ^ "-" ^ v) :: args in
+                    loop errs (k + 1) (Amap.add a arg cl) pargs args
+                | Some v ->
+                    (* This is actually a parse error, flags have no value.
+                       We make it an option completion but the completions
+                       will be empty (the prefix won't match) *)
+                    let prefix = name ^ v in
+                    let comp =
+                      { prefix; after_dashdash = false; subcmds = false;
+                        kind = `Any }
+                    in
+                    raise (Completion_requested comp)
+                | None ->
+                    (* We have in fact a fully completed flag turn
+                       it into an option completion. *)
+                    let comp =
+                      { prefix = name; after_dashdash = false; subcmds = false;
+                        kind = `Any }
+                    in
+                    raise (Completion_requested comp)
+                end
+            | _ ->
+                begin match value with
+                | Some prefix ->
+                    let comp =
+                      { prefix; after_dashdash = false; subcmds = false;
+                        kind = `Opt_value a }
+                    in
+                    raise (Completion_requested comp)
+                | None ->
+                    (* We have a fully cmpleted option name, we don't try to
+                       lookup what happens in the next argument which should
+                       hold the value if any, we just turn it into an option
+                       completion.
+                    *)
+                    let comp =
+                      { prefix = name; after_dashdash = false;
+                        subcmds = false; kind = `Any }
+                    in
+                    raise (Completion_requested comp)
+                end
+          end
+      | Error `Not_found when for_completion ->
+          (* This will eventually be turned into an `Any completion *)
+          loop errs (k + 1) cl (s :: pargs) args
+      | Error `Not_found when peek_opts ->
+          loop errs (k + 1) cl pargs args
       | Error `Not_found ->
           let hints = hint_matching_opt optidx s in
           let err = Cmdliner_base.err_unknown ~kind:"option" ~hints name in
@@ -205,7 +286,7 @@ let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
         | `Complete prefix ->
             let c =
               { prefix; after_dashdash = has_dashdash; subcmds = false;
-                kind = `Arg a }
+                kind = `Pos_value a }
             in
             raise (Completion_requested c)
       in

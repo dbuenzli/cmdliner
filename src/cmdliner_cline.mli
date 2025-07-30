@@ -10,10 +10,11 @@ val is_opt : string -> bool
 (** {1 Completion} *)
 
 val has_complete_prefix : string -> bool
+val get_token_to_complete : string -> string
 
 type completion_kind =
-  [ `Opt of Cmdliner_info.Arg.t
-  | `Arg of Cmdliner_info.Arg.t
+  [ `Opt_value of Cmdliner_info.Arg.t
+  | `Pos_value of Cmdliner_info.Arg.t
   | `Any ]
 
 type completion =

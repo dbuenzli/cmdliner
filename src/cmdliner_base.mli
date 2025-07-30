@@ -13,8 +13,8 @@ val suggest : string -> string list -> string list
     not too far from [near]. *)
 
 val is_space : char -> bool
-val string_has_prefix : prefix:string -> string -> bool
-val string_drop_prefix : prefix:string -> string -> string option
+val string_starts_with : prefix:string -> string -> bool
+val string_drop_first : int -> string -> string
 
 (* Formatters *)
 
