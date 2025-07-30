@@ -83,12 +83,12 @@ prepare-prefix:
 	$(INSTALL) -d "$(BINDIR)" "$(LIBDIR)"
 
 install-common: prepare-prefix
-	$(INSTALL) -m 644 pkg/META $(BASE).cmi $(BASE).cmti "$(LIBDIR)"
+	$(INSTALL) -m 644 pkg/META $(BASE).cmi "$(LIBDIR)"
 	$(INSTALL) -m 644 cmdliner.opam "$(LIBDIR)/opam"
 
 install-srcs: prepare-prefix
 	$(INSTALL) -m 644 $(wildcard $(BASE)*.mli) $(wildcard $(BASE)*.ml) \
-	  "$(LIBDIR)"
+		 $(wildcard $(BASE)*.cmti) $(wildcard $(BASE)*.cmt) "$(LIBDIR)"
 
 install-byte: prepare-prefix
 	$(INSTALL) -m 644 $(BASE).cma "$(LIBDIR)"
