@@ -275,17 +275,17 @@ end
 module Eval = struct
   type t = (* information about the evaluation context. *)
     { cmd : Cmd.t; (* cmd being evaluated. *)
-      parents : Cmd.t list; (* parents of cmd, root is last. *)
+      ancestors : Cmd.t list; (* ancestors of cmd, root is last. *)
       env : string -> string option; (* environment variable lookup. *)
       err_ppf : Format.formatter (* error formatter *) }
 
-  let make ~cmd ~parents ~env ~err_ppf = { cmd; parents; env; err_ppf }
+  let make ~cmd ~ancestors ~env ~err_ppf = { cmd; ancestors; env; err_ppf }
 
   let cmd i = i.cmd
-  let parents i = i.parents
+  let ancestors i = i.ancestors
   let env_var i v = i.env v
   let err_ppf i = i.err_ppf
-  let main i = match List.rev i.parents with [] -> i.cmd | m :: _ -> m
+  let main i = match List.rev i.ancestors with [] -> i.cmd | m :: _ -> m
   let with_cmd i cmd = { i with cmd }
 
   let doclang_name n = strf "$(b,%s)" (Cmd.escaped_name n)
@@ -296,10 +296,10 @@ module Eval = struct
   | "tname" | "cmd.name" -> Some (doclang_name ei.cmd)
   | "mname" | "tool" -> Some (doclang_name (main ei))
   | "cmd.parent" ->
-      let parents = parents ei in
-      if parents = [] then Some (doclang_name (main ei)) else
-      Some (doclang_names (List.rev_map Cmd.name parents))
+      let ancestors = ancestors ei in
+      if ancestors = [] then Some (doclang_name (main ei)) else
+      Some (doclang_names (List.rev_map Cmd.name ancestors))
   | "iname" | "cmd" ->
-      Some (doclang_names (List.rev_map Cmd.name (cmd ei :: parents ei)))
+      Some (doclang_names (List.rev_map Cmd.name (cmd ei :: ancestors ei)))
   | _ -> None
 end

@@ -3,19 +3,28 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-val is_opt : string -> bool
-val has_complete_prefix : string -> bool
-
 (** Command lines. *)
 
-type t
+val is_opt : string -> bool
+
+(** {1 Completion} *)
+
+val has_complete_prefix : string -> bool
+
+type completion_kind =
+  [ `Opt of Cmdliner_info.Arg.t
+  | `Arg of Cmdliner_info.Arg.t
+  | `Any ]
 
 type completion =
   { prefix : string;
     after_dashdash : bool;
-    kind : [ `Opt of Cmdliner_info.Arg.t
-           | `Arg of Cmdliner_info.Arg.t
-           | `Any ] }
+    subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
+    kind : completion_kind  }
+
+(** {1: Completion kind} *)
+
+type t
 
 val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->

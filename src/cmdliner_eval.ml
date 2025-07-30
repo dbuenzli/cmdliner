@@ -7,6 +7,19 @@ type 'a eval_ok = [ `Ok of 'a | `Version | `Help ]
 type eval_error = [ `Parse | `Term | `Exn ]
 type 'a eval_exit = [ `Ok of 'a  | `Exit of Cmdliner_info.Exit.code ]
 
+type 'a complete =
+  Cmdliner_info.Arg.Set.t * 'a Cmdliner_cmd.t * Cmdliner_cline.completion
+
+type eval_result_error =
+  [ Cmdliner_term.term_escape
+  | `Exn of exn * Printexc.raw_backtrace
+  | `Parse of string
+  | `Std_help of Cmdliner_manpage.format
+  | `Std_version ]
+
+type 'a eval_result =
+  ('a, [ eval_result_error | `Complete of 'a complete]) result
+
 let err_help s = "Term error, help requested for unknown command " ^ s
 let err_argv = "argv array must have at least one element"
 
@@ -24,49 +37,36 @@ let add_stdopts ei =
   let cmd = Cmdliner_info.Cmd.add_args (Cmdliner_info.Eval.cmd ei) args in
   help, vers, Cmdliner_info.Eval.with_cmd ei cmd
 
-let parse_error_term err ei cl = Error (`Parse err)
+let run_parser ~catch ei cl f =
+  try (f ei cl :> ('a, eval_result_error) result) with
+  | exn when catch ->
+      let bt = Printexc.get_raw_backtrace () in
+      Error (`Exn (exn, bt))
 
-type complete =
-  Cmdliner_info.Arg.Set.t * Cmdliner_cmd.info * Cmdliner_cmd.info list *
-  Cmdliner_cline.completion
-
-type 'a eval_result =
-  ('a, [ Cmdliner_term.term_escape
-       | `Exn of exn * Printexc.raw_backtrace
-       | `Parse of string
-       | `Std_help of Cmdliner_manpage.format
-       | `Std_version
-       | `Complete of complete]) result
-
-let run_parser ~catch ei cl f = try (f ei cl :> 'a eval_result) with
-| exn when catch ->
-    let bt = Printexc.get_raw_backtrace () in
-    Error (`Exn (exn, bt))
-
-let try_eval_stdopts ~catch ei cl help version =
+let try_eval_stdopts ~catch ei cl help version : 'a eval_result option =
   match run_parser ~catch ei cl (Cmdliner_term.parser help) with
   | Ok (Some fmt) -> Some (Error (`Std_help fmt))
-  | Error (`Complete _) -> assert false
   | Error (`Parse _) ->
       (* only [FMT] errored, there was a `--help`, show help anyways *)
       Some (Error (`Std_help `Auto))
-  | Error _ as err -> Some err
+  | Error _ as err -> (Some err :> 'a eval_result option)
   | Ok None ->
       match version with
       | None -> None
       | Some version ->
-          match run_parser ~catch ei cl (Cmdliner_term.parser version) with
+          match (run_parser ~catch ei cl (Cmdliner_term.parser version))
+          with
           | Ok false -> None
           | Ok true -> Some (Error (`Std_version))
-          | Error _ as err -> Some err
+          | Error _ as err -> (Some err :> 'a eval_result option)
 
-let do_help ~env help_ppf err_ppf ei fmt cmd =
-  let ei = match cmd with
+let do_help ~env help_ppf err_ppf ei fmt cmd_name =
+  let ei = match cmd_name with
   | None (* help of main command requested *)  ->
       let env _ = assert false in
       let cmd = Cmdliner_info.Eval.main ei in
-      let ei' = Cmdliner_info.Eval.make ~cmd ~parents:[] ~env ~err_ppf in
-      begin match Cmdliner_info.Eval.parents ei with
+      let ei' = Cmdliner_info.Eval.make ~cmd ~ancestors:[] ~env ~err_ppf in
+      begin match Cmdliner_info.Eval.ancestors ei with
       | [] -> (* [ei] is an evaluation of main, [cmd] has stdopts *) ei'
       | _ -> let _, _, ei = add_stdopts ei' in ei
       end
@@ -84,7 +84,7 @@ let do_help ~env help_ppf err_ppf ei fmt cmd =
   in
   Cmdliner_docgen.pp_man ~env ~errs:err_ppf fmt help_ppf ei
 
-let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
+let do_completion help_ppf err_ppf ei cmd_args_info cmd comp =
   let prefix = comp.Cmdliner_cline.prefix in
   let after_dashdash = comp.Cmdliner_cline.after_dashdash in
   let subst = Cmdliner_info.Eval.doclang_subst ei in
@@ -106,14 +106,15 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
     List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
   in
   let pp_complete_opt_names ppf cmd =
-    let set = Cmdliner_info.Cmd.args cmd in
+    let info = Cmdliner_cmd.get_info cmd in
+    let set = Cmdliner_info.Cmd.args info in
     if not (Cmdliner_info.Arg.Set.is_empty set) then begin
       pp_group ppf "Options";
-      Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args cmd)
+      Cmdliner_info.Arg.Set.iter (pp_option ppf) (Cmdliner_info.Cmd.args info)
     end
   in
   let pp_complete_arg_values ~after_dashdash ppf arg =
-    match Cmdliner_info.Arg.Set.find_opt arg args with
+    match Cmdliner_info.Arg.Set.find_opt arg cmd_args_info with
     | None -> ()
     | Some (V comp) ->
         if after_dashdash && Cmdliner_base.Completion.restart comp
@@ -129,7 +130,7 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
           if comp_dirs then pp_line ppf "dirs"
         end
   in
-  let pp_complete_subcommands ppf cmd_children =
+  let pp_complete_subcommands ppf cmd =
     pp_group ppf "Subcommands";
     let complete_cmd cmd =
       let name = Cmdliner_info.Cmd.name cmd in
@@ -137,7 +138,7 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
       let doc = Cmdliner_info.Cmd.styled_doc ~errs:err_ppf ~subst cmd in
       pp_item ppf ~prefix (name, doc)
     in
-    List.iter complete_cmd cmd_children
+    List.iter complete_cmd (Cmdliner_cmd.get_children_infos cmd)
   in
   let pp_completions ppf () =
     begin match comp.kind with
@@ -148,8 +149,7 @@ let do_completion help_ppf err_ppf ei args cmd cmd_children comp =
     | `Any ->
         if not comp.after_dashdash then pp_complete_opt_names ppf cmd;
     end;
-    if cmd_children <> []
-    then pp_complete_subcommands ppf cmd_children
+    if comp.subcmds then pp_complete_subcommands ppf cmd
   in
   let vnum = 1 in
   Cmdliner_base.Fmt.pf help_ppf "@[<v>%d@,%a@]@?" vnum pp_completions ()
@@ -163,13 +163,13 @@ let do_result ~env help_ppf err_ppf ei = function
     | `Std_version ->
         Cmdliner_msg.pp_version help_ppf ei; Ok `Version
     | `Parse err ->
-        Cmdliner_msg.pp_usage_and_err err_ppf ei ~err;
-        Error `Parse
-    | `Complete (args, cmd, cmd_children, comp) ->
-        do_completion help_ppf err_ppf ei
-          args cmd cmd_children comp; Ok `Help
-    | `Help (fmt, cmd) -> do_help ~env help_ppf err_ppf ei fmt cmd; Ok `Help
-    | `Exn (e, bt) -> Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
+        Cmdliner_msg.pp_usage_and_err err_ppf ei ~err; Error `Parse
+    | `Complete (cmd_args_info, cmd, comp) ->
+        do_completion help_ppf err_ppf ei cmd_args_info cmd comp; Ok `Help
+    | `Help (fmt, cmd_name) ->
+        do_help ~env help_ppf err_ppf ei fmt cmd_name; Ok `Help
+    | `Exn (e, bt) ->
+        Cmdliner_msg.pp_backtrace err_ppf ei e bt; (Error `Exn)
     | `Error (usage, err) ->
         (if usage
          then Cmdliner_msg.pp_usage_and_err err_ppf ei ~err
@@ -177,9 +177,9 @@ let do_result ~env help_ppf err_ppf ei = function
         Error `Term
 
 let do_deprecated_msgs ~env err_ppf cl ei =
-  let cmd = Cmdliner_info.Eval.cmd ei in
+  let cmd_info = Cmdliner_info.Eval.cmd ei in
   let deprecated = Cmdliner_cline.deprecated ~env cl in
-  match Cmdliner_info.Cmd.deprecated cmd, deprecated with
+  match Cmdliner_info.Cmd.deprecated cmd_info, deprecated with
   | None, [] -> ()
   | depr_cmd, deprs ->
       let open Cmdliner_base in
@@ -197,63 +197,67 @@ let do_deprecated_msgs ~env err_ppf cl ei =
       in
       let pp_deprs = Fmt.list (Cmdliner_cline.pp_deprecated ~subst) in
       Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
-        Cmdliner_msg.pp_exec_msg ei pp_cmd_msg cmd pp_sep () pp_deprs deprs
+        Cmdliner_msg.pp_exec_msg ei pp_cmd_msg cmd_info pp_sep () pp_deprs deprs
 
-let cmd_name_dom cmds =
-  let cmd_name c = Cmdliner_info.Cmd.name (Cmdliner_cmd.get_info c) in
-  List.sort String.compare (List.rev_map cmd_name cmds)
-
-let find_parser ~legacy_prefixes ~for_completion args cmd =
-  let stop args parents cmd =
-    match (cmd : 'a Cmdliner_cmd.t) with
-    | Cmd (i, parser) -> args, i, parents, Ok parser
-    | Group (i, (Some parser, _)) -> args, i, parents, Ok parser
-    | Group (i, (None, children)) ->
-        let dom = cmd_name_dom children in
-        let err = Cmdliner_msg.err_cmd_missing ~dom in
-        let try_stdopts = true in
-        args, i, parents, Error (`Parse (try_stdopts, err))
+let find_cmd_and_parser ~legacy_prefixes ~for_completion args cmd =
+  (* This finds the command to use if it's a group and [for_completion]
+     is [true] whether we may need to add the subcommand names to the
+     completions. *)
+  let stop ~ancestors ~cmd args = match (cmd : 'a Cmdliner_cmd.t) with
+  | Cmd (info, parser) -> ancestors, cmd, args, Ok parser
+  | Group (info, (Some parser, _)) -> ancestors, cmd, args, Ok parser
+  | Group (info, (None, children)) ->
+      let dom = Cmdliner_cmd.list_names children in
+      let err = Cmdliner_msg.err_cmd_missing ~dom in
+      let try_stdopts = true in
+      ancestors, cmd, args, Error (`Parse (try_stdopts, err))
   in
-  let rec loop parents cmd = function
-  | ("--" :: _ | [] as rest) -> stop rest parents cmd
-  | (arg :: args) as rest
-    when for_completion && Cmdliner_cline.has_complete_prefix arg ->
-      begin match cmd with
-      | Cmd _ -> (* arg completion *) stop rest parents cmd
-      | Group (i, group) -> rest, i, parents, Error (`Complete group)
+  let rec loop ~ancestors ~current_cmd = function
+  | "--" :: _ | [] as args -> stop ~ancestors ~cmd:current_cmd args
+  | arg :: _ as args when for_completion &&
+                          Cmdliner_cline.has_complete_prefix arg ->
+      begin match current_cmd with
+      | Cmd _ -> (* arg completion *) stop ~ancestors ~cmd:current_cmd args
+      | Group (i, cmds) ->
+          (* Technically we could check here whether the thing to complete
+             is not already an option but it is harmless to suggest to always
+             suggest to complete commands here it eventually gets filtered
+             out when the protocol is output and prefixes are checked. *)
+          ancestors, current_cmd, args, Error `Complete
       end
-  | (arg :: _ as rest) when Cmdliner_cline.is_opt arg -> stop rest parents cmd
-  | (arg :: args) as rest ->
-      match cmd with
-      | Cmd (i, parser) -> rest, i, parents, Ok parser
+  | arg :: _ as args when Cmdliner_cline.is_opt arg ->
+      stop ~ancestors ~cmd:current_cmd args
+  | arg :: rest as args ->
+      match current_cmd with
+      | Cmd (i, parser) -> ancestors, current_cmd, args, Ok parser
       | Group (i, (_, children)) ->
           let cmd_index = Cmdliner_cmd.name_trie children in
           match Cmdliner_trie.find ~legacy_prefixes cmd_index arg with
-          | Ok cmd -> loop (i :: parents) cmd args
+          | Ok cmd -> loop ~ancestors:(i :: ancestors) ~current_cmd:cmd rest
           | Error `Not_found ->
               let all = Cmdliner_trie.ambiguities cmd_index "" in
               let hints = Cmdliner_base.suggest arg all in
-              let dom = cmd_name_dom children in
+              let dom = Cmdliner_cmd.list_names children in
               let kind = "command" in
               let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
               let try_stdopts =
                 (* When we users writes cmd no_such_cmd --help it's
                    better to show the unknown command error message
-                   rather than get into the help of the parent command.
-                   Otherwise one gets confused into thinking the
-                   command exists and/or annoyed not be reading the right
-                   man page. *)
+                   rather than get into the help of the parent
+                   command. Otherwise one gets confused into thinking
+                   the command exists and/or annoyed not be reading
+                   the right man page. *)
                 false
               in
-              rest, i, parents, Error (`Parse (try_stdopts, err))
+              ancestors, current_cmd, args, Error (`Parse (try_stdopts, err))
           | Error `Ambiguous (* Only on legacy prefixes *)  ->
               let ambs = Cmdliner_trie.ambiguities cmd_index arg in
               let ambs = List.sort compare ambs in
               let err = Cmdliner_base.err_ambiguous ~kind:"command" arg ~ambs in
-              let try_stdopts = true in
-              rest, i, parents, Error (`Parse (try_stdopts, err))
+              let try_stdopts = false in
+              ancestors, current_cmd, args, Error (`Parse (try_stdopts, err))
   in
-  loop [] cmd args
+  loop ~ancestors:[] ~current_cmd:cmd args
 
 let cli_args_of_argv argv = match Array.to_list argv with
 | exec :: "--__complete" :: args -> true, args
@@ -266,49 +270,55 @@ let eval_value
     ?(catch = true) ?(env = Sys.getenv_opt) ?(argv = Sys.argv) cmd
   =
   let legacy_prefixes = Cmdliner_trie.legacy_prefixes ~env in
-  let for_completion, cli_args = cli_args_of_argv argv in
-  let args, cmd, parents, res =
-    find_parser ~legacy_prefixes ~for_completion cli_args cmd
+  let for_completion, args = cli_args_of_argv argv in
+  let ancestors, cmd, args, parser =
+    find_cmd_and_parser ~legacy_prefixes ~for_completion args cmd
   in
-  let ei = Cmdliner_info.Eval.make ~cmd ~parents ~env ~err_ppf in
-  let help, version, ei = add_stdopts ei in
-  let term_args = Cmdliner_info.Cmd.args (Cmdliner_info.Eval.cmd ei) in
+  let help, version, ei =
+    let cmd_info = Cmdliner_cmd.get_info cmd in
+    let ei = Cmdliner_info.Eval.make ~cmd:cmd_info ~ancestors ~env ~err_ppf in
+    add_stdopts ei
+  in
+  let cmd_args_info = Cmdliner_info.Cmd.args (Cmdliner_info.Eval.cmd ei) in
   let cline =
-    Cmdliner_cline.create ~legacy_prefixes ~for_completion term_args args
+    Cmdliner_cline.create ~legacy_prefixes ~for_completion cmd_args_info args
   in
-  let res = match res with
+  let res = match parser with
   | Error (`Parse (try_stdopts, msg)) ->
       (* Command lookup error, we may still prioritize stdargs *)
       begin match cline with
-      | `Completion compl -> Error (`Complete (term_args, cmd, [], compl))
+      | `Completion comp -> Error (`Complete (cmd_args_info, cmd, comp))
       | `Error (_, cl) | `Ok cl ->
-          if not try_stdopts then Error (`Error (true, msg)) else
-          begin match try_eval_stdopts ~catch ei cl help version with
-          | Some e -> e
+          let stdopts =
+            if try_stdopts then try_eval_stdopts ~catch ei cl help version else
+            None
+          in
+          begin match stdopts with
           | None -> Error (`Error (true, msg))
+          | Some e -> e
           end
       end
-  | Error (`Complete (default, children)) ->
-      let children = List.map Cmdliner_cmd.get_info children in
+  | Error `Complete ->
       begin match cline with
-      | `Completion compl -> Error (`Complete (term_args, cmd, children, compl))
+      | `Completion comp ->
+          Error (`Complete (cmd_args_info, cmd, { comp with subcmds = true }))
       | `Ok _ | `Error _ -> assert false
       end
   | Ok parser ->
-      match cline with
-      | `Completion compl -> Error (`Complete (term_args, cmd, [], compl))
+      begin match cline with
+      | `Completion comp -> Error (`Complete (cmd_args_info, cmd, comp))
       | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
           | None -> Error (`Error (true, e))
           end
       | `Ok cl ->
-          assert (not for_completion);
           match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
           | None ->
               do_deprecated_msgs ~env err_ppf cl ei;
-              run_parser ~catch ei cl parser
+              (run_parser ~catch ei cl parser :> 'a eval_result)
+      end
   in
   do_result ~env help_ppf err_ppf ei res
 
@@ -316,33 +326,41 @@ let eval_peek_opts
     ?(version_opt = false) ?(env = Sys.getenv_opt) ?(argv = Sys.argv) t
   : 'a option * ('a eval_ok, eval_error) result
   =
-  let args, f = Cmdliner_term.argset t, Cmdliner_term.parser t in
-  let version = if version_opt then Some "dummy" else None in
-  let cmd = Cmdliner_info.Cmd.make ?version "dummy" in
-  let cmd = Cmdliner_info.Cmd.add_args cmd args in
-  let null_ppf = Format.make_formatter (fun _ _ _ -> ()) (fun () -> ()) in
-  let ei = Cmdliner_info.Eval.make ~cmd ~parents:[] ~env ~err_ppf:null_ppf in
-  let help, version, ei = add_stdopts ei in
-  let term_args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
-  let for_completion, cli_args = cli_args_of_argv argv in
   let legacy_prefixes = Cmdliner_trie.legacy_prefixes ~env in
-  let v, ret =
-    match
-      Cmdliner_cline.create
-        ~peek_opts:true ~legacy_prefixes ~for_completion term_args cli_args
-    with
-    | `Completion arg -> None, (Error (`Complete (term_args, cmd, [], arg)))
-    | `Error (e, cl) ->
-        begin match try_eval_stdopts ~catch:true ei cl help version with
-        | Some e -> None, e
-        | None -> None, Error (`Error (true, e))
-        end
-    | `Ok cl ->
-        let ret = run_parser ~catch:true ei cl f in
-        let v = match ret with Ok v -> Some v | Error _ -> None in
-        match try_eval_stdopts ~catch:true ei cl help version with
-        | Some e -> v, e
-        | None -> v, ret
+  let for_completion, args = cli_args_of_argv argv in
+  let version = if version_opt then Some "dummy" else None in
+  let cmd_info, parser =
+    let args, parser = Cmdliner_term.argset t, Cmdliner_term.parser t in
+    let cmd_info = Cmdliner_info.Cmd.make ?version "dummy" in
+    Cmdliner_info.Cmd.add_args cmd_info args, parser
+  in
+  let help, version, ei =
+    let err_ppf = Format.make_formatter (fun _ _ _ -> ()) (fun () -> ()) in
+    let ancestors = [] in
+    let ei = Cmdliner_info.Eval.make ~cmd:cmd_info ~ancestors ~env ~err_ppf in
+    add_stdopts ei
+  in
+  let cmd_arg_infos = Cmdliner_info.Cmd.args (Cmdliner_info.Eval.cmd ei) in
+  let cline =
+    Cmdliner_cline.create
+      ~peek_opts:true ~legacy_prefixes ~for_completion cmd_arg_infos args
+  in
+  let v, ret = match cline with
+  | `Completion comp ->
+      let cmd = Cmdliner_cmd.make cmd_info t in
+      None, (Error (`Complete (cmd_arg_infos, cmd, comp)))
+  | `Error (e, cl) ->
+      begin match try_eval_stdopts ~catch:true ei cl help version with
+      | Some e -> None, e
+      | None -> None, Error (`Error (true, e))
+      end
+  | `Ok cl ->
+      let ret = run_parser ~catch:true ei cl parser in
+      let v = match ret with Ok v -> Some v | Error _ -> None in
+      begin match try_eval_stdopts ~catch:true ei cl help version with
+      | Some e -> v, e
+      | None -> v, (ret :> 'a eval_result)
+      end
   in
   let ret = match ret with
   | Ok v -> Ok (`Ok v)

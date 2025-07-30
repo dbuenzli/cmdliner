@@ -11,6 +11,33 @@
    the term's closures to retrieve and convert command line arguments
    (see the Cmdliner_arg module). *)
 
+(* Completion *)
+
+let complete_prefix = "--__complete="
+let has_complete_prefix s =
+  Cmdliner_base.string_has_prefix ~prefix:complete_prefix s
+
+let maybe_token_to_complete ~for_completion s =
+  if for_completion
+  then Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
+  else None
+
+type completion_kind =
+  [ `Opt of Cmdliner_info.Arg.t
+  | `Arg of Cmdliner_info.Arg.t
+  | `Any ]
+
+type completion =
+  { prefix : string;
+    after_dashdash : bool;
+    subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
+    kind : completion_kind  }
+
+exception Completion_requested of completion
+
+(* Command lines *)
+
+
 let err_multi_opt_name_def name a a' =
   Cmdliner_base.err_multi_def
     ~kind:"option name" name Cmdliner_info.Arg.doc a a'
@@ -87,23 +114,6 @@ let hint_matching_opt optidx s =
   | true, [] -> [short_opt]
   | true, l -> if List.mem short_opt l then l else short_opt :: l
 
-let complete_prefix = "--__complete="
-let has_complete_prefix s =
-  Cmdliner_base.string_has_prefix ~prefix:complete_prefix s
-
-let maybe_token_to_complete ~for_completion s =
-  if not for_completion then None else
-  Cmdliner_base.string_drop_prefix ~prefix:complete_prefix s
-
-type completion =
-  { prefix : string;
-    after_dashdash : bool;
-    kind : [ `Opt of Cmdliner_info.Arg.t
-           | `Arg of Cmdliner_info.Arg.t
-           | `Any ] }
-
-exception Completion_requested of completion
-
 let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
   (* returns an updated [cl] cmdline according to the options found in [args]
      with the trie index [optidx]. Positional arguments are returned in order
@@ -131,7 +141,10 @@ let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
                    (maybe_token_to_complete ~for_completion)
           with
           | Some prefix ->
-              let c = { prefix; after_dashdash = false; kind = `Opt a } in
+              let c =
+                { prefix; after_dashdash = false; subcmds = false;
+                  kind = `Opt a }
+              in
               raise (Completion_requested c)
           | None ->
               let arg = O ((k, name, value) :: opt_arg cl a) in
@@ -190,7 +203,10 @@ let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
         match take_range ~for_completion start stop pargs with
         | `Range args -> args
         | `Complete prefix ->
-            let c = { prefix; after_dashdash = has_dashdash; kind = `Arg a } in
+            let c =
+              { prefix; after_dashdash = has_dashdash; subcmds = false;
+                kind = `Arg a }
+            in
             raise (Completion_requested c)
       in
       let max_spec = max stop max_spec in
@@ -206,7 +222,10 @@ let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
     match take_range ~for_completion (max_spec + 1) last pargs with
     | `Range args -> args
     | `Complete prefix ->
-        let c = { prefix; after_dashdash = has_dashdash; kind = `Any } in
+        let c =
+          { prefix; after_dashdash = has_dashdash; subcmds = false;
+            kind = `Any }
+        in
         raise (Completion_requested c)
   in
   if misses <> [] then begin
@@ -239,7 +258,7 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
             | None -> assert false
             | Some prefix ->
                 let c = { prefix; after_dashdash = has_dashdash;
-                          kind = `Any }
+                          subcmds = false; kind = `Any }
                 in
                 raise (Completion_requested c)
         end

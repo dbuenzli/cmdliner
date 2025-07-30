@@ -46,8 +46,8 @@ let sorted_items_to_blocks ~boilerplate:b items =
 
 (* Command docs *)
 
-let invocation ?(sep = " ") ?(parents = []) cmd =
-  let names = List.rev_map Cmdliner_info.Cmd.name (cmd :: parents) in
+let invocation ?(sep = " ") ?(ancestors = []) cmd =
+  let names = List.rev_map Cmdliner_info.Cmd.name (cmd :: ancestors) in
   esc @@ String.concat sep names
 
 let synopsis_pos_arg a =
@@ -77,7 +77,7 @@ let synopsis_opt_arg a n =
 let deprecated cmd = match Cmdliner_info.Cmd.deprecated cmd with
 | None -> "" | Some _ -> "(Deprecated) "
 
-let synopsis ?(show_help = false) ?parents cmd =
+let synopsis ?(show_help = false) ?ancestors cmd =
   let show_help = if show_help then " [$(b,--help)]" else "" in
   match Cmdliner_info.Cmd.children cmd with
   | [] ->
@@ -118,12 +118,12 @@ let synopsis ?(show_help = false) ?parents cmd =
         String.concat " " ("" (* add a space *) :: List.rev_map snd pargs)
       in
       strf "%s$(b,%s)%s %s%s"
-        (deprecated cmd) (invocation ?parents cmd) show_help oargs pargs
+        (deprecated cmd) (invocation ?ancestors cmd) show_help oargs pargs
   | _cmds ->
       let subcmd = match Cmdliner_info.Cmd.has_args cmd with
       | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
       in
-      strf "%s$(b,%s)%s %s …" (deprecated cmd) (invocation ?parents cmd)
+      strf "%s$(b,%s)%s %s …" (deprecated cmd) (invocation ?ancestors cmd)
         show_help subcmd
 
 let cmd_doc cmd =
@@ -318,8 +318,8 @@ let xref_docs ~errs ei =
 let ensure_s_name ei sm =
   if Cmdliner_manpage.(smap_has_section sm ~sec:s_name) then sm else
   let cmd = Cmdliner_info.Eval.cmd ei in
-  let parents = Cmdliner_info.Eval.parents ei in
-  let tname = (deprecated cmd) ^ invocation ~sep:"-" ~parents cmd in
+  let ancestors = Cmdliner_info.Eval.ancestors ei in
+  let tname = (deprecated cmd) ^ invocation ~sep:"-" ~ancestors cmd in
   let tdoc = cmd_doc cmd in
   let tagline = if tdoc = "" then "" else strf " - %s" tdoc in
   let tagline = `P (strf "%s%s" tname tagline) in
@@ -328,8 +328,8 @@ let ensure_s_name ei sm =
 let ensure_s_synopsis ei sm =
   if Cmdliner_manpage.(smap_has_section sm ~sec:s_synopsis) then sm else
   let cmd = Cmdliner_info.Eval.cmd ei in
-  let parents = Cmdliner_info.Eval.parents ei in
-  let synopsis = `P (synopsis ~parents cmd) in
+  let ancestors = Cmdliner_info.Eval.ancestors ei in
+  let synopsis = `P (synopsis ~ancestors cmd) in
   Cmdliner_manpage.(smap_append_block sm ~sec:s_synopsis synopsis)
 
 let insert_cmd_man_docs ~errs ei sm =
@@ -357,8 +357,8 @@ let title ei =
   let main = Cmdliner_info.Eval.main ei in
   let exec = String.capitalize_ascii (Cmdliner_info.Cmd.name main) in
   let cmd = Cmdliner_info.Eval.cmd ei in
-  let parents = Cmdliner_info.Eval.parents ei in
-  let name = String.uppercase_ascii (invocation ~sep:"-" ~parents cmd) in
+  let ancestors = Cmdliner_info.Eval.ancestors ei in
+  let name = String.uppercase_ascii (invocation ~sep:"-" ~ancestors cmd) in
   let center_header = esc @@ strf "%s Manual" exec in
   let left_footer =
     let version = match Cmdliner_info.Cmd.version main with
@@ -379,6 +379,6 @@ let pp_man ~env ~errs fmt ppf ei =
 let styled_usage_synopsis ~errs ei =
   let subst = Cmdliner_info.Eval.doclang_subst ei in
   let cmd = Cmdliner_info.Eval.cmd ei in
-  let parents = Cmdliner_info.Eval.parents ei in
-  let synopsis = synopsis ~show_help:true ~parents cmd in
+  let ancestors = Cmdliner_info.Eval.ancestors ei in
+  let synopsis = synopsis ~show_help:true ~ancestors cmd in
   Cmdliner_manpage.doc_to_styled ~errs ~subst synopsis

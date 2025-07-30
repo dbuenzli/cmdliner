@@ -177,12 +177,12 @@ end
 module Eval : sig
   type t
   val make :
-    cmd:Cmd.t -> parents:Cmd.t list -> env:(string -> string option) ->
+    cmd:Cmd.t -> ancestors:Cmd.t list -> env:(string -> string option) ->
     err_ppf:Format.formatter -> t
 
   val cmd : t -> Cmd.t
   val main : t -> Cmd.t
-  val parents : t -> Cmd.t list
+  val ancestors : t -> Cmd.t list (* root is last *)
   val env_var : t -> string -> string option
   val err_ppf : t -> Format.formatter
   val with_cmd : t -> Cmd.t -> t

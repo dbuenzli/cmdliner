@@ -5,8 +5,6 @@
 
 (* Commands *)
 
-(* Command info *)
-
 type info = Cmdliner_info.Cmd.t
 let info = Cmdliner_info.Cmd.make
 
@@ -14,15 +12,15 @@ type 'a t =
 | Cmd of info * 'a Cmdliner_term.parser
 | Group of info * ('a Cmdliner_term.parser option * 'a t list)
 
-let get_info = function Cmd (i, _) | Group (i, _) -> i
-let children_infos = function
-| Cmd _ -> [] | Group (_, (_, cs)) -> List.map get_info cs
-
 let make i t =
   let info = Cmdliner_info.Cmd.add_args i (Cmdliner_term.argset t) in
   Cmd (info, Cmdliner_term.parser t)
 
 let v = make
+
+let get_info = function Cmd (i, _) | Group (i, _) -> i
+let get_children_infos = function
+| Cmd _ -> assert false | Group (_, (_, cs)) -> List.map get_info cs
 
 let group ?default i cmds =
   let args, parser = match default with
@@ -47,3 +45,7 @@ let name_trie cmds =
         Cmdliner_base.err_multi_def ~kind name Cmdliner_info.Cmd.doc i i'
   in
   List.fold_left add Cmdliner_trie.empty cmds
+
+let list_names cmds =
+  let cmd_name c = Cmdliner_info.Cmd.name (get_info c) in
+  List.sort String.compare (List.rev_map cmd_name cmds)
