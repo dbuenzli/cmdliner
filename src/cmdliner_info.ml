@@ -324,4 +324,8 @@ module Completion = struct
     { prefix; after_dashdash; subcmds; kind }
 
   let add_subcmds c = { c with subcmds = true }
+  let prefix c = c.prefix
+  let after_dashdash c = c.after_dashdash
+  let subcmds c = c.subcmds
+  let kind c = c.kind
 end

@@ -230,7 +230,8 @@ let eval_value
   | Error `Complete ->
       begin match cline with
       | `Completion comp ->
-          Error (`Complete (cmd_args_info, cmd, { comp with subcmds = true }))
+          let comp = Cmdliner_info.Completion.add_subcmds comp in
+          Error (`Complete (cmd_args_info, cmd, comp))
       | `Ok _ | `Error _ -> assert false
       end
   | Ok parser ->

@@ -60,8 +60,8 @@ let vnum = 1 (* Protocol version number *)
 
 let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
   let subst = Cmdliner_info.Eval.doclang_subst ei in
-  let after_dashdash = comp.Cmdliner_info.Completion.after_dashdash in
-  let prefix = comp.Cmdliner_info.Completion.prefix in
+  let after_dashdash = Cmdliner_info.Completion.after_dashdash comp in
+  let prefix = Cmdliner_info.Completion.prefix comp in
   let pp_arg_value ppf arg_info =
     begin match Cmdliner_info.Arg.Set.find_opt arg_info cmd_args_info with
     | None -> ()
@@ -69,7 +69,7 @@ let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
     end;
   in
   let pp ppf () =
-    begin match comp.Cmdliner_info.Completion.kind with
+    begin match Cmdliner_info.Completion.kind comp with
     | Opt_value arg_info -> pp_arg_value ppf arg_info
     | Opt_name_or_pos_value arg_info ->
         pp_arg_value ppf arg_info;
@@ -79,7 +79,7 @@ let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
         if not after_dashdash
         then pp_opt_names ~err_ppf ~subst ~prefix ppf cmd;
     end;
-    if comp.subcmds
+    if Cmdliner_info.Completion.subcmds comp
     then pp_subcmds ~err_ppf ~subst ~prefix ppf cmd
   in
   Cmdliner_base.Fmt.pf out_ppf "@[<v>%d@,%a@]@?" vnum pp ()

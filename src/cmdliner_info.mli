@@ -196,14 +196,14 @@ module Completion : sig
   | Opt_name_or_pos_value of Arg.t
   | Opt_name
 
-  type t =
-    { prefix : string;
-      after_dashdash : bool;
-      subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
-      kind : kind  }
+  type t
 
   val make :
     ?after_dashdash:bool -> ?subcmds:bool -> prefix:string -> kind -> t
 
   val add_subcmds : t -> t
+  val prefix : t -> string
+  val after_dashdash : t -> bool
+  val subcmds : t -> bool
+  val kind : t -> kind
 end
