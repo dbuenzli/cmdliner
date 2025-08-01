@@ -303,3 +303,23 @@ module Eval = struct
       Some (doclang_names (List.rev_map Cmd.name (cmd ei :: ancestors ei)))
   | _ -> None
 end
+
+(* Completion *)
+
+module Completion = struct
+  type kind =
+  | Opt_value of Arg.t
+  | Opt_name_or_pos_value of Arg.t
+  | Opt_name
+
+  type t =
+    { prefix : string;
+      after_dashdash : bool;
+      subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
+      kind : kind  }
+
+  let make ?(after_dashdash = false) ?(subcmds = false) ~prefix kind =
+    { prefix; after_dashdash; subcmds; kind }
+
+  let add_subcmds c = { c with subcmds = true }
+end

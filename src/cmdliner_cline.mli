@@ -12,25 +12,16 @@ val is_opt : string -> bool
 val has_complete_prefix : string -> bool
 val get_token_to_complete : string -> string
 
-type completion_kind =
-  [ `Opt_value of Cmdliner_info.Arg.t
-  | `Pos_value of Cmdliner_info.Arg.t
-  | `Any ]
-
-type completion =
-  { prefix : string;
-    after_dashdash : bool;
-    subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
-    kind : completion_kind  }
-
-(** {1: Completion kind} *)
+(** {1: Command lines} *)
 
 type t
 
 val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
   Cmdliner_info.Arg.Set.t -> string list ->
-  [ `Ok of t | `Completion of completion | `Error of string * t ]
+  [ `Ok of t
+  | `Completion of Cmdliner_info.Completion.t
+  | `Error of string * t ]
 
 val opt_arg : t -> Cmdliner_info.Arg.t -> (int * string * (string option)) list
 val pos_arg : t -> Cmdliner_info.Arg.t -> string list

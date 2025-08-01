@@ -470,3 +470,7 @@ Therefore this behaviour was unconditionally removed in Cmdliner
 them with [CMDLINER_LEGACY_PREFIXES=true] set in the environment to
 recover the old behaviour. {b However the scripts should be fixed: this
 escape hatch will be removed in the future.}
+
+The [CMDLINER_LEGACY_PREFIX=true] escape hatch should not be used for
+interactive tool interaction. In particular the behaviour of Cmdliner
+completion support under this setting is undefined.

@@ -188,3 +188,22 @@ module Eval : sig
   val with_cmd : t -> Cmd.t -> t
   val doclang_subst : t -> Cmdliner_manpage.subst
 end
+
+(** Completion *)
+module Completion : sig
+  type kind =
+  | Opt_value of Arg.t
+  | Opt_name_or_pos_value of Arg.t
+  | Opt_name
+
+  type t =
+    { prefix : string;
+      after_dashdash : bool;
+      subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
+      kind : kind  }
+
+  val make :
+    ?after_dashdash:bool -> ?subcmds:bool -> prefix:string -> kind -> t
+
+  val add_subcmds : t -> t
+end
