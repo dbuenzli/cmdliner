@@ -37,6 +37,15 @@ let bash_generic_completion =
         done
         # Sadly it seems bash does not support doc strings, so we only
         # add item to to the reply. If you know any better get in touch.
+        # Handle glued forms, the completion item is the full option
+        if [[ $group == "Values" ]]; then
+           if [[ $prefix == --* ]]; then
+              item="${prefix%%=*}=$item"
+           fi
+           if [[ $prefix == -* ]]; then
+              item="${prefix:0:2}$item"
+           fi
+        fi
         COMPREPLY+=($item)
       elif [[ $type == "restart" ]]; then
           # N.B. only emitted if there is a -- token
@@ -55,6 +64,7 @@ let bash_generic_completion =
 let zsh_generic_completion =
 {|function _cmdliner_generic {
   local w=("${words[@]}") # Keep words intact for restart completion
+  local prefix="${words[CURRENT]}"
   w[CURRENT]="--__complete=${words[CURRENT]}"
   local line="${w[@]:0:1} --__complete ${w[@]:1}"
   local -a completions
@@ -87,8 +97,17 @@ let zsh_generic_completion =
                 item_doc="$item_line"
             fi
         done
+        # Handle glued forms, the completion item is the full option
+        if [[ "$group" == "Values" ]]; then
+            if [[ "$prefix" == --* ]]; then
+                item="${prefix%%=*}=${item}"
+            fi
+            if [[ "$prefix" == -* ]]; then
+                item="${prefix:0:2}${item}"
+            fi
+        fi
         # item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
-        completions+=("$item":"$item_doc")
+        completions+=("${item}":"${item_doc}")
       elif [[ "$type" == "dirs" ]]; then
         _path_files -/
       elif [[ "$type" == "files" ]]; then

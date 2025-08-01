@@ -36,6 +36,15 @@ _cmdliner_generic() {
         done
         # Sadly it seems bash does not support doc strings, so we only
         # add item to to the reply. If you know any better get in touch.
+        # Handle glued forms, the completion item is the full option
+        if [[ $group == "Values" ]]; then
+           if [[ $prefix == --* ]]; then
+              item="${prefix%%=*}=$item"
+           fi
+           if [[ $prefix == -* ]]; then
+              item="${prefix:0:2}$item"
+           fi
+        fi
         COMPREPLY+=($item)
       elif [[ $type == "restart" ]]; then
           # N.B. only emitted if there is a -- token

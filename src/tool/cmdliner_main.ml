@@ -423,7 +423,7 @@ let shell_doc = strf "$(docv) the shell to support, must be %s." shells_doc
 let shells_opt =
   let doc = shell_doc ^ " Repeatable." in
   let absent = "All supported shells" in
-  Arg.(value & opt_all shell_conv shells & info ["shell"] ~absent ~doc)
+  Arg.(value & opt_all shell_conv shells & info ["s"; "shell"] ~absent ~doc)
 
 let shell_posn n =
   Arg.(required & pos n (some shell_conv) None & info [] ~doc:shell_doc)
