@@ -179,7 +179,9 @@ module Arg = struct
   let compare a0 a1 = Int.compare a0.id a1.id
 
   let doclang_subst ~subst i = function
-  | "docv" -> Some (strf "$(i,%s)" (Cmdliner_manpage.escape i.docv))
+  | "docv" ->
+      let docv = if i.docv = "" then "VAL" else i.docv in
+      Some (strf "$(i,%s)" (Cmdliner_manpage.escape docv))
   | "opt" when is_opt i ->
       Some (strf "$(b,%s)" (Cmdliner_manpage.escape (opt_name_sample i)))
   | id ->
