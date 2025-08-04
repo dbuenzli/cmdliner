@@ -11,20 +11,20 @@ val get_token_to_complete : string -> string
 
 (** {1:cli Command lines} *)
 
-type t = Cmdliner_info.Cline.t
+type t = Cmdliner_def.Cline.t
 
 val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
-  Cmdliner_info.Arg_info.Set.t -> string list ->
+  Cmdliner_def.Arg_info.Set.t -> string list ->
   [ `Ok of t
-  | `Complete of Cmdliner_info.Complete.t
+  | `Complete of Cmdliner_def.Complete.t
   | `Error of string * t ]
 
 val opt_arg :
-  t -> Cmdliner_info.Arg_info.t -> (int * string * (string option)) list
+  t -> Cmdliner_def.Arg_info.t -> (int * string * (string option)) list
 
-val pos_arg : t -> Cmdliner_info.Arg_info.t -> string list
-val actual_args : t -> Cmdliner_info.Arg_info.t -> string list
+val pos_arg : t -> Cmdliner_def.Arg_info.t -> string list
+val actual_args : t -> Cmdliner_def.Arg_info.t -> string list
 (** Actual command line arguments from the command line *)
 
 (** {1:deprecations Deprecations} *)

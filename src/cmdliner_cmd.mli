@@ -5,12 +5,12 @@
 
 (** Commands and their information. *)
 
-type info = Cmdliner_info.Cmd_info.t
+type info = Cmdliner_def.Cmd_info.t
 
 val info :
   ?deprecated:string -> ?man_xrefs:Cmdliner_manpage.xref list ->
-  ?man:Cmdliner_manpage.block list -> ?envs:Cmdliner_info.Env.info list ->
-  ?exits:Cmdliner_info.Exit.info list -> ?sdocs:string -> ?docs:string ->
+  ?man:Cmdliner_manpage.block list -> ?envs:Cmdliner_def.Env.info list ->
+  ?exits:Cmdliner_def.Exit.info list -> ?sdocs:string -> ?docs:string ->
   ?doc:string -> ?version:string -> string -> info
 
 type 'a t =

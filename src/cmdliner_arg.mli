@@ -53,8 +53,8 @@ type 'a t = 'a Cmdliner_term.t
 type info
 val info :
   ?deprecated:string -> ?absent:string -> ?docs:string ->
-  ?doc_envs:Cmdliner_info.Env.info list -> ?docv:string -> ?doc:string ->
-  ?env:Cmdliner_info.Env.info -> string list -> info
+  ?doc_envs:Cmdliner_def.Env.info list -> ?docv:string -> ?doc:string ->
+  ?env:Cmdliner_def.Env.info -> string list -> info
 
 val ( & ) : ('a -> 'b) -> 'a -> 'b
 

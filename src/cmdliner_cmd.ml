@@ -5,15 +5,15 @@
 
 (* Commands *)
 
-type info = Cmdliner_info.Cmd_info.t
-let info = Cmdliner_info.Cmd_info.make
+type info = Cmdliner_def.Cmd_info.t
+let info = Cmdliner_def.Cmd_info.make
 
 type 'a t =
 | Cmd of info * 'a Cmdliner_term.parser
 | Group of info * ('a Cmdliner_term.parser option * 'a t list)
 
 let make info t =
-  let info = Cmdliner_info.Cmd_info.add_args info (Cmdliner_term.argset t) in
+  let info = Cmdliner_def.Cmd_info.add_args info (Cmdliner_term.argset t) in
   Cmd (info, Cmdliner_term.parser t)
 
 let v = make
@@ -28,25 +28,25 @@ let group ?default info cmds =
   | Some t -> Some (Cmdliner_term.argset t), Some (Cmdliner_term.parser t)
   in
   let children = List.map get_info cmds in
-  let info = Cmdliner_info.Cmd_info.with_children info ~args ~children in
+  let info = Cmdliner_def.Cmd_info.with_children info ~args ~children in
   Group (info, (parser, cmds))
 
-let name c = Cmdliner_info.Cmd_info.name (get_info c)
+let name c = Cmdliner_def.Cmd_info.name (get_info c)
 
 let name_trie cmds =
   let add acc cmd =
     let info = get_info cmd in
-    let name = Cmdliner_info.Cmd_info.name info in
+    let name = Cmdliner_def.Cmd_info.name info in
     match Cmdliner_trie.add acc name cmd with
     | `New t -> t
     | `Replaced (cmd', _) ->
         let info' = get_info cmd' and kind = "command" in
         invalid_arg @@
         Cmdliner_base.err_multi_def ~kind name
-          Cmdliner_info.Cmd_info.doc info info'
+          Cmdliner_def.Cmd_info.doc info info'
   in
   List.fold_left add Cmdliner_trie.empty cmds
 
 let list_names cmds =
-  let cmd_name c = Cmdliner_info.Cmd_info.name (get_info c) in
+  let cmd_name c = Cmdliner_def.Cmd_info.name (get_info c) in
   List.sort String.compare (List.rev_map cmd_name cmds)

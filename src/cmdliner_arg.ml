@@ -52,22 +52,22 @@ let err_invalid_enum var s enums =
 
 (* Argument converters *)
 
-module Completion = Cmdliner_info.Arg_completion
-module Conv = Cmdliner_info.Arg_conv
+module Completion = Cmdliner_def.Arg_completion
+module Conv = Cmdliner_def.Arg_conv
 type 'a conv = 'a Conv.t
-let some = Cmdliner_info.Arg_conv.some
-let some' = Cmdliner_info.Arg_conv.some'
+let some = Cmdliner_def.Arg_conv.some
+let some' = Cmdliner_def.Arg_conv.some'
 
 (* Argument information *)
 
 type 'a t = 'a Cmdliner_term.t
-type info = Cmdliner_info.Arg_info.t
-let info = Cmdliner_info.Arg_info.make
+type info = Cmdliner_def.Arg_info.t
+let info = Cmdliner_def.Arg_info.make
 
 (* Arguments *)
 
 let no_completion =
-  Cmdliner_info.Arg_info.Completion Cmdliner_info.Arg_completion.none
+  Cmdliner_def.Arg_info.Completion Cmdliner_def.Arg_completion.none
 
 let ( & ) f x = f x
 let parse_error e = Error (`Parse e)
@@ -82,24 +82,24 @@ let env_bool_parse s = match String.lowercase_ascii s with
 let parse_to_list parser s = match parser s with
 | Ok v -> Ok [v] | Error _ as e -> e
 
-let try_env ei a parse ~absent = match Cmdliner_info.Arg_info.env a with
+let try_env ei a parse ~absent = match Cmdliner_def.Arg_info.env a with
 | None -> Ok absent
 | Some env ->
-    let var = Cmdliner_info.Env.info_var env in
-    match Cmdliner_info.Eval.env_var ei var with
+    let var = Cmdliner_def.Env.info_var env in
+    match Cmdliner_def.Eval.env_var ei var with
     | None -> Ok absent
     | Some v ->
         match parse v with
         | Error e -> parse_error (Cmdliner_msg.err_env_parse env ~err:e)
         | Ok _ as v -> v
 
-let arg_to_args a complete = Cmdliner_info.Arg_info.Set.singleton a complete
+let arg_to_args a complete = Cmdliner_def.Arg_info.Set.singleton a complete
 let list_to_args f l complete =
-  let add acc v = Cmdliner_info.Arg_info.Set.add (f v) complete acc in
-  List.fold_left add Cmdliner_info.Arg_info.Set.empty l
+  let add acc v = Cmdliner_def.Arg_info.Set.add (f v) complete acc in
+  List.fold_left add Cmdliner_def.Arg_info.Set.empty l
 
 let flag a =
-  if Cmdliner_info.Arg_info.is_pos a then invalid_arg err_not_opt else
+  if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a env_bool_parse ~absent:false
   | [_, _, None] -> Ok true
@@ -110,8 +110,8 @@ let flag a =
   Cmdliner_term.make (arg_to_args a no_completion) convert
 
 let flag_all a =
-  if Cmdliner_info.Arg_info.is_pos a then invalid_arg err_not_opt else
-  let a = Cmdliner_info.Arg_info.make_all_opts a in
+  if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
+  let a = Cmdliner_def.Arg_info.make_all_opts a in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a (parse_to_list env_bool_parse) ~absent:[]
   | l ->
@@ -145,7 +145,7 @@ let vflag v l =
     try Ok (aux None l) with Failure e -> parse_error e
   in
   let flag (_, a) =
-    if Cmdliner_info.Arg_info.is_pos a then invalid_arg err_not_opt else a
+    if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else a
   in
   Cmdliner_term.make (list_to_args flag l no_completion) convert
 
@@ -168,8 +168,8 @@ let vflag_all v l =
     try Ok (aux [] l) with Failure e -> parse_error e
   in
   let flag (_, a) =
-    if Cmdliner_info.Arg_info.is_pos a then invalid_arg err_not_opt else
-    Cmdliner_info.Arg_info.make_all_opts a
+    if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
+    Cmdliner_def.Arg_info.make_all_opts a
   in
   Cmdliner_term.make (list_to_args flag l no_completion) convert
 
@@ -177,19 +177,19 @@ let parse_opt_value parse f v = match parse v with
 | Ok v -> v | Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)
 
 let opt ?vopt conv v a =
-  if Cmdliner_info.Arg_info.is_pos a then invalid_arg err_not_opt else
-  let absent = match Cmdliner_info.Arg_info.absent a with
-  | Cmdliner_info.Arg_info.Doc d as a when d <> "" -> a
-  | _ -> Cmdliner_info.Arg_info.Val (lazy (str_of_pp (Conv.pp conv) v))
+  if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
+  let absent = match Cmdliner_def.Arg_info.absent a with
+  | Cmdliner_def.Arg_info.Doc d as a when d <> "" -> a
+  | _ -> Cmdliner_def.Arg_info.Val (lazy (str_of_pp (Conv.pp conv) v))
   in
   let kind = match vopt with
-  | None -> Cmdliner_info.Arg_info.Opt
-  | Some dv -> Cmdliner_info.Arg_info.Opt_vopt (str_of_pp (Conv.pp conv) dv)
+  | None -> Cmdliner_def.Arg_info.Opt
+  | Some dv -> Cmdliner_def.Arg_info.Opt_vopt (str_of_pp (Conv.pp conv) dv)
   in
-  let docv = match Cmdliner_info.Arg_info.docv a with
+  let docv = match Cmdliner_def.Arg_info.docv a with
   | "" -> Conv.docv conv | docv -> docv
   in
-  let a = Cmdliner_info.Arg_info.make_opt ~docv ~absent ~kind a in
+  let a = Cmdliner_def.Arg_info.make_opt ~docv ~absent ~kind a in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a (Conv.parser conv) ~absent:v
   | [_, f, Some v] ->
@@ -206,19 +206,19 @@ let opt ?vopt conv v a =
   Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
 let opt_all ?vopt conv v a =
-  if Cmdliner_info.Arg_info.is_pos a then invalid_arg err_not_opt else
-  let absent = match Cmdliner_info.Arg_info.absent a with
-  | Cmdliner_info.Arg_info.Doc d as a when d <> "" -> a
-  | _ -> Cmdliner_info.Arg_info.Val (lazy "")
+  if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
+  let absent = match Cmdliner_def.Arg_info.absent a with
+  | Cmdliner_def.Arg_info.Doc d as a when d <> "" -> a
+  | _ -> Cmdliner_def.Arg_info.Val (lazy "")
   in
   let kind = match vopt with
-  | None -> Cmdliner_info.Arg_info.Opt
-  | Some dv -> Cmdliner_info.Arg_info.Opt_vopt (str_of_pp (Conv.pp conv) dv)
+  | None -> Cmdliner_def.Arg_info.Opt
+  | Some dv -> Cmdliner_def.Arg_info.Opt_vopt (str_of_pp (Conv.pp conv) dv)
   in
-  let docv = match Cmdliner_info.Arg_info.docv a with
+  let docv = match Cmdliner_def.Arg_info.docv a with
   | "" -> Conv.docv conv | docv -> docv
   in
-  let a = Cmdliner_info.Arg_info.make_opt_all ~docv ~absent ~kind a in
+  let a = Cmdliner_def.Arg_info.make_opt_all ~docv ~absent ~kind a in
   let convert ei cl = match Cmdliner_cline.opt_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->
@@ -241,16 +241,16 @@ let parse_pos_value parse a v = match parse v with
 | Error err -> failwith (Cmdliner_msg.err_pos_parse a ~err)
 
 let pos ?(rev = false) k conv v a =
-  if Cmdliner_info.Arg_info.is_opt a then invalid_arg err_not_pos else
-  let absent = match Cmdliner_info.Arg_info.absent a with
-  | Cmdliner_info.Arg_info.Doc d as a when d <> "" -> a
-  | _ -> Cmdliner_info.Arg_info.Val (lazy (str_of_pp (Conv.pp conv) v))
+  if Cmdliner_def.Arg_info.is_opt a then invalid_arg err_not_pos else
+  let absent = match Cmdliner_def.Arg_info.absent a with
+  | Cmdliner_def.Arg_info.Doc d as a when d <> "" -> a
+  | _ -> Cmdliner_def.Arg_info.Val (lazy (str_of_pp (Conv.pp conv) v))
   in
-  let pos = Cmdliner_info.Arg_info.pos ~rev ~start:k ~len:(Some 1) in
-  let docv = match Cmdliner_info.Arg_info.docv a with
+  let pos = Cmdliner_def.Arg_info.pos ~rev ~start:k ~len:(Some 1) in
+  let docv = match Cmdliner_def.Arg_info.docv a with
   | "" -> Conv.docv conv | docv -> docv
   in
-  let a = Cmdliner_info.Arg_info.make_pos_abs ~docv ~absent ~pos a in
+  let a = Cmdliner_def.Arg_info.make_pos_abs ~docv ~absent ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with
   | [] -> try_env ei a (Conv.parser conv) ~absent:v
   | [v] ->
@@ -261,11 +261,11 @@ let pos ?(rev = false) k conv v a =
   Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
 let pos_list pos conv v a =
-  if Cmdliner_info.Arg_info.is_opt a then invalid_arg err_not_pos else
-  let docv = match Cmdliner_info.Arg_info.docv a with
+  if Cmdliner_def.Arg_info.is_opt a then invalid_arg err_not_pos else
+  let docv = match Cmdliner_def.Arg_info.docv a with
   | "" -> Conv.docv conv | docv -> docv
   in
-  let a = Cmdliner_info.Arg_info.make_pos ~docv ~pos a in
+  let a = Cmdliner_def.Arg_info.make_pos ~docv ~pos a in
   let convert ei cl = match Cmdliner_cline.pos_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->
@@ -275,33 +275,33 @@ let pos_list pos conv v a =
   in
   Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
-let all = Cmdliner_info.Arg_info.pos ~rev:false ~start:0 ~len:None
+let all = Cmdliner_def.Arg_info.pos ~rev:false ~start:0 ~len:None
 let pos_all c v a = pos_list all c v a
 
 let pos_left ?(rev = false) k =
   let start = if rev then k + 1 else 0 in
   let len = if rev then None else Some k in
-  pos_list (Cmdliner_info.Arg_info.pos ~rev ~start ~len)
+  pos_list (Cmdliner_def.Arg_info.pos ~rev ~start ~len)
 
 let pos_right ?(rev = false) k =
   let start = if rev then 0 else k + 1 in
   let len = if rev then Some k else None in
-  pos_list (Cmdliner_info.Arg_info.pos ~rev ~start ~len)
+  pos_list (Cmdliner_def.Arg_info.pos ~rev ~start ~len)
 
 (* Arguments as terms *)
 
 let absent_error args =
   let make_req a v acc =
-    let req_a = Cmdliner_info.Arg_info.make_req a in
-    Cmdliner_info.Arg_info.Set.add req_a v acc
+    let req_a = Cmdliner_def.Arg_info.make_req a in
+    Cmdliner_def.Arg_info.Set.add req_a v acc
   in
-  Cmdliner_info.Arg_info.Set.fold make_req args Cmdliner_info.Arg_info.Set.empty
+  Cmdliner_def.Arg_info.Set.fold make_req args Cmdliner_def.Arg_info.Set.empty
 
 let value a = a
 
 let err_arg_missing args =
   parse_error @@
-  Cmdliner_msg.err_arg_missing (fst (Cmdliner_info.Arg_info.Set.choose args))
+  Cmdliner_msg.err_arg_missing (fst (Cmdliner_def.Arg_info.Set.choose args))
 
 let required t =
   let args = absent_error (Cmdliner_term.argset t) in

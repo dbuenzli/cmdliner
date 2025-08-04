@@ -3,17 +3,17 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-type term_escape = Cmdliner_info.Term.escape
-type 'a parser = 'a Cmdliner_info.Term.parser
-type +'a t = 'a Cmdliner_info.Term.t
+type term_escape = Cmdliner_def.Term.escape
+type 'a parser = 'a Cmdliner_def.Term.parser
+type +'a t = 'a Cmdliner_def.Term.t
 
 let make args p = (args, p)
 let argset (args, _) = args
 let parser (_, parser) = parser
 
-let const v = Cmdliner_info.Arg_info.Set.empty, (fun _ _ -> Ok v)
+let const v = Cmdliner_def.Arg_info.Set.empty, (fun _ _ -> Ok v)
 let app (args_f, f) (args_v, v) =
-  Cmdliner_info.Arg_info.Set.union args_f args_v,
+  Cmdliner_def.Arg_info.Set.union args_f args_v,
   fun ei cl -> match (f ei cl) with
   | Error _ as e -> e
   | Ok f ->
@@ -63,17 +63,17 @@ let cli_parse_result' t =
   cli_parse_result wrap
 
 let main_name =
-  Cmdliner_info.Arg_info.Set.empty,
-  (fun ei _ -> Ok (Cmdliner_info.Cmd_info.name @@ Cmdliner_info.Eval.main ei))
+  Cmdliner_def.Arg_info.Set.empty,
+  (fun ei _ -> Ok (Cmdliner_def.Cmd_info.name @@ Cmdliner_def.Eval.main ei))
 
 let choice_names =
-  Cmdliner_info.Arg_info.Set.empty,
+  Cmdliner_def.Arg_info.Set.empty,
   (fun ei _ ->
      (* N.B. this keeps everything backward compatible. We return the command
         names of main's children *)
-     let name t = Cmdliner_info.Cmd_info.name t in
+     let name t = Cmdliner_def.Cmd_info.name t in
      let choices =
-       Cmdliner_info.Cmd_info.children (Cmdliner_info.Eval.main ei)
+       Cmdliner_def.Cmd_info.children (Cmdliner_def.Eval.main ei)
      in
      Ok (List.rev_map name choices))
 
@@ -86,12 +86,12 @@ let with_used_args (al, v) : (_ * string list) t =
           List.rev_append args acc
         in
         let used =
-          List.rev (Cmdliner_info.Arg_info.Set.fold actual_args al [])
+          List.rev (Cmdliner_def.Arg_info.Set.fold actual_args al [])
         in
         Ok (x, used)
     | Error _ as e -> e
 
 
 let env =
-  Cmdliner_info.Arg_info.Set.empty,
-  (fun ei _ -> Ok (Cmdliner_info.Eval.env_var ei))
+  Cmdliner_def.Arg_info.Set.empty,
+  (fun ei _ -> Ok (Cmdliner_def.Eval.env_var ei))

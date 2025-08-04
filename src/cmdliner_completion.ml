@@ -19,26 +19,26 @@ let pp_item ppf ~prefix (name, doc) =
 
 let pp_opt ~err_ppf ~subst ~prefix ppf arg_info _ =
   (* XXX should we rather list a single name ? *)
-  let names = Cmdliner_info.Arg_info.opt_names arg_info in
-  let subst = Cmdliner_info.Arg_info.doclang_subst ~subst arg_info in
-  let doc = Cmdliner_info.Arg_info.styled_doc ~errs:err_ppf ~subst arg_info in
+  let names = Cmdliner_def.Arg_info.opt_names arg_info in
+  let subst = Cmdliner_def.Arg_info.doclang_subst ~subst arg_info in
+  let doc = Cmdliner_def.Arg_info.styled_doc ~errs:err_ppf ~subst arg_info in
   List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
 
 let pp_opt_names ~err_ppf ~subst ~prefix ppf cmd =
   let info = Cmdliner_cmd.get_info cmd in
-  let set = Cmdliner_info.Cmd_info.args info in
-  if not (Cmdliner_info.Arg_info.Set.is_empty set) then begin
-    let arg_infos = Cmdliner_info.Cmd_info.args info in
+  let set = Cmdliner_def.Cmd_info.args info in
+  if not (Cmdliner_def.Arg_info.Set.is_empty set) then begin
+    let arg_infos = Cmdliner_def.Cmd_info.args info in
     pp_group ppf "Options";
-    Cmdliner_info.Arg_info.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf) arg_infos
+    Cmdliner_def.Arg_info.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf) arg_infos
   end
 
 let pp_arg_values ~after_dashdash ~prefix ppf comp =
-  if after_dashdash && Cmdliner_info.Arg_completion.restart comp
+  if after_dashdash && Cmdliner_def.Arg_completion.restart comp
   then pp_line ppf "restart" else
-  let items = Cmdliner_info.Arg_completion.complete comp prefix in
-  let comp_files = Cmdliner_info.Arg_completion.files comp in
-  let comp_dirs = Cmdliner_info.Arg_completion.dirs comp in
+  let items = Cmdliner_def.Arg_completion.complete comp prefix in
+  let comp_files = Cmdliner_def.Arg_completion.files comp in
+  let comp_dirs = Cmdliner_def.Arg_completion.dirs comp in
   if items <> [] || comp_files || comp_dirs then begin
     pp_group ppf "Values";
     List.iter (pp_item ppf ~prefix) items;
@@ -49,9 +49,9 @@ let pp_arg_values ~after_dashdash ~prefix ppf comp =
 let pp_subcmds ~err_ppf ~subst ~prefix ppf cmd =
   pp_group ppf "Subcommands";
   let complete_cmd cmd =
-    let name = Cmdliner_info.Cmd_info.name cmd in
+    let name = Cmdliner_def.Cmd_info.name cmd in
     (* FIXME subst is wrong here. *)
-    let doc = Cmdliner_info.Cmd_info.styled_doc ~errs:err_ppf ~subst cmd in
+    let doc = Cmdliner_def.Cmd_info.styled_doc ~errs:err_ppf ~subst cmd in
     pp_item ppf ~prefix (name, doc)
   in
   List.iter complete_cmd (Cmdliner_cmd.get_children_infos cmd)
@@ -59,17 +59,17 @@ let pp_subcmds ~err_ppf ~subst ~prefix ppf cmd =
 let vnum = 1 (* Protocol version number *)
 
 let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
-  let subst = Cmdliner_info.Eval.doclang_subst ei in
-  let after_dashdash = Cmdliner_info.Complete.after_dashdash comp in
-  let prefix = Cmdliner_info.Complete.prefix comp in
+  let subst = Cmdliner_def.Eval.doclang_subst ei in
+  let after_dashdash = Cmdliner_def.Complete.after_dashdash comp in
+  let prefix = Cmdliner_def.Complete.prefix comp in
   let pp_arg_value ppf arg_info =
-    begin match Cmdliner_info.Arg_info.Set.find_opt arg_info cmd_args_info with
+    begin match Cmdliner_def.Arg_info.Set.find_opt arg_info cmd_args_info with
     | None -> ()
     | Some (Completion comp) -> pp_arg_values ~after_dashdash ~prefix ppf comp
     end;
   in
   let pp ppf () =
-    begin match Cmdliner_info.Complete.kind comp with
+    begin match Cmdliner_def.Complete.kind comp with
     | Opt_value arg_info -> pp_arg_value ppf arg_info
     | Opt_name_or_pos_value arg_info ->
         pp_arg_value ppf arg_info;
@@ -79,7 +79,7 @@ let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
         if not after_dashdash
         then pp_opt_names ~err_ppf ~subst ~prefix ppf cmd;
     end;
-    if Cmdliner_info.Complete.subcmds comp
+    if Cmdliner_def.Complete.subcmds comp
     then pp_subcmds ~err_ppf ~subst ~prefix ppf cmd
   in
   Cmdliner_base.Fmt.pf out_ppf "@[<v>%d@,%a@]@?" vnum pp ()

@@ -1,7 +1,7 @@
 Cmdliner_trie
 Cmdliner_base
 Cmdliner_manpage
-Cmdliner_info
+Cmdliner_def
 Cmdliner_docgen
 Cmdliner_msg
 Cmdliner_cline
