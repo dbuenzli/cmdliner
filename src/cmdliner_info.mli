@@ -3,10 +3,7 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-(** Exit codes, environment variables, arguments, commands and eval information.
-
-    These information types gathers untyped data used to parse command
-    lines report errors and format man pages. *)
+(** Core definitions. *)
 
 (** Exit codes. *)
 module Exit : sig
@@ -55,47 +52,6 @@ end
 
 (** Arguments *)
 module Arg : sig
-
-  (* Completion strategies *)
-
-  module Completion : sig
-    type complete = string -> (string * string) list
-    type 'a t
-    val make :
-      ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
-      unit -> 'a t
-
-    val none : 'a t
-    val some : 'a t -> 'a option t
-    val complete : 'a t -> complete
-    val dirs : 'a t -> bool
-    val files : 'a t -> bool
-    val restart : 'a t -> bool
-  end
-
-  (* Textual OCaml value converters *)
-
-  module Conv : sig
-    type 'a parser = string -> ('a, string) result
-    type 'a fmt = 'a Cmdliner_base.Fmt.t
-    type 'a t
-    val make :
-      ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
-      pp:'a fmt -> unit -> 'a t
-
-    val of_conv : 'a t ->
-      ?completion:'a Completion.t -> ?docv:string -> ?parser:'a parser ->
-      ?pp:'a fmt -> unit -> 'a t
-
-    val docv : 'a t -> string
-    val parser : 'a t -> 'a parser
-    val pp : 'a t -> 'a fmt
-    val completion : 'a t -> 'a Completion.t
-
-    val some : ?none:string -> 'a t -> 'a option t
-    val some' : ?none:'a -> 'a t -> 'a option t
-  end
-
   type absence =
   | Err  (** an error is reported. *)
   | Val of string Lazy.t (** if <> "", takes the given default value. *)
@@ -161,24 +117,25 @@ module Arg : sig
   val styled_doc :
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 
+  type 'a completion
+  type e_completion = Completion : 'a completion -> e_completion
   module Map : Map.S with type key := t
   module Set : sig
-    type arg = t
-    type completion = V : 'a Completion.t -> completion
+    type arg := t
     type t
     val is_empty : t -> bool
     val empty : t
-    val add : arg -> completion -> t -> t
-    val choose : t -> arg * completion
-    val partition : (arg -> completion -> bool) -> t -> t * t
-    val filter : (arg -> completion -> bool) -> t -> t
-    val iter : (arg -> completion -> unit) -> t -> unit
-    val singleton : arg -> completion -> t
-    val fold : (arg -> completion -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val add : arg -> e_completion -> t -> t
+    val choose : t -> arg * e_completion
+    val partition : (arg -> e_completion -> bool) -> t -> t * t
+    val filter : (arg -> e_completion -> bool) -> t -> t
+    val iter : (arg -> e_completion -> unit) -> t -> unit
+    val singleton : arg -> e_completion -> t
+    val fold : (arg -> e_completion -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val elements : t -> arg list
     val union : t -> t -> t
-    val find_opt : arg -> t -> completion option
-  end with type arg := t
+    val find_opt : arg -> t -> e_completion option
+  end
 end
 
 (** Commands. *)
@@ -212,12 +169,12 @@ module Cmd : sig
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 end
 
-
 (** Untyped command line parses. *)
 module Cline : sig
-  type arg =      (* unconverted argument data as found on the command line. *)
+  type arg =
   | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
-  | P of string list
+  | P of string list (** *)
+  (** Unconverted argument data as found on the command line. *)
 
   type t = arg Arg.Map.t  (* command line, maps arg_infos to arg value. *)
 end
@@ -259,7 +216,6 @@ end
 
 (** Terms, typed cli fragment definitions. *)
 module Term : sig
-
   type escape =
   [ `Error of bool * string
   | `Help of Cmdliner_manpage.format * string option ]
@@ -268,4 +224,43 @@ module Term : sig
     Eval.t -> Cline.t -> ('a, [ `Parse of string | escape ]) result
 
   type 'a t = Arg.Set.t * 'a parser
+end
+
+(** Completion strategies *)
+module Arg_completion : sig
+  type complete = string -> (string * string) list
+  type 'a t = 'a Arg.completion
+  val make :
+    ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
+    unit -> 'a t
+
+  val context : 'a t -> 'a Term.t option
+  val none : 'a t
+  val some : 'a t -> 'a option t
+  val complete : 'a t -> complete
+  val dirs : 'a t -> bool
+  val files : 'a t -> bool
+  val restart : 'a t -> bool
+end
+
+(** Textual OCaml value converters *)
+module Arg_conv : sig
+  type 'a parser = string -> ('a, string) result
+  type 'a fmt = 'a Cmdliner_base.Fmt.t
+  type 'a t
+  val make :
+    ?completion:'a Arg_completion.t -> docv:string -> parser:'a parser ->
+    pp:'a fmt -> unit -> 'a t
+
+  val of_conv : 'a t ->
+    ?completion:'a Arg_completion.t -> ?docv:string -> ?parser:'a parser ->
+    ?pp:'a fmt -> unit -> 'a t
+
+  val docv : 'a t -> string
+  val parser : 'a t -> 'a parser
+  val pp : 'a t -> 'a fmt
+  val completion : 'a t -> 'a Arg_completion.t
+
+  val some : ?none:string -> 'a t -> 'a option t
+  val some' : ?none:'a -> 'a t -> 'a option t
 end

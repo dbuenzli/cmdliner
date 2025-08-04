@@ -83,82 +83,8 @@ end
 (* Arguments *)
 
 module Arg = struct
-
-  (* Completions *)
-
-  module Completion = struct
-    type complete = string -> (string * string) list
-    type 'a t =
-      { complete : complete;
-        dirs : bool;
-        files : bool;
-        restart : bool }
-
-    let make
-        ?(complete = Fun.const []) ?(dirs = false) ?(files = false)
-        ?(restart = false) ()
-      =
-      {complete; dirs; files; restart}
-
-    let none = make ()
-    let some = (Fun.id :> 'a t -> 'a option t)
-    let complete c = c.complete
-    let dirs c = c.dirs
-    let files c = c.files
-    let restart c = c.restart
-  end
-
-  (* Converters *)
-
-  module Conv = struct
-    type 'a parser = string -> ('a, string) result
-    type 'a fmt = Format.formatter -> 'a -> unit
-    type 'a t =
-      { docv : string;
-        parser : 'a parser;
-        pp : 'a fmt;
-        completion : 'a Completion.t; }
-
-    let make ?(completion = Completion.none) ~docv ~parser ~pp () =
-      { docv; parser; pp; completion }
-
-    let of_conv
-        conv ?(completion = conv.completion) ?(docv = conv.docv)
-        ?(parser = conv.parser) ?(pp = conv.pp) ()
-      =
-      { docv; parser; pp; completion }
-
-    let docv c = c.docv
-    let parser c = c.parser
-    let pp c = c.pp
-    let completion c = c.completion
-
-    let some ?(none = "") conv =
-      let parser s = match parser conv s with
-      | Ok v -> Ok (Some v) | Error _ as e -> e
-      in
-      let pp ppf v = match v with
-      | None -> Format.pp_print_string ppf none
-      | Some v -> pp conv ppf v
-      in
-      let completion = Completion.some (completion conv) in
-      { conv with parser; pp; completion }
-
-    let some' ?none conv =
-      let parser s = match parser conv s with
-      | Ok v -> Ok (Some v) | Error _ as e -> e
-      in
-      let pp ppf = function
-      | None -> (match none with None -> () | Some v -> (pp conv) ppf v)
-      | Some v -> pp conv ppf v
-      in
-      let completion = Completion.some conv.completion in
-      { conv with parser; pp; completion }
-  end
-
   type absence = Err | Val of string Lazy.t | Doc of string
   type opt_kind = Flag | Opt | Opt_vopt of string
-
   type pos_kind = (* information about a positional argument. *)
     { pos_rev : bool; (* if [true] positions are counted from the end. *)
       pos_start : int; (* start positional argument. *)
@@ -170,6 +96,7 @@ module Arg = struct
   let pos_rev p = p.pos_rev
   let pos_start p = p.pos_start
   let pos_len p = p.pos_len
+  let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
   type t = (* information about a command line argument. *)
     { id : int; (* unique id for the argument. *)
@@ -184,8 +111,6 @@ module Arg = struct
       opt_kind : opt_kind; (* optional arg kind. *)
       opt_names : string list; (* names (for opt args). *)
       opt_all : bool; } (* repeatable (for opt args). *)
-
-  let dumb_pos = pos ~rev:false ~start:(-1) ~len:None
 
   let make
       ?deprecated ?(absent = "") ?docs ?(doc_envs = []) ?(docv = "")
@@ -240,18 +165,16 @@ module Arg = struct
   let is_pos i = i.opt_names = []
   let is_req i = i.absent = Err
 
-  let pos_cli_order a0 a1 = (* best-effort order on the cli. *)
-    let c = compare (a0.pos.pos_rev) (a1.pos.pos_rev) in
+  let pos_cli_order (a0 : t) (a1 : t) = (* best-effort order on the cli. *)
+    let c = Bool.compare (a0.pos.pos_rev) (a1.pos.pos_rev) in
     if c <> 0 then c else
     if a0.pos.pos_rev
-    then compare a1.pos.pos_start a0.pos.pos_start
-    else compare a0.pos.pos_start a1.pos.pos_start
+    then Int.compare a1.pos.pos_start a0.pos.pos_start
+    else Int.compare a0.pos.pos_start a1.pos.pos_start
 
   let rev_pos_cli_order a0 a1 = pos_cli_order a1 a0
 
-  let compare a0 a1 = Int.compare a0.id a1.id
-
-  let doclang_subst ~subst i = function
+  let doclang_subst ~subst (i : t) = function
   | "docv" ->
       let docv = if i.docv = "" then "VAL" else i.docv in
       Some (strf "$(i,%s)" (Cmdliner_manpage.escape docv))
@@ -262,22 +185,70 @@ module Arg = struct
       | Some e -> Env.doclang_subst ~subst e id
       | None -> subst id
 
-  let styled_deprecated ~errs ~subst i = match i.deprecated with
+  let styled_deprecated ~errs ~subst (i : t) = match i.deprecated with
   | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
 
-  let styled_doc ~errs ~subst i =
+  let styled_doc ~errs ~subst (i : t) =
     Cmdliner_manpage.doc_to_styled ~errs ~subst i.doc
 
-  module T = struct type nonrec t = t let compare = compare end
-  module Map = Map.Make (T)
+  let compare (a0 : t) (a1 : t) = Int.compare a0.id a1.id
+  module Map = Map.Make (struct type nonrec t = t let compare = compare end)
+
+  (* Due to terms appearing in the completion API, we have an annoying
+     recursive type definition which we resolve here. Most of these
+     types do not belong this module. *)
+
+  type term_escape =
+  [ `Error of bool * string
+  | `Help of Cmdliner_manpage.format * string option ]
+
+  type complete = string -> (string * string) list
+  type 'a completion =
+    { context : 'a term option;
+      complete : complete;
+      dirs : bool;
+      files : bool;
+      restart : bool }
+
+  and e_completion = Completion : 'a completion -> e_completion
+  and arg_set = e_completion Map.t
+
+  and cmd =
+    { name : string; (* name of the cmd. *)
+      version : string option; (* version (for --version). *)
+      deprecated : string option; (* deprecation message *)
+      doc : string; (* one line description of cmd. *)
+      docs : string; (* title of man section where listed (commands). *)
+      sdocs : string; (* standard options, title of section where listed. *)
+      exits : Exit.info list; (* exit codes for the cmd. *)
+      envs : Env.info list; (* env vars that influence the cmd. *)
+      man : Cmdliner_manpage.block list; (* man page text. *)
+      man_xrefs : Cmdliner_manpage.xref list; (* man cross-refs. *)
+      args : arg_set; (* Command arguments. *)
+      has_args : bool; (* [true] if has own parsing term. *)
+      children : cmd list; } (* Children, if any. *)
+
+  and eval = (* information about the evaluation context. *)
+    { cmd : cmd; (* cmd being evaluated. *)
+      ancestors : cmd list; (* ancestors of cmd, root is last. *)
+      env : string -> string option; (* environment variable lookup. *)
+      err_ppf : Format.formatter (* error formatter *) }
+
+  and cline = cline_arg Map.t
+  and cline_arg = (* unconverted argument data as found on the command line. *)
+  | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
+  | P of string list
+
+  and 'a term_parser =
+    eval -> cline -> ('a, [ `Parse of string | term_escape ]) result
+
+  and 'a term = arg_set * 'a term_parser
+
+  (* Sets of arguments stored as maps to their completion *)
+
   module Set = struct
-    type arg = t
-    type completion = V : 'a Completion.t -> completion
-
     include Map
-
-    type t = completion Map.t
-
+    type t = e_completion Map.t
     let find_opt k m = try Some (Map.find k m) with Not_found -> None
     let elements m = List.map fst (bindings m)
     let union a b =
@@ -291,102 +262,83 @@ end
 (* Commands *)
 
 module Cmd = struct
-  type t =
-    { name : string; (* name of the cmd. *)
-      version : string option; (* version (for --version). *)
-      deprecated : string option; (* deprecation message *)
-      doc : string; (* one line description of cmd. *)
-      docs : string; (* title of man section where listed (commands). *)
-      sdocs : string; (* standard options, title of section where listed. *)
-      exits : Exit.info list; (* exit codes for the cmd. *)
-      envs : Env.info list; (* env vars that influence the cmd. *)
-      man : Cmdliner_manpage.block list; (* man page text. *)
-      man_xrefs : Cmdliner_manpage.xref list; (* man cross-refs. *)
-      args : Arg.Set.t; (* Command arguments. *)
-      has_args : bool; (* [true] if has own parsing term. *)
-      children : t list; } (* Children, if any. *)
-
+  type t = Arg.cmd
   let make
       ?deprecated ?(man_xrefs = [`Main]) ?(man = []) ?(envs = [])
       ?(exits = Exit.defaults) ?(sdocs = Cmdliner_manpage.s_common_options)
-      ?(docs = Cmdliner_manpage.s_commands) ?(doc = "") ?version name
+      ?(docs = Cmdliner_manpage.s_commands) ?(doc = "") ?version name : t
     =
     { name; version; deprecated; doc; docs; sdocs; exits;
       envs; man; man_xrefs; args = Arg.Set.empty;
       has_args = true; children = [] }
 
-  let name i = i.name
-  let version i = i.version
-  let deprecated i = i.deprecated
-  let doc i = i.doc
-  let docs i = i.docs
-  let stdopts_docs i = i.sdocs
-  let exits i = i.exits
-  let envs i = i.envs
-  let man i = i.man
-  let man_xrefs i = i.man_xrefs
-  let args i = i.args
-  let has_args i = i.has_args
-  let children i = i.children
-  let add_args i args = { i with args = Arg.Set.union args i.args }
-  let with_children cmd ~args ~children =
+  let name (i : t) = i.name
+  let version (i : t) = i.version
+  let deprecated (i : t) = i.deprecated
+  let doc (i : t) = i.doc
+  let docs (i : t) = i.docs
+  let stdopts_docs (i : t) = i.sdocs
+  let exits (i : t) = i.exits
+  let envs (i : t) = i.envs
+  let man (i : t) = i.man
+  let man_xrefs (i : t) = i.man_xrefs
+  let args (i : t) = i.args
+  let has_args (i : t) = i.has_args
+  let children (i : t) = i.children
+  let add_args (i : t) args = { i with args = Arg.Set.union args i.args }
+  let with_children (i : t) ~args ~children =
     let has_args, args = match args with
-    | None -> false, cmd.args
-    | Some args -> true, Arg.Set.union args cmd.args
+    | None -> false, i.args
+    | Some args -> true, Arg.Set.union args i.args
     in
-    { cmd with has_args; args; children }
+    { i with has_args; args; children }
 
-  let styled_deprecated ~errs ~subst i = match i.deprecated with
+  let styled_deprecated ~errs ~subst (i : t) = match i.deprecated with
   | None -> "" | Some msg -> Cmdliner_manpage.doc_to_styled ~errs ~subst msg
 
-  let styled_doc ~errs ~subst i =
+  let styled_doc ~errs ~subst (i : t) =
     Cmdliner_manpage.doc_to_styled ~errs ~subst i.doc
 
-  let escaped_name i = Cmdliner_manpage.escape i.name
+  let escaped_name (i : t) = Cmdliner_manpage.escape i.name
 end
 
 (* Command lines *)
 
 module Cline = struct
-  type arg =      (* unconverted argument data as found on the command line. *)
-  | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
+  type arg = Arg.cline_arg =
+  | O of (int * string * (string option)) list
   | P of string list
 
-  type t = arg Arg.Map.t  (* command line, maps arg_infos to arg value. *)
+  type t = Arg.cline
 end
-
 
 (* Evaluation *)
 
 module Eval = struct
-  type t = (* information about the evaluation context. *)
-    { cmd : Cmd.t; (* cmd being evaluated. *)
-      ancestors : Cmd.t list; (* ancestors of cmd, root is last. *)
-      env : string -> string option; (* environment variable lookup. *)
-      err_ppf : Format.formatter (* error formatter *) }
+  type t = Arg.eval
 
-  let make ~cmd ~ancestors ~env ~err_ppf = { cmd; ancestors; env; err_ppf }
+  let make ~cmd ~ancestors ~env ~err_ppf : t = { cmd; ancestors; env; err_ppf }
 
-  let cmd i = i.cmd
-  let ancestors i = i.ancestors
-  let env_var i v = i.env v
-  let err_ppf i = i.err_ppf
-  let main i = match List.rev i.ancestors with [] -> i.cmd | m :: _ -> m
-  let with_cmd i cmd = { i with cmd }
+  let cmd (i : t) = i.cmd
+  let ancestors (i : t) = i.ancestors
+  let env_var (i : t) v = i.env v
+  let err_ppf (i : t) = i.err_ppf
+  let main (i : t) = match List.rev i.ancestors with [] -> i.cmd | m :: _ -> m
+  let with_cmd (i : t) cmd = { i with cmd }
 
   let doclang_name n = strf "$(b,%s)" (Cmd.escaped_name n)
   let doclang_names names =
     strf "$(b,%s)" (Cmdliner_manpage.escape (String.concat " " names))
 
-  let doclang_subst ei = function
-  | "tname" | "cmd.name" -> Some (doclang_name ei.cmd)
-  | "mname" | "tool" -> Some (doclang_name (main ei))
+  let doclang_subst (i : t) = function
+  | "tname" | "cmd.name" -> Some (doclang_name i.cmd)
+  | "mname" | "tool" -> Some (doclang_name (main i))
   | "cmd.parent" ->
-      let ancestors = ancestors ei in
-      if ancestors = [] then Some (doclang_name (main ei)) else
+      let ancestors = ancestors i in
+      if ancestors = [] then Some (doclang_name (main i)) else
       Some (doclang_names (List.rev_map Cmd.name ancestors))
   | "iname" | "cmd" ->
-      Some (doclang_names (List.rev_map Cmd.name (cmd ei :: ancestors ei)))
+      Some (doclang_names (List.rev_map Cmd.name (cmd i :: ancestors i)))
   | _ -> None
 end
 
@@ -417,12 +369,78 @@ end
 (* Terms *)
 
 module Term = struct
-  type escape =
-  [ `Error of bool * string
-  | `Help of Cmdliner_manpage.format * string option ]
+  type escape = Arg.term_escape
+  type 'a parser = 'a Arg.term_parser
+  type 'a t = 'a Arg.term
+  let some (aset, parser) =
+    aset, (fun eval cline -> Result.map Option.some (parser eval cline))
+end
 
-  type 'a parser =
-    Eval.t -> Cline.t -> ('a, [ `Parse of string | escape ]) result
+module Arg_completion = struct
+  type complete = Arg.complete
+  type 'a t = 'a Arg.completion
 
-  type 'a t = Arg.Set.t * 'a parser
+  let make
+      ?(complete = Fun.const []) ?(dirs = false) ?(files = false)
+      ?(restart = false) () : 'a t
+    =
+    {context = None; complete; dirs; files; restart}
+
+  let none = make ()
+  let some (c : 'a t) =
+    { c with context = Option.map Term.some c.context }
+
+  let context (c : 'a t) = c.context
+  let complete (c : 'a t) = c.complete
+  let dirs (c : 'a t) = c.dirs
+  let files (c : 'a t) = c.files
+  let restart (c : 'a t) = c.restart
+end
+
+(* Converters *)
+
+module Arg_conv = struct
+  type 'a parser = string -> ('a, string) result
+  type 'a fmt = Format.formatter -> 'a -> unit
+  type 'a t =
+    { docv : string;
+      parser : 'a parser;
+      pp : 'a fmt;
+      completion : 'a Arg_completion.t; }
+
+  let make ?(completion = Arg_completion.none) ~docv ~parser ~pp () =
+    { docv; parser; pp; completion }
+
+  let of_conv
+      conv ?(completion = conv.completion) ?(docv = conv.docv)
+      ?(parser = conv.parser) ?(pp = conv.pp) ()
+    =
+    { docv; parser; pp; completion }
+
+  let docv c = c.docv
+  let parser c = c.parser
+  let pp c = c.pp
+  let completion c = c.completion
+
+  let some ?(none = "") conv =
+    let parser s = match parser conv s with
+    | Ok v -> Ok (Some v) | Error _ as e -> e
+    in
+    let pp ppf v = match v with
+    | None -> Format.pp_print_string ppf none
+    | Some v -> pp conv ppf v
+    in
+    let completion = Arg_completion.some (completion conv) in
+    { conv with parser; pp; completion }
+
+  let some' ?none conv =
+    let parser s = match parser conv s with
+    | Ok v -> Ok (Some v) | Error _ as e -> e
+    in
+    let pp ppf = function
+    | None -> (match none with None -> () | Some v -> (pp conv) ppf v)
+    | Some v -> pp conv ppf v
+    in
+    let completion = Arg_completion.some conv.completion in
+      { conv with parser; pp; completion }
 end

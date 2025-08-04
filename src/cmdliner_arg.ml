@@ -52,11 +52,11 @@ let err_invalid_enum var s enums =
 
 (* Argument converters *)
 
-module Completion = Cmdliner_info.Arg.Completion
-module Conv = Cmdliner_info.Arg.Conv
+module Completion = Cmdliner_info.Arg_completion
+module Conv = Cmdliner_info.Arg_conv
 type 'a conv = 'a Conv.t
-let some = Cmdliner_info.Arg.Conv.some
-let some' = Cmdliner_info.Arg.Conv.some'
+let some = Cmdliner_info.Arg_conv.some
+let some' = Cmdliner_info.Arg_conv.some'
 
 (* Argument information *)
 
@@ -66,7 +66,8 @@ let info = Cmdliner_info.Arg.make
 
 (* Arguments *)
 
-let no_completion = Cmdliner_info.Arg.Set.V Cmdliner_info.Arg.Completion.none
+let no_completion =
+  Cmdliner_info.Arg.Completion Cmdliner_info.Arg_completion.none
 
 let ( & ) f x = f x
 let parse_error e = Error (`Parse e)
@@ -202,7 +203,7 @@ let opt ?vopt conv v a =
   | (_, f, _) :: (_, g, _) :: _ ->
       parse_error (Cmdliner_msg.err_opt_repeated g f)
   in
-  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
+  Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
 let opt_all ?vopt conv v a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -231,7 +232,7 @@ let opt_all ?vopt conv v a =
                 (List.sort rev_compare (List.rev_map parse l))) with
       | Failure e -> parse_error e
   in
-  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
+  Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
 (* Positional arguments *)
 
@@ -257,7 +258,7 @@ let pos ?(rev = false) k conv v a =
       | Failure e -> parse_error e)
   | _ -> assert false
   in
-  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
+  Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
 let pos_list pos conv v a =
   if Cmdliner_info.Arg.is_opt a then invalid_arg err_not_pos else
@@ -272,7 +273,7 @@ let pos_list pos conv v a =
       with
       | Failure e -> parse_error e
   in
-  Cmdliner_term.make (arg_to_args a (V (Conv.completion conv))) convert
+  Cmdliner_term.make (arg_to_args a (Completion (Conv.completion conv))) convert
 
 let all = Cmdliner_info.Arg.pos ~rev:false ~start:0 ~len:None
 let pos_all c v a = pos_list all c v a

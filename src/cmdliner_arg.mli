@@ -15,6 +15,8 @@ module Completion : sig
   val make :
     ?complete:complete -> ?dirs:bool ->  ?files:bool -> ?restart:bool -> unit ->
     'a t
+
+  val context : 'a t -> 'a Cmdliner_term.t option
   val complete : 'a t -> complete
   val dirs : 'a t -> bool
   val files : 'a t -> bool
