@@ -11,9 +11,9 @@ let make args p = (args, p)
 let argset (args, _) = args
 let parser (_, parser) = parser
 
-let const v = Cmdliner_info.Arg.Set.empty, (fun _ _ -> Ok v)
+let const v = Cmdliner_info.Arg_info.Set.empty, (fun _ _ -> Ok v)
 let app (args_f, f) (args_v, v) =
-  Cmdliner_info.Arg.Set.union args_f args_v,
+  Cmdliner_info.Arg_info.Set.union args_f args_v,
   fun ei cl -> match (f ei cl) with
   | Error _ as e -> e
   | Ok f ->
@@ -63,11 +63,11 @@ let cli_parse_result' t =
   cli_parse_result wrap
 
 let main_name =
-  Cmdliner_info.Arg.Set.empty,
+  Cmdliner_info.Arg_info.Set.empty,
   (fun ei _ -> Ok (Cmdliner_info.Cmd_info.name @@ Cmdliner_info.Eval.main ei))
 
 let choice_names =
-  Cmdliner_info.Arg.Set.empty,
+  Cmdliner_info.Arg_info.Set.empty,
   (fun ei _ ->
      (* N.B. this keeps everything backward compatible. We return the command
         names of main's children *)
@@ -85,10 +85,13 @@ let with_used_args (al, v) : (_ * string list) t =
           let args = Cmdliner_cline.actual_args cl arg_info in
           List.rev_append args acc
         in
-        let used = List.rev (Cmdliner_info.Arg.Set.fold actual_args al []) in
+        let used =
+          List.rev (Cmdliner_info.Arg_info.Set.fold actual_args al [])
+        in
         Ok (x, used)
     | Error _ as e -> e
 
 
 let env =
-  Cmdliner_info.Arg.Set.empty, (fun ei _ -> Ok (Cmdliner_info.Eval.env_var ei))
+  Cmdliner_info.Arg_info.Set.empty,
+  (fun ei _ -> Ok (Cmdliner_info.Eval.env_var ei))

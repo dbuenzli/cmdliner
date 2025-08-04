@@ -19,8 +19,8 @@ type +'a t = 'a Cmdliner_info.Term.t
 (** The type for terms. The list of arguments it can parse and the parsing
     function that does so. *)
 
-val make : Cmdliner_info.Arg.Set.t -> 'a parser -> 'a t
-val argset : 'a t -> Cmdliner_info.Arg.Set.t
+val make : Cmdliner_info.Arg_info.Set.t -> 'a parser -> 'a t
+val argset : 'a t -> Cmdliner_info.Arg_info.Set.t
 val parser : 'a t -> 'a parser
 
 val const : 'a -> 'a t

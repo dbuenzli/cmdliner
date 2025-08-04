@@ -15,14 +15,16 @@ type t = Cmdliner_info.Cline.t
 
 val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
-  Cmdliner_info.Arg.Set.t -> string list ->
+  Cmdliner_info.Arg_info.Set.t -> string list ->
   [ `Ok of t
   | `Complete of Cmdliner_info.Complete.t
   | `Error of string * t ]
 
-val opt_arg : t -> Cmdliner_info.Arg.t -> (int * string * (string option)) list
-val pos_arg : t -> Cmdliner_info.Arg.t -> string list
-val actual_args : t -> Cmdliner_info.Arg.t -> string list
+val opt_arg :
+  t -> Cmdliner_info.Arg_info.t -> (int * string * (string option)) list
+
+val pos_arg : t -> Cmdliner_info.Arg_info.t -> string list
+val actual_args : t -> Cmdliner_info.Arg_info.t -> string list
 (** Actual command line arguments from the command line *)
 
 (** {1:deprecations Deprecations} *)

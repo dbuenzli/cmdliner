@@ -18,7 +18,7 @@ let err_pos_excess excess =
     Fmt.ereason "too many arguments"
     Fmt.(list ~sep:comma code_or_quote) excess
 
-let err_pos_miss a = match Cmdliner_info.Arg.docv a with
+let err_pos_miss a = match Cmdliner_info.Arg_info.docv a with
 | "" -> Fmt.str "@[a required argument is %a@]" Fmt.missing ()
 | v -> Fmt.str "@[required argument %a is %a@]" Fmt.code_var v Fmt.missing ()
 
@@ -26,19 +26,19 @@ let err_pos_misses = function
 | [] -> assert false
 | [a] -> err_pos_miss a
 | args ->
-    let add_arg acc a = match Cmdliner_info.Arg.docv a with
+    let add_arg acc a = match Cmdliner_info.Arg_info.docv a with
     | "" -> "ARG" :: acc
     | argv -> argv :: acc
     in
-    let rev_args = List.sort Cmdliner_info.Arg.rev_pos_cli_order args in
+    let rev_args = List.sort Cmdliner_info.Arg_info.rev_pos_cli_order args in
     let args = List.fold_left add_arg [] rev_args in
     Fmt.str "@[required arguments %a@ are@ %a@]"
       Fmt.(list ~sep:comma code_var) args Fmt.missing ()
 
-let err_pos_parse a ~err = match Cmdliner_info.Arg.docv a with
+let err_pos_parse a ~err = match Cmdliner_info.Arg_info.docv a with
 | "" -> err
 | argv ->
-    match Cmdliner_info.Arg.(pos_len @@ pos_kind a) with
+    match Cmdliner_info.Arg_info.(pos_len @@ pos_kind a) with
     | Some 1 -> Fmt.str "@[%a argument: %s@]" Fmt.code_var argv err
     | None | Some _ -> Fmt.str "@[%a… arguments: %s@]" Fmt.code_var argv err
 
@@ -67,9 +67,9 @@ let err_opt_repeated f f' =
 (* Argument errors *)
 
 let err_arg_missing a =
-  if Cmdliner_info.Arg.is_pos a then err_pos_miss a else
+  if Cmdliner_info.Arg_info.is_pos a then err_pos_miss a else
   Fmt.str "@[required option %a is %a@]"
-    Fmt.code (Cmdliner_info.Arg.opt_name_sample a) Fmt.missing ()
+    Fmt.code (Cmdliner_info.Arg_info.opt_name_sample a) Fmt.missing ()
 
 let err_cmd_missing ~dom =
   Fmt.str "@[required %a name is %a,@ must@ be@ %a@]"

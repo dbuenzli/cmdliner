@@ -7,7 +7,7 @@ let rev_compare n0 n1 = compare n1 n0
 let strf = Printf.sprintf
 
 let order_args a0 a1 =
-  match Cmdliner_info.Arg.is_opt a0, Cmdliner_info.Arg.is_opt a1 with
+  match Cmdliner_info.Arg_info.is_opt a0, Cmdliner_info.Arg_info.is_opt a1 with
   | true, true -> (* optional by name *)
       let key names =
         let k = List.hd (List.sort rev_compare names) in
@@ -15,12 +15,12 @@ let order_args a0 a1 =
         if k.[1] = '-' then String.sub k 1 (String.length k - 1) else k
       in
       compare
-        (key @@ Cmdliner_info.Arg.opt_names a0)
-        (key @@ Cmdliner_info.Arg.opt_names a1)
+        (key @@ Cmdliner_info.Arg_info.opt_names a0)
+        (key @@ Cmdliner_info.Arg_info.opt_names a1)
   | false, false -> (* positional by variable *)
       compare
-        (String.lowercase_ascii @@ Cmdliner_info.Arg.docv a0)
-        (String.lowercase_ascii @@ Cmdliner_info.Arg.docv a1)
+        (String.lowercase_ascii @@ Cmdliner_info.Arg_info.docv a0)
+        (String.lowercase_ascii @@ Cmdliner_info.Arg_info.docv a1)
   | true, false -> -1 (* positional first *)
   | false, true -> 1  (* optional after *)
 
@@ -51,10 +51,12 @@ let invocation ?(sep = " ") ?(ancestors = []) cmd =
   esc @@ String.concat sep names
 
 let synopsis_pos_arg a =
-  let v = match Cmdliner_info.Arg.docv a with "" -> "ARG" | v -> v in
+  let v = match Cmdliner_info.Arg_info.docv a with "" -> "ARG" | v -> v in
   let v = strf "$(i,%s)" (esc v) in
-  let v = (if Cmdliner_info.Arg.is_req a then strf "%s" else strf "[%s]") v in
-  match Cmdliner_info.Arg.(pos_len @@ pos_kind a) with
+  let v =
+    (if Cmdliner_info.Arg_info.is_req a then strf "%s" else strf "[%s]") v
+  in
+  match Cmdliner_info.Arg_info.(pos_len @@ pos_kind a) with
   | None -> v ^ "…"
   | Some 1 -> v
   | Some n ->
@@ -62,14 +64,14 @@ let synopsis_pos_arg a =
       String.concat " " (loop n [])
 
 let synopsis_opt_arg a n =
-  let var = match Cmdliner_info.Arg.docv a with "" -> "VAL" | v -> v in
-  match Cmdliner_info.Arg.opt_kind a with
-  | Cmdliner_info.Arg.Flag -> strf "$(b,%s)" (esc n)
-  | Cmdliner_info.Arg.Opt ->
+  let var = match Cmdliner_info.Arg_info.docv a with "" -> "VAL" | v -> v in
+  match Cmdliner_info.Arg_info.opt_kind a with
+  | Cmdliner_info.Arg_info.Flag -> strf "$(b,%s)" (esc n)
+  | Cmdliner_info.Arg_info.Opt ->
         if String.length n > 2
         then strf "$(b,%s)=$(i,%s)" (esc n) (esc var)
         else strf "$(b,%s) $(i,%s)" (esc n) (esc var)
-  | Cmdliner_info.Arg.Opt_vopt _ ->
+  | Cmdliner_info.Arg_info.Opt_vopt _ ->
       if String.length n > 2
       then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
       else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
@@ -82,27 +84,29 @@ let synopsis ?(show_help = false) ?ancestors cmd =
   match Cmdliner_info.Cmd_info.children cmd with
   | [] ->
       let rev_cli_order (a0, _) (a1, _) =
-        Cmdliner_info.Arg.rev_pos_cli_order a0 a1
+        Cmdliner_info.Arg_info.rev_pos_cli_order a0 a1
       in
       let args = Cmdliner_info.Cmd_info.args cmd in
       let oargs, pargs =
-        Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args)
+        Cmdliner_info.Arg_info.(Set.partition (fun a _ -> is_opt a) args)
       in
       let oargs =
         (* Keep only those that are listed in the s_options section and
            that are not [--version] or [--help]. * *)
         let keep a _ =
           let drop_names n = n = "--help" || n = "--version" in
-          Cmdliner_info.Arg.docs a = Cmdliner_manpage.s_options &&
-          not (List.exists drop_names (Cmdliner_info.Arg.opt_names a))
+          Cmdliner_info.Arg_info.docs a = Cmdliner_manpage.s_options &&
+          not (List.exists drop_names (Cmdliner_info.Arg_info.opt_names a))
         in
-        let oargs = Cmdliner_info.Arg.Set.(elements (filter keep oargs)) in
+        let oargs = Cmdliner_info.Arg_info.Set.(elements (filter keep oargs)) in
         let count = List.length oargs in
         let any_option = "[$(i,OPTION)]…" in
         if count = 0 || count > 3 then any_option else
         let syn a =
-          let syn = synopsis_opt_arg a (Cmdliner_info.Arg.opt_name_sample a) in
-          if Cmdliner_info.Arg.is_req a
+          let syn =
+            synopsis_opt_arg a (Cmdliner_info.Arg_info.opt_name_sample a)
+          in
+          if Cmdliner_info.Arg_info.is_req a
           then syn
           else strf "[%s]" syn
         in
@@ -111,7 +115,7 @@ let synopsis ?(show_help = false) ?ancestors cmd =
         String.concat " " [oargs; any_option]
       in
       let pargs =
-        let pargs = Cmdliner_info.Arg.Set.elements pargs in
+        let pargs = Cmdliner_info.Arg_info.Set.elements pargs in
         if pargs = [] then "" else
         let pargs = List.map (fun a -> a, synopsis_pos_arg a) pargs in
         let pargs = List.sort rev_cli_order pargs in
@@ -151,36 +155,36 @@ let cmd_docs ei = match Cmdliner_info.(Cmd_info.children (Eval.cmd ei)) with
 (* Argument docs *)
 
 let arg_man_item_label a =
-  let s = match Cmdliner_info.Arg.is_pos a with
-  | true -> strf "$(i,%s)" (esc @@ Cmdliner_info.Arg.docv a)
+  let s = match Cmdliner_info.Arg_info.is_pos a with
+  | true -> strf "$(i,%s)" (esc @@ Cmdliner_info.Arg_info.docv a)
   | false ->
-      let names = List.sort compare (Cmdliner_info.Arg.opt_names a) in
+      let names = List.sort compare (Cmdliner_info.Arg_info.opt_names a) in
       String.concat ", " (List.rev_map (synopsis_opt_arg a) names)
   in
-  match Cmdliner_info.Arg.deprecated a with
+  match Cmdliner_info.Arg_info.deprecated a with
   | None -> s | Some _ -> "(Deprecated) " ^ s
 
 let arg_to_man_item ~errs ~subst ~buf a =
-  let subst = Cmdliner_info.Arg.doclang_subst ~subst a in
-  let or_env ~value a = match Cmdliner_info.Arg.env a with
+  let subst = Cmdliner_info.Arg_info.doclang_subst ~subst a in
+  let or_env ~value a = match Cmdliner_info.Arg_info.env a with
   | None -> ""
   | Some e ->
       let value = if value then " or" else "absent " in
       strf "%s $(b,%s) env" value (esc @@ Cmdliner_info.Env.info_var e)
   in
-  let absent = match Cmdliner_info.Arg.absent a with
-  | Cmdliner_info.Arg.Err -> "required"
-  | Cmdliner_info.Arg.Doc "" -> strf "%s" (or_env ~value:false a)
-  | Cmdliner_info.Arg.Doc s ->
+  let absent = match Cmdliner_info.Arg_info.absent a with
+  | Cmdliner_info.Arg_info.Err -> "required"
+  | Cmdliner_info.Arg_info.Doc "" -> strf "%s" (or_env ~value:false a)
+  | Cmdliner_info.Arg_info.Doc s ->
       let s = Cmdliner_manpage.subst_vars ~errs ~subst buf s in
       strf "absent=%s%s" s (or_env ~value:true a)
-  | Cmdliner_info.Arg.Val v ->
+  | Cmdliner_info.Arg_info.Val v ->
       match Lazy.force v with
       | "" -> strf "%s" (or_env ~value:false a)
       | v -> strf "absent=$(b,%s)%s" (esc v) (or_env ~value:true a)
   in
-  let optvopt = match Cmdliner_info.Arg.opt_kind a with
-  | Cmdliner_info.Arg.Opt_vopt v -> strf "default=$(b,%s)" (esc v)
+  let optvopt = match Cmdliner_info.Arg_info.opt_kind a with
+  | Cmdliner_info.Arg_info.Opt_vopt v -> strf "default=$(b,%s)" (esc v)
   | _ -> ""
   in
   let argvdoc = match optvopt, absent with
@@ -188,19 +192,24 @@ let arg_to_man_item ~errs ~subst ~buf a =
   | s, "" | "", s -> strf " (%s)" s
   | s, s' -> strf " (%s) (%s)" s s'
   in
-  let deprecated = match Cmdliner_info.Arg.deprecated a with
+  let deprecated = match Cmdliner_info.Arg_info.deprecated a with
   | None -> "" | Some msg -> msg ^ " "
   in
-  let doc = deprecated ^ Cmdliner_info.Arg.doc a in
+  let doc = deprecated ^ Cmdliner_info.Arg_info.doc a in
   let doc = Cmdliner_manpage.subst_vars ~errs ~subst buf doc in
-  (Cmdliner_info.Arg.docs a, `I (arg_man_item_label a ^ argvdoc, doc))
+  (Cmdliner_info.Arg_info.docs a, `I (arg_man_item_label a ^ argvdoc, doc))
 
 let arg_docs ~errs ~subst ~buf ei =
   let by_sec_by_arg a0 a1 =
-    let c = compare (Cmdliner_info.Arg.docs a0) (Cmdliner_info.Arg.docs a1) in
+    let c = compare
+        (Cmdliner_info.Arg_info.docs a0)
+        (Cmdliner_info.Arg_info.docs a1)
+    in
     if c <> 0 then c else
     let c =
-      match Cmdliner_info.Arg.deprecated a0, Cmdliner_info.Arg.deprecated a1
+      match
+        Cmdliner_info.Arg_info.deprecated a0,
+        Cmdliner_info.Arg_info.deprecated a1
       with
       | None, None | Some _, Some _ -> 0
       | None, Some _ -> -1 | Some _, None -> 1
@@ -208,11 +217,11 @@ let arg_docs ~errs ~subst ~buf ei =
     if c <> 0 then c else order_args a0 a1
   in
   let keep_arg a _ acc =
-    if not Cmdliner_info.Arg.(is_pos a && (docv a = "" || doc a = ""))
+    if not Cmdliner_info.Arg_info.(is_pos a && (docv a = "" || doc a = ""))
     then (a :: acc) else acc
   in
   let args = Cmdliner_info.Cmd_info.args @@ Cmdliner_info.Eval.cmd ei in
-  let args = Cmdliner_info.Arg.Set.fold keep_arg args [] in
+  let args = Cmdliner_info.Arg_info.Set.fold keep_arg args [] in
   let args = List.sort by_sec_by_arg args in
   let args = List.rev_map (arg_to_man_item ~errs ~subst ~buf) args in
   sorted_items_to_blocks ~boilerplate:None args
@@ -259,11 +268,11 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
     seen, envs
   in
   let add_arg_envs a _ acc =
-    let envs = Cmdliner_info.Arg.doc_envs a in
-    let envs = match Cmdliner_info.Arg.env a with
+    let envs = Cmdliner_info.Arg_info.doc_envs a in
+    let envs = match Cmdliner_info.Arg_info.env a with
     | None -> envs | Some e -> e :: envs
     in
-    let subst = Cmdliner_info.Arg.doclang_subst ~subst a in
+    let subst = Cmdliner_info.Arg_info.doclang_subst ~subst a in
     List.fold_left (add_env_item ~subst) acc envs
   in
   let add_env acc e =
@@ -279,7 +288,7 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
   let args = Cmdliner_info.Cmd_info.args @@ Cmdliner_info.Eval.cmd ei in
   let tenvs = Cmdliner_info.Cmd_info.envs @@ Cmdliner_info.Eval.cmd ei in
   let init = Cmdliner_info.Env.Set.empty, [] in
-  let acc = Cmdliner_info.Arg.Set.fold add_arg_envs args init in
+  let acc = Cmdliner_info.Arg_info.Set.fold add_arg_envs args init in
   let _, envs = List.fold_left add_env acc tenvs in
   let envs = List.sort by_sec_by_rev_name envs in
   let envs = (envs :> (string * Cmdliner_manpage.block) list) in

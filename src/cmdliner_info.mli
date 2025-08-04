@@ -50,8 +50,8 @@ module Env : sig
   module Set : Set.S with type elt = info
 end
 
-(** Arguments *)
-module Arg : sig
+(** Argument information. *)
+module Arg_info : sig
   type absence =
   | Err  (** an error is reported. *)
   | Val of string Lazy.t (** if <> "", takes the given default value. *)
@@ -157,11 +157,11 @@ module Cmd_info : sig
   val envs : t -> Env.info list
   val man : t -> Cmdliner_manpage.block list
   val man_xrefs : t -> Cmdliner_manpage.xref list
-  val args : t -> Arg.Set.t
+  val args : t -> Arg_info.Set.t
   val has_args : t -> bool
   val children : t -> t list
-  val add_args : t -> Arg.Set.t -> t
-  val with_children : t -> args:Arg.Set.t option -> children:t list -> t
+  val add_args : t -> Arg_info.Set.t -> t
+  val with_children : t -> args:Arg_info.Set.t option -> children:t list -> t
   val styled_deprecated :
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 
@@ -176,7 +176,7 @@ module Cline : sig
   | P of string list (** *)
   (** Unconverted argument data as found on the command line. *)
 
-  type t = arg Arg.Map.t  (* command line, maps arg_infos to arg value. *)
+  type t = arg Arg_info.Map.t  (* command line, maps arg_infos to arg value. *)
 end
 
 (** Evaluation. *)
@@ -198,8 +198,8 @@ end
 (** Complete instruction. *)
 module Complete : sig
   type kind =
-  | Opt_value of Arg.t
-  | Opt_name_or_pos_value of Arg.t
+  | Opt_value of Arg_info.t
+  | Opt_name_or_pos_value of Arg_info.t
   | Opt_name
 
   type t
@@ -223,13 +223,13 @@ module Term : sig
   type 'a parser =
     Eval.t -> Cline.t -> ('a, [ `Parse of string | escape ]) result
 
-  type 'a t = Arg.Set.t * 'a parser
+  type 'a t = Arg_info.Set.t * 'a parser
 end
 
 (** Completion strategies *)
 module Arg_completion : sig
   type complete = string -> (string * string) list
-  type 'a t = 'a Arg.completion
+  type 'a t = 'a Arg_info.completion
   val make :
     ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
     unit -> 'a t

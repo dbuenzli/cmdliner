@@ -80,9 +80,9 @@ module Env = struct
   module Set = Set.Make (struct type t = info let compare = info_compare end)
 end
 
-(* Arguments *)
+(* Argument information *)
 
-module Arg = struct
+module Arg_info = struct
   type absence = Err | Val of string Lazy.t | Doc of string
   type opt_kind = Flag | Opt | Opt_vopt of string
   type pos_kind = (* information about a positional argument. *)
@@ -262,14 +262,14 @@ end
 (* Commands *)
 
 module Cmd_info = struct
-  type t = Arg.cmd
+  type t = Arg_info.cmd
   let make
       ?deprecated ?(man_xrefs = [`Main]) ?(man = []) ?(envs = [])
       ?(exits = Exit.defaults) ?(sdocs = Cmdliner_manpage.s_common_options)
       ?(docs = Cmdliner_manpage.s_commands) ?(doc = "") ?version name : t
     =
     { name; version; deprecated; doc; docs; sdocs; exits;
-      envs; man; man_xrefs; args = Arg.Set.empty;
+      envs; man; man_xrefs; args = Arg_info.Set.empty;
       has_args = true; children = [] }
 
   let name (i : t) = i.name
@@ -285,11 +285,11 @@ module Cmd_info = struct
   let args (i : t) = i.args
   let has_args (i : t) = i.has_args
   let children (i : t) = i.children
-  let add_args (i : t) args = { i with args = Arg.Set.union args i.args }
+  let add_args (i : t) args = { i with args = Arg_info.Set.union args i.args }
   let with_children (i : t) ~args ~children =
     let has_args, args = match args with
     | None -> false, i.args
-    | Some args -> true, Arg.Set.union args i.args
+    | Some args -> true, Arg_info.Set.union args i.args
     in
     { i with has_args; args; children }
 
@@ -305,17 +305,17 @@ end
 (* Command lines *)
 
 module Cline = struct
-  type arg = Arg.cline_arg =
+  type arg = Arg_info.cline_arg =
   | O of (int * string * (string option)) list
   | P of string list
 
-  type t = Arg.cline
+  type t = Arg_info.cline
 end
 
 (* Evaluation *)
 
 module Eval = struct
-  type t = Arg.eval
+  type t = Arg_info.eval
 
   let make ~cmd ~ancestors ~env ~err_ppf : t = { cmd; ancestors; env; err_ppf }
 
@@ -346,8 +346,8 @@ end
 
 module Complete = struct
   type kind =
-  | Opt_value of Arg.t
-  | Opt_name_or_pos_value of Arg.t
+  | Opt_value of Arg_info.t
+  | Opt_name_or_pos_value of Arg_info.t
   | Opt_name
 
   type t =
@@ -369,16 +369,16 @@ end
 (* Terms *)
 
 module Term = struct
-  type escape = Arg.term_escape
-  type 'a parser = 'a Arg.term_parser
-  type 'a t = 'a Arg.term
+  type escape = Arg_info.term_escape
+  type 'a parser = 'a Arg_info.term_parser
+  type 'a t = 'a Arg_info.term
   let some (aset, parser) =
     aset, (fun eval cline -> Result.map Option.some (parser eval cline))
 end
 
 module Arg_completion = struct
-  type complete = Arg.complete
-  type 'a t = 'a Arg.completion
+  type complete = Arg_info.complete
+  type 'a t = 'a Arg_info.completion
 
   let make
       ?(complete = Fun.const []) ?(dirs = false) ?(files = false)

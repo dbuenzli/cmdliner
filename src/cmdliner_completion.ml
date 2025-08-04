@@ -19,18 +19,18 @@ let pp_item ppf ~prefix (name, doc) =
 
 let pp_opt ~err_ppf ~subst ~prefix ppf arg_info _ =
   (* XXX should we rather list a single name ? *)
-  let names = Cmdliner_info.Arg.opt_names arg_info in
-  let subst = Cmdliner_info.Arg.doclang_subst ~subst arg_info in
-  let doc = Cmdliner_info.Arg.styled_doc ~errs:err_ppf ~subst arg_info in
+  let names = Cmdliner_info.Arg_info.opt_names arg_info in
+  let subst = Cmdliner_info.Arg_info.doclang_subst ~subst arg_info in
+  let doc = Cmdliner_info.Arg_info.styled_doc ~errs:err_ppf ~subst arg_info in
   List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
 
 let pp_opt_names ~err_ppf ~subst ~prefix ppf cmd =
   let info = Cmdliner_cmd.get_info cmd in
   let set = Cmdliner_info.Cmd_info.args info in
-  if not (Cmdliner_info.Arg.Set.is_empty set) then begin
+  if not (Cmdliner_info.Arg_info.Set.is_empty set) then begin
     let arg_infos = Cmdliner_info.Cmd_info.args info in
     pp_group ppf "Options";
-    Cmdliner_info.Arg.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf) arg_infos
+    Cmdliner_info.Arg_info.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf) arg_infos
   end
 
 let pp_arg_values ~after_dashdash ~prefix ppf comp =
@@ -63,7 +63,7 @@ let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
   let after_dashdash = Cmdliner_info.Complete.after_dashdash comp in
   let prefix = Cmdliner_info.Complete.prefix comp in
   let pp_arg_value ppf arg_info =
-    begin match Cmdliner_info.Arg.Set.find_opt arg_info cmd_args_info with
+    begin match Cmdliner_info.Arg_info.Set.find_opt arg_info cmd_args_info with
     | None -> ()
     | Some (Completion comp) -> pp_arg_values ~after_dashdash ~prefix ppf comp
     end;

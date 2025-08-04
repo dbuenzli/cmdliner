@@ -8,7 +8,7 @@ type eval_error = [ `Parse | `Term | `Exn ]
 type 'a eval_exit = [ `Ok of 'a  | `Exit of Cmdliner_info.Exit.code ]
 
 type 'a complete =
-  Cmdliner_info.Arg.Set.t * 'a Cmdliner_cmd.t * Cmdliner_info.Complete.t
+  Cmdliner_info.Arg_info.Set.t * 'a Cmdliner_cmd.t * Cmdliner_info.Complete.t
 
 type eval_result_error =
   [ Cmdliner_term.term_escape
@@ -27,13 +27,15 @@ let add_stdopts ei =
   let docs = Cmdliner_info.Cmd_info.stdopts_docs (Cmdliner_info.Eval.cmd ei) in
   let vargs, vers =
     match Cmdliner_info.Cmd_info.version (Cmdliner_info.Eval.main ei) with
-    | None -> Cmdliner_info.Arg.Set.empty, None
+    | None -> Cmdliner_info.Arg_info.Set.empty, None
     | Some _ ->
         let vers = Cmdliner_arg.stdopt_version ~docs in
         (Cmdliner_term.argset vers), Some vers
   in
   let help = Cmdliner_arg.stdopt_help ~docs in
-  let args = Cmdliner_info.Arg.Set.union vargs (Cmdliner_term.argset help) in
+  let args =
+    Cmdliner_info.Arg_info.Set.union vargs (Cmdliner_term.argset help)
+  in
   let cmd = Cmdliner_info.Cmd_info.add_args (Cmdliner_info.Eval.cmd ei) args in
   help, vers, Cmdliner_info.Eval.with_cmd ei cmd
 

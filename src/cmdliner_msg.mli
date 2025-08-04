@@ -12,8 +12,8 @@ val err_env_parse : Cmdliner_info.Env.info -> err:string -> string
 (** {1:pos_err Positional argument errors} *)
 
 val err_pos_excess : string list -> string
-val err_pos_misses : Cmdliner_info.Arg.t list -> string
-val err_pos_parse : Cmdliner_info.Arg.t -> err:string -> string
+val err_pos_misses : Cmdliner_info.Arg_info.t list -> string
+val err_pos_parse : Cmdliner_info.Arg_info.t -> err:string -> string
 
 (** {1:opt_err Optional argument errors} *)
 
@@ -24,7 +24,7 @@ val err_opt_repeated : string -> string -> string
 
 (** {1:arg_err Argument errors} *)
 
-val err_arg_missing : Cmdliner_info.Arg.t -> string
+val err_arg_missing : Cmdliner_info.Arg_info.t -> string
 val err_cmd_missing : dom:string list -> string
 
 (** {1:msgs Other messages} *)
