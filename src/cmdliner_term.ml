@@ -3,9 +3,9 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-type term_escape = Cmdliner_cline.term_escape
-type 'a parser = 'a Cmdliner_cline.parser
-type +'a t = 'a Cmdliner_cline.term
+type term_escape = Cmdliner_info.Term.escape
+type 'a parser = 'a Cmdliner_info.Term.parser
+type +'a t = 'a Cmdliner_info.Term.t
 
 let make args p = (args, p)
 let argset (args, _) = args

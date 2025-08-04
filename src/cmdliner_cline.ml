@@ -371,14 +371,3 @@ let pp_deprecated ~subst ppf (info, arg) =
       Fmt.pf ppf "@[%a @[argument%s %a: %a@]@]"
         Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) args
         Fmt.styled_text msg
-
-
-type term_escape =
-  [ `Error of bool * string
-  | `Help of Cmdliner_manpage.format * string option ]
-
-type 'a parser =
-  Cmdliner_info.Eval.t -> t ->
-  ('a, [ `Parse of string | term_escape ]) result
-
-type 'a term = Cmdliner_info.Arg.Set.t * 'a parser

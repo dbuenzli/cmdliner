@@ -413,3 +413,16 @@ module Complete = struct
   let subcmds c = c.subcmds
   let kind c = c.kind
 end
+
+(* Terms *)
+
+module Term = struct
+  type escape =
+  [ `Error of bool * string
+  | `Help of Cmdliner_manpage.format * string option ]
+
+  type 'a parser =
+    Eval.t -> Cline.t -> ('a, [ `Parse of string | escape ]) result
+
+  type 'a t = Arg.Set.t * 'a parser
+end

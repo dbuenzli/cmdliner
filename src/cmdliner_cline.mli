@@ -6,15 +6,12 @@
 (** Command lines. *)
 
 val is_opt : string -> bool
-
-(** {1 Completion} *)
-
 val has_complete_prefix : string -> bool
 val get_token_to_complete : string -> string
 
-(** {1: Command lines} *)
+(** {1:cli Command lines} *)
 
-type t
+type t = Cmdliner_info.Cline.t
 
 val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
@@ -41,15 +38,3 @@ val deprecated : env:(string -> string option) -> t -> deprecated list
 val pp_deprecated :
   subst:Cmdliner_manpage.subst -> deprecated Cmdliner_base.Fmt.t
 (** [pp_deprecated] formats deprecations. *)
-
-(** {1:terms Terms} *)
-
-type term_escape =
-  [ `Error of bool * string
-  | `Help of Cmdliner_manpage.format * string option ]
-
-type 'a parser =
-  Cmdliner_info.Eval.t -> t ->
-  ('a, [ `Parse of string | term_escape ]) result
-
-type 'a term = Cmdliner_info.Arg.Set.t * 'a parser

@@ -256,3 +256,16 @@ module Complete : sig
   val subcmds : t -> bool
   val kind : t -> kind
 end
+
+(** Terms, typed cli fragment definitions. *)
+module Term : sig
+
+  type escape =
+  [ `Error of bool * string
+  | `Help of Cmdliner_manpage.format * string option ]
+
+  type 'a parser =
+    Eval.t -> Cline.t -> ('a, [ `Parse of string | escape ]) result
+
+  type 'a t = Arg.Set.t * 'a parser
+end
