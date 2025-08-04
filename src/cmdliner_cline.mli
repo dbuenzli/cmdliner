@@ -41,3 +41,15 @@ val deprecated : env:(string -> string option) -> t -> deprecated list
 val pp_deprecated :
   subst:Cmdliner_manpage.subst -> deprecated Cmdliner_base.Fmt.t
 (** [pp_deprecated] formats deprecations. *)
+
+(** {1:terms Terms} *)
+
+type term_escape =
+  [ `Error of bool * string
+  | `Help of Cmdliner_manpage.format * string option ]
+
+type 'a parser =
+  Cmdliner_info.Eval.t -> t ->
+  ('a, [ `Parse of string | term_escape ]) result
+
+type 'a term = Cmdliner_info.Arg.Set.t * 'a parser

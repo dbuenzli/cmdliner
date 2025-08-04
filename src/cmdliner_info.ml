@@ -268,11 +268,12 @@ module Arg = struct
   let styled_doc ~errs ~subst i =
     Cmdliner_manpage.doc_to_styled ~errs ~subst i.doc
 
+  module T = struct type nonrec t = t let compare = compare end
+  module Map = Map.Make (T)
   module Set = struct
     type arg = t
     type completion = V : 'a Completion.t -> completion
 
-    module Map = Map.Make (struct type t = arg let compare = compare end)
     include Map
 
     type t = completion Map.t

@@ -161,10 +161,10 @@ module Arg : sig
   val styled_doc :
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 
+  module Map : Map.S with type key := t
   module Set : sig
     type arg = t
     type completion = V : 'a Completion.t -> completion
-
     type t
     val is_empty : t -> bool
     val empty : t
@@ -178,7 +178,7 @@ module Arg : sig
     val elements : t -> arg list
     val union : t -> t -> t
     val find_opt : arg -> t -> completion option
-  end
+  end with type arg := t
 end
 
 (** Commands. *)

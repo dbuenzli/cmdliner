@@ -3,15 +3,10 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-type term_escape =
-  [ `Error of bool * string
-  | `Help of Cmdliner_manpage.format * string option ]
+type term_escape = Cmdliner_cline.term_escape
+type 'a parser = 'a Cmdliner_cline.parser
+type +'a t = 'a Cmdliner_cline.term
 
-type 'a parser =
-  Cmdliner_info.Eval.t -> Cmdliner_cline.t ->
-  ('a, [ `Parse of string | term_escape ]) result
-
-type +'a t = Cmdliner_info.Arg.Set.t * 'a parser
 let make args p = (args, p)
 let argset (args, _) = args
 let parser (_, parser) = parser
