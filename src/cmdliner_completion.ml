@@ -26,9 +26,9 @@ let pp_opt ~err_ppf ~subst ~prefix ppf arg_info _ =
 
 let pp_opt_names ~err_ppf ~subst ~prefix ppf cmd =
   let info = Cmdliner_cmd.get_info cmd in
-  let set = Cmdliner_info.Cmd.args info in
+  let set = Cmdliner_info.Cmd_info.args info in
   if not (Cmdliner_info.Arg.Set.is_empty set) then begin
-    let arg_infos = Cmdliner_info.Cmd.args info in
+    let arg_infos = Cmdliner_info.Cmd_info.args info in
     pp_group ppf "Options";
     Cmdliner_info.Arg.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf) arg_infos
   end
@@ -49,9 +49,9 @@ let pp_arg_values ~after_dashdash ~prefix ppf comp =
 let pp_subcmds ~err_ppf ~subst ~prefix ppf cmd =
   pp_group ppf "Subcommands";
   let complete_cmd cmd =
-    let name = Cmdliner_info.Cmd.name cmd in
+    let name = Cmdliner_info.Cmd_info.name cmd in
     (* FIXME subst is wrong here. *)
-    let doc = Cmdliner_info.Cmd.styled_doc ~errs:err_ppf ~subst cmd in
+    let doc = Cmdliner_info.Cmd_info.styled_doc ~errs:err_ppf ~subst cmd in
     pp_item ppf ~prefix (name, doc)
   in
   List.iter complete_cmd (Cmdliner_cmd.get_children_infos cmd)

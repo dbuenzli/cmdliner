@@ -78,11 +78,11 @@ let err_cmd_missing ~dom =
 (* Other messages *)
 
 let pp_version ppf ei =
-  match Cmdliner_info.Cmd.version (Cmdliner_info.Eval.main ei) with
+  match Cmdliner_info.Cmd_info.version (Cmdliner_info.Eval.main ei) with
   | None -> assert false
   | Some v -> Fmt.pf ppf "@[%s@]@." v
 
-let exec_name ei = Cmdliner_info.Cmd.name (Cmdliner_info.Eval.main ei)
+let exec_name ei = Cmdliner_info.Cmd_info.name (Cmdliner_info.Eval.main ei)
 
 let pp_exec_msg ppf ei = Fmt.pf ppf "%s:" (exec_name ei)
 

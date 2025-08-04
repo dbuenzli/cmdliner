@@ -261,7 +261,7 @@ end
 
 (* Commands *)
 
-module Cmd = struct
+module Cmd_info = struct
   type t = Arg.cmd
   let make
       ?deprecated ?(man_xrefs = [`Main]) ?(man = []) ?(envs = [])
@@ -326,7 +326,7 @@ module Eval = struct
   let main (i : t) = match List.rev i.ancestors with [] -> i.cmd | m :: _ -> m
   let with_cmd (i : t) cmd = { i with cmd }
 
-  let doclang_name n = strf "$(b,%s)" (Cmd.escaped_name n)
+  let doclang_name n = strf "$(b,%s)" (Cmd_info.escaped_name n)
   let doclang_names names =
     strf "$(b,%s)" (Cmdliner_manpage.escape (String.concat " " names))
 
@@ -336,9 +336,9 @@ module Eval = struct
   | "cmd.parent" ->
       let ancestors = ancestors i in
       if ancestors = [] then Some (doclang_name (main i)) else
-      Some (doclang_names (List.rev_map Cmd.name ancestors))
+      Some (doclang_names (List.rev_map Cmd_info.name ancestors))
   | "iname" | "cmd" ->
-      Some (doclang_names (List.rev_map Cmd.name (cmd i :: ancestors i)))
+      Some (doclang_names (List.rev_map Cmd_info.name (cmd i :: ancestors i)))
   | _ -> None
 end
 

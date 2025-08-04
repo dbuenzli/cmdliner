@@ -138,8 +138,8 @@ module Arg : sig
   end
 end
 
-(** Commands. *)
-module Cmd : sig
+(** Command information. *)
+module Cmd_info : sig
   type t
   val make :
     ?deprecated:string -> ?man_xrefs:Cmdliner_manpage.xref list ->
@@ -183,15 +183,15 @@ end
 module Eval : sig
   type t
   val make :
-    cmd:Cmd.t -> ancestors:Cmd.t list -> env:(string -> string option) ->
-    err_ppf:Format.formatter -> t
+    cmd:Cmd_info.t -> ancestors:Cmd_info.t list ->
+    env:(string -> string option) -> err_ppf:Format.formatter -> t
 
-  val cmd : t -> Cmd.t
-  val main : t -> Cmd.t
-  val ancestors : t -> Cmd.t list (* root is last *)
+  val cmd : t -> Cmd_info.t
+  val main : t -> Cmd_info.t
+  val ancestors : t -> Cmd_info.t list (* root is last *)
   val env_var : t -> string -> string option
   val err_ppf : t -> Format.formatter
-  val with_cmd : t -> Cmd.t -> t
+  val with_cmd : t -> Cmd_info.t -> t
   val doclang_subst : t -> Cmdliner_manpage.subst
 end
 

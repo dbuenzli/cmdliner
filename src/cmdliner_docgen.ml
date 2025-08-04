@@ -47,7 +47,7 @@ let sorted_items_to_blocks ~boilerplate:b items =
 (* Command docs *)
 
 let invocation ?(sep = " ") ?(ancestors = []) cmd =
-  let names = List.rev_map Cmdliner_info.Cmd.name (cmd :: ancestors) in
+  let names = List.rev_map Cmdliner_info.Cmd_info.name (cmd :: ancestors) in
   esc @@ String.concat sep names
 
 let synopsis_pos_arg a =
@@ -74,17 +74,17 @@ let synopsis_opt_arg a n =
       then strf "$(b,%s)[=$(i,%s)]" (esc n) (esc var)
       else strf "$(b,%s) [$(i,%s)]" (esc n) (esc var)
 
-let deprecated cmd = match Cmdliner_info.Cmd.deprecated cmd with
+let deprecated cmd = match Cmdliner_info.Cmd_info.deprecated cmd with
 | None -> "" | Some _ -> "(Deprecated) "
 
 let synopsis ?(show_help = false) ?ancestors cmd =
   let show_help = if show_help then " [$(b,--help)]" else "" in
-  match Cmdliner_info.Cmd.children cmd with
+  match Cmdliner_info.Cmd_info.children cmd with
   | [] ->
       let rev_cli_order (a0, _) (a1, _) =
         Cmdliner_info.Arg.rev_pos_cli_order a0 a1
       in
-      let args = Cmdliner_info.Cmd.args cmd in
+      let args = Cmdliner_info.Cmd_info.args cmd in
       let oargs, pargs =
         Cmdliner_info.Arg.(Set.partition (fun a _ -> is_opt a) args)
       in
@@ -120,24 +120,24 @@ let synopsis ?(show_help = false) ?ancestors cmd =
       strf "%s$(b,%s)%s %s%s"
         (deprecated cmd) (invocation ?ancestors cmd) show_help oargs pargs
   | _cmds ->
-      let subcmd = match Cmdliner_info.Cmd.has_args cmd with
+      let subcmd = match Cmdliner_info.Cmd_info.has_args cmd with
       | false -> "$(i,COMMAND)" | true -> "[$(i,COMMAND)]"
       in
       strf "%s$(b,%s)%s %s …" (deprecated cmd) (invocation ?ancestors cmd)
         show_help subcmd
 
 let cmd_doc cmd =
-  let depr = match Cmdliner_info.Cmd.deprecated cmd with
+  let depr = match Cmdliner_info.Cmd_info.deprecated cmd with
   | None -> "" | Some msg -> msg ^ " "
   in
-  depr ^ Cmdliner_info.Cmd.doc cmd
+  depr ^ Cmdliner_info.Cmd_info.doc cmd
 
-let cmd_docs ei = match Cmdliner_info.(Cmd.children (Eval.cmd ei)) with
+let cmd_docs ei = match Cmdliner_info.(Cmd_info.children (Eval.cmd ei)) with
 | [] -> []
 | cmds ->
     let add_cmd acc cmd =
       let syn = synopsis cmd in
-      (Cmdliner_info.Cmd.docs cmd, `I (syn, cmd_doc cmd)) :: acc
+      (Cmdliner_info.Cmd_info.docs cmd, `I (syn, cmd_doc cmd)) :: acc
     in
     let by_sec_by_rev_name (s0, `I (c0, _)) (s1, `I (c1, _)) =
       let c = compare s0 s1 in
@@ -211,7 +211,7 @@ let arg_docs ~errs ~subst ~buf ei =
     if not Cmdliner_info.Arg.(is_pos a && (docv a = "" || doc a = ""))
     then (a :: acc) else acc
   in
-  let args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
+  let args = Cmdliner_info.Cmd_info.args @@ Cmdliner_info.Eval.cmd ei in
   let args = Cmdliner_info.Arg.Set.fold keep_arg args [] in
   let args = List.sort by_sec_by_arg args in
   let args = List.rev_map (arg_to_man_item ~errs ~subst ~buf) args in
@@ -233,7 +233,7 @@ let exit_docs ~errs ~subst ~buf ~has_sexit ei =
     let item = `I (label, Cmdliner_manpage.subst_vars ~errs ~subst buf doc) in
     (Cmdliner_info.Exit.info_docs einfo, item) :: acc
   in
-  let exits = Cmdliner_info.Cmd.exits @@ Cmdliner_info.Eval.cmd ei in
+  let exits = Cmdliner_info.Cmd_info.exits @@ Cmdliner_info.Eval.cmd ei in
   let exits = List.sort Cmdliner_info.Exit.info_order exits in
   let exits = List.fold_left add_exit_item [] exits in
   let exits = List.stable_sort by_sec (* sort by section *) exits in
@@ -276,8 +276,8 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
   in
   (* Arg envs before term envs is important here: if the same is mentioned
      both in an arg and in a term the substs of the arg are allowed. *)
-  let args = Cmdliner_info.Cmd.args @@ Cmdliner_info.Eval.cmd ei in
-  let tenvs = Cmdliner_info.Cmd.envs @@ Cmdliner_info.Eval.cmd ei in
+  let args = Cmdliner_info.Cmd_info.args @@ Cmdliner_info.Eval.cmd ei in
+  let tenvs = Cmdliner_info.Cmd_info.envs @@ Cmdliner_info.Eval.cmd ei in
   let init = Cmdliner_info.Env.Set.empty, [] in
   let acc = Cmdliner_info.Arg.Set.fold add_arg_envs args init in
   let _, envs = List.fold_left add_env acc tenvs in
@@ -291,19 +291,19 @@ let env_docs ~errs ~subst ~buf ~has_senv ei =
 let xref_docs ~errs ei =
   let main = Cmdliner_info.Eval.main ei in
   let to_xref = function
-  | `Main -> Cmdliner_info.Cmd.name main, 1
+  | `Main -> Cmdliner_info.Cmd_info.name main, 1
   | `Tool tool -> tool, 1
   | `Page (name, sec) -> name, sec
   | `Cmd c ->
       (* N.B. we are handling only the first subcommand level here *)
-      let cmds = Cmdliner_info.Cmd.children main in
-      let mname = Cmdliner_info.Cmd.name main in
-      let is_cmd cmd = Cmdliner_info.Cmd.name cmd = c in
+      let cmds = Cmdliner_info.Cmd_info.children main in
+      let mname = Cmdliner_info.Cmd_info.name main in
+      let is_cmd cmd = Cmdliner_info.Cmd_info.name cmd = c in
       if List.exists is_cmd cmds then strf "%s-%s" mname c, 1 else
       (Format.fprintf errs "xref %s: no such command name@." c; "doc-err", 0)
   in
   let xref_str (name, sec) = strf "%s(%d)" (esc name) sec in
-  let xrefs = Cmdliner_info.Cmd.man_xrefs @@ Cmdliner_info.Eval.cmd ei in
+  let xrefs = Cmdliner_info.Cmd_info.man_xrefs @@ Cmdliner_info.Eval.cmd ei in
   let xrefs = match main == Cmdliner_info.Eval.cmd ei with
   | true -> List.filter (fun x -> x <> `Main) xrefs  (* filter out default *)
   | false -> xrefs
@@ -346,7 +346,7 @@ let insert_cmd_man_docs ~errs ei sm =
   sm
 
 let text ~errs ei =
-  let man = Cmdliner_info.Cmd.man @@ Cmdliner_info.Eval.cmd ei in
+  let man = Cmdliner_info.Cmd_info.man @@ Cmdliner_info.Eval.cmd ei in
   let sm = Cmdliner_manpage.smap_of_blocks man in
   let sm = ensure_s_name ei sm in
   let sm = ensure_s_synopsis ei sm in
@@ -355,13 +355,13 @@ let text ~errs ei =
 
 let title ei =
   let main = Cmdliner_info.Eval.main ei in
-  let exec = String.capitalize_ascii (Cmdliner_info.Cmd.name main) in
+  let exec = String.capitalize_ascii (Cmdliner_info.Cmd_info.name main) in
   let cmd = Cmdliner_info.Eval.cmd ei in
   let ancestors = Cmdliner_info.Eval.ancestors ei in
   let name = String.uppercase_ascii (invocation ~sep:"-" ~ancestors cmd) in
   let center_header = esc @@ strf "%s Manual" exec in
   let left_footer =
-    let version = match Cmdliner_info.Cmd.version main with
+    let version = match Cmdliner_info.Cmd_info.version main with
     | None -> "" | Some v -> " " ^ v
     in
     esc @@ strf "%s%s" exec version

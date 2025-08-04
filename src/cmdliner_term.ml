@@ -64,15 +64,17 @@ let cli_parse_result' t =
 
 let main_name =
   Cmdliner_info.Arg.Set.empty,
-  (fun ei _ -> Ok (Cmdliner_info.Cmd.name @@ Cmdliner_info.Eval.main ei))
+  (fun ei _ -> Ok (Cmdliner_info.Cmd_info.name @@ Cmdliner_info.Eval.main ei))
 
 let choice_names =
   Cmdliner_info.Arg.Set.empty,
   (fun ei _ ->
      (* N.B. this keeps everything backward compatible. We return the command
         names of main's children *)
-     let name t = Cmdliner_info.Cmd.name t in
-     let choices = Cmdliner_info.Cmd.children (Cmdliner_info.Eval.main ei) in
+     let name t = Cmdliner_info.Cmd_info.name t in
+     let choices =
+       Cmdliner_info.Cmd_info.children (Cmdliner_info.Eval.main ei)
+     in
      Ok (List.rev_map name choices))
 
 let with_used_args (al, v) : (_ * string list) t =

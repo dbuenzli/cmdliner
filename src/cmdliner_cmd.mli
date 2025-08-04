@@ -5,7 +5,7 @@
 
 (** Commands and their information. *)
 
-type info = Cmdliner_info.Cmd.t
+type info = Cmdliner_info.Cmd_info.t
 
 val info :
   ?deprecated:string -> ?man_xrefs:Cmdliner_manpage.xref list ->
