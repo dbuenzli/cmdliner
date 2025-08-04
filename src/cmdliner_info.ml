@@ -345,6 +345,17 @@ module Cmd = struct
   let escaped_name i = Cmdliner_manpage.escape i.name
 end
 
+(* Command lines *)
+
+module Cline = struct
+  type arg =      (* unconverted argument data as found on the command line. *)
+  | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
+  | P of string list
+
+  type t = arg Arg.Map.t  (* command line, maps arg_infos to arg value. *)
+end
+
+
 (* Evaluation *)
 
 module Eval = struct

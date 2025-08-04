@@ -212,6 +212,16 @@ module Cmd : sig
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 end
 
+
+(** Untyped command line parses. *)
+module Cline : sig
+  type arg =      (* unconverted argument data as found on the command line. *)
+  | O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
+  | P of string list
+
+  type t = arg Arg.Map.t  (* command line, maps arg_infos to arg value. *)
+end
+
 (** Evaluation. *)
 module Eval : sig
   type t

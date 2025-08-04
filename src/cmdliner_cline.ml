@@ -40,18 +40,15 @@ let err_multi_opt_name_def name a a' =
   let kind = "option name" in
   Cmdliner_base.err_multi_def ~kind name Cmdliner_info.Arg.doc a a'
 
-module Amap = Cmdliner_info.Arg.Map
+type arg = Cmdliner_info.Cline.arg
+type t = Cmdliner_info.Cline.t
 
-type arg =      (* unconverted argument data as found on the command line. *)
-| O of (int * string * (string option)) list (* (pos, name, value) of opt. *)
-| P of string list
+let get_arg cline a : arg =
+  try Cmdliner_info.Arg.Map.find a cline with Not_found -> assert false
 
-type t = arg Amap.t  (* command line, maps arg_infos to arg value. *)
-
-let get_arg cl a = try Amap.find a cl with Not_found -> assert false
-let opt_arg cl a = match get_arg cl a with O l -> l | _ -> assert false
-let pos_arg cl a = match get_arg cl a with P l -> l | _ -> assert false
-let actual_args cl a = match get_arg cl a with
+let opt_arg cline a = match get_arg cline a with O l -> l | _ -> assert false
+let pos_arg cline a = match get_arg cline a with P l -> l | _ -> assert false
+let actual_args cline a = match get_arg cline a with
 | P args -> args
 | O l ->
     let extract_args (_pos, name, value) =
@@ -63,11 +60,13 @@ let arg_info_indexes args =
   (* from [args] returns a trie mapping the names of optional arguments to
      their arg_info, a list with all arg_info for positional arguments and
      a cmdline mapping each arg_info to an empty [arg]. *)
-  let rec loop optidx posidx cl = function
-  | [] -> optidx, posidx, cl
+  let rec loop optidx posidx cline = function
+  | [] -> optidx, posidx, cline
   | a :: l ->
       match Cmdliner_info.Arg.is_pos a with
-      | true -> loop optidx (a :: posidx) (Amap.add a (P []) cl) l
+      | true ->
+          let cline = Cmdliner_info.Arg.Map.add a (P [] : arg) cline in
+          loop optidx (a :: posidx) cline l
       | false ->
           let add t name = match Cmdliner_trie.add t name a with
           | `New t -> t
@@ -75,9 +74,11 @@ let arg_info_indexes args =
           in
           let names = Cmdliner_info.Arg.opt_names a in
           let optidx = List.fold_left add optidx names in
-          loop optidx posidx (Amap.add a (O []) cl) l
+          let cline = Cmdliner_info.Arg.Map.add a (O [] : arg) cline in
+          loop optidx posidx cline l
   in
-  loop Cmdliner_trie.empty [] Amap.empty (Cmdliner_info.Arg.Set.elements args)
+  let cline = Cmdliner_info.Arg.Map.empty in
+  loop Cmdliner_trie.empty [] cline (Cmdliner_info.Arg.Set.elements args)
 
 (* Optional argument parsing *)
 
@@ -178,13 +179,15 @@ let try_complete_opt_value arg_info name value args =
           comp_request ~prefix:name Opt_name
       end
 
-let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
+let parse_opt_args
+    ~peek_opts ~legacy_prefixes ~for_completion optidx cline args
+  =
   (* returns an updated [cl] cmdline according to the options found in [args]
      with the trie index [optidx]. Positional arguments are returned in order
      in a list. *)
-  let rec loop errs k cl pargs = function
-  | [] -> List.rev errs, cl, false, List.rev pargs
-  | "--" :: args -> List.rev errs, cl, true, (List.rev_append pargs args)
+  let rec loop errs k cline pargs = function
+  | [] -> List.rev errs, cline, false, List.rev pargs
+  | "--" :: args -> List.rev errs, cline, true, (List.rev_append pargs args)
   | s :: args ->
       let do_parse =
         is_opt s &&
@@ -192,7 +195,7 @@ let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
          if not (has_complete_prefix s) then true else
          is_opt_to_complete s)
       in
-      if not do_parse then loop errs (k + 1) cl (s :: pargs) args else
+      if not do_parse then loop errs (k + 1) cline (s :: pargs) args else
       let name, value, is_completion = parse_opt_arg s in
       match Cmdliner_trie.find ~legacy_prefixes optidx name with
       | Ok arg_info ->
@@ -201,29 +204,30 @@ let parse_opt_args ~peek_opts ~legacy_prefixes ~for_completion optidx cl args =
             then try_complete_opt_value arg_info name value args
             else parse_opt_value ~for_completion arg_info name value args
           in
-          let arg = O ((k, name, value) :: opt_arg cl arg_info) in
-          loop errs (k + 1) (Amap.add arg_info arg cl) pargs args
+          let arg : arg = O ((k, name, value) :: opt_arg cline arg_info) in
+          let cline = Cmdliner_info.Arg.Map.add arg_info arg cline in
+          loop errs (k + 1) cline pargs args
       | Error `Not_found when for_completion ->
           if not is_completion
-          then (* XXX unclear *) loop errs (k + 1) cl (s :: pargs) args else
+          then (* XXX unclear *) loop errs (k + 1) cline (s :: pargs) args else
           let prefix = name ^ Option.value ~default:"" value in
           comp_request ~prefix Opt_name
       | Error `Not_found when peek_opts ->
-          loop errs (k + 1) cl pargs args
+          loop errs (k + 1) cline pargs args
       | Error `Not_found ->
           let hints = hint_matching_opt optidx s in
           let err = Cmdliner_base.err_unknown ~kind:"option" ~hints name in
-          loop (err :: errs) (k + 1) cl pargs args
+          loop (err :: errs) (k + 1) cline pargs args
       | Error `Ambiguous (* Only on legacy prefixes *) ->
           let ambs = Cmdliner_trie.ambiguities optidx name in
           let ambs = List.sort compare ambs in
           let err = Cmdliner_base.err_ambiguous ~kind:"option" name ~ambs in
-          loop (err :: errs) (k + 1) cl pargs args
+          loop (err :: errs) (k + 1) cline pargs args
   in
-  let errs, cl, has_dashdash, pargs = loop [] 0 cl [] args in
-  if errs = [] then Ok (cl, has_dashdash, pargs) else
+  let errs, cline, has_dashdash, pargs = loop [] 0 cline [] args in
+  if errs = [] then Ok (cline, has_dashdash, pargs) else
   let err = String.concat "\n" errs in
-  Error (err, cl, has_dashdash, pargs)
+  Error (err, cline, has_dashdash, pargs)
 
 let take_range ~for_completion start stop l =
   let rec loop i acc = function
@@ -237,19 +241,19 @@ let take_range ~for_completion start stop l =
   in
   loop 0 [] l
 
-let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
+let process_pos_args ~for_completion posidx cline ~has_dashdash pargs =
   (* returns an updated [cl] cmdline in which each positional arg mentioned
      in the list index posidx, is given a value according the list
      of positional arguments values [pargs]. *)
   if pargs = [] then
     let misses = List.filter Cmdliner_info.Arg.is_req posidx in
-    if misses = [] then Ok cl else
-    Error (Cmdliner_msg.err_pos_misses misses, cl)
+    if misses = [] then Ok cline else
+    Error (Cmdliner_msg.err_pos_misses misses, cline)
   else
   let last = List.length pargs - 1 in
   let pos rev k = if rev then last - k else k in
-  let rec loop misses cl max_spec = function
-  | [] -> misses, cl, max_spec
+  let rec loop misses cline max_spec = function
+  | [] -> misses, cline, max_spec
   | a :: al ->
       let apos = Cmdliner_info.Arg.pos_kind a in
       let rev = Cmdliner_info.Arg.pos_rev apos in
@@ -267,14 +271,14 @@ let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
             comp_request ~after_dashdash:has_dashdash ~prefix kind
       in
       let max_spec = max stop max_spec in
-      let cl = Amap.add a (P args) cl in
+      let cline = Cmdliner_info.Arg.Map.add a (P args : arg) cline in
       let misses = match Cmdliner_info.Arg.is_req a && args = [] with
       | true -> a :: misses
       | false -> misses
       in
-      loop misses cl max_spec al
+      loop misses cline max_spec al
   in
-  let misses, cl, max_spec = loop [] cl (-1) posidx in
+  let misses, cline, max_spec = loop [] cline (-1) posidx in
   let consume_excess () =
     match take_range ~for_completion (max_spec + 1) last pargs with
     | `Range args -> args
@@ -283,22 +287,23 @@ let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
   in
   if misses <> [] then begin
     let _ : string list = consume_excess () in
-    Error (Cmdliner_msg.err_pos_misses misses, cl)
+    Error (Cmdliner_msg.err_pos_misses misses, cline)
   end else
-  if last <= max_spec then Ok cl else
-  Error (Cmdliner_msg.err_pos_excess (consume_excess ()), cl)
+  if last <= max_spec then Ok cline else
+  Error (Cmdliner_msg.err_pos_excess (consume_excess ()), cline)
 
 let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
   try
-    let optidx, posidx, cl = arg_info_indexes al in
+    let optidx, posidx, cline = arg_info_indexes al in
     let r =
-      parse_opt_args ~for_completion ~peek_opts ~legacy_prefixes optidx cl args
+      parse_opt_args
+        ~for_completion ~peek_opts ~legacy_prefixes optidx cline args
     in
     match r with
-    | Ok (cl, has_dashdash, _) when peek_opts -> `Ok cl
-    | Ok (cl, has_dashdash, pargs) ->
+    | Ok (cline, has_dashdash, _) when peek_opts -> `Ok cline
+    | Ok (cline, has_dashdash, pargs) ->
         let r =
-          process_pos_args ~for_completion posidx cl ~has_dashdash pargs
+          process_pos_args ~for_completion posidx cline ~has_dashdash pargs
         in
         if not for_completion
         then (match r with Ok v -> `Ok v | Error v -> `Error v)
@@ -314,20 +319,20 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
               | Some prefix ->
                   comp_request ~after_dashdash:has_dashdash ~prefix Opt_name
         end
-  | Error (errs, cl, has_dashdash, pargs) ->
+  | Error (errs, cline, has_dashdash, pargs) ->
       let _ : _ result =
-        process_pos_args ~for_completion posidx cl ~has_dashdash pargs
+        process_pos_args ~for_completion posidx cline ~has_dashdash pargs
       in
-      `Error (errs, cl)
+      `Error (errs, cline)
   with Completion_requested c -> `Complete c
 
 (* Deprecations *)
 
 type deprecated = Cmdliner_info.Arg.t * arg
 
-let deprecated ~env cl =
+let deprecated ~env cline =
   let add ~env info arg acc =
-    let deprecation_invoked = match arg with
+    let deprecation_invoked = match (arg : arg) with
     | O [] | P [] -> (* nothing on the cli for the argument *)
         begin match Cmdliner_info.Arg.env info with
         | None -> false
@@ -340,13 +345,13 @@ let deprecated ~env cl =
     in
     if deprecation_invoked then (info, arg) :: acc else acc
   in
-  List.rev (Amap.fold (add ~env) cl [])
+  List.rev (Cmdliner_info.Arg.Map.fold (add ~env) cline [])
 
 let pp_deprecated ~subst ppf (info, arg) =
   let open Cmdliner_base in
   let plural l = if List.length l > 1 then "s" else "" in
   let subst = Cmdliner_info.Arg.doclang_subst ~subst info in
-  match arg with
+  match (arg : arg) with
   | O [] | P [] ->
       let env = Option.get (Cmdliner_info.Arg.env info) in
       let msg = Cmdliner_info.Env.styled_deprecated ~errs:ppf ~subst env in
