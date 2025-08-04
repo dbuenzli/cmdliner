@@ -52,11 +52,11 @@ let err_invalid_enum var s enums =
 
 (* Argument converters *)
 
-module Completion = Cmdliner_base.Completion
-module Conv = Cmdliner_base.Conv
+module Completion = Cmdliner_info.Arg.Completion
+module Conv = Cmdliner_info.Arg.Conv
 type 'a conv = 'a Conv.t
-let some = Cmdliner_base.Conv.some
-let some' = Cmdliner_base.Conv.some'
+let some = Cmdliner_info.Arg.Conv.some
+let some' = Cmdliner_info.Arg.Conv.some'
 
 (* Argument information *)
 
@@ -65,6 +65,8 @@ type info = Cmdliner_info.Arg.t
 let info = Cmdliner_info.Arg.make
 
 (* Arguments *)
+
+let no_completion = Cmdliner_info.Arg.Set.V Cmdliner_info.Arg.Completion.none
 
 let ( & ) f x = f x
 let parse_error e = Error (`Parse e)
@@ -104,7 +106,7 @@ let flag a =
   | (_, f, _) :: (_ ,g, _) :: _  ->
       parse_error (Cmdliner_msg.err_opt_repeated f g)
   in
-  Cmdliner_term.make (arg_to_args a (V Cmdliner_base.Completion.none)) convert
+  Cmdliner_term.make (arg_to_args a no_completion) convert
 
 let flag_all a =
   if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
@@ -120,7 +122,7 @@ let flag_all a =
         Ok (List.rev_map truth l)
       with Failure e -> parse_error e
   in
-  Cmdliner_term.make (arg_to_args a (V Cmdliner_base.Completion.none)) convert
+  Cmdliner_term.make (arg_to_args a no_completion) convert
 
 let vflag v l =
   let convert _ cl =
@@ -144,8 +146,7 @@ let vflag v l =
   let flag (_, a) =
     if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else a
   in
-  Cmdliner_term.make
-    (list_to_args flag l (V Cmdliner_base.Completion.none)) convert
+  Cmdliner_term.make (list_to_args flag l no_completion) convert
 
 let vflag_all v l =
   let convert _ cl =
@@ -169,8 +170,7 @@ let vflag_all v l =
     if Cmdliner_info.Arg.is_pos a then invalid_arg err_not_opt else
     Cmdliner_info.Arg.make_all_opts a
   in
-  Cmdliner_term.make
-    (list_to_args flag l (V Cmdliner_base.Completion.none)) convert
+  Cmdliner_term.make (list_to_args flag l no_completion) convert
 
 let parse_opt_value parse f v = match parse v with
 | Ok v -> v | Error err -> failwith (Cmdliner_msg.err_opt_parse f ~err)

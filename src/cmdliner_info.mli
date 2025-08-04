@@ -56,6 +56,46 @@ end
 (** Arguments *)
 module Arg : sig
 
+  (* Completion strategies *)
+
+  module Completion : sig
+    type complete = string -> (string * string) list
+    type 'a t
+    val make :
+      ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
+      unit -> 'a t
+
+    val none : 'a t
+    val some : 'a t -> 'a option t
+    val complete : 'a t -> complete
+    val dirs : 'a t -> bool
+    val files : 'a t -> bool
+    val restart : 'a t -> bool
+  end
+
+  (* Textual OCaml value converters *)
+
+  module Conv : sig
+    type 'a parser = string -> ('a, string) result
+    type 'a fmt = 'a Cmdliner_base.Fmt.t
+    type 'a t
+    val make :
+      ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
+      pp:'a fmt -> unit -> 'a t
+
+    val of_conv : 'a t ->
+      ?completion:'a Completion.t -> ?docv:string -> ?parser:'a parser ->
+      ?pp:'a fmt -> unit -> 'a t
+
+    val docv : 'a t -> string
+    val parser : 'a t -> 'a parser
+    val pp : 'a t -> 'a fmt
+    val completion : 'a t -> 'a Completion.t
+
+    val some : ?none:string -> 'a t -> 'a option t
+    val some' : ?none:'a -> 'a t -> 'a option t
+  end
+
   type absence =
   | Err  (** an error is reported. *)
   | Val of string Lazy.t (** if <> "", takes the given default value. *)
@@ -123,8 +163,7 @@ module Arg : sig
 
   module Set : sig
     type arg = t
-    type completion =
-    | V : 'a Cmdliner_base.Completion.t -> completion
+    type completion = V : 'a Completion.t -> completion
 
     type t
     val is_empty : t -> bool

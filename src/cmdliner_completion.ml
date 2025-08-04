@@ -34,11 +34,11 @@ let pp_opt_names ~err_ppf ~subst ~prefix ppf cmd =
   end
 
 let pp_arg_values ~after_dashdash ~prefix ppf comp =
-  if after_dashdash && Cmdliner_base.Completion.restart comp
+  if after_dashdash && Cmdliner_info.Arg.Completion.restart comp
   then pp_line ppf "restart" else
-  let items = Cmdliner_base.Completion.complete comp prefix in
-  let comp_files = Cmdliner_base.Completion.files comp in
-  let comp_dirs = Cmdliner_base.Completion.dirs comp in
+  let items = Cmdliner_info.Arg.Completion.complete comp prefix in
+  let comp_files = Cmdliner_info.Arg.Completion.files comp in
+  let comp_dirs = Cmdliner_info.Arg.Completion.dirs comp in
   if items <> [] || comp_files || comp_dirs then begin
     pp_group ppf "Values";
     List.iter (pp_item ppf ~prefix) items;

@@ -83,6 +83,79 @@ end
 (* Arguments *)
 
 module Arg = struct
+
+  (* Completions *)
+
+  module Completion = struct
+    type complete = string -> (string * string) list
+    type 'a t =
+      { complete : complete;
+        dirs : bool;
+        files : bool;
+        restart : bool }
+
+    let make
+        ?(complete = Fun.const []) ?(dirs = false) ?(files = false)
+        ?(restart = false) ()
+      =
+      {complete; dirs; files; restart}
+
+    let none = make ()
+    let some = (Fun.id :> 'a t -> 'a option t)
+    let complete c = c.complete
+    let dirs c = c.dirs
+    let files c = c.files
+    let restart c = c.restart
+  end
+
+  (* Converters *)
+
+  module Conv = struct
+    type 'a parser = string -> ('a, string) result
+    type 'a fmt = Format.formatter -> 'a -> unit
+    type 'a t =
+      { docv : string;
+        parser : 'a parser;
+        pp : 'a fmt;
+        completion : 'a Completion.t; }
+
+    let make ?(completion = Completion.none) ~docv ~parser ~pp () =
+      { docv; parser; pp; completion }
+
+    let of_conv
+        conv ?(completion = conv.completion) ?(docv = conv.docv)
+        ?(parser = conv.parser) ?(pp = conv.pp) ()
+      =
+      { docv; parser; pp; completion }
+
+    let docv c = c.docv
+    let parser c = c.parser
+    let pp c = c.pp
+    let completion c = c.completion
+
+    let some ?(none = "") conv =
+      let parser s = match parser conv s with
+      | Ok v -> Ok (Some v) | Error _ as e -> e
+      in
+      let pp ppf v = match v with
+      | None -> Format.pp_print_string ppf none
+      | Some v -> pp conv ppf v
+      in
+      let completion = Completion.some (completion conv) in
+      { conv with parser; pp; completion }
+
+    let some' ?none conv =
+      let parser s = match parser conv s with
+      | Ok v -> Ok (Some v) | Error _ as e -> e
+      in
+      let pp ppf = function
+      | None -> (match none with None -> () | Some v -> (pp conv) ppf v)
+      | Some v -> pp conv ppf v
+      in
+      let completion = Completion.some conv.completion in
+      { conv with parser; pp; completion }
+  end
+
   type absence = Err | Val of string Lazy.t | Doc of string
   type opt_kind = Flag | Opt | Opt_vopt of string
 
@@ -197,8 +270,7 @@ module Arg = struct
 
   module Set = struct
     type arg = t
-    type completion =
-    | V : 'a Cmdliner_base.Completion.t -> completion
+    type completion = V : 'a Completion.t -> completion
 
     module Map = Map.Make (struct type t = arg let compare = compare end)
     include Map
