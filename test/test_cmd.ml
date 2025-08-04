@@ -37,10 +37,10 @@ let test_groups =
   error `Term [] @@ __POS_OF__
   "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
    test_group: required \u{001B}[04mCOMMAND\u{001B}[m name is \u{001B}[31mmissing\u{001B}[m, must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m,\n\
-  \            \u{001B}[01mfishs\u{001B}[m or \u{001B}[01mmammals\u{001B}[m\n";
+  \            \u{001B}[01mfishs\u{001B}[m, \u{001B}[01mlookup\u{001B}[m or \u{001B}[01mmammals\u{001B}[m\n";
   error `Term ["bla"] @@ __POS_OF__ "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
-                                     test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mbla\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m or\n\
-                                    \            \u{001B}[01mmammals\u{001B}[m\n";
+                                     test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mbla\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m, \u{001B}[01mlookup\u{001B}[m\n\
+                                    \            or \u{001B}[01mmammals\u{001B}[m\n";
   error `Parse ["birds"; "-k"] @@ __POS_OF__
 "Usage: \u{001B}[01mtest_group birds\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mCOMMAND\u{001B}[m] …\n\
 test_group: option \u{001B}[01m-k\u{001B}[m \u{001B}[31mneeds an argument\u{001B}[m\n";
@@ -64,6 +64,9 @@ COMMANDS
 
        fishs [OPTION]… [NAME]
            Operate on fishs.
+
+       lookup [--kind=ENUM] [OPTION]… NAME
+           Lookup animal by name.
 
        mammals [OPTION]…
            Operate on mammals.

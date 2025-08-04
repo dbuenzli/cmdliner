@@ -45,8 +45,8 @@ test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mbir\u{001B}[m. Did
 "Usage: \u{001B}[01mtest_group birds\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mCOMMAND\u{001B}[m] …\n\
 test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mfl\u{001B}[m. Did you mean \u{001B}[01mfly\u{001B}[m?\n";
   error_nolegacy `Term ["mam"] @@ __POS_OF__ "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
-                                              test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mmam\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m or\n\
-                                             \            \u{001B}[01mmammals\u{001B}[m\n";
+                                              test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mmam\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m, \u{001B}[01mlookup\u{001B}[m\n\
+                                             \            or \u{001B}[01mmammals\u{001B}[m\n";
   ()
 
 let test_cmd =

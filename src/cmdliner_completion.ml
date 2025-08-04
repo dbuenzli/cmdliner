@@ -30,13 +30,14 @@ let pp_opt_names ~err_ppf ~subst ~prefix ppf cmd =
   if not (Cmdliner_def.Arg_info.Set.is_empty set) then begin
     let arg_infos = Cmdliner_def.Cmd_info.args info in
     pp_group ppf "Options";
-    Cmdliner_def.Arg_info.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf) arg_infos
+    Cmdliner_def.Arg_info.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf)
+      arg_infos
   end
 
-let pp_arg_values ~after_dashdash ~prefix ppf comp =
+let pp_arg_values ~after_dashdash ~prefix items ppf comp =
   if after_dashdash && Cmdliner_def.Arg_completion.restart comp
   then pp_line ppf "restart" else
-  let items = Cmdliner_def.Arg_completion.complete comp prefix in
+  let items = items () in
   let comp_files = Cmdliner_def.Arg_completion.files comp in
   let comp_dirs = Cmdliner_def.Arg_completion.dirs comp in
   if items <> [] || comp_files || comp_dirs then begin
@@ -58,14 +59,16 @@ let pp_subcmds ~err_ppf ~subst ~prefix ppf cmd =
 
 let vnum = 1 (* Protocol version number *)
 
-let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
+let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp ~items =
   let subst = Cmdliner_def.Eval.doclang_subst ei in
   let after_dashdash = Cmdliner_def.Complete.after_dashdash comp in
   let prefix = Cmdliner_def.Complete.prefix comp in
+  let maybe_opt = prefix = "" || prefix.[0] = '-' in
   let pp_arg_value ppf arg_info =
     begin match Cmdliner_def.Arg_info.Set.find_opt arg_info cmd_args_info with
     | None -> ()
-    | Some (Completion comp) -> pp_arg_values ~after_dashdash ~prefix ppf comp
+    | Some (Completion comp) ->
+        pp_arg_values ~after_dashdash ~prefix items ppf comp
     end;
   in
   let pp ppf () =
@@ -73,10 +76,10 @@ let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
     | Opt_value arg_info -> pp_arg_value ppf arg_info
     | Opt_name_or_pos_value arg_info ->
         pp_arg_value ppf arg_info;
-        if not after_dashdash
+        if not after_dashdash && maybe_opt
         then pp_opt_names ~err_ppf ~subst ~prefix ppf cmd
     | Opt_name ->
-        if not after_dashdash
+        if not after_dashdash && maybe_opt
         then pp_opt_names ~err_ppf ~subst ~prefix ppf cmd;
     end;
     if Cmdliner_def.Complete.subcmds comp

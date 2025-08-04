@@ -10,14 +10,16 @@
 type 'a conv
 
 module Completion : sig
-  type complete = string -> (string * string) list
+  type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
+  type 'a complete =
+  | Complete : 'ctx Cmdliner_term.t option * 'ctx func -> 'a complete
+
   type 'a t
   val make :
-    ?complete:complete -> ?dirs:bool ->  ?files:bool -> ?restart:bool -> unit ->
-    'a t
+    ?context: 'ctx Cmdliner_term.t -> ?func:'ctx func -> ?dirs:bool ->
+    ?files:bool -> ?restart:bool -> unit -> 'a t
 
-  val context : 'a t -> 'a Cmdliner_term.t option
-  val complete : 'a t -> complete
+  val complete : 'a t -> 'a complete
   val dirs : 'a t -> bool
   val files : 'a t -> bool
   val restart : 'a t -> bool

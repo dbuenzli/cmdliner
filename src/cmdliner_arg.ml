@@ -336,8 +336,10 @@ let bool =
   let parser s = try Ok (bool_of_string s) with
   | Invalid_argument _ -> Error (err_invalid_enum "" s alts)
   in
-  let complete _prefix = List.map (fun s -> s, "") alts in
-  let completion = Completion.make ~complete () in
+  let completion =
+    let func _ctx ~prefix:_ = List.map (fun s -> s, "") alts in
+    Completion.make ~func ()
+  in
   Conv.make ~docv:"BOOL" ~parser ~pp:Format.pp_print_bool ~completion ()
 
 let char =
@@ -395,8 +397,10 @@ let enum ?(docv = "ENUM") sl =
     try Fmt.string ppf (List.assoc v sl_inv)
     with Not_found -> invalid_arg (err_incomplete_enum (List.map fst sl))
   in
-  let complete _prefix = List.map (fun (s, _) -> s, "") sl in
-  let completion = Completion.make ~complete () in
+  let completion =
+    let func _ctx ~prefix:_ = List.map (fun (s, _) -> s, "") sl in
+    Completion.make ~func ()
+  in
   Conv.make ~docv ~parser ~pp ~completion ()
 
 let path =

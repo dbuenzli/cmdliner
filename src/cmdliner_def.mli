@@ -205,8 +205,10 @@ module Complete : sig
   type t
 
   val make :
-    ?after_dashdash:bool -> ?subcmds:bool -> prefix:string -> kind -> t
+    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> prefix:string ->
+    kind -> t
 
+  val context : t -> Cline.t
   val add_subcmds : t -> t
   val prefix : t -> string
   val after_dashdash : t -> bool
@@ -228,16 +230,17 @@ end
 
 (** Completion strategies *)
 module Arg_completion : sig
-  type complete = string -> (string * string) list
+
+  type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
+  type 'a complete = Complete : 'ctx Term.t option * 'ctx func -> 'a complete
   type 'a t = 'a Arg_info.completion
   val make :
-    ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
-    unit -> 'a t
+    ?context:'ctx Term.t -> ?func:'ctx func -> ?dirs:bool -> ?files:bool ->
+    ?restart:bool -> unit -> 'a t
 
-  val context : 'a t -> 'a Term.t option
   val none : 'a t
   val some : 'a t -> 'a option t
-  val complete : 'a t -> complete
+  val complete : 'a t -> 'a complete
   val dirs : 'a t -> bool
   val files : 'a t -> bool
   val restart : 'a t -> bool
@@ -252,9 +255,9 @@ module Arg_conv : sig
     ?completion:'a Arg_completion.t -> docv:string -> parser:'a parser ->
     pp:'a fmt -> unit -> 'a t
 
-  val of_conv : 'a t ->
-    ?completion:'a Arg_completion.t -> ?docv:string -> ?parser:'a parser ->
-    ?pp:'a fmt -> unit -> 'a t
+  val of_conv :
+    'a t -> ?completion:'a Arg_completion.t -> ?docv:string ->
+    ?parser:'a parser -> ?pp:'a fmt -> unit -> 'a t
 
   val docv : 'a t -> string
   val parser : 'a t -> 'a parser

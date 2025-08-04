@@ -162,5 +162,37 @@ let sample_group_cmd =
     Cmd.make (Cmd.info "camels" ~deprecated ~doc:"Operate on camels." ~man) @@
     let+ bactrian and+ herd in ()
   in
+  let lookup =
+    let kind_opt =
+      let kinds = ["bird", `Bird; "fish", `Fish] in
+      let doc =
+        "$(docv) restricts the animal kind. Must be " ^ Arg.doc_alts_enum kinds
+      in
+      Arg.(value & opt (some (enum kinds)) None  & info ["k"; "kind"] ~doc)
+    in
+    let name_conv =
+      let bird_names = ["sparrow"; "parrot"; "pigeon"] in
+      let fish_names = ["salmon"; "trout"; "piranha"] in
+      let completion =
+        let select ~prefix n =
+          if String.starts_with ~prefix n then Some (n, "") else None
+        in
+        let func kind ~prefix = match Option.join kind with
+        | None -> List.filter_map (select ~prefix) (bird_names @ fish_names)
+        | Some `Bird -> List.filter_map (select ~prefix) bird_names
+        | Some `Fish -> List.filter_map (select ~prefix) fish_names
+        in
+        Arg.Completion.make ~context:kind_opt ~func ()
+      in
+      Arg.Conv.of_conv Arg.string ~completion ()
+    in
+    Cmd.make (Cmd.info "lookup" ~doc:"Lookup animal by name.") @@
+    let+ kind_opt
+    and+ name =
+      let doc = "$(docv) is the animal name to lookup" and docv = "NAME" in
+      Arg.(required & pos 0 (some name_conv) None & info [] ~doc ~docv)
+    in
+    ()
+  in
   Cmd.group (Cmd.info "test_group" ~version:"X.Y.Z" ~man) @@
-  [birds; mammals; fishs; camels]
+  [birds; mammals; fishs; camels; lookup]

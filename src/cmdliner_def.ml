@@ -202,10 +202,10 @@ module Arg_info = struct
   [ `Error of bool * string
   | `Help of Cmdliner_manpage.format * string option ]
 
-  type complete = string -> (string * string) list
-  type 'a completion =
-    { context : 'a term option;
-      complete : complete;
+  type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
+  type 'a complete = Complete : 'ctx term option * 'ctx func -> 'a complete
+  and 'a completion =
+    { complete : 'a complete;
       dirs : bool;
       files : bool;
       restart : bool }
@@ -351,15 +351,19 @@ module Complete = struct
   | Opt_name
 
   type t =
-    { prefix : string;
+    { context : Cline.t;
+      prefix : string;
       after_dashdash : bool;
       subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
-      kind : kind  }
+      kind : kind;
+      values : (string * string) list }
 
-  let make ?(after_dashdash = false) ?(subcmds = false) ~prefix kind =
-    { prefix; after_dashdash; subcmds; kind }
+  let make ?(after_dashdash = false) ?(subcmds = false) context ~prefix kind =
+    { context; prefix; after_dashdash; subcmds; kind; values = [] }
 
   let add_subcmds c = { c with subcmds = true }
+  let add_values c values = { c with values }
+  let context c = c.context
   let prefix c = c.prefix
   let after_dashdash c = c.after_dashdash
   let subcmds c = c.subcmds
@@ -377,20 +381,26 @@ module Term = struct
 end
 
 module Arg_completion = struct
-  type complete = Arg_info.complete
+  type 'ctx func = 'ctx Arg_info.func
+
+  type 'a complete = 'a Arg_info.complete =
+    | Complete : 'ctx Term.t option * 'ctx func -> 'a complete
+
   type 'a t = 'a Arg_info.completion
 
   let make
-      ?(complete = Fun.const []) ?(dirs = false) ?(files = false)
+      ?context ?(func = fun _ ~prefix:_ -> []) ?(dirs = false) ?(files = false)
       ?(restart = false) () : 'a t
     =
-    {context = None; complete; dirs; files; restart}
+    { complete = Complete (context, func); dirs; files; restart }
 
-  let none = make ()
-  let some (c : 'a t) =
-    { c with context = Option.map Term.some c.context }
+  let none : 'a t =
+    { complete = Complete (None, fun _ ~prefix:_ -> []);
+      dirs = false; files = false; restart = false }
 
-  let context (c : 'a t) = c.context
+  let some c : 'a option t = match c.Arg_info.complete with
+  | Complete (ctx, func) -> { c with complete = Complete (ctx, func) }
+
   let complete (c : 'a t) = c.complete
   let dirs (c : 'a t) = c.dirs
   let files (c : 'a t) = c.files
@@ -412,7 +422,8 @@ module Arg_conv = struct
     { docv; parser; pp; completion }
 
   let of_conv
-      conv ?(completion = conv.completion) ?(docv = conv.docv)
+      conv
+      ?(completion = conv.completion) ?(docv = conv.docv)
       ?(parser = conv.parser) ?(pp = conv.pp) ()
     =
     { docv; parser; pp; completion }

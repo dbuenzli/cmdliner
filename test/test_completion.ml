@@ -39,6 +39,10 @@ let test_groups =
      item\n\
      camels\n\
      Operate on camels.\n\
+     item-end\n\
+     item\n\
+     lookup\n\
+     Lookup animal by name.\n\
      item-end\n";
   complete ["birds"; "--__complete="] @@  __POS_OF__
     "1\n\
@@ -69,7 +73,7 @@ let test_groups =
   ()
 
 let test_no_options_after_dashsash =
-  Test.test "No options after --" @@ fun () ->
+  Test.test "no options after --" @@ fun () ->
   complete ["birds"; "fly"; "--__complete="] @@ __POS_OF__
     "1\n\
      group\n\
@@ -83,7 +87,7 @@ let test_no_options_after_dashsash =
   ()
 
 let test_opts_starts =
-  Test.test "Complete optional argument values" @@ fun () ->
+  Test.test "complete optional argument names" @@ fun () ->
   complete ["birds"; "--__complete=-"] @@ __POS_OF__
     "1\n\
      group\n\
@@ -117,7 +121,7 @@ let test_opts_starts =
   ()
 
 let test_opt_value =
-  Test.test "Complete optional argument values" @@ fun () ->
+  Test.test "complete optional argument values" @@ fun () ->
   (* Glued *)
   complete ["birds"; "--__complete=--can-fly="] @@ __POS_OF__
     "1\n\
@@ -178,8 +182,72 @@ let test_opt_value =
      item-end\n";
   ()
 
+let test_context_sensitive =
+  Test.test "context sensitive completions" @@ fun () ->
+  complete ["lookup"; "--__complete="] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Values\n\
+     item\n\
+     sparrow\n\
+     \n\
+     item-end\n\
+     item\n\
+     parrot\n\
+     \n\
+     item-end\n\
+     item\n\
+     pigeon\n\
+     \n\
+     item-end\n\
+     item\n\
+     salmon\n\
+     \n\
+     item-end\n\
+     item\n\
+     trout\n\
+     \n\
+     item-end\n\
+     item\n\
+     piranha\n\
+     \n\
+     item-end\n\
+     group\n\
+     Options\n\
+     item\n\
+     -k\n\
+     \u{001B}[04mENUM\u{001B}[m restricts the animal kind. Must be either \u{001B}[01mbird\u{001B}[m or\n\
+     \u{001B}[01mfish\u{001B}[m\n\
+     item-end\n\
+     item\n\
+     --kind\n\
+     \u{001B}[04mENUM\u{001B}[m restricts the animal kind. Must be either \u{001B}[01mbird\u{001B}[m or\n\
+     \u{001B}[01mfish\u{001B}[m\n\
+     item-end\n";
+  complete ["lookup"; "-kfish"; "--__complete=s"] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Values\n\
+     item\n\
+     salmon\n\
+     \n\
+     item-end\n";
+  complete ["lookup"; "-kbird"; "--__complete=p"] @@ __POS_OF__
+    "1\n\
+     group\n\
+     Values\n\
+     item\n\
+     parrot\n\
+     \n\
+     item-end\n\
+     item\n\
+     pigeon\n\
+     \n\
+     item-end\n";
+  ()
+
 let test_restart_restricted_tool =
-  Test.test "Restart restricted tool" @@ fun () ->
+  Test.test "restart restricted tool" @@ fun () ->
   let cmd =
     Cmd.make (Cmd.info "test_restart_restricted") @@
     let+ verb = Arg.(value & flag & info ["verbose"])
@@ -221,9 +289,7 @@ let test_restart_restricted_tool =
      item\n\
      git\n\
      \n\
-     item-end\n\
-     group\n\
-     Options\n";
+     item-end\n";
   (* Note no reset here: as there is no -- token *)
   complete ["git"; "--__complete="] @@ __POS_OF__
     "1\n\
@@ -239,7 +305,7 @@ let test_restart_restricted_tool =
   ()
 
 let test_restart_any_tool =
-  Test.test "Restart any tool" @@ fun () ->
+  Test.test "restart any tool" @@ fun () ->
   let cmd =
     Cmd.make (Cmd.info "test_restart") @@
     let arg ~docv =
@@ -262,9 +328,7 @@ let test_restart_any_tool =
      item-end\n";
   (* The following two do not restart because -- is missing *)
   complete ["--__complete=gi"] @@ __POS_OF__
-    "1\n\
-     group\n\
-     Options\n";
+    "1\n";
   complete ["git"; "--__complete="] @@ __POS_OF__
     "1\n\
      group\n\

@@ -30,8 +30,8 @@ let maybe_token_to_complete ~for_completion s =
 
 exception Completion_requested of Cmdliner_def.Complete.t
 
-let comp_request ?after_dashdash ~prefix kind =
-  let comp = Cmdliner_def.Complete.make ?after_dashdash ~prefix kind in
+let comp_request ?after_dashdash cline ~prefix kind =
+  let comp = Cmdliner_def.Complete.make ?after_dashdash cline ~prefix kind in
   raise (Completion_requested comp)
 
 (* Command lines *)
@@ -124,7 +124,7 @@ let hint_matching_opt optidx s =
   | true, [] -> [short_opt]
   | true, l -> if List.mem short_opt l then l else short_opt :: l
 
-let parse_opt_value ~for_completion arg_info name value args =
+let parse_opt_value ~for_completion cline arg_info name value args =
   (* Either we got a value glued in [value] or we need to get one in args *)
   match Cmdliner_def.Arg_info.opt_kind arg_info with
   | Flag -> (* Flags have no values but we may get dash sharing in [value] *)
@@ -144,11 +144,11 @@ let parse_opt_value ~for_completion arg_info name value args =
           | v :: rest when for_completion && has_complete_prefix v ->
               let v = get_token_to_complete v in
               if is_opt v then (* not an option value *) None, args else
-              comp_request ~prefix:v (Opt_value arg_info)
+              comp_request cline ~prefix:v (Opt_value arg_info)
           | v :: rest ->
               if is_opt v then None, args else Some v, rest
 
-let try_complete_opt_value arg_info name value args =
+let try_complete_opt_value cline arg_info name value args =
   (* At that point we found a matching option name so this should be mostly
      about completing a glued option value, but there are twists. *)
   match Cmdliner_def.Arg_info.opt_kind arg_info with
@@ -162,21 +162,21 @@ let try_complete_opt_value arg_info name value args =
           (* This is actually a parse error, flags have no value.  We
              make it an option completion but the completions will
              eventually be empty (the prefix won't match) *)
-          comp_request ~prefix:(name ^ v) Opt_name
+          comp_request cline ~prefix:(name ^ v) Opt_name
       | None ->
           (* We have in fact a fully completed flag turn it into an
              option completion. *)
-          comp_request ~prefix:name Opt_name
+          comp_request cline ~prefix:name Opt_name
       end
   | _ ->
       begin match value with
-      | Some prefix -> comp_request ~prefix (Opt_value arg_info)
+      | Some prefix -> comp_request cline ~prefix (Opt_value arg_info)
       | None ->
           (* We have a fully completed option name, we don't try to
              lookup what happens in the next argument which should
              hold the value if any, we just turn it into an option
              completion. *)
-          comp_request ~prefix:name Opt_name
+          comp_request cline ~prefix:name Opt_name
       end
 
 let parse_opt_args
@@ -201,17 +201,20 @@ let parse_opt_args
       | Ok arg_info ->
           let value, args =
             if is_completion
-            then try_complete_opt_value arg_info name value args
-            else parse_opt_value ~for_completion arg_info name value args
+            then try_complete_opt_value cline arg_info name value args
+            else parse_opt_value ~for_completion cline arg_info name value args
           in
           let arg : arg = O ((k, name, value) :: opt_arg cline arg_info) in
           let cline = Cmdliner_def.Arg_info.Map.add arg_info arg cline in
           loop errs (k + 1) cline pargs args
       | Error `Not_found when for_completion ->
           if not is_completion
-          then (* XXX unclear *) loop errs (k + 1) cline (s :: pargs) args else
+          (* Drop the data, if the user thought this was an opt with
+             an argument this may confuse positional args but there's
+             not much we can do. *)
+          then loop errs (k + 1) cline pargs args else
           let prefix = name ^ Option.value ~default:"" value in
-          comp_request ~prefix Opt_name
+          comp_request cline ~prefix Opt_name
       | Error `Not_found when peek_opts ->
           loop errs (k + 1) cline pargs args
       | Error `Not_found ->
@@ -268,7 +271,7 @@ let process_pos_args ~for_completion posidx cline ~has_dashdash pargs =
         | `Range args -> args
         | `Complete prefix ->
             let kind = Cmdliner_def.Complete.Opt_name_or_pos_value a in
-            comp_request ~after_dashdash:has_dashdash ~prefix kind
+            comp_request ~after_dashdash:has_dashdash cline ~prefix kind
       in
       let max_spec = max stop max_spec in
       let cline = Cmdliner_def.Arg_info.Map.add a (P args : arg) cline in
@@ -283,7 +286,7 @@ let process_pos_args ~for_completion posidx cline ~has_dashdash pargs =
     match take_range ~for_completion (max_spec + 1) last pargs with
     | `Range args -> args
     | `Complete prefix ->
-        comp_request ~after_dashdash:has_dashdash ~prefix Opt_name
+        comp_request ~after_dashdash:has_dashdash cline ~prefix Opt_name
   in
   if misses <> [] then begin
     let _ : string list = consume_excess () in
@@ -317,7 +320,8 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
               match maybe_token_to_complete ~for_completion:true arg with
               | None -> assert false
               | Some prefix ->
-                  comp_request ~after_dashdash:has_dashdash ~prefix Opt_name
+                  comp_request
+                    ~after_dashdash:has_dashdash cline ~prefix Opt_name
         end
   | Error (errs, cline, has_dashdash, pargs) ->
       let _ : _ result =

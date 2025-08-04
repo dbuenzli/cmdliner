@@ -8,7 +8,8 @@ type eval_error = [ `Parse | `Term | `Exn ]
 type 'a eval_exit = [ `Ok of 'a  | `Exit of Cmdliner_def.Exit.code ]
 
 type 'a complete =
-  Cmdliner_def.Arg_info.Set.t * 'a Cmdliner_cmd.t * Cmdliner_def.Complete.t
+  Cmdliner_def.Eval.t * Cmdliner_def.Arg_info.Set.t * 'a Cmdliner_cmd.t *
+  Cmdliner_def.Complete.t
 
 type eval_result_error =
   [ Cmdliner_term.term_escape
@@ -44,6 +45,14 @@ let run_parser ~catch ei cl f =
   | exn when catch ->
       let bt = Printexc.get_raw_backtrace () in
       Error (`Exn (exn, bt))
+
+let run_parser_for_completion_context ei cline ctx =
+  let parser = Cmdliner_term.parser ctx in
+  match (parser ei cline :> ('a, eval_result_error) result) with
+  | Ok ctx -> Some ctx
+  | Error _ -> None
+  | exception exn -> None
+
 
 let try_eval_stdopts ~catch ei cl help version : 'a eval_result option =
   match run_parser ~catch ei cl (Cmdliner_term.parser help) with
@@ -96,9 +105,34 @@ let do_result ~env help_ppf err_ppf ei = function
         Cmdliner_msg.pp_version help_ppf ei; Ok `Version
     | `Parse err ->
         Cmdliner_msg.pp_usage_and_err err_ppf ei ~err; Error `Parse
-    | `Complete (cmd_args_info, cmd, comp) ->
+    | `Complete (ei, cmd_args_info, cmd, comp) ->
+        (* TODO quick hack this should not happen here *)
+        let items () =
+          let prefix = Cmdliner_def.Complete.prefix comp in
+          let arg_info = match Cmdliner_def.Complete.kind comp with
+          | Opt_value arg_info -> Some arg_info
+          | Opt_name_or_pos_value arg_info -> Some arg_info
+          | _ -> None
+          in
+          match arg_info with
+          | None -> []
+          | Some arg_info ->
+              match Cmdliner_def.Arg_info.Set.find_opt
+                            arg_info cmd_args_info with
+              | None -> []
+              | Some (Completion c) ->
+                 match Cmdliner_def.Arg_completion.complete c with
+                 | Complete (ctx, func) ->
+                     let cline = Cmdliner_def.Complete.context comp in
+                     let ctx = match ctx with
+                     | None -> None
+                     | Some ctx ->
+                         run_parser_for_completion_context ei cline ctx
+                     in
+                     func ctx ~prefix
+        in
         Cmdliner_completion.output
-          ~out_ppf:help_ppf ~err_ppf ei cmd_args_info cmd comp; Ok `Help
+          ~out_ppf:help_ppf ~err_ppf ei cmd_args_info cmd comp ~items; Ok `Help
     | `Help (fmt, cmd_name) ->
         do_help ~env help_ppf err_ppf ei fmt cmd_name; Ok `Help
     | `Exn (e, bt) ->
@@ -220,7 +254,7 @@ let eval_value
   | Error (`Parse (try_stdopts, msg)) ->
       (* Command lookup error, we may still prioritize stdargs *)
       begin match cline with
-      | `Complete comp -> Error (`Complete (cmd_args_info, cmd, comp))
+      | `Complete comp -> Error (`Complete (ei, cmd_args_info, cmd, comp))
       | `Error (_, cl) | `Ok cl ->
           let stdopts =
             if try_stdopts then try_eval_stdopts ~catch ei cl help version else
@@ -235,12 +269,12 @@ let eval_value
       begin match cline with
       | `Complete comp ->
           let comp = Cmdliner_def.Complete.add_subcmds comp in
-          Error (`Complete (cmd_args_info, cmd, comp))
+          Error (`Complete (ei, cmd_args_info, cmd, comp))
       | `Ok _ | `Error _ -> assert false
       end
   | Ok parser ->
       begin match cline with
-      | `Complete comp -> Error (`Complete (cmd_args_info, cmd, comp))
+      | `Complete comp -> Error (`Complete (ei, cmd_args_info, cmd, comp))
       | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
@@ -282,7 +316,7 @@ let eval_peek_opts
   let v, ret = match cline with
   | `Complete comp ->
       let cmd = Cmdliner_cmd.make cmd_info t in
-      None, (Error (`Complete (cmd_arg_infos, cmd, comp)))
+      None, (Error (`Complete (ei, cmd_arg_infos, cmd, comp)))
   | `Error (e, cl) ->
       begin match try_eval_stdopts ~catch:true ei cl help version with
       | Some e -> None, e

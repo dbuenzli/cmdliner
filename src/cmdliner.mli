@@ -635,22 +635,34 @@ module Arg : sig
       cmdliner for the argument. *)
   module Completion : sig
 
-    type complete = string -> (string * string) list
+    type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
     (** The type for completion functions. Given a prefix should
         return a list of possible completions and a doc string. *)
+
+    type 'a complete = Complete : 'ctx Term.t option * 'ctx func -> 'a complete
+    (** The type for completing. A completion context specification
+        and a completion function. *)
 
     type 'a t
     (** The type for completing values parsed into values of type ['a]. *)
 
     val make :
-      ?complete:complete -> ?dirs:bool -> ?files:bool -> ?restart:bool ->
-      unit -> 'a t
-    (** [make ()] is a completion specification with given properties.
-        See accesors for semantics. Note that the properties are
+      ?context:'ctx Term.t -> ?func:'ctx func -> ?dirs:bool ->
+      ?files:bool -> ?restart:bool -> unit -> 'a t
+    (** [make ()] is a completion specification with:
+
+        [context] is a command line is command line completion
+        context. During completion the command line fragment of the
+        context is parsed, if successful the result is given to the
+        completion function. Note that [context] must be part of the
+        term of the command in which you use that completion otherwhise
+        the context will always be [None] in the function.
+
+        See accessors for semantics. Note that the properties are
         not mutually exclusive. *)
 
-    val complete : 'a t -> complete
-    (** [complete c] is a function to perform completion. *)
+    val complete : 'a t -> 'a complete
+    (** [complete c] is a the context and function to perform completion. *)
 
     val dirs : 'a t -> bool
     (** [dirs c] indicates the argument should be completed with directories. *)
