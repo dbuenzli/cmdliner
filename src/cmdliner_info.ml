@@ -308,7 +308,7 @@ end
 
 (* Completion *)
 
-module Completion = struct
+module Complete = struct
   type kind =
   | Opt_value of Arg.t
   | Opt_name_or_pos_value of Arg.t

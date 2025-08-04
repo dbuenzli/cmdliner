@@ -28,10 +28,10 @@ let maybe_token_to_complete ~for_completion s =
   if not for_completion || not (has_complete_prefix s) then None else
   Some (get_token_to_complete s)
 
-exception Completion_requested of Cmdliner_info.Completion.t
+exception Completion_requested of Cmdliner_info.Complete.t
 
 let comp_request ?after_dashdash ~prefix kind =
-  let comp = Cmdliner_info.Completion.make ?after_dashdash ~prefix kind in
+  let comp = Cmdliner_info.Complete.make ?after_dashdash ~prefix kind in
   raise (Completion_requested comp)
 
 (* Command lines *)
@@ -263,7 +263,7 @@ let process_pos_args ~for_completion posidx cl ~has_dashdash pargs =
         match take_range ~for_completion start stop pargs with
         | `Range args -> args
         | `Complete prefix ->
-            let kind = Cmdliner_info.Completion.Opt_name_or_pos_value a in
+            let kind = Cmdliner_info.Complete.Opt_name_or_pos_value a in
             comp_request ~after_dashdash:has_dashdash ~prefix kind
       in
       let max_spec = max stop max_spec in
@@ -319,7 +319,7 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
         process_pos_args ~for_completion posidx cl ~has_dashdash pargs
       in
       `Error (errs, cl)
-  with Completion_requested c -> `Completion c
+  with Completion_requested c -> `Complete c
 
 (* Deprecations *)
 

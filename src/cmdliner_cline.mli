@@ -20,7 +20,7 @@ val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
   Cmdliner_info.Arg.Set.t -> string list ->
   [ `Ok of t
-  | `Completion of Cmdliner_info.Completion.t
+  | `Complete of Cmdliner_info.Complete.t
   | `Error of string * t ]
 
 val opt_arg : t -> Cmdliner_info.Arg.t -> (int * string * (string option)) list

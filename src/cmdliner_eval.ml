@@ -8,7 +8,7 @@ type eval_error = [ `Parse | `Term | `Exn ]
 type 'a eval_exit = [ `Ok of 'a  | `Exit of Cmdliner_info.Exit.code ]
 
 type 'a complete =
-  Cmdliner_info.Arg.Set.t * 'a Cmdliner_cmd.t * Cmdliner_info.Completion.t
+  Cmdliner_info.Arg.Set.t * 'a Cmdliner_cmd.t * Cmdliner_info.Complete.t
 
 type eval_result_error =
   [ Cmdliner_term.term_escape
@@ -216,7 +216,7 @@ let eval_value
   | Error (`Parse (try_stdopts, msg)) ->
       (* Command lookup error, we may still prioritize stdargs *)
       begin match cline with
-      | `Completion comp -> Error (`Complete (cmd_args_info, cmd, comp))
+      | `Complete comp -> Error (`Complete (cmd_args_info, cmd, comp))
       | `Error (_, cl) | `Ok cl ->
           let stdopts =
             if try_stdopts then try_eval_stdopts ~catch ei cl help version else
@@ -229,14 +229,14 @@ let eval_value
       end
   | Error `Complete ->
       begin match cline with
-      | `Completion comp ->
-          let comp = Cmdliner_info.Completion.add_subcmds comp in
+      | `Complete comp ->
+          let comp = Cmdliner_info.Complete.add_subcmds comp in
           Error (`Complete (cmd_args_info, cmd, comp))
       | `Ok _ | `Error _ -> assert false
       end
   | Ok parser ->
       begin match cline with
-      | `Completion comp -> Error (`Complete (cmd_args_info, cmd, comp))
+      | `Complete comp -> Error (`Complete (cmd_args_info, cmd, comp))
       | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch ei cl help version with
           | Some e -> e
@@ -276,7 +276,7 @@ let eval_peek_opts
       ~peek_opts:true ~legacy_prefixes ~for_completion cmd_arg_infos args
   in
   let v, ret = match cline with
-  | `Completion comp ->
+  | `Complete comp ->
       let cmd = Cmdliner_cmd.make cmd_info t in
       None, (Error (`Complete (cmd_arg_infos, cmd, comp)))
   | `Error (e, cl) ->

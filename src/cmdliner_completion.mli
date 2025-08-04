@@ -8,4 +8,4 @@ val output :
   err_ppf:Format.formatter ->
   Cmdliner_info.Eval.t ->
   Cmdliner_info.Arg.Set.t ->
-  'a Cmdliner_cmd.t -> Cmdliner_info.Completion.t -> unit
+  'a Cmdliner_cmd.t -> Cmdliner_info.Complete.t -> unit

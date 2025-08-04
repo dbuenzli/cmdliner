@@ -189,8 +189,8 @@ module Eval : sig
   val doclang_subst : t -> Cmdliner_manpage.subst
 end
 
-(** Completion *)
-module Completion : sig
+(** Complete instruction. *)
+module Complete : sig
   type kind =
   | Opt_value of Arg.t
   | Opt_name_or_pos_value of Arg.t
