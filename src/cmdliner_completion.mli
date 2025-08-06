@@ -10,5 +10,4 @@ val output :
   Cmdliner_def.Arg_info.Set.t ->
   'a Cmdliner_cmd.t ->
   Cmdliner_def.Complete.t ->
-  items:(unit -> (string * string) list) ->
   unit

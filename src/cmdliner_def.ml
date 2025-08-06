@@ -202,17 +202,19 @@ module Arg_info = struct
   [ `Error of bool * string
   | `Help of Cmdliner_manpage.format * string option ]
 
-  type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
-  type 'a complete = Complete : 'ctx term option * 'ctx func -> 'a complete
-  and 'a completion =
-    { complete : 'a complete;
-      dirs : bool;
-      files : bool;
-      restart : bool }
+  type 'a completion_directive =
+  | String of string * string | Value of 'a * string | Files | Dirs | Restart
+  | Raw of string
 
+  type ('ctx, 'a) completion_func =
+    'ctx option -> token:string -> ('a completion_directive list, string) result
+
+  type 'a complete =
+  | Complete : 'ctx term option * ('ctx, 'a) completion_func -> 'a complete
+
+  and 'a completion = { complete : 'a complete }
   and e_completion = Completion : 'a completion -> e_completion
   and arg_set = e_completion Map.t
-
   and cmd =
     { name : string; (* name of the cmd. *)
       version : string option; (* version (for --version). *)
@@ -342,34 +344,6 @@ module Eval = struct
   | _ -> None
 end
 
-(* Completion *)
-
-module Complete = struct
-  type kind =
-  | Opt_value of Arg_info.t
-  | Opt_name_or_pos_value of Arg_info.t
-  | Opt_name
-
-  type t =
-    { context : Cline.t;
-      prefix : string;
-      after_dashdash : bool;
-      subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
-      kind : kind;
-      values : (string * string) list }
-
-  let make ?(after_dashdash = false) ?(subcmds = false) context ~prefix kind =
-    { context; prefix; after_dashdash; subcmds; kind; values = [] }
-
-  let add_subcmds c = { c with subcmds = true }
-  let add_values c values = { c with values }
-  let context c = c.context
-  let prefix c = c.prefix
-  let after_dashdash c = c.after_dashdash
-  let subcmds c = c.subcmds
-  let kind c = c.kind
-end
-
 (* Terms *)
 
 module Term = struct
@@ -381,30 +355,54 @@ module Term = struct
 end
 
 module Arg_completion = struct
-  type 'ctx func = 'ctx Arg_info.func
+  type 'a directive = 'a Arg_info.completion_directive =
+  | String of string * string | Value of 'a * string
+  | Files | Dirs | Restart | Raw of string
+
+  let value ?(doc = "") v = Value (v, doc)
+  let string ?(doc = "") s = String (s, doc)
+  let files = Files
+  let dirs = Dirs
+  let restart = Restart
+  let raw s = Raw s
+
+  type ('ctx, 'a) func =
+    'ctx option -> token:string -> ('a directive list, string) result
 
   type 'a complete = 'a Arg_info.complete =
-    | Complete : 'ctx Term.t option * 'ctx func -> 'a complete
+  | Complete : 'ctx Term.t option * ('ctx, 'a) func -> 'a complete
 
   type 'a t = 'a Arg_info.completion
 
-  let make
-      ?context ?(func = fun _ ~prefix:_ -> []) ?(dirs = false) ?(files = false)
-      ?(restart = false) () : 'a t
-    =
-    { complete = Complete (context, func); dirs; files; restart }
-
-  let none : 'a t =
-    { complete = Complete (None, fun _ ~prefix:_ -> []);
-      dirs = false; files = false; restart = false }
-
-  let some c : 'a option t = match c.Arg_info.complete with
-  | Complete (ctx, func) -> { c with complete = Complete (ctx, func) }
-
+  let make ?context func : 'a t = { complete = Complete (context, func) }
   let complete (c : 'a t) = c.complete
-  let dirs (c : 'a t) = c.dirs
-  let files (c : 'a t) = c.files
-  let restart (c : 'a t) = c.restart
+
+  let complete_files : 'a t =
+    { complete = Complete (None, fun _ ~token:_ -> Ok [Files]) }
+
+  let complete_dirs : 'a t =
+    { complete = Complete (None, fun _ ~token:_ -> Ok [Dirs]) }
+
+  let complete_paths : 'a t =
+    { complete = Complete (None, fun _ ~token:_ -> Ok [Files; Dirs]) }
+
+  let complete_restart : 'a t =
+    { complete = Complete (None, fun _ ~token:_ -> Ok [Restart]) }
+
+  let complete_none : 'a t =
+    { complete = Complete (None, fun _ ~token:_ -> Ok []) }
+
+  let directive_some : 'a directive -> 'a option directive = function
+  | Value (v, doc) -> Value (Some v, doc)
+  | (String _ | Files | Dirs | Restart | Raw _ as v) -> v
+
+  let complete_some (c : 'a t) : 'a option t = match c.complete with
+  | Complete (ctx, func) ->
+      let func ctx ~token =
+        let some_result directives = List.map directive_some directives in
+        Result.map some_result (func ctx ~token)
+      in
+      { complete = Complete (ctx, func) }
 end
 
 (* Converters *)
@@ -418,7 +416,7 @@ module Arg_conv = struct
       pp : 'a fmt;
       completion : 'a Arg_completion.t; }
 
-  let make ?(completion = Arg_completion.none) ~docv ~parser ~pp () =
+  let make ?(completion = Arg_completion.complete_none) ~docv ~parser ~pp () =
     { docv; parser; pp; completion }
 
   let of_conv
@@ -434,24 +432,57 @@ module Arg_conv = struct
   let completion c = c.completion
 
   let some ?(none = "") conv =
-    let parser s = match parser conv s with
-    | Ok v -> Ok (Some v) | Error _ as e -> e
-    in
+    let parser s = Result.map Option.some (parser conv s) in
     let pp ppf v = match v with
     | None -> Format.pp_print_string ppf none
     | Some v -> pp conv ppf v
     in
-    let completion = Arg_completion.some (completion conv) in
+    let completion = Arg_completion.complete_some (completion conv) in
     { conv with parser; pp; completion }
 
   let some' ?none conv =
-    let parser s = match parser conv s with
-    | Ok v -> Ok (Some v) | Error _ as e -> e
-    in
+    let parser s = Result.map Option.some (parser conv s) in
     let pp ppf = function
     | None -> (match none with None -> () | Some v -> (pp conv) ppf v)
     | Some v -> pp conv ppf v
     in
-    let completion = Arg_completion.some conv.completion in
-      { conv with parser; pp; completion }
+    let completion = Arg_completion.complete_some conv.completion in
+    { conv with parser; pp; completion }
+end
+
+
+
+(* Completion *)
+
+module Complete = struct
+  type kind =
+  | Opt_value of Arg_info.t
+  | Opt_name_or_pos_value of Arg_info.t
+  | Opt_name
+
+  type directives =
+    Directives : ('a Arg_completion.directive list, string) result -> directives
+
+  type t =
+    { context : Cline.t;
+      prefix : string;
+      after_dashdash : bool;
+      subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
+      kind : kind;
+      directives : directives }
+
+  let make ?(after_dashdash = false) ?(subcmds = false) context ~prefix kind =
+    { context; prefix; after_dashdash; subcmds; kind;
+      directives = Directives (Ok []) }
+
+  let add_subcmds c = { c with subcmds = true }
+  let add_directives directives c =
+    { c with directives = Directives directives }
+
+  let context c = c.context
+  let prefix c = c.prefix
+  let after_dashdash c = c.after_dashdash
+  let subcmds c = c.subcmds
+  let kind c = c.kind
+  let directives c = c.directives
 end

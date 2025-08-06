@@ -174,15 +174,16 @@ let sample_group_cmd =
       let bird_names = ["sparrow"; "parrot"; "pigeon"] in
       let fish_names = ["salmon"; "trout"; "piranha"] in
       let completion =
-        let select ~prefix n =
-          if String.starts_with ~prefix n then Some (n, "") else None
+        let select ~token:prefix n =
+          if String.starts_with ~prefix n
+          then Some (Arg.Completion.string n) else None
         in
-        let func kind ~prefix = match Option.join kind with
-        | None -> List.filter_map (select ~prefix) (bird_names @ fish_names)
-        | Some `Bird -> List.filter_map (select ~prefix) bird_names
-        | Some `Fish -> List.filter_map (select ~prefix) fish_names
+        let func kind ~token = match Option.join kind with
+        | None -> Ok (List.filter_map (select ~token) (bird_names @ fish_names))
+        | Some `Bird -> Ok (List.filter_map (select ~token) bird_names)
+        | Some `Fish -> Ok (List.filter_map (select ~token) fish_names)
         in
-        Arg.Completion.make ~context:kind_opt ~func ()
+        Arg.Completion.make ~context:kind_opt func
       in
       Arg.Conv.of_conv Arg.string ~completion ()
     in

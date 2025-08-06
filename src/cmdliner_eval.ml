@@ -107,32 +107,33 @@ let do_result ~env help_ppf err_ppf ei = function
         Cmdliner_msg.pp_usage_and_err err_ppf ei ~err; Error `Parse
     | `Complete (ei, cmd_args_info, cmd, comp) ->
         (* TODO quick hack this should not happen here *)
-        let items () =
-          let prefix = Cmdliner_def.Complete.prefix comp in
+        let comp =
+          let token = Cmdliner_def.Complete.prefix comp in
           let arg_info = match Cmdliner_def.Complete.kind comp with
           | Opt_value arg_info -> Some arg_info
           | Opt_name_or_pos_value arg_info -> Some arg_info
           | _ -> None
           in
           match arg_info with
-          | None -> []
+          | None -> comp
           | Some arg_info ->
               match Cmdliner_def.Arg_info.Set.find_opt
                             arg_info cmd_args_info with
-              | None -> []
-              | Some (Completion c) ->
-                 match Cmdliner_def.Arg_completion.complete c with
-                 | Complete (ctx, func) ->
-                     let cline = Cmdliner_def.Complete.context comp in
-                     let ctx = match ctx with
-                     | None -> None
-                     | Some ctx ->
-                         run_parser_for_completion_context ei cline ctx
-                     in
-                     func ctx ~prefix
+              | None -> comp
+              | Some (Completion c) -> (* FIXME we want converter here *)
+                  match Cmdliner_def.Arg_completion.complete c with
+                  | Complete (ctx, func) ->
+                      let cline = Cmdliner_def.Complete.context comp in
+                      let ctx = match ctx with
+                      | None -> None
+                      | Some ctx ->
+                          run_parser_for_completion_context ei cline ctx
+                      in
+                      let dirs = func ctx ~token in
+                      Cmdliner_def.Complete.add_directives dirs comp
         in
         Cmdliner_completion.output
-          ~out_ppf:help_ppf ~err_ppf ei cmd_args_info cmd comp ~items; Ok `Help
+          ~out_ppf:help_ppf ~err_ppf ei cmd_args_info cmd comp; Ok `Help
     | `Help (fmt, cmd_name) ->
         do_help ~env help_ppf err_ppf ei fmt cmd_name; Ok `Help
     | `Exn (e, bt) ->

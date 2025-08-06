@@ -3,86 +3,113 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-(* Output protocol
+(* Output protocol  *)
 
-   This is a bit ugly we have logic and rendering intermingled. *)
+let cons_if b v l = if b then v :: l else l
 
-let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ())
-let pp_group ppf s = pp_line ppf "group"; pp_line ppf s
-let pp_item ppf ~prefix (name, doc) =
-  if Cmdliner_base.string_starts_with ~prefix name then begin
+type dir =
+[ `Dirs | `Error of string | `Files | `Group of string * (string * string) list
+| `Restart ]
+
+let pp_protocol ppf dirs =
+  let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
+  let vnum = 1 (* Protocol version number *) in
+  let pp_item ppf (name, doc) =
     pp_line ppf "item";
     pp_line ppf name;
-    Cmdliner_base.Fmt.(pf ppf "@[%a@]@," text doc);
+    Cmdliner_base.Fmt.(pf ppf "@[%a@]@," styled_text doc);
     pp_line ppf "item-end";
-  end
+  in
+  let pp_dir ppf = function
+  | `Dirs -> pp_line ppf "dirs"
+  | `Files -> pp_line ppf "files"
+  | `Error msg -> failwith "TODO"
+  | `Restart -> pp_line ppf "restart"
+  | `Group (name, items) ->
+      pp_line ppf "group";
+      pp_line ppf name;
+      Cmdliner_base.Fmt.(list ~sep:nop pp_item) ppf items;
+  in
+  Cmdliner_base.Fmt.pf ppf "@[<v>%d@,%a@]" vnum
+    Cmdliner_base.Fmt.(list ~sep:nop pp_dir) dirs
 
-let pp_opt ~err_ppf ~subst ~prefix ppf arg_info _ =
-  (* XXX should we rather list a single name ? *)
-  let names = Cmdliner_def.Arg_info.opt_names arg_info in
-  let subst = Cmdliner_def.Arg_info.doclang_subst ~subst arg_info in
-  let doc = Cmdliner_def.Arg_info.styled_doc ~errs:err_ppf ~subst arg_info in
-  List.iter (fun name -> pp_item ppf ~prefix (name, doc)) names
-
-let pp_opt_names ~err_ppf ~subst ~prefix ppf cmd =
-  let info = Cmdliner_cmd.get_info cmd in
-  let set = Cmdliner_def.Cmd_info.args info in
-  if not (Cmdliner_def.Arg_info.Set.is_empty set) then begin
-    let arg_infos = Cmdliner_def.Cmd_info.args info in
-    pp_group ppf "Options";
-    Cmdliner_def.Arg_info.Set.iter (pp_opt ~err_ppf ~subst ~prefix ppf)
-      arg_infos
-  end
-
-let pp_arg_values ~after_dashdash ~prefix items ppf comp =
-  if after_dashdash && Cmdliner_def.Arg_completion.restart comp
-  then pp_line ppf "restart" else
-  let items = items () in
-  let comp_files = Cmdliner_def.Arg_completion.files comp in
-  let comp_dirs = Cmdliner_def.Arg_completion.dirs comp in
-  if items <> [] || comp_files || comp_dirs then begin
-    pp_group ppf "Values";
-    List.iter (pp_item ppf ~prefix) items;
-    if comp_files then pp_line ppf "files";
-    if comp_dirs then pp_line ppf "dirs"
-  end
-
-let pp_subcmds ~err_ppf ~subst ~prefix ppf cmd =
-  pp_group ppf "Subcommands";
-  let complete_cmd cmd =
+let add_subcommands_group ~err_ppf ~subst cmd comp directives =
+  if not (Cmdliner_def.Complete.subcmds comp) then directives else
+  let prefix = Cmdliner_def.Complete.prefix comp in
+  let maybe_item cmd =
     let name = Cmdliner_def.Cmd_info.name cmd in
+    if not (Cmdliner_base.string_starts_with ~prefix name) then None else
     (* FIXME subst is wrong here. *)
     let doc = Cmdliner_def.Cmd_info.styled_doc ~errs:err_ppf ~subst cmd in
-    pp_item ppf ~prefix (name, doc)
+    Some (name, doc)
   in
-  List.iter complete_cmd (Cmdliner_cmd.get_children_infos cmd)
+  let subcmds = Cmdliner_cmd.get_children_infos cmd in
+  (`Group ("Subcommands", List.filter_map maybe_item subcmds)) :: directives
 
-let vnum = 1 (* Protocol version number *)
-
-let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp ~items =
-  let subst = Cmdliner_def.Eval.doclang_subst ei in
-  let after_dashdash = Cmdliner_def.Complete.after_dashdash comp in
+let add_options_group ~err_ppf ~subst cmd comp directives =
   let prefix = Cmdliner_def.Complete.prefix comp in
+  let maybe_items arg_info =
+    let names = Cmdliner_def.Arg_info.opt_names arg_info in
+    let subst = Cmdliner_def.Arg_info.doclang_subst ~subst arg_info in
+    let doc = Cmdliner_def.Arg_info.styled_doc ~errs:err_ppf ~subst arg_info in
+    let add_name n =
+      if not (Cmdliner_base.string_starts_with ~prefix n) then None else
+      Some (n, doc)
+    in
+    List.filter_map add_name names
+  in
   let maybe_opt = prefix = "" || prefix.[0] = '-' in
-  let pp_arg_value ppf arg_info =
-    begin match Cmdliner_def.Arg_info.Set.find_opt arg_info cmd_args_info with
-    | None -> ()
-    | Some (Completion comp) ->
-        pp_arg_values ~after_dashdash ~prefix items ppf comp
-    end;
+  if Cmdliner_def.Complete.after_dashdash comp || not maybe_opt
+  then directives else
+  let info = Cmdliner_cmd.get_info cmd in
+  let set = Cmdliner_def.Cmd_info.args info in
+  if Cmdliner_def.Arg_info.Set.is_empty set then directives else
+  let options = Cmdliner_def.Arg_info.Set.elements set in
+  `Group ("Options", List.concat (List.map maybe_items options)) :: directives
+
+let add_argument_value_directives directives comp =
+  let Directives ds = Cmdliner_def.Complete.directives comp in
+  match ds with
+  | Error msg -> `Directives [`Error msg]
+  | Ok ds ->
+      let rec loop values ~files ~dirs ~restart ~raw = function
+      | [] ->
+          begin match raw with
+          | Some r -> `Raw r
+          | None ->
+              if Cmdliner_def.Complete.after_dashdash comp && restart
+              then `Directives [`Restart] else
+              let dd =
+                cons_if dirs `Dirs @@
+                cons_if files `Files @@
+                cons_if (values <> []) (`Group ("Values", List.rev values)) []
+              in
+              `Directives (List.rev_append dd directives)
+          end
+      | d :: ds ->
+          match d with
+          | Cmdliner_def.Arg_completion.String (s, doc) ->
+              loop ((s, doc) :: values) ~files ~dirs ~restart ~raw ds
+          | Value (_, _) -> failwith "TODO"
+          | Files -> loop values ~files:true ~dirs ~restart ~raw ds
+          | Dirs -> loop values ~files ~dirs:true ~restart ~raw ds
+          | Restart -> loop values ~files ~dirs ~restart:true ~raw ds
+          | Raw r -> loop values ~files ~dirs ~restart ~raw:(Some r) ds
+      in
+      loop [] ~files:false ~dirs:false ~restart:false ~raw:None ds
+
+let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
+  let subst = Cmdliner_def.Eval.doclang_subst ei in
+  let dirs = add_subcommands_group ~err_ppf ~subst cmd comp [] in
+  let res = match Cmdliner_def.Complete.kind comp with
+  | Opt_value _arg_info (* XXX need to handle Value *) ->
+      add_argument_value_directives dirs comp
+  | Opt_name_or_pos_value arg_info (* XXX need to handle Value *) ->
+      let dirs = add_options_group ~err_ppf ~subst cmd comp dirs in
+      add_argument_value_directives dirs comp
+  | Opt_name ->
+      `Directives (add_options_group ~err_ppf ~subst cmd comp dirs)
   in
-  let pp ppf () =
-    begin match Cmdliner_def.Complete.kind comp with
-    | Opt_value arg_info -> pp_arg_value ppf arg_info
-    | Opt_name_or_pos_value arg_info ->
-        pp_arg_value ppf arg_info;
-        if not after_dashdash && maybe_opt
-        then pp_opt_names ~err_ppf ~subst ~prefix ppf cmd
-    | Opt_name ->
-        if not after_dashdash && maybe_opt
-        then pp_opt_names ~err_ppf ~subst ~prefix ppf cmd;
-    end;
-    if Cmdliner_def.Complete.subcmds comp
-    then pp_subcmds ~err_ppf ~subst ~prefix ppf cmd
-  in
-  Cmdliner_base.Fmt.pf out_ppf "@[<v>%d@,%a@]@?" vnum pp ()
+  match res with
+  | `Raw raw -> Cmdliner_base.Fmt.pf out_ppf "%s@?" raw
+  | `Directives dirs -> Cmdliner_base.Fmt.pf out_ppf "%a@?" pp_protocol dirs

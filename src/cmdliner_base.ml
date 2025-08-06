@@ -77,6 +77,7 @@ module Fmt = struct
   type 'a t = Format.formatter -> 'a -> unit
   let str = Format.asprintf
   let pf = Format.fprintf
+  let nop ppf _ = ()
   let sp = Format.pp_print_space
   let cut = Format.pp_print_cut
   let string = Format.pp_print_string

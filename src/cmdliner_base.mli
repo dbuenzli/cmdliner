@@ -22,6 +22,7 @@ module Fmt : sig
   type 'a t = Format.formatter -> 'a -> unit
   val str : ('a, Format.formatter, unit, string) format4 -> 'a
   val pf : Format.formatter -> ('a, Format.formatter, unit) format -> 'a
+  val nop : 'a t
   val sp : unit t
   val comma : unit t
   val cut : unit t

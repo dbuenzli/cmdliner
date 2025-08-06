@@ -628,50 +628,44 @@ module Arg : sig
 
   (** Argument completion.
 
-      This modules provides a type to describe how argument values
-      described by {{!Arg.type-conv}argument converters} can be completed.
-      They define which completion directives from the
-      {{!page-cli.completion_protocol}protocol} get emitted by
-      cmdliner for the argument. *)
+      This module provides a type to describe how positional and
+      optional argument values described by {{!Arg.type-conv}argument
+      converters} can be completed. It defines which completion
+      directives from the {{!page-cli.completion_protocol}protocol}
+      get emitted by your tool for the argument.
+
+      {b Note.} Subcommand and option name
+      completion is done automatically by the library itself.
+      {{!Cmdliner.Arg.predef}Prefined argument converters} already
+      have completions built-in whenever appropriate. *)
   module Completion : sig
 
-    type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
-    (** The type for completion functions. Given a prefix should
-        return a list of possible completions and a doc string. *)
+    (** {1:directives Completion directives} *)
 
-    type 'a complete = Complete : 'ctx Term.t option * 'ctx func -> 'a complete
-    (** The type for completing. A completion context specification
-        and a completion function. *)
+    type 'a directive
+    (** The type for a completion directive for values of type ['a]. *)
 
-    type 'a t
-    (** The type for completing values parsed into values of type ['a]. *)
+    val value : ?doc:string -> 'a -> 'a directive
+    (** [value v ~doc] indicates that the token to complete could be
+        replaced by the value [v] as serialized by the argument's
+        formatter {!Conv.pp}. [doc] is ANSI styled UTF-8 text
+        documenting the value, defaults to [""]. *)
 
-    val make :
-      ?context:'ctx Term.t -> ?func:'ctx func -> ?dirs:bool ->
-      ?files:bool -> ?restart:bool -> unit -> 'a t
-    (** [make ()] is a completion specification with:
+    val string : ?doc:string -> string -> 'a directive
+    (** [string s ~doc] indicates that the token to complete could be
+        replaced by the string [s]. [doc] is ANSI styled UTF-8 text
+        documenting the value, defaults to [""]. *)
 
-        [context] is a command line is command line completion
-        context. During completion the command line fragment of the
-        context is parsed, if successful the result is given to the
-        completion function. Note that [context] must be part of the
-        term of the command in which you use that completion otherwhise
-        the context will always be [None] in the function.
+    val files : 'a directive
+    (** [files] indicates that the token to complete could be replaced
+        with files that the shell deems suitable. *)
 
-        See accessors for semantics. Note that the properties are
-        not mutually exclusive. *)
+    val dirs : 'a directive
+    (** [dirs] indicates that the token to complete could be replaced with
+        directories that the shell deems suitable. *)
 
-    val complete : 'a t -> 'a complete
-    (** [complete c] is a the context and function to perform completion. *)
-
-    val dirs : 'a t -> bool
-    (** [dirs c] indicates the argument should be completed with directories. *)
-
-    val files : 'a t -> bool
-    (** [files c] indicates the argument should be completed with files. *)
-
-    val restart : 'a t -> bool
-    (** [restart c] indicates that shell should restart the completion
+    val restart : 'a directive
+    (** [restart] indicates that the shell should restart the completion
         after the positional disambiguation token [--].
 
         This is typically used for tools that end-up invoking other
@@ -681,13 +675,75 @@ module Arg : sig
         your program you'd eschew [restart] on the first postional
         argument but add it to the remaining ones.
 
-        {b Warning.} Other completion properties are ignored when you
-        use this. Also note that [restart] directives are emitted only
-        after a [--] token and it's likely that it will work with
-        completion scripts only if the [TOOL] is specified after the
-        token. Educate your users to use the [--] (e.g. mention them
-        in user {{!page-cookbook.manpage_synopsis}user defined
-        synopses}) it's good cli specification hygiene anyways. *)
+        {b Warning.} A [restart] directive is eventually emited only
+        if the completion is requested after a [--] token. In this
+        case other completions returned alongside by {!func} are
+        ignored. Educate your users to use the [--], for example
+        mention them in {{!page-cookbook.manpage_synopsis}user defined
+        synopses}.  It is good cli specification hygiene anyways as it
+        properly delineates argument scopes. *)
+
+    val raw : string -> 'a directive
+    (** [raw s] takes over the whole {{!page-cli.completion_protocol}protocol}
+        output (including subcommand and option name completion) with [s],
+        you are in charge. Any other directive in the result of {!func}
+        is ignored.
+
+        {b Warning.} The protocol is unstable, it is not advised to
+        output it yourself. *)
+
+    (** {1:completion Completion} *)
+
+    type ('ctx, 'a) func =
+      'ctx option -> token:string -> ('a directive list, string) result
+    (** The type for completion functions.
+
+        Given an optional context determined from a partial command
+        line parse and a token to complete it returns a list of
+        completion directives or an error which is reported to
+        end-users via the protocol. *)
+
+    type 'a complete =
+    | Complete : 'ctx Term.t option * ('ctx, 'a) func -> 'a complete (** *)
+    (** The type for completing.
+
+        A completion context specification which captures a partial
+        command line parse (for example the path to a configuration
+        file) and a completion function. *)
+
+    type 'a t
+    (** The type for completing values parsed into values of type ['a]. *)
+
+    val make : ?context:'ctx Term.t -> ('ctx, 'a) func -> 'a t
+    (** [make ~context func] uses [func] to complete.
+
+        [context] defines a commmand line fragment that is evaluated
+        before performing the completion. It the evaluation is
+        successful the result is given to the completion function otherwise
+        [None] is given.
+
+        {b Warning.} [context] must be part of the term of the command
+        in which you use the completion otherwise the context will
+        always be [None] in the function. *)
+
+    val complete : 'a t -> 'a complete
+    (** [complete c] completes with [c]. *)
+
+    val complete_files : 'a t
+    (** [complete_files] holds a context insensitive function that
+        always returns [Ok \[]{!files}[\]]. *)
+
+    val complete_dirs : 'a t
+    (** [complete_dirs] holds a context insensitive function that
+        always returns [Ok \[]{!dirs}[\]]. *)
+
+    val complete_paths : 'a t
+    (** [complete_paths] holds a context insensitive function that
+        always returns [Ok \[]{!files}[;]{!dirs}{[\]]. *)
+
+    val complete_restart : 'a t
+    (** [complete_dirs] holds a context insensitive function that
+        always returns [Ok \[]{!restart}[\]]. *)
   end
 
   (** Argument converters.

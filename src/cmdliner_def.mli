@@ -117,9 +117,11 @@ module Arg_info : sig
   val styled_doc :
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 
+  module Map : Map.S with type key := t
+
   type 'a completion
   type e_completion = Completion : 'a completion -> e_completion
-  module Map : Map.S with type key := t
+
   module Set : sig
     type arg := t
     type t
@@ -195,27 +197,6 @@ module Eval : sig
   val doclang_subst : t -> Cmdliner_manpage.subst
 end
 
-(** Complete instruction. *)
-module Complete : sig
-  type kind =
-  | Opt_value of Arg_info.t
-  | Opt_name_or_pos_value of Arg_info.t
-  | Opt_name
-
-  type t
-
-  val make :
-    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> prefix:string ->
-    kind -> t
-
-  val context : t -> Cline.t
-  val add_subcmds : t -> t
-  val prefix : t -> string
-  val after_dashdash : t -> bool
-  val subcmds : t -> bool
-  val kind : t -> kind
-end
-
 (** Terms, typed cli fragment definitions. *)
 module Term : sig
   type escape =
@@ -230,20 +211,32 @@ end
 
 (** Completion strategies *)
 module Arg_completion : sig
+  type 'a directive =
+  | String of string * string | Value of 'a * string
+  | Files | Dirs | Restart | Raw of string
 
-  type 'ctx func = 'ctx option -> prefix:string -> (string * string) list
-  type 'a complete = Complete : 'ctx Term.t option * 'ctx func -> 'a complete
+  val value : ?doc:string -> 'a -> 'a directive
+  val string : ?doc:string -> string -> 'a directive
+  val files : 'a directive
+  val dirs : 'a directive
+  val restart : 'a directive
+  val raw : string -> 'a directive
+
+  type ('ctx, 'a) func =
+    'ctx option -> token:string -> ('a directive list, string) result
+
+  type 'a complete =
+  | Complete : 'ctx Term.t option * ('ctx, 'a) func -> 'a complete
+
   type 'a t = 'a Arg_info.completion
-  val make :
-    ?context:'ctx Term.t -> ?func:'ctx func -> ?dirs:bool -> ?files:bool ->
-    ?restart:bool -> unit -> 'a t
 
-  val none : 'a t
-  val some : 'a t -> 'a option t
+  val make : ?context:'ctx Term.t -> ('ctx, 'a) func -> 'a t
   val complete : 'a t -> 'a complete
-  val dirs : 'a t -> bool
-  val files : 'a t -> bool
-  val restart : 'a t -> bool
+  val complete_none : 'a t
+  val complete_files : 'a t
+  val complete_dirs : 'a t
+  val complete_paths : 'a t
+  val complete_restart : 'a t
 end
 
 (** Textual OCaml value converters *)
@@ -266,4 +259,35 @@ module Arg_conv : sig
 
   val some : ?none:string -> 'a t -> 'a option t
   val some' : ?none:'a -> 'a t -> 'a option t
+end
+
+
+(** Complete instruction. *)
+module Complete : sig
+  type kind =
+  | Opt_value of Arg_info.t
+  | Opt_name_or_pos_value of Arg_info.t
+  | Opt_name
+
+  type directives =
+    Directives : ('a Arg_completion.directive list, string) result -> directives
+
+  type t
+
+  val make :
+    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> prefix:string ->
+    kind -> t
+
+  val context : t -> Cline.t
+
+
+  val add_subcmds : t -> t
+  val add_directives :
+    ('a Arg_completion.directive list, string) result -> t -> t
+
+  val prefix : t -> string
+  val after_dashdash : t -> bool
+  val subcmds : t -> bool
+  val kind : t -> kind
+  val directives : t -> directives
 end

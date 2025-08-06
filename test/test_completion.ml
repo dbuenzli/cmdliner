@@ -216,13 +216,11 @@ let test_context_sensitive =
      Options\n\
      item\n\
      -k\n\
-     \u{001B}[04mENUM\u{001B}[m restricts the animal kind. Must be either \u{001B}[01mbird\u{001B}[m or\n\
-     \u{001B}[01mfish\u{001B}[m\n\
+     \u{001B}[04mENUM\u{001B}[m restricts the animal kind. Must be either \u{001B}[01mbird\u{001B}[m or \u{001B}[01mfish\u{001B}[m\n\
      item-end\n\
      item\n\
      --kind\n\
-     \u{001B}[04mENUM\u{001B}[m restricts the animal kind. Must be either \u{001B}[01mbird\u{001B}[m or\n\
-     \u{001B}[01mfish\u{001B}[m\n\
+     \u{001B}[04mENUM\u{001B}[m restricts the animal kind. Must be either \u{001B}[01mbird\u{001B}[m or \u{001B}[01mfish\u{001B}[m\n\
      item-end\n";
   complete ["lookup"; "-kfish"; "--__complete=s"] @@ __POS_OF__
     "1\n\
@@ -256,7 +254,7 @@ let test_restart_restricted_tool =
       Arg.(required & pos 0 (some tool) None & info [])
     and+ args =
       let arg =
-        let completion = Arg.Completion.make ~restart:true () in
+        let completion = Arg.Completion.complete_restart in
         Arg.Conv.of_conv ~docv:"ARG" Arg.string ~completion ()
       in
       Arg.(value & pos_right 0 arg [] & info [])
@@ -309,7 +307,7 @@ let test_restart_any_tool =
   let cmd =
     Cmd.make (Cmd.info "test_restart") @@
     let arg ~docv =
-      let completion = Arg.Completion.make ~restart:true () in
+      let completion = Arg.Completion.complete_restart in
       Arg.Conv.of_conv ~docv:"TOOL" Arg.string ~completion ()
     in
     let+ verb = Arg.(value & flag & info ["verbose"])

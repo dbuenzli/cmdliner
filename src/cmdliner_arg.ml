@@ -67,7 +67,7 @@ let info = Cmdliner_def.Arg_info.make
 (* Arguments *)
 
 let no_completion =
-  Cmdliner_def.Arg_info.Completion Cmdliner_def.Arg_completion.none
+  Cmdliner_def.Arg_info.Completion Cmdliner_def.Arg_completion.complete_none
 
 let ( & ) f x = f x
 let parse_error e = Error (`Parse e)
@@ -331,14 +331,20 @@ let last t =
 
 (* Predefined converters. *)
 
+let add_prefix_completion ~token name =
+  if Cmdliner_base.string_starts_with ~prefix:token name
+  then Some (Completion.string name) else None
+
 let bool =
   let alts = ["true"; "false"] in
   let parser s = try Ok (bool_of_string s) with
   | Invalid_argument _ -> Error (err_invalid_enum "" s alts)
   in
   let completion =
-    let func _ctx ~prefix:_ = List.map (fun s -> s, "") alts in
-    Completion.make ~func ()
+    let func _ctx ~token =
+      Ok (List.filter_map (add_prefix_completion ~token) alts)
+    in
+    Completion.make func
   in
   Conv.make ~docv:"BOOL" ~parser ~pp:Format.pp_print_bool ~completion ()
 
@@ -398,27 +404,29 @@ let enum ?(docv = "ENUM") sl =
     with Not_found -> invalid_arg (err_incomplete_enum (List.map fst sl))
   in
   let completion =
-    let func _ctx ~prefix:_ = List.map (fun (s, _) -> s, "") sl in
-    Completion.make ~func ()
+    let func _ctx ~token =
+      Ok (List.filter_map (fun (n, _) -> add_prefix_completion ~token n) sl)
+    in
+    Completion.make func
   in
   Conv.make ~docv ~parser ~pp ~completion ()
 
 let path =
   let parser s = Ok s in
   let pp ppf s = Fmt.string ppf (Filename.quote s) in
-  let completion = Completion.make ~dirs:true ~files:true () in
+  let completion = Completion.complete_paths in
   Conv.make ~docv:"PATH" ~parser ~pp ~completion ()
 
 let filepath =
   let parser s = Ok s in
   let pp ppf s = Fmt.string ppf (Filename.quote s) in
-  let completion = Completion.make ~files:true () in
+  let completion = Completion.complete_files in
   Conv.make ~docv:"FILE" ~parser ~pp ~completion ()
 
 let dirpath =
   let parser s = Ok s in
   let pp ppf s = Fmt.string ppf (Filename.quote s) in
-  let completion = Completion.make ~dirs:true () in
+  let completion = Completion.complete_dirs in
   Conv.make ~docv:"DIR" ~parser ~pp ~completion ()
 
 let file =
@@ -427,7 +435,7 @@ let file =
     if Sys.file_exists s then Ok s else
     Error (err_no "file or directory" s)
   in
-  let completion = Completion.make ~dirs:true ~files:true () in
+  let completion = Completion.complete_files in
   Conv.make ~docv:"PATH" ~parser ~pp:Fmt.string ~completion ()
 
 let dir =
@@ -436,7 +444,7 @@ let dir =
     then (if Sys.is_directory s then Ok s else Error (err_not_dir s))
     else Error (err_no "directory" s)
   in
-  let completion = Completion.make ~dirs:true () in
+  let completion = Completion.complete_dirs in
   Conv.make ~docv:"DIR" ~parser ~pp:Fmt.string ~completion ()
 
 let non_dir_file =
@@ -446,7 +454,7 @@ let non_dir_file =
     then (if not (Sys.is_directory s) then Ok s else Error (err_is_dir s))
     else Error (err_no "file" s)
   in
-  let completion = Completion.make ~files:true () in
+  let completion = Completion.complete_files in
   Conv.make ~docv:"FILE" ~parser ~pp:Fmt.string ~completion ()
 
 let split_and_parse sep parse s = (* raises [Failure] *)
