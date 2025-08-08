@@ -428,11 +428,12 @@ module Arg_conv = struct
       ?(completion = Arg_completion.complete_none) ~docv ~parser ~pp () : 'a t =
     { docv; parser; pp; completion }
 
-  let of_conv
-      (conv : 'a t)
-      ?(completion = conv.completion) ?(docv = conv.docv)
-      ?(parser = conv.parser) ?(pp = conv.pp) () : 'a t
+  let of_conv ?completion ?docv ?parser ?pp (conv : 'a t) : 'a t
     =
+    let completion = Option.value ~default:conv.completion completion in
+    let docv = Option.value ~default:conv.docv docv in
+    let parser = Option.value ~default:conv.parser parser in
+    let pp = Option.value ~default:conv.pp pp in
     { docv; parser; pp; completion }
 
   let docv (c : 'a t) = c.docv

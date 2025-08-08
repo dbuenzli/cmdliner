@@ -251,8 +251,8 @@ module Arg_conv : sig
     pp:'a fmt -> unit -> 'a t
 
   val of_conv :
-    'a t -> ?completion:'a Arg_completion.t -> ?docv:string ->
-    ?parser:'a parser -> ?pp:'a fmt -> unit -> 'a t
+    ?completion:'a Arg_completion.t -> ?docv:string ->
+    ?parser:'a parser -> ?pp:'a fmt -> 'a t -> 'a t
 
   val docv : 'a t -> string
   val parser : 'a t -> 'a parser
@@ -273,10 +273,9 @@ module Complete : sig
   | Opt_name
 
   type t
-
   val make :
-    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> token:string ->
-    kind -> t
+    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> token:string -> kind ->
+    t
 
   val cline : t -> Cline.t
   val token : t -> string

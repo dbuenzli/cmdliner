@@ -775,8 +775,8 @@ module Arg : sig
         given properties. See corresponding accessors for semantics. *)
 
     val of_conv :
-      'a t -> ?completion:'a Completion.t -> ?docv:string ->
-      ?parser:'a parser -> ?pp:'a fmt -> unit -> 'a t
+      ?completion:'a Completion.t -> ?docv:string ->
+      ?parser:'a parser -> ?pp:'a fmt -> 'a t -> 'a t
     (** [of_conv conv ()] is a new converter with given unspecified
         properties defaulting to those of [conv]. *)
 

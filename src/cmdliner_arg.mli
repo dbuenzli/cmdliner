@@ -46,9 +46,9 @@ module Conv : sig
     ?completion:'a Completion.t -> docv:string -> parser:'a parser ->
     pp:'a fmt -> unit -> 'a t
 
-  val of_conv : 'a t ->
+  val of_conv :
     ?completion:'a Completion.t -> ?docv:string -> ?parser:'a parser ->
-    ?pp:'a fmt -> unit -> 'a t
+    ?pp:'a fmt -> 'a t -> 'a t
 
   val docv : 'a conv -> string
   val parser : 'a conv -> 'a parser

@@ -185,7 +185,7 @@ let sample_group_cmd =
         in
         Arg.Completion.make ~context:kind_opt func
       in
-      Arg.Conv.of_conv Arg.string ~completion ()
+      Arg.Conv.of_conv Arg.string ~completion
     in
     Cmd.make (Cmd.info "lookup" ~doc:"Lookup animal by name.") @@
     let+ kind_opt

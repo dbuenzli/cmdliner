@@ -352,7 +352,7 @@ EXIT STATUS
 let test_conv_docv =
   Test.test "Arg.Conv.docv" @@ fun () ->
   let cmd =
-    let field = Arg.Conv.of_conv Arg.string ~docv:"FIELD" () in
+    let field = Arg.Conv.of_conv Arg.string ~docv:"FIELD" in
     Cmd.make (Cmd.info "test_conv_docv" ~doc:"Test conv docv") @@
     let+ all = Arg.(value & pos_all field [] & info [])
     and+ opt = Arg.(value & opt field "bla" & info ["field"]) in

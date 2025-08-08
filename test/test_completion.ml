@@ -337,7 +337,7 @@ let test_restart_restricted_tool =
     and+ args =
       let arg =
         let completion = Arg.Completion.complete_restart in
-        Arg.Conv.of_conv ~docv:"ARG" Arg.string ~completion ()
+        Arg.Conv.of_conv Arg.string ~docv:"ARG" ~completion
       in
       Arg.(value & pos_right 0 arg [] & info [])
     in
@@ -402,7 +402,7 @@ let test_restart_any_tool =
     Cmd.make (Cmd.info "test_restart") @@
     let arg ~docv =
       let completion = Arg.Completion.complete_restart in
-      Arg.Conv.of_conv ~docv:"TOOL" Arg.string ~completion ()
+      Arg.Conv.of_conv Arg.string ~docv:"TOOL" ~completion
     in
     let+ verb = Arg.(value & flag & info ["verbose"])
     and+ tool = Arg.(required & pos 0 (some (arg ~docv:"TOOL")) None & info [])
