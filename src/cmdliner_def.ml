@@ -209,12 +209,20 @@ module Arg_info = struct
   type ('ctx, 'a) completion_func =
     'ctx option -> token:string -> ('a completion_directive list, string) result
 
+  type 'a parser = string -> ('a, string) result
   type 'a complete =
   | Complete : 'ctx term option * ('ctx, 'a) completion_func -> 'a complete
 
   and 'a completion = { complete : 'a complete }
-  and e_completion = Completion : 'a completion -> e_completion
-  and arg_set = e_completion Map.t
+
+  and 'a conv =
+    { docv : string;
+      parser : 'a parser;
+      pp : 'a Cmdliner_base.Fmt.t;
+      completion : 'a completion; }
+
+  and e_conv = Conv : 'a conv -> e_conv
+  and arg_set = e_conv Map.t
   and cmd =
     { name : string; (* name of the cmd. *)
       version : string option; (* version (for --version). *)
@@ -250,7 +258,7 @@ module Arg_info = struct
 
   module Set = struct
     include Map
-    type t = e_completion Map.t
+    type t = e_conv Map.t
     let find_opt k m = try Some (Map.find k m) with Not_found -> None
     let elements m = List.map fst (bindings m)
     let union a b =
@@ -409,28 +417,31 @@ end
 (* Converters *)
 
 module Arg_conv = struct
-  type 'a parser = string -> ('a, string) result
-  type 'a fmt = Format.formatter -> 'a -> unit
-  type 'a t =
-    { docv : string;
-      parser : 'a parser;
-      pp : 'a fmt;
-      completion : 'a Arg_completion.t; }
+  type 'a parser = 'a Arg_info.parser
+  type 'a fmt = 'a Cmdliner_base.Fmt.t
+  type 'a t = 'a Arg_info.conv
 
-  let make ?(completion = Arg_completion.complete_none) ~docv ~parser ~pp () =
+  let make
+      ?(completion = Arg_completion.complete_none) ~docv ~parser ~pp () : 'a t =
     { docv; parser; pp; completion }
 
   let of_conv
-      conv
+      (conv : 'a t)
       ?(completion = conv.completion) ?(docv = conv.docv)
-      ?(parser = conv.parser) ?(pp = conv.pp) ()
+      ?(parser = conv.parser) ?(pp = conv.pp) () : 'a t
     =
     { docv; parser; pp; completion }
 
-  let docv c = c.docv
-  let parser c = c.parser
-  let pp c = c.pp
-  let completion c = c.completion
+  let docv (c : 'a t) = c.docv
+  let parser (c : 'a t) = c.parser
+  let pp (c : 'a t) = c.pp
+  let completion (c : 'a t) = c.completion
+
+  let none : 'a t =
+    { docv = "";
+      parser = (fun _ -> assert false);
+      pp = (fun _ _ -> assert false);
+      completion = Arg_completion.complete_none }
 
   let some ?(none = "") conv =
     let parser s = Result.map Option.some (parser conv s) in
@@ -450,8 +461,6 @@ module Arg_conv = struct
     let completion = Arg_completion.complete_some conv.completion in
     { conv with parser; pp; completion }
 end
-
-
 
 (* Completion *)
 

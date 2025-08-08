@@ -53,7 +53,6 @@ let run_parser_for_completion_context ei cline ctx =
   | Error _ -> None
   | exception exn -> None
 
-
 let try_eval_stdopts ~catch ei cl help version : 'a eval_result option =
   match run_parser ~catch ei cl (Cmdliner_term.parser help) with
   | Ok (Some fmt) -> Some (Error (`Std_help fmt))
@@ -120,8 +119,9 @@ let do_result ~env help_ppf err_ppf ei = function
               match Cmdliner_def.Arg_info.Set.find_opt
                             arg_info cmd_args_info with
               | None -> comp
-              | Some (Completion c) -> (* FIXME we want converter here *)
-                  match Cmdliner_def.Arg_completion.complete c with
+              | Some (Conv c) ->
+                  let completion = Cmdliner_def.Arg_conv.completion c in
+                  match Cmdliner_def.Arg_completion.complete completion with
                   | Complete (ctx, func) ->
                       let cline = Cmdliner_def.Complete.context comp in
                       let ctx = match ctx with

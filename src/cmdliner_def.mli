@@ -119,24 +119,24 @@ module Arg_info : sig
 
   module Map : Map.S with type key := t
 
-  type 'a completion
-  type e_completion = Completion : 'a completion -> e_completion
+  type 'a conv
+  type e_conv = Conv : 'a conv -> e_conv
 
   module Set : sig
     type arg := t
     type t
     val is_empty : t -> bool
     val empty : t
-    val add : arg -> e_completion -> t -> t
-    val choose : t -> arg * e_completion
-    val partition : (arg -> e_completion -> bool) -> t -> t * t
-    val filter : (arg -> e_completion -> bool) -> t -> t
-    val iter : (arg -> e_completion -> unit) -> t -> unit
-    val singleton : arg -> e_completion -> t
-    val fold : (arg -> e_completion -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val add : arg -> e_conv -> t -> t
+    val choose : t -> arg * e_conv
+    val partition : (arg -> e_conv -> bool) -> t -> t * t
+    val filter : (arg -> e_conv -> bool) -> t -> t
+    val iter : (arg -> e_conv -> unit) -> t -> unit
+    val singleton : arg -> e_conv -> t
+    val fold : (arg -> e_conv -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val elements : t -> arg list
     val union : t -> t -> t
-    val find_opt : arg -> t -> e_completion option
+    val find_opt : arg -> t -> e_conv option
   end
 end
 
@@ -229,7 +229,7 @@ module Arg_completion : sig
   type 'a complete =
   | Complete : 'ctx Term.t option * ('ctx, 'a) func -> 'a complete
 
-  type 'a t = 'a Arg_info.completion
+  type 'a t
 
   val make : ?context:'ctx Term.t -> ('ctx, 'a) func -> 'a t
   val complete : 'a t -> 'a complete
@@ -244,7 +244,7 @@ end
 module Arg_conv : sig
   type 'a parser = string -> ('a, string) result
   type 'a fmt = 'a Cmdliner_base.Fmt.t
-  type 'a t
+  type 'a t = 'a Arg_info.conv
   val make :
     ?completion:'a Arg_completion.t -> docv:string -> parser:'a parser ->
     pp:'a fmt -> unit -> 'a t
@@ -260,6 +260,8 @@ module Arg_conv : sig
 
   val some : ?none:string -> 'a t -> 'a option t
   val some' : ?none:'a -> 'a t -> 'a option t
+
+  val none : 'a t
 end
 
 
