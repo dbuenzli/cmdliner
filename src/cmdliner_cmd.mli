@@ -20,10 +20,8 @@ type 'a t =
 val make : info -> 'a Cmdliner_term.t -> 'a t
 val v : info -> 'a Cmdliner_term.t -> 'a t
 val group : ?default:'a Cmdliner_term.t -> info -> 'a t list -> 'a t
-
 val name : 'a t -> string
 val name_trie : 'a t list -> 'a t Cmdliner_trie.t
 val list_names : 'a t list -> string list
-
 val get_info : 'a t -> info
-val get_children_infos : 'a t -> info list (* raises if not Group *)
+val get_children_infos : 'a t -> info list
