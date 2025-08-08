@@ -4,7 +4,7 @@ function _cmdliner_generic {
   w[CURRENT]="--__complete=${words[CURRENT]}"
   local line="${w[@]:0:1} --__complete ${w[@]:1}"
   local -a completions
-  local version type group item item_line item_doc
+  local version type group item text_line item_doc msg
   eval $line | {
     read -r version
     if [[ $version != "1" ]]; then
@@ -18,19 +18,28 @@ function _cmdliner_generic {
           completions=()
         fi
         read -r group
+      elif [[ "$type" == "message" ]]; then
+          msg="";
+          while read text_line; do
+              if [[ "$text_line" == "message-end" ]]; then
+                  break
+              fi
+              msg+=$'\n'"$text_line"
+          done
+          _message -r "$msg"
       elif [[ "$type" == "item" ]]; then
         read -r item;
         item_doc="";
-        while read -r item_line; do
-            if [[ "$item_line" == "item-end" ]]; then
+        while read -r text_line; do
+            if [[ "$text_line" == "item-end" ]]; then
                 break
             fi
             if [[ -n "$item_doc" ]]; then
                 # Sadly it seems impossible to make multiline
                 # doc strings. Get in touch if you know any better.
-                item_doc+=" $item_line"
+                item_doc+=" $text_line"
             else
-                item_doc="$item_line"
+                item_doc="$text_line"
             fi
         done
         # Handle glued forms, the completion item is the full option

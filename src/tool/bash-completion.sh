@@ -3,7 +3,7 @@ _cmdliner_generic() {
   local w=("${COMP_WORDS[@]}") # Keep COMP_WORDS intact for restart completion
   w[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
   local line="${w[@]:0:1} --__complete ${w[@]:1}"
-  local version type group item item_line item_doc
+  local version type group item text_line item_doc msg
   {
     read version
     if [[ $version != "1" ]]; then
@@ -21,17 +21,26 @@ _cmdliner_generic() {
         if [[ $prefix != -* ]]; then
           COMPREPLY+=( $(compgen -f "$prefix") )
         fi
+      elif [[ $type == "message" ]]; then
+          msg="";
+          while read text_line; do
+              if [[ "$text_line" == "message-end" ]]; then
+                  break
+              fi
+              msg+=$'\n'"$text_line"
+          done
+          printf "$msg" >&2
       elif [[ $type == "item" ]]; then
         read item;
         item_doc="";
-        while read item_line; do
-            if [[ "$item_line" == "item-end" ]]; then
+        while read text_line; do
+            if [[ "$text_line" == "item-end" ]]; then
                 break
             fi
             if [[ -n "$item_doc" ]]; then
-                item_doc+=$'\n'"$item_line"
+                item_doc+=$'\n'"$text_line"
             else
-                item_doc=$item_line
+                item_doc=$text_line
             fi
         done
         # Sadly it seems bash does not support doc strings, so we only

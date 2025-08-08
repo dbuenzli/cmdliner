@@ -203,8 +203,8 @@ module Arg_info = struct
   | `Help of Cmdliner_manpage.format * string option ]
 
   type 'a completion_directive =
-  | String of string * string | Value of 'a * string | Files | Dirs | Restart
-  | Raw of string
+  | Message of string | String of string * string | Value of 'a * string
+  | Files | Dirs | Restart | Raw of string
 
   type ('ctx, 'a) completion_func =
     'ctx option -> token:string -> ('a completion_directive list, string) result
@@ -356,7 +356,7 @@ end
 
 module Arg_completion = struct
   type 'a directive = 'a Arg_info.completion_directive =
-  | String of string * string | Value of 'a * string
+  | Message of string | String of string * string | Value of 'a * string
   | Files | Dirs | Restart | Raw of string
 
   let value ?(doc = "") v = Value (v, doc)
@@ -364,6 +364,7 @@ module Arg_completion = struct
   let files = Files
   let dirs = Dirs
   let restart = Restart
+  let message msg = Message msg
   let raw s = Raw s
 
   type ('ctx, 'a) func =
@@ -394,7 +395,7 @@ module Arg_completion = struct
 
   let directive_some : 'a directive -> 'a option directive = function
   | Value (v, doc) -> Value (Some v, doc)
-  | (String _ | Files | Dirs | Restart | Raw _ as v) -> v
+  | (Message _ | String _ | Files | Dirs | Restart | Raw _ as v) -> v
 
   let complete_some (c : 'a t) : 'a option t = match c.complete with
   | Complete (ctx, func) ->

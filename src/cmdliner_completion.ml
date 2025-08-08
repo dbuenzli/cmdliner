@@ -8,27 +8,28 @@
 let cons_if b v l = if b then v :: l else l
 
 type dir =
-[ `Dirs | `Error of string | `Files | `Group of string * (string * string) list
-| `Restart ]
+| Dirs | Files | Group of string * (string * string) list
+| Restart | Message of string
 
 let pp_protocol ppf dirs =
   let pp_line ppf s = Cmdliner_base.Fmt.(string ppf s; cut ppf ()) in
+  let pp_text ppf s = Cmdliner_base.Fmt.(pf ppf "@[%a@]@," styled_text s) in
   let vnum = 1 (* Protocol version number *) in
   let pp_item ppf (name, doc) =
     pp_line ppf "item";
-    pp_line ppf name;
-    Cmdliner_base.Fmt.(pf ppf "@[%a@]@," styled_text doc);
+    pp_line ppf name; pp_text ppf doc;
     pp_line ppf "item-end";
   in
   let pp_dir ppf = function
-  | `Dirs -> pp_line ppf "dirs"
-  | `Files -> pp_line ppf "files"
-  | `Error msg -> failwith "TODO"
-  | `Restart -> pp_line ppf "restart"
-  | `Group (name, items) ->
+  | Dirs -> pp_line ppf "dirs"
+  | Files -> pp_line ppf "files"
+  | Restart -> pp_line ppf "restart"
+  | Group (name, items) ->
       pp_line ppf "group";
       pp_line ppf name;
       Cmdliner_base.Fmt.(list ~sep:nop pp_item) ppf items;
+  | Message msg ->
+      pp_line ppf "message"; pp_text ppf msg; pp_line ppf "message-end"
   in
   Cmdliner_base.Fmt.pf ppf "@[<v>%d@,%a@]" vnum
     Cmdliner_base.Fmt.(list ~sep:nop pp_dir) dirs
@@ -44,7 +45,7 @@ let add_subcommands_group ~err_ppf ~subst cmd comp directives =
     Some (name, doc)
   in
   let subcmds = Cmdliner_cmd.get_children_infos cmd in
-  (`Group ("Subcommands", List.filter_map maybe_item subcmds)) :: directives
+  (Group ("Subcommands", List.filter_map maybe_item subcmds)) :: directives
 
 let add_options_group ~err_ppf ~subst cmd comp directives =
   let prefix = Cmdliner_def.Complete.prefix comp in
@@ -65,38 +66,40 @@ let add_options_group ~err_ppf ~subst cmd comp directives =
   let set = Cmdliner_def.Cmd_info.args info in
   if Cmdliner_def.Arg_info.Set.is_empty set then directives else
   let options = Cmdliner_def.Arg_info.Set.elements set in
-  `Group ("Options", List.concat (List.map maybe_items options)) :: directives
+  Group ("Options", List.concat (List.map maybe_items options)) :: directives
 
 let add_argument_value_directives directives comp =
   let Directives ds = Cmdliner_def.Complete.directives comp in
   match ds with
-  | Error msg -> `Directives [`Error msg]
+  | Error msg -> `Directives [Message msg]
   | Ok ds ->
-      let rec loop values ~files ~dirs ~restart ~raw = function
+      let rec loop values msgs ~files ~dirs ~restart ~raw = function
       | [] ->
           begin match raw with
           | Some r -> `Raw r
           | None ->
               if Cmdliner_def.Complete.after_dashdash comp && restart
-              then `Directives [`Restart] else
+              then `Directives [Restart] else
               let dd =
-                cons_if dirs `Dirs @@
-                cons_if files `Files @@
-                cons_if (values <> []) (`Group ("Values", List.rev values)) []
+                cons_if dirs Dirs @@
+                cons_if files Files @@
+                cons_if (values <> []) (Group ("Values", List.rev values)) []
               in
-              `Directives (List.rev_append dd directives)
+              `Directives (List.rev_append msgs (List.rev_append dd directives))
           end
       | d :: ds ->
           match d with
           | Cmdliner_def.Arg_completion.String (s, doc) ->
-              loop ((s, doc) :: values) ~files ~dirs ~restart ~raw ds
+              loop ((s, doc) :: values) msgs ~files ~dirs ~restart ~raw ds
           | Value (_, _) -> failwith "TODO"
-          | Files -> loop values ~files:true ~dirs ~restart ~raw ds
-          | Dirs -> loop values ~files ~dirs:true ~restart ~raw ds
-          | Restart -> loop values ~files ~dirs ~restart:true ~raw ds
-          | Raw r -> loop values ~files ~dirs ~restart ~raw:(Some r) ds
+          | Files -> loop values msgs ~files:true ~dirs ~restart ~raw ds
+          | Dirs -> loop values msgs ~files ~dirs:true ~restart ~raw ds
+          | Restart -> loop values msgs ~files ~dirs ~restart:true ~raw ds
+          | Message msg ->
+              loop values (Message msg :: msgs) ~files ~dirs ~restart ~raw ds
+          | Raw r -> loop values msgs ~files ~dirs ~restart ~raw:(Some r) ds
       in
-      loop [] ~files:false ~dirs:false ~restart:false ~raw:None ds
+      loop [] [] ~files:false ~dirs:false ~restart:false ~raw:None ds
 
 let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
   let subst = Cmdliner_def.Eval.doclang_subst ei in

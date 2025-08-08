@@ -17,6 +17,7 @@ module Completion : sig
   val files : 'a directive
   val dirs : 'a directive
   val restart : 'a directive
+  val message : string -> 'a directive
   val raw : string -> 'a directive
 
   type ('ctx, 'a) func =

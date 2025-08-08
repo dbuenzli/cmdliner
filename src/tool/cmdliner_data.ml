@@ -4,7 +4,7 @@ let bash_generic_completion =
   local w=("${COMP_WORDS[@]}") # Keep COMP_WORDS intact for restart completion
   w[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
   local line="${w[@]:0:1} --__complete ${w[@]:1}"
-  local version type group item item_line item_doc
+  local version type group item text_line item_doc msg
   {
     read version
     if [[ $version != "1" ]]; then
@@ -22,17 +22,26 @@ let bash_generic_completion =
         if [[ $prefix != -* ]]; then
           COMPREPLY+=( $(compgen -f "$prefix") )
         fi
+      elif [[ $type == "message" ]]; then
+          msg="";
+          while read text_line; do
+              if [[ "$text_line" == "message-end" ]]; then
+                  break
+              fi
+              msg+=$'\n'"$text_line"
+          done
+          printf "$msg" >&2
       elif [[ $type == "item" ]]; then
         read item;
         item_doc="";
-        while read item_line; do
-            if [[ "$item_line" == "item-end" ]]; then
+        while read text_line; do
+            if [[ "$text_line" == "item-end" ]]; then
                 break
             fi
             if [[ -n "$item_doc" ]]; then
-                item_doc+=$'\n'"$item_line"
+                item_doc+=$'\n'"$text_line"
             else
-                item_doc=$item_line
+                item_doc=$text_line
             fi
         done
         # Sadly it seems bash does not support doc strings, so we only
@@ -68,7 +77,7 @@ let zsh_generic_completion =
   w[CURRENT]="--__complete=${words[CURRENT]}"
   local line="${w[@]:0:1} --__complete ${w[@]:1}"
   local -a completions
-  local version type group item item_line item_doc
+  local version type group item text_line item_doc msg
   eval $line | {
     read -r version
     if [[ $version != "1" ]]; then
@@ -82,19 +91,28 @@ let zsh_generic_completion =
           completions=()
         fi
         read -r group
+      elif [[ "$type" == "message" ]]; then
+          msg="";
+          while read text_line; do
+              if [[ "$text_line" == "message-end" ]]; then
+                  break
+              fi
+              msg+=$'\n'"$text_line"
+          done
+          _message -r "$msg"
       elif [[ "$type" == "item" ]]; then
         read -r item;
         item_doc="";
-        while read -r item_line; do
-            if [[ "$item_line" == "item-end" ]]; then
+        while read -r text_line; do
+            if [[ "$text_line" == "item-end" ]]; then
                 break
             fi
             if [[ -n "$item_doc" ]]; then
                 # Sadly it seems impossible to make multiline
                 # doc strings. Get in touch if you know any better.
-                item_doc+=" $item_line"
+                item_doc+=" $text_line"
             else
-                item_doc="$item_line"
+                item_doc="$text_line"
             fi
         done
         # Handle glued forms, the completion item is the full option

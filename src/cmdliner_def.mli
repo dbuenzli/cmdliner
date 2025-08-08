@@ -212,7 +212,7 @@ end
 (** Completion strategies *)
 module Arg_completion : sig
   type 'a directive =
-  | String of string * string | Value of 'a * string
+  | Message of string | String of string * string | Value of 'a * string
   | Files | Dirs | Restart | Raw of string
 
   val value : ?doc:string -> 'a -> 'a directive
@@ -220,6 +220,7 @@ module Arg_completion : sig
   val files : 'a directive
   val dirs : 'a directive
   val restart : 'a directive
+  val message : string -> 'a directive
   val raw : string -> 'a directive
 
   type ('ctx, 'a) func =

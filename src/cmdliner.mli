@@ -629,14 +629,14 @@ module Arg : sig
   (** Argument completion.
 
       This module provides a type to describe how positional and
-      optional argument values described by {{!Arg.type-conv}argument
+      optional argument values of {{!Arg.type-conv}argument
       converters} can be completed. It defines which completion
       directives from the {{!page-cli.completion_protocol}protocol}
       get emitted by your tool for the argument.
 
-      {b Note.} Subcommand and option name
-      completion is done automatically by the library itself.
-      {{!Cmdliner.Arg.predef}Prefined argument converters} already
+      {b Note.} Subcommand and option name are completed
+      automatically by the library itself and
+      {{!Cmdliner.Arg.predef}prefined argument converters} already
       have completions built-in whenever appropriate. *)
   module Completion : sig
 
@@ -680,8 +680,12 @@ module Arg : sig
         case other completions returned alongside by {!func} are
         ignored. Educate your users to use the [--], for example
         mention them in {{!page-cookbook.manpage_synopsis}user defined
-        synopses}.  It is good cli specification hygiene anyways as it
-        properly delineates argument scopes. *)
+        synopses}, it is good cli specification hygiene as it properly
+        delineates argument scopes. *)
+
+    val message : string -> 'a directive
+    (** [message s] is a multi-line, ANSI styled, UTF-8 message reported
+        to end users. *)
 
     val raw : string -> 'a directive
     (** [raw s] takes over the whole {{!page-cli.completion_protocol}protocol}
@@ -701,7 +705,7 @@ module Arg : sig
         Given an optional context determined from a partial command
         line parse and a token to complete it returns a list of
         completion directives or an error which is reported to
-        end-users via the protocol. *)
+        end-users by using a protocol {!message}. *)
 
     type 'a complete =
     | Complete : 'ctx Term.t option * ('ctx, 'a) func -> 'a complete (** *)
@@ -719,8 +723,8 @@ module Arg : sig
 
         [context] defines a commmand line fragment that is evaluated
         before performing the completion. It the evaluation is
-        successful the result is given to the completion function otherwise
-        [None] is given.
+        successful the result is given to the completion
+        function. Otherwise [None] is given.
 
         {b Warning.} [context] must be part of the term of the command
         in which you use the completion otherwise the context will
@@ -739,7 +743,7 @@ module Arg : sig
 
     val complete_paths : 'a t
     (** [complete_paths] holds a context insensitive function that
-        always returns [Ok \[]{!files}[;]{!dirs}{[\]]. *)
+        always returns [Ok \[]{!files}[;]{!dirs}[\]]. *)
 
     val complete_restart : 'a t
     (** [complete_dirs] holds a context insensitive function that
