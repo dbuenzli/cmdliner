@@ -273,7 +273,9 @@ module Complete : sig
   | Opt_name
 
   type directives =
-    Directives : ('a Arg_completion.directive list, string) result -> directives
+  | Directives :
+      'a Cmdliner_base.Fmt.t *
+      ('a Arg_completion.directive list, string) result -> directives
 
   type t
 
@@ -282,10 +284,9 @@ module Complete : sig
     kind -> t
 
   val context : t -> Cline.t
-
-
   val add_subcmds : t -> t
   val add_directives :
+    'a Cmdliner_base.Fmt.t ->
     ('a Arg_completion.directive list, string) result -> t -> t
 
   val prefix : t -> string

@@ -69,7 +69,7 @@ let add_options_group ~err_ppf ~subst cmd comp directives =
   Group ("Options", List.concat (List.map maybe_items options)) :: directives
 
 let add_argument_value_directives directives comp =
-  let Directives ds = Cmdliner_def.Complete.directives comp in
+  let Directives (pp, ds) = Cmdliner_def.Complete.directives comp in
   match ds with
   | Error msg -> `Directives [Message msg]
   | Ok ds ->
@@ -91,7 +91,9 @@ let add_argument_value_directives directives comp =
           match d with
           | Cmdliner_def.Arg_completion.String (s, doc) ->
               loop ((s, doc) :: values) msgs ~files ~dirs ~restart ~raw ds
-          | Value (_, _) -> failwith "TODO"
+          | Value (v, doc) ->
+              let s = Cmdliner_base.Fmt.str "@[<h>%a@]" pp v in
+              loop ((s, doc) :: values) msgs ~files ~dirs ~restart ~raw ds
           | Files -> loop values msgs ~files:true ~dirs ~restart ~raw ds
           | Dirs -> loop values msgs ~files ~dirs:true ~restart ~raw ds
           | Restart -> loop values msgs ~files ~dirs ~restart:true ~raw ds
@@ -105,9 +107,9 @@ let output ~out_ppf ~err_ppf ei cmd_args_info cmd comp =
   let subst = Cmdliner_def.Eval.doclang_subst ei in
   let dirs = add_subcommands_group ~err_ppf ~subst cmd comp [] in
   let res = match Cmdliner_def.Complete.kind comp with
-  | Opt_value _arg_info (* XXX need to handle Value *) ->
+  | Opt_value _arg_info ->
       add_argument_value_directives dirs comp
-  | Opt_name_or_pos_value arg_info (* XXX need to handle Value *) ->
+  | Opt_name_or_pos_value _arg_info ->
       let dirs = add_options_group ~err_ppf ~subst cmd comp dirs in
       add_argument_value_directives dirs comp
   | Opt_name ->

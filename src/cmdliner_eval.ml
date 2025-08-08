@@ -130,7 +130,8 @@ let do_result ~env help_ppf err_ppf ei = function
                           run_parser_for_completion_context ei cline ctx
                       in
                       let dirs = func ctx ~token in
-                      Cmdliner_def.Complete.add_directives dirs comp
+                      Cmdliner_def.Complete.add_directives
+                        (Cmdliner_def.Arg_conv.pp c) dirs comp
         in
         Cmdliner_completion.output
           ~out_ppf:help_ppf ~err_ppf ei cmd_args_info cmd comp; Ok `Help

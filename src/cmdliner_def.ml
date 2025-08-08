@@ -471,7 +471,9 @@ module Complete = struct
   | Opt_name
 
   type directives =
-    Directives : ('a Arg_completion.directive list, string) result -> directives
+      Directives :
+        'a Cmdliner_base.Fmt.t *
+        ('a Arg_completion.directive list, string) result -> directives
 
   type t =
     { context : Cline.t;
@@ -483,11 +485,11 @@ module Complete = struct
 
   let make ?(after_dashdash = false) ?(subcmds = false) context ~prefix kind =
     { context; prefix; after_dashdash; subcmds; kind;
-      directives = Directives (Ok []) }
+      directives = Directives (Cmdliner_base.Fmt.nop, Ok []) }
 
   let add_subcmds c = { c with subcmds = true }
-  let add_directives directives c =
-    { c with directives = Directives directives }
+  let add_directives pp directives c =
+    { c with directives = Directives (pp, directives) }
 
   let context c = c.context
   let prefix c = c.prefix
