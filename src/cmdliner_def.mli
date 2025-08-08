@@ -185,12 +185,13 @@ end
 module Eval : sig
   type t
   val make :
-    cmd:Cmd_info.t -> ancestors:Cmd_info.t list ->
+    ancestors:Cmd_info.t list -> cmd:Cmd_info.t -> subcmds:Cmd_info.t list ->
     env:(string -> string option) -> err_ppf:Format.formatter -> t
 
   val cmd : t -> Cmd_info.t
   val main : t -> Cmd_info.t
   val ancestors : t -> Cmd_info.t list (* root is last *)
+  val subcmds : t -> Cmd_info.t list
   val env_var : t -> string -> string option
   val err_ppf : t -> Format.formatter
   val with_cmd : t -> Cmd_info.t -> t
@@ -264,7 +265,6 @@ module Arg_conv : sig
   val none : 'a t
 end
 
-
 (** Complete instruction. *)
 module Complete : sig
   type kind =
@@ -272,26 +272,16 @@ module Complete : sig
   | Opt_name_or_pos_value of Arg_info.t
   | Opt_name
 
-  type directives =
-  | Directives :
-      'a Cmdliner_base.Fmt.t *
-      ('a Arg_completion.directive list, string) result -> directives
-
   type t
 
   val make :
-    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> prefix:string ->
+    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> token:string ->
     kind -> t
 
-  val context : t -> Cline.t
-  val add_subcmds : t -> t
-  val add_directives :
-    'a Cmdliner_base.Fmt.t ->
-    ('a Arg_completion.directive list, string) result -> t -> t
-
-  val prefix : t -> string
+  val cline : t -> Cline.t
+  val token : t -> string
   val after_dashdash : t -> bool
   val subcmds : t -> bool
   val kind : t -> kind
-  val directives : t -> directives
+  val add_subcmds : t -> t
 end

@@ -241,6 +241,7 @@ module Arg_info = struct
   and eval = (* information about the evaluation context. *)
     { cmd : cmd; (* cmd being evaluated. *)
       ancestors : cmd list; (* ancestors of cmd, root is last. *)
+      subcmds : cmd list; (* subcommands (if any) *)
       env : string -> string option; (* environment variable lookup. *)
       err_ppf : Format.formatter (* error formatter *) }
 
@@ -327,10 +328,12 @@ end
 module Eval = struct
   type t = Arg_info.eval
 
-  let make ~cmd ~ancestors ~env ~err_ppf : t = { cmd; ancestors; env; err_ppf }
+  let make ~ancestors ~cmd ~subcmds ~env ~err_ppf : t =
+    { ancestors; cmd; subcmds; env; err_ppf }
 
   let cmd (i : t) = i.cmd
   let ancestors (i : t) = i.ancestors
+  let subcmds (i : t) = i.subcmds
   let env_var (i : t) v = i.env v
   let err_ppf (i : t) = i.err_ppf
   let main (i : t) = match List.rev i.ancestors with [] -> i.cmd | m :: _ -> m
@@ -470,31 +473,20 @@ module Complete = struct
   | Opt_name_or_pos_value of Arg_info.t
   | Opt_name
 
-  type directives =
-      Directives :
-        'a Cmdliner_base.Fmt.t *
-        ('a Arg_completion.directive list, string) result -> directives
-
   type t =
-    { context : Cline.t;
-      prefix : string;
+    { cline : Cline.t;
+      token : string;
       after_dashdash : bool;
       subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
-      kind : kind;
-      directives : directives }
+      kind : kind }
 
-  let make ?(after_dashdash = false) ?(subcmds = false) context ~prefix kind =
-    { context; prefix; after_dashdash; subcmds; kind;
-      directives = Directives (Cmdliner_base.Fmt.nop, Ok []) }
+  let make ?(after_dashdash = false) ?(subcmds = false) cline ~token kind =
+    { cline; token; after_dashdash; subcmds; kind; }
 
-  let add_subcmds c = { c with subcmds = true }
-  let add_directives pp directives c =
-    { c with directives = Directives (pp, directives) }
-
-  let context c = c.context
-  let prefix c = c.prefix
+  let cline c = c.cline
+  let token c = c.token
   let after_dashdash c = c.after_dashdash
   let subcmds c = c.subcmds
   let kind c = c.kind
-  let directives c = c.directives
+  let add_subcmds c = { c with subcmds = true }
 end

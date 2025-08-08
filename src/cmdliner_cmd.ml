@@ -20,7 +20,7 @@ let v = make
 
 let get_info = function Cmd (info, _) | Group (info, _) -> info
 let get_children_infos = function
-| Cmd _ -> assert false | Group (_, (_, cs)) -> List.map get_info cs
+| Cmd _ -> [] | Group (_, (_, cs)) -> List.map get_info cs
 
 let group ?default info cmds =
   let args, parser = match default with
