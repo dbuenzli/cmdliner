@@ -26,6 +26,7 @@ let bash_generic_completion =
           msg="";
           while read text_line; do
               if [[ "$text_line" == "message-end" ]]; then
+                  msg=${msg#?} # remove first newline
                   break
               fi
               msg+=$'\n'"$text_line"
@@ -36,13 +37,10 @@ let bash_generic_completion =
         item_doc="";
         while read text_line; do
             if [[ "$text_line" == "item-end" ]]; then
+                item_doc=${item_doc#?} # remove first newline
                 break
             fi
-            if [[ -n "$item_doc" ]]; then
-                item_doc+=$'\n'"$text_line"
-            else
-                item_doc=$text_line
-            fi
+            item_doc+=$'\n'"$text_line"
         done
         # Sadly it seems bash does not support doc strings, so we only
         # add item to to the reply. If you know any better get in touch.
@@ -95,6 +93,7 @@ let zsh_generic_completion =
           msg="";
           while read text_line; do
               if [[ "$text_line" == "message-end" ]]; then
+                  msg=${msg#?} # remove first newline
                   break
               fi
               msg+=$'\n'"$text_line"
@@ -105,15 +104,12 @@ let zsh_generic_completion =
         item_doc="";
         while read -r text_line; do
             if [[ "$text_line" == "item-end" ]]; then
+                item_doc=${item_doc#?} # remove first space
                 break
             fi
-            if [[ -n "$item_doc" ]]; then
-                # Sadly it seems impossible to make multiline
-                # doc strings. Get in touch if you know any better.
-                item_doc+=" $text_line"
-            else
-                item_doc="$text_line"
-            fi
+            # Sadly it seems impossible to make multiline
+            # doc strings. Get in touch if you know any better.
+            item_doc+=" $text_line"
         done
         # Handle glued forms, the completion item is the full option
         if [[ "$group" == "Values" ]]; then

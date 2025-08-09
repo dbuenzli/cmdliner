@@ -25,6 +25,7 @@ _cmdliner_generic() {
           msg="";
           while read text_line; do
               if [[ "$text_line" == "message-end" ]]; then
+                  msg=${msg#?} # remove first newline
                   break
               fi
               msg+=$'\n'"$text_line"
@@ -35,13 +36,10 @@ _cmdliner_generic() {
         item_doc="";
         while read text_line; do
             if [[ "$text_line" == "item-end" ]]; then
+                item_doc=${item_doc#?} # remove first newline
                 break
             fi
-            if [[ -n "$item_doc" ]]; then
-                item_doc+=$'\n'"$text_line"
-            else
-                item_doc=$text_line
-            fi
+            item_doc+=$'\n'"$text_line"
         done
         # Sadly it seems bash does not support doc strings, so we only
         # add item to to the reply. If you know any better get in touch.
