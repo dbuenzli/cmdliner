@@ -48,8 +48,7 @@ let bash_generic_completion =
         if [[ $group == "Values" ]]; then
            if [[ $prefix == --* ]]; then
               item="${prefix%%=*}=$item"
-           fi
-           if [[ $prefix == -* ]]; then
+           elif [[ $prefix == -* ]]; then
               item="${prefix:0:2}$item"
            fi
         fi
@@ -115,8 +114,7 @@ let zsh_generic_completion =
         if [[ "$group" == "Values" ]]; then
             if [[ "$prefix" == --* ]]; then
                 item="${prefix%%=*}=${item}"
-            fi
-            if [[ "$prefix" == -* ]]; then
+            elif [[ "$prefix" == -* ]]; then
                 item="${prefix:0:2}${item}"
             fi
         fi

@@ -44,8 +44,7 @@ function _cmdliner_generic {
         if [[ "$group" == "Values" ]]; then
             if [[ "$prefix" == --* ]]; then
                 item="${prefix%%=*}=${item}"
-            fi
-            if [[ "$prefix" == -* ]]; then
+            elif [[ "$prefix" == -* ]]; then
                 item="${prefix:0:2}${item}"
             fi
         fi
