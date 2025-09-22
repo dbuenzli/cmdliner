@@ -111,7 +111,7 @@ let do_result ~env help_ppf err_ppf eval = function
 
 let do_deprecated_msgs ~env err_ppf cl eval =
   let cmd_info = Cmdliner_def.Eval.cmd eval in
-  let deprecated = Cmdliner_cline.deprecated ~env cl in
+  let deprecated = Cmdliner_def.Cline.deprecated ~env cl in
   match Cmdliner_def.Cmd_info.deprecated cmd_info, deprecated with
   | None, [] -> ()
   | depr_cmd, deprs ->
@@ -130,7 +130,7 @@ let do_deprecated_msgs ~env err_ppf cl eval =
             Fmt.pf ppf "@[%a command %a:@[ %a@]@]"
               Fmt.deprecated () Fmt.code_or_quote name Fmt.styled_text msg
       in
-      let pp_deprs = Fmt.list (Cmdliner_cline.pp_deprecated ~subst) in
+      let pp_deprs = Fmt.list (Cmdliner_def.Cline.pp_deprecated ~subst) in
       Fmt.pf err_ppf "@[%a @[<v>%a%a%a@]@]@."
         Cmdliner_msg.pp_exec_msg eval pp_cmd_msg cmd_info
         pp_sep () pp_deprs deprs
@@ -175,12 +175,11 @@ let find_cmd_and_parser ~legacy_prefixes ~for_completion args cmd =
               let kind = "command" in
               let err = Cmdliner_base.err_unknown ~kind ~dom ~hints arg in
               let try_stdopts =
-                (* When we users writes cmd no_such_cmd --help it's
-                   better to show the unknown command error message
-                   rather than get into the help of the parent
-                   command. Otherwise one gets confused into thinking
-                   the command exists and/or annoyed not be reading
-                   the right man page. *)
+                (* When one writes [cmd no_such_cmd --help] it's better
+                   to show the unknown command error message rather
+                   than get into the help of the parent command. Otherwise
+                   one gets confused into thinking the command exists and/or
+                   annoyed not to be reading the right man page. *)
                 false
               in
               ancestors, current_cmd, args, Error (`Parse (try_stdopts, err))

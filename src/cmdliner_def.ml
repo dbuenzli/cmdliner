@@ -321,6 +321,75 @@ module Cline = struct
   | P of string list
 
   type t = Arg_info.cline
+
+  let empty = Arg_info.Map.empty
+  let add = Arg_info.Map.add
+  let fold = Arg_info.Map.fold
+  let get_arg cline a : arg =
+    try Arg_info.Map.find a cline with Not_found -> assert false
+
+  let get_opt_arg cline a =
+    match get_arg cline a with O l -> l | _ -> assert false
+
+  let get_pos_arg cline a =
+    match get_arg cline a with P l -> l | _ -> assert false
+
+  let actual_args cline a = match get_arg cline a with
+  | P args -> args
+  | O l ->
+      let extract_args (_pos, name, value) =
+        name :: (match value with None -> [] | Some v -> [v])
+      in
+      List.concat (List.map extract_args l)
+
+  (* Deprecations *)
+
+  type deprecated = Arg_info.t * arg
+
+  let deprecated ~env cline =
+    let add ~env info arg acc =
+      let deprecation_invoked = match (arg : arg) with
+      | O [] | P [] -> (* nothing on the cli for the argument *)
+          begin match Arg_info.env info with
+          | None -> false
+          | Some ienv ->
+              (* the parse uses the env var if defined which may be
+                 deprecated  *)
+              Option.is_some (Env.info_deprecated ienv) &&
+              Option.is_some (env (Env.info_var ienv))
+          end
+      | _ -> Option.is_some (Arg_info.deprecated info)
+      in
+      if deprecation_invoked then (info, arg) :: acc else acc
+    in
+    List.rev (fold (add ~env) cline [])
+
+  let pp_deprecated ~subst ppf (info, arg) =
+    let open Cmdliner_base in
+  let plural l = if List.length l > 1 then "s" else "" in
+    let subst = Arg_info.doclang_subst ~subst info in
+    match (arg : arg) with
+    | O [] | P [] ->
+        let env = Option.get (Arg_info.env info) in
+        let msg = Env.styled_deprecated ~errs:ppf ~subst env in
+        Fmt.pf ppf "@[%a @[environment variable %a: %a@]@]"
+          Fmt.deprecated () Fmt.code (Env.info_var env)
+          Fmt.styled_text msg
+    | O os ->
+        let plural = plural os in
+        let names = List.map (fun (_, n, _) -> n) os in
+        let msg = Arg_info.styled_deprecated ~errs:ppf ~subst info in
+        Fmt.pf ppf "@[%a @[option%s %a: %a@]@]"
+          Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) names
+          Fmt.styled_text msg
+    | P args ->
+        let plural = plural args in
+        let msg =
+          Arg_info.styled_deprecated ~errs:ppf ~subst info
+        in
+        Fmt.pf ppf "@[%a @[argument%s %a: %a@]@]"
+          Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) args
+          Fmt.styled_text msg
 end
 
 (* Evaluation *)

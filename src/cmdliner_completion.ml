@@ -7,7 +7,7 @@
 
 let cons_if b v l = if b then v :: l else l
 
-type dir =
+type directive =
 | Dirs | Files | Group of string * (string * string) list
 | Restart | Message of string
 

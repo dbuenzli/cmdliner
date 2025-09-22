@@ -98,7 +98,7 @@ let list_to_args f l complete =
 
 let flag a =
   if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
-  let convert ei cl = match Cmdliner_cline.opt_arg cl a with
+  let convert ei cl = match Cmdliner_def.Cline.get_opt_arg cl a with
   | [] -> try_env ei a env_bool_parse ~absent:false
   | [_, _, None] -> Ok true
   | [_, f, Some v] -> parse_error (Cmdliner_msg.err_flag_value f v)
@@ -110,7 +110,7 @@ let flag a =
 let flag_all a =
   if Cmdliner_def.Arg_info.is_pos a then invalid_arg err_not_opt else
   let a = Cmdliner_def.Arg_info.make_all_opts a in
-  let convert ei cl = match Cmdliner_cline.opt_arg cl a with
+  let convert ei cl = match Cmdliner_def.Cline.get_opt_arg cl a with
   | [] -> try_env ei a (parse_to_list env_bool_parse) ~absent:[]
   | l ->
       try
@@ -127,7 +127,7 @@ let vflag v l =
   let convert _ cl =
     let rec aux fv = function
     | (v, a) :: rest ->
-        begin match Cmdliner_cline.opt_arg cl a with
+        begin match Cmdliner_def.Cline.get_opt_arg cl a with
         | [] -> aux fv rest
         | [_, f, None] ->
             begin match fv with
@@ -151,7 +151,7 @@ let vflag_all v l =
   let convert _ cl =
     let rec aux acc = function
     | (fv, a) :: rest ->
-        begin match Cmdliner_cline.opt_arg cl a with
+        begin match Cmdliner_def.Cline.get_opt_arg cl a with
         | [] -> aux acc rest
         | l ->
             let fval (k, f, v) = match v with
@@ -188,7 +188,7 @@ let opt ?vopt conv v a =
   | "" -> Conv.docv conv | docv -> docv
   in
   let a = Cmdliner_def.Arg_info.make_opt ~docv ~absent ~kind a in
-  let convert ei cl = match Cmdliner_cline.opt_arg cl a with
+  let convert ei cl = match Cmdliner_def.Cline.get_opt_arg cl a with
   | [] -> try_env ei a (Conv.parser conv) ~absent:v
   | [_, f, Some v] ->
       (try Ok (parse_opt_value (Conv.parser conv) f v) with
@@ -217,7 +217,7 @@ let opt_all ?vopt conv v a =
   | "" -> Conv.docv conv | docv -> docv
   in
   let a = Cmdliner_def.Arg_info.make_opt_all ~docv ~absent ~kind a in
-  let convert ei cl = match Cmdliner_cline.opt_arg cl a with
+  let convert ei cl = match Cmdliner_def.Cline.get_opt_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->
       let parse (k, f, v) = match v with
@@ -249,7 +249,7 @@ let pos ?(rev = false) k conv v a =
   | "" -> Conv.docv conv | docv -> docv
   in
   let a = Cmdliner_def.Arg_info.make_pos_abs ~docv ~absent ~pos a in
-  let convert ei cl = match Cmdliner_cline.pos_arg cl a with
+  let convert ei cl = match Cmdliner_def.Cline.get_pos_arg cl a with
   | [] -> try_env ei a (Conv.parser conv) ~absent:v
   | [v] ->
       (try Ok (parse_pos_value (Conv.parser conv) a v) with
@@ -264,7 +264,7 @@ let pos_list pos conv v a =
   | "" -> Conv.docv conv | docv -> docv
   in
   let a = Cmdliner_def.Arg_info.make_pos ~docv ~pos a in
-  let convert ei cl = match Cmdliner_cline.pos_arg cl a with
+  let convert ei cl = match Cmdliner_def.Cline.get_pos_arg cl a with
   | [] -> try_env ei a (parse_to_list (Conv.parser conv)) ~absent:v
   | l ->
       try Ok (List.rev (List.rev_map (parse_pos_value (Conv.parser conv) a) l))

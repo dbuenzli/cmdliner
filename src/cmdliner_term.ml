@@ -82,7 +82,7 @@ let with_used_args (al, v) : (_ * string list) t =
     match v ei cl with
     | Ok x ->
         let actual_args arg_info _ acc =
-          let args = Cmdliner_cline.actual_args cl arg_info in
+          let args = Cmdliner_def.Cline.actual_args cl arg_info in
           List.rev_append args acc
         in
         let used =

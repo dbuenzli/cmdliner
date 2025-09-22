@@ -5,11 +5,12 @@
 
 (* A command line stores pre-parsed information about the command
    line's arguments in a more structured way. Given the
-   Cmdliner_info.arg values mentioned in a term and Sys.argv
-   (without exec name) we parse the command line into a map of
-   Cmdliner_info.arg values to [arg] values (see below). This map is used by
-   the term's closures to retrieve and convert command line arguments
-   (see the Cmdliner_arg module). *)
+   Cmdliner_def.Arg_info.t values mentioned in a term and Sys.argv
+   (without exec name) we parse the command line into
+   [Cmdliner_def.Cline.t] which is map of [Cmdliner_def.Arg_info.t]
+   values to [Cmdliner_def.Cline.arg] values. This map is used by the
+   term's closures to retrieve and convert command line arguments (see
+   the [Cmdliner_arg] module). *)
 
 (* Completion *)
 
@@ -36,49 +37,35 @@ let comp_request ?after_dashdash cline ~token kind =
 
 (* Command lines *)
 
-let err_multi_opt_name_def name a a' =
-  let kind = "option name" in
-  Cmdliner_base.err_multi_def ~kind name Cmdliner_def.Arg_info.doc a a'
+let err_multi_opt_name_def name arg_info arg_info' =
+  Cmdliner_base.err_multi_def ~kind:"option name" name
+    Cmdliner_def.Arg_info.doc arg_info arg_info'
 
-type arg = Cmdliner_def.Cline.arg
-type t = Cmdliner_def.Cline.t
-
-let get_arg cline a : arg =
-  try Cmdliner_def.Arg_info.Map.find a cline with Not_found -> assert false
-
-let opt_arg cline a = match get_arg cline a with O l -> l | _ -> assert false
-let pos_arg cline a = match get_arg cline a with P l -> l | _ -> assert false
-let actual_args cline a = match get_arg cline a with
-| P args -> args
-| O l ->
-    let extract_args (_pos, name, value) =
-      name :: (match value with None -> [] | Some v -> [v])
-    in
-    List.concat (List.map extract_args l)
-
-let arg_info_indexes args =
+let arg_info_indexes arg_infos =
   (* from [args] returns a trie mapping the names of optional arguments to
      their arg_info, a list with all arg_info for positional arguments and
      a cmdline mapping each arg_info to an empty [arg]. *)
   let rec loop optidx posidx cline = function
   | [] -> optidx, posidx, cline
-  | a :: l ->
-      match Cmdliner_def.Arg_info.is_pos a with
+  | arg_info :: l ->
+      match Cmdliner_def.Arg_info.is_pos arg_info with
       | true ->
-          let cline = Cmdliner_def.Arg_info.Map.add a (P [] : arg) cline in
-          loop optidx (a :: posidx) cline l
+          let cline = Cmdliner_def.Cline.add arg_info (P []) cline in
+          loop optidx (arg_info :: posidx) cline l
       | false ->
-          let add t name = match Cmdliner_trie.add t name a with
+          let add t name = match Cmdliner_trie.add t name arg_info with
           | `New t -> t
-          | `Replaced (a', _) -> invalid_arg (err_multi_opt_name_def name a a')
+          | `Replaced (a', _) ->
+              invalid_arg (err_multi_opt_name_def name arg_info a')
           in
-          let names = Cmdliner_def.Arg_info.opt_names a in
+          let names = Cmdliner_def.Arg_info.opt_names arg_info in
           let optidx = List.fold_left add optidx names in
-          let cline = Cmdliner_def.Arg_info.Map.add a (O [] : arg) cline in
+          let cline = Cmdliner_def.Cline.add arg_info (O []) cline in
           loop optidx posidx cline l
   in
-  let cline = Cmdliner_def.Arg_info.Map.empty in
-  loop Cmdliner_trie.empty [] cline (Cmdliner_def.Arg_info.Set.elements args)
+  let cline = Cmdliner_def.Cline.empty in
+  let arg_infos = Cmdliner_def.Arg_info.Set.elements arg_infos in
+  loop Cmdliner_trie.empty [] cline arg_infos
 
 (* Optional argument parsing *)
 
@@ -107,8 +94,7 @@ let parse_opt_arg s =
   with Not_found -> s, None, is_completion
 
 let hint_matching_opt optidx s =
-  (* hint options that could match [s] in [optidx]. FIXME explain this is
-     a bit obscure. *)
+  (* hint option names that could match [s] in [optidx]. *)
   if String.length s <= 2 then [] else
   let short_opt, long_opt =
     if s.[1] <> '-'
@@ -204,8 +190,11 @@ let parse_opt_args
             then try_complete_opt_value cline arg_info name value args
             else parse_opt_value ~for_completion cline arg_info name value args
           in
-          let arg : arg = O ((k, name, value) :: opt_arg cline arg_info) in
-          let cline = Cmdliner_def.Arg_info.Map.add arg_info arg cline in
+          let arg : Cmdliner_def.Cline.arg =
+            O ((k, name, value) ::
+               Cmdliner_def.Cline.get_opt_arg cline arg_info)
+          in
+          let cline = Cmdliner_def.Cline.add arg_info arg cline in
           loop errs (k + 1) cline pargs args
       | Error `Not_found when for_completion ->
           if not is_completion
@@ -266,15 +255,14 @@ let process_pos_args ~for_completion posidx cline ~has_dashdash pargs =
       | Some n -> pos rev (Cmdliner_def.Arg_info.pos_start apos + n - 1)
       in
       let start, stop = if rev then stop, start else start, stop in
-      let args =
-        match take_range ~for_completion start stop pargs with
-        | `Range args -> args
-        | `Complete token ->
-            let kind = Cmdliner_def.Complete.Opt_name_or_pos_value a in
-            comp_request ~after_dashdash:has_dashdash cline ~token kind
+      let args = match take_range ~for_completion start stop pargs with
+      | `Range args -> args
+      | `Complete token ->
+          let kind = Cmdliner_def.Complete.Opt_name_or_pos_value a in
+          comp_request ~after_dashdash:has_dashdash cline ~token kind
       in
       let max_spec = max stop max_spec in
-      let cline = Cmdliner_def.Arg_info.Map.add a (P args : arg) cline in
+      let cline = Cmdliner_def.Cline.add a (P args) cline in
       let misses = match Cmdliner_def.Arg_info.is_req a && args = [] with
       | true -> a :: misses
       | false -> misses
@@ -329,51 +317,3 @@ let create ?(peek_opts = false) ~legacy_prefixes ~for_completion al args =
       in
       `Error (errs, cline)
   with Completion_requested c -> `Complete c
-
-(* Deprecations *)
-
-type deprecated = Cmdliner_def.Arg_info.t * arg
-
-let deprecated ~env cline =
-  let add ~env info arg acc =
-    let deprecation_invoked = match (arg : arg) with
-    | O [] | P [] -> (* nothing on the cli for the argument *)
-        begin match Cmdliner_def.Arg_info.env info with
-        | None -> false
-        | Some ienv ->
-            (* the parse uses the env var if defined which may be deprecated  *)
-            Option.is_some (Cmdliner_def.Env.info_deprecated ienv) &&
-            Option.is_some (env (Cmdliner_def.Env.info_var ienv))
-        end
-    | _ -> Option.is_some (Cmdliner_def.Arg_info.deprecated info)
-    in
-    if deprecation_invoked then (info, arg) :: acc else acc
-  in
-  List.rev (Cmdliner_def.Arg_info.Map.fold (add ~env) cline [])
-
-let pp_deprecated ~subst ppf (info, arg) =
-  let open Cmdliner_base in
-  let plural l = if List.length l > 1 then "s" else "" in
-  let subst = Cmdliner_def.Arg_info.doclang_subst ~subst info in
-  match (arg : arg) with
-  | O [] | P [] ->
-      let env = Option.get (Cmdliner_def.Arg_info.env info) in
-      let msg = Cmdliner_def.Env.styled_deprecated ~errs:ppf ~subst env in
-      Fmt.pf ppf "@[%a @[environment variable %a: %a@]@]"
-        Fmt.deprecated () Fmt.code (Cmdliner_def.Env.info_var env)
-        Fmt.styled_text msg
-  | O os ->
-      let plural = plural os in
-      let names = List.map (fun (_, n, _) -> n) os in
-      let msg = Cmdliner_def.Arg_info.styled_deprecated ~errs:ppf ~subst info in
-      Fmt.pf ppf "@[%a @[option%s %a: %a@]@]"
-        Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) names
-        Fmt.styled_text msg
-  | P args ->
-      let plural = plural args in
-      let msg =
-        Cmdliner_def.Arg_info.styled_deprecated ~errs:ppf ~subst info
-      in
-      Fmt.pf ppf "@[%a @[argument%s %a: %a@]@]"
-        Fmt.deprecated () plural Fmt.(list ~sep:sp code_or_quote) args
-        Fmt.styled_text msg

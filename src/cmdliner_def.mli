@@ -117,8 +117,6 @@ module Arg_info : sig
   val styled_doc :
     errs:Format.formatter -> subst:Cmdliner_manpage.subst -> t -> string
 
-  module Map : Map.S with type key := t
-
   type 'a conv
   type e_conv = Conv : 'a conv -> e_conv
 
@@ -178,7 +176,31 @@ module Cline : sig
   | P of string list (** *)
   (** Unconverted argument data as found on the command line. *)
 
-  type t = arg Arg_info.Map.t  (* command line, maps arg_infos to arg value. *)
+  type t (* command line, maps arg_infos to arg value. *)
+  val empty : t
+  val add : Arg_info.t -> arg -> t -> t
+  val get_arg : t -> Arg_info.t -> arg
+  val get_opt_arg : t -> Arg_info.t -> (int * string * (string option)) list
+  val get_pos_arg : t -> Arg_info.t -> string list
+  val actual_args : t -> Arg_info.t -> string list
+  (** Actual command line arguments from the command line *)
+
+  val fold : (Arg_info.t -> arg -> 'b -> 'b) -> t -> 'b -> 'b
+
+  (** {1:deprecations Deprecations} *)
+
+  type deprecated
+  (** The type for deprecation invocations. This include both environment
+      variable deprecations and argument deprecations. *)
+
+  val deprecated :
+    env:(string -> string option) -> t -> deprecated list
+  (** [deprecated ~env cli] are the deprecated invocations that occur
+      when parsing [cli]. *)
+
+  val pp_deprecated :
+    subst:Cmdliner_manpage.subst -> deprecated Cmdliner_base.Fmt.t
+    (** [pp_deprecated] formats deprecations. *)
 end
 
 (** Evaluation. *)
