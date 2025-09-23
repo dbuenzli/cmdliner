@@ -450,6 +450,183 @@ let test_restart_any_tool =
      restart\n";
   ()
 
+let test_context =
+  Test.test "Context sensitive completion from optional argument" @@ fun () ->
+  let ctx =
+    Arg.(value & opt (some bool) None & info ["ctx"])
+  in
+  let dep =
+    let complete ctx ~token:_ = match ctx with
+    | None -> Ok [Arg.Completion.string "ctx-parse-error"]
+    | Some None -> Ok [Arg.Completion.string "no-context"]
+    | Some (Some ctx) -> Ok [Arg.Completion.string (Bool.to_string ctx)]
+    in
+    let completion = Arg.Completion.make ~context:ctx complete in
+    Arg.Conv.of_conv Arg.string ~docv:"SPECIAL" ~completion
+  in
+  let () = (* test [dep] converter on an option *)
+    let cmd =
+      Cmd.make (Cmd.info "test_context") @@
+      let+ lookup = Arg.(value & opt dep "nothing" & info ["dep"])
+      and+ ctx in
+      ()
+    in
+    let complete = Testing_cmdliner.snap_completion cmd in
+    complete ["--dep"; "--__complete="] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+    complete ["--ctx=hey"; "--dep"; "--__complete="] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       ctx-parse-error\n\
+       \n\
+       item-end\n";
+    complete ["--ctx=true"; "--dep"; "--__complete="] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       true\n\
+       \n\
+       item-end\n";
+    complete ["--dep"; "--__complete="; "--ctx=true"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+  in
+  let () =
+    let cmd =
+      Cmd.make (Cmd.info "test_context") @@
+      let+ lookup = Arg.(value & pos 0 dep "nothing" & info [])
+      and+ ctx in
+      ()
+    in
+    let complete = Testing_cmdliner.snap_completion cmd in
+    complete ["--__complete=a"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+    complete ["--ctx=hey"; "--__complete=a"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       ctx-parse-error\n\
+       \n\
+       item-end\n";
+    complete ["--ctx=true"; "--__complete=a"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       true\n\
+       \n\
+       item-end\n";
+    complete ["--__complete=a"; "--ctx=true"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       true\n\
+       \n\
+       item-end\n";
+  in
+  ()
+
+let test_context =
+  Test.test "Context sensitive completion from positional argument" @@ fun () ->
+  let ctx0 = Arg.(value & pos 0 (some bool) None & info []) in
+  let dep =
+    let complete ctx ~token:_ = match ctx with
+    | None -> Ok [Arg.Completion.string "ctx-parse-error"]
+    | Some None -> Ok [Arg.Completion.string "no-context"]
+    | Some (Some ctx) -> Ok [Arg.Completion.string (Bool.to_string ctx)]
+    in
+    let completion = Arg.Completion.make ~context:ctx0 complete in
+    Arg.Conv.of_conv Arg.string ~docv:"SPECIAL" ~completion
+  in
+  let () = (* test [dep] converter on an option *)
+    let cmd =
+      Cmd.make (Cmd.info "test_context") @@
+      let+ lookup = Arg.(value & opt dep "nothing" & info ["dep"])
+      and+ ctx0 in
+      ()
+    in
+    let complete = Testing_cmdliner.snap_completion cmd in
+    complete ["--dep"; "--__complete="] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+    complete ["bla"; "--dep"; "--__complete="] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+    complete ["true"; "--dep"; "--__complete="] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+    complete ["--dep"; "--__complete="; "true"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+  in
+  let () =
+    let cmd =
+      Cmd.make (Cmd.info "test_context") @@
+      let+ lookup = Arg.(value & pos 1 dep "nothing" & info [])
+      and+ ctx0 in
+      ()
+    in
+    let complete = Testing_cmdliner.snap_completion cmd in
+    complete ["hey"; "--__complete=a"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+    complete ["true"; "--__complete=a"] @@ __POS_OF__
+      "1\n\
+       group\n\
+       Values\n\
+       item\n\
+       no-context\n\
+       \n\
+       item-end\n";
+  in
+  ()
 
 let main () =
   let doc = "Test completion" in
