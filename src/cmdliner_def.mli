@@ -295,11 +295,7 @@ module Complete : sig
   | Opt_name
 
   type t
-  val make :
-    ?after_dashdash:bool -> ?subcmds:bool -> Cline.t -> token:string -> kind ->
-    t
-
-  val cline : t -> Cline.t
+  val make : ?after_dashdash:bool -> ?subcmds:bool -> token:string -> kind -> t
   val token : t -> string
   val after_dashdash : t -> bool
   val subcmds : t -> bool

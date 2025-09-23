@@ -68,7 +68,7 @@ let add_options_group ~err_ppf ~subst eval comp directives =
   let options = Cmdliner_def.Arg_info.Set.elements set in
   Group ("Options", List.concat (List.map maybe_items options)) :: directives
 
-let add_argument_value_directives directives eval arg_info comp =
+let add_argument_value_directives directives eval arg_info comp cline =
   let (Conv conv) =
     let arg_infos = Cmdliner_def.Cmd_info.args (Cmdliner_def.Eval.cmd eval) in
     Option.get (Cmdliner_def.Arg_info.Set.find_opt arg_info arg_infos)
@@ -80,7 +80,6 @@ let add_argument_value_directives directives eval arg_info comp =
         let ctx = match ctx with
         | None -> None
         | Some ctx ->
-            let cline = Cmdliner_def.Complete.cline comp in
             match (Cmdliner_term.parser ctx) eval cline with
             | Ok ctx -> Some ctx
             | Error _ -> None
@@ -122,15 +121,15 @@ let add_argument_value_directives directives eval arg_info comp =
       in
       loop [] [] ~files:false ~dirs:false ~restart:false ~raw:None ds
 
-let output ~out_ppf ~err_ppf eval comp =
+let output ~out_ppf ~err_ppf eval comp cline =
   let subst = Cmdliner_def.Eval.doclang_subst eval in
   let dirs = add_subcommands_group ~err_ppf ~subst eval comp [] in
   let res = match Cmdliner_def.Complete.kind comp with
   | Opt_value arg_info ->
-      add_argument_value_directives dirs eval arg_info comp
+      add_argument_value_directives dirs eval arg_info comp cline
   | Opt_name_or_pos_value arg_info ->
       let dirs = add_options_group ~err_ppf ~subst eval comp dirs in
-      add_argument_value_directives dirs eval arg_info comp
+      add_argument_value_directives dirs eval arg_info comp cline
   | Opt_name ->
       `Directives (add_options_group ~err_ppf ~subst eval comp dirs)
   in

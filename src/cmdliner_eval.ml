@@ -15,7 +15,8 @@ type eval_result_error =
   | `Std_version ]
 
 type 'a eval_result =
-  ('a, [ eval_result_error | `Complete of Cmdliner_def.Complete.t]) result
+  ('a, [ eval_result_error
+       | `Complete of Cmdliner_def.Complete.t * Cmdliner_def.Cline.t]) result
 
 let err_help s = "Term error, help requested for unknown command " ^ s
 let err_argv = "argv array must have at least one element"
@@ -96,8 +97,8 @@ let do_result ~env help_ppf err_ppf eval = function
         Cmdliner_msg.pp_version help_ppf eval; Ok `Version
     | `Parse err ->
         Cmdliner_msg.pp_usage_and_err err_ppf eval ~err; Error `Parse
-    | `Complete comp ->
-        Cmdliner_completion.output ~out_ppf:help_ppf ~err_ppf eval comp;
+    | `Complete (comp, cline) ->
+        Cmdliner_completion.output ~out_ppf:help_ppf ~err_ppf eval comp cline;
         Ok `Help
     | `Help (fmt, cmd_name) ->
         do_help ~env help_ppf err_ppf eval fmt cmd_name; Ok `Help
@@ -221,7 +222,7 @@ let eval_value
   | Error (`Parse (try_stdopts, msg)) ->
       (* Command lookup error, we may still prioritize stdargs *)
       begin match cline with
-      | `Complete comp -> Error (`Complete comp)
+      | `Complete c -> Error (`Complete c)
       | `Error (_, cl) | `Ok cl ->
           let stdopts =
             if try_stdopts
@@ -234,14 +235,14 @@ let eval_value
       end
   | Error `Complete ->
       begin match cline with
-      | `Complete comp ->
+      | `Complete (comp, cline) ->
           let comp = Cmdliner_def.Complete.add_subcmds comp in
-          Error (`Complete comp)
+          Error (`Complete (comp, cline))
       | `Ok _ | `Error _ -> assert false
       end
   | Ok parser ->
       begin match cline with
-      | `Complete comp -> Error (`Complete comp)
+      | `Complete c -> Error (`Complete c)
       | `Error (e, cl) ->
           begin match try_eval_stdopts ~catch eval cl help version with
           | Some e -> e

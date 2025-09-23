@@ -501,7 +501,7 @@ let test_context =
        group\n\
        Values\n\
        item\n\
-       no-context\n\
+       true\n\
        \n\
        item-end\n";
   in
@@ -581,7 +581,7 @@ let test_context =
        group\n\
        Values\n\
        item\n\
-       no-context\n\
+       ctx-parse-error\n\
        \n\
        item-end\n";
     complete ["true"; "--dep"; "--__complete="] @@ __POS_OF__
@@ -589,7 +589,7 @@ let test_context =
        group\n\
        Values\n\
        item\n\
-       no-context\n\
+       true\n\
        \n\
        item-end\n";
     complete ["--dep"; "--__complete="; "true"] @@ __POS_OF__
@@ -597,7 +597,7 @@ let test_context =
        group\n\
        Values\n\
        item\n\
-       no-context\n\
+       true\n\
        \n\
        item-end\n";
   in
@@ -614,7 +614,7 @@ let test_context =
        group\n\
        Values\n\
        item\n\
-       no-context\n\
+       ctx-parse-error\n\
        \n\
        item-end\n";
     complete ["true"; "--__complete=a"] @@ __POS_OF__
@@ -622,7 +622,7 @@ let test_context =
        group\n\
        Values\n\
        item\n\
-       no-context\n\
+       true\n\
        \n\
        item-end\n";
   in

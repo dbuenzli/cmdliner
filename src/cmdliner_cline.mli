@@ -15,5 +15,5 @@ val create :
   ?peek_opts:bool -> legacy_prefixes:bool -> for_completion:bool ->
   Cmdliner_def.Arg_info.Set.t -> string list ->
   [ `Ok of Cmdliner_def.Cline.t
-  | `Complete of Cmdliner_def.Complete.t
+  | `Complete of Cmdliner_def.Complete.t * Cmdliner_def.Cline.t
   | `Error of string * Cmdliner_def.Cline.t ]

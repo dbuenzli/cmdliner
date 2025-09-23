@@ -705,7 +705,10 @@ module Arg : sig
         Given an optional context determined from a partial command
         line parse and a token to complete it returns a list of
         completion directives or an error which is reported to
-        end-users by using a protocol {!message}. *)
+        end-users by using a protocol {!message}.
+
+        The context is [None] if no context was given to {!make} or if
+        the context failed to parse on the current command line. *)
 
     type 'a complete =
     | Complete : 'ctx Term.t option * ('ctx, 'a) func -> 'a complete (** *)

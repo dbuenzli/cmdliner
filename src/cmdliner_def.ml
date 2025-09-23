@@ -544,16 +544,14 @@ module Complete = struct
   | Opt_name
 
   type t =
-    { cline : Cline.t;
-      token : string;
+    { token : string;
       after_dashdash : bool;
       subcmds : bool; (* Note this is adjusted in Cmdliner_eval *)
       kind : kind }
 
-  let make ?(after_dashdash = false) ?(subcmds = false) cline ~token kind =
-    { cline; token; after_dashdash; subcmds; kind; }
+  let make ?(after_dashdash = false) ?(subcmds = false) ~token kind =
+    { token; after_dashdash; subcmds; kind; }
 
-  let cline c = c.cline
   let token c = c.token
   let after_dashdash c = c.after_dashdash
   let subcmds c = c.subcmds
