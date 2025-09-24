@@ -413,7 +413,7 @@ A couple of predefined argument converter like {!Cmdliner.Arg.path},
 
 If you would like to perform custom or more elaborate context
 sensitive completions you can define your own argument converter with
-with a completion defined with {!Cmdliner.Arg.Completion.make}.
+a completion defined with {!Cmdliner.Arg.Completion.make}.
 
 Here is an example where the first positional argument is completed
 with the filenames found in a directory specified via the [--dir]

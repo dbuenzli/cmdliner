@@ -694,7 +694,9 @@ module Arg : sig
         is ignored.
 
         {b Warning.} The protocol is unstable, it is not advised to
-        output it yourself. *)
+        output it yourself. However this can be useful to invoke
+        another tool according to the protocol in the completion
+        function and treat its result as the requested completion. *)
 
     (** {1:completion Completion} *)
 
