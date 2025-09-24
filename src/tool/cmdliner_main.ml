@@ -523,7 +523,8 @@ let install_generic_completion_cmd =
   in
   Cmd.make (Cmd.info "generic-completion" ~doc ~man) @@
   (* No let punning in < 4.13 *)
-  let+ dry_run = dry_run and+ shells = shells_opt and+ update_opam_install
+  let+ dry_run = dry_run and+ shells = shells_opt
+  and+ update_opam_install = update_opam_install
   and+ sharedir_pos0 = sharedir_pos0 in
   install_generic_completion ~dry_run ~update_opam_install shells sharedir_pos0
 
@@ -546,7 +547,8 @@ let install_tool_completion_cmd =
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
   (* No let punning in < 4.13 *)
-  let+ dry_run = dry_run and+ shells = shells_opt and+ update_opam_install
+  let+ dry_run = dry_run and+ shells = shells_opt
+  and+ update_opam_install = update_opam_install
   and+ toolnames = toolnames_posleft and+ sharedir = sharedir_poslast in
   install_tool_completion
     ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
@@ -566,7 +568,7 @@ let install_tool_manpages_cmd =
   ]
   in
   Cmd.make (Cmd.info "tool-manpages" ~doc ~man) @@
-  let+ dry_run = dry_run and+ update_opam_install
+  let+ dry_run = dry_run and+ update_opam_install = update_opam_install
   and+ tools = tools_posleft and+ mandir = mandir_poslast in
   install_tool_manpages ~dry_run ~update_opam_install ~tools ~mandir
 
@@ -588,8 +590,8 @@ let install_tool_support_cmd =
   ]
   in
   Cmd.make (Cmd.info "tool-support" ~doc ~man) @@
-  let+ dry_run = dry_run and+ update_opam_install and+ shells = shells_opt
-  and+ tools = tools_posleft and+ sharedir = sharedir_opt
+  let+ dry_run = dry_run and+ update_opam_install = update_opam_install
+  and+ shells = shells_opt and+ tools = tools_posleft and+ sharedir = sharedir_opt
   and+ mandir = mandir_opt and+ prefix = prefix in
   install_tool_support
     ~dry_run ~update_opam_install tools shells ~prefix ~sharedir ~mandir
