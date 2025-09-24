@@ -401,6 +401,49 @@ unspecified on the command line.
    parameter overrides the two previous ways. See
    {{!args_detect_absent}this} example. }}
 
+{2:args_completion How can I customize positional and option value completion?}
+
+Positional argument values and option values are completed according
+to the {{!Cmdliner.Arg.argconv}argument converter} you use for defining
+the optional or positional argument.
+
+A couple of predefined argument converter like {!Cmdliner.Arg.path},
+{!Cmdliner.Arg.filepath} and {!Cmdliner.Arg.dirpath} or
+{!Cmdliner.Arg.enum} automatically handle this for you.
+
+If you would like to perform custom or more elaborate context
+sensitive completions you can define your own argument converter with
+with a completion defined with {!Cmdliner.Arg.Completion.make}.
+
+Here is an example where the first positional argument is completed
+with the filenames found in a directory specified via the [--dir]
+option (which defaults to the current working directory if unspecified).
+{[
+let dir = Arg.(value & opt dirpath "." & info ["d"; "dir"])
+let dir_filenames_conv =
+  let complete dir ~token = match dir with
+  | None -> Error "Could not determine directory to lookup"
+  | Some dir ->
+      match Array.to_list (Sys.readdir dir) with
+      | exception Sys_error e -> Error (String.concat ": " [dir; e])
+      | fnames ->
+          let fnames = List.filter (String.starts_with ~prefix:token) fnames in
+          Ok (List.map Arg.Completion.string fnames)
+  in
+  let completion = Arg.Completion.make ~context:dir complete in
+  Arg.Conv.of_conv ~completion Arg.string
+
+let pos0 = Arg.(required & pos 0 (some dir_filenames_conv) None & info [])
+]}
+
+Note that when you use [pos0] in a command line definition you also
+need to make sure [dir] is part of the term otherwise the context will
+always be [None]:
+
+{[
+let+ pos0 and+ dir and+ … in …
+]}
+
 {1:envs Environment variables}
 
 {2:env_args How can environment variables define defaults?}
