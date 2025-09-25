@@ -164,7 +164,9 @@ let get_tool_commands tool =
       | _ :: lines -> find_subs lines
       | [] -> []
       in
-      let exec = strf "%s --__complete %s --__complete=" tool cmd in
+      let exec =
+        strf "%s --__complete %s --__complete=" (Filename.quote tool) cmd
+      in
       let comps = exec_stdout exec |> error_to_failure in
       let comps = String.split_on_char '\n' comps in
       match comps with
@@ -184,6 +186,7 @@ let get_tool_commands tool =
   with Failure e -> Error e
 
 let get_tool_command_man tool ~name cmd =
+  let tool = Filename.quote tool in
   let exec = if cmd = "" then tool else String.concat " " [tool; cmd] in
   let man_basename =
     let exec = if cmd = "" then name else String.concat " " [name; cmd] in
