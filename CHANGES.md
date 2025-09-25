@@ -1,3 +1,5 @@
+v2.0.0 2025-09-26 Zagreb
+------------------------
 
 ### End-user visible changes
 
