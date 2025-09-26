@@ -6,11 +6,6 @@
 let strf = Printf.sprintf
 let error_to_failure = function Ok v -> v | Error e -> failwith e
 
-let quote_tool tool =
-  (* Can be replaced by Filename.quote_command once we drop OCaml < 4.10 *)
-  Filename.quote @@
-  if Sys.win32 then String.map (function '/' -> '\\' | c -> c) tool else tool
-
 let find_sub ?(start = 0) ~sub s =
   (* naive algorithm, worst case O(length sub * length s) *)
   let len_sub = String.length sub in
@@ -83,10 +78,19 @@ let with_binary_stdout f =
   try let () = set_binary_mode_out stdout true in f () with
   | Sys_error e | Failure e -> prerr_endline e; Cmdliner.Cmd.Exit.some_error
 
-let exec_stdout cmd =
+let exec_stdout tool ~args =
+  (* The cmd munging logic can be replaced by Filename.quote_command once we
+     drop OCaml < 4.10 *)
+  let quote_tool tool =
+    Filename.quote @@
+    if Sys.win32 then String.map (function '/' -> '\\' | c -> c) tool else tool
+  in
   try
     let tmp = Filename.temp_file "cmd" "stdout" in
+    let tool = quote_tool tool and args = List.map Filename.quote args in
+    let cmd = String.concat " " (tool :: args) in
     let exec = String.concat " > " [cmd; Filename.quote tmp] in
+    let exec = if Sys.win32 then strf {|"%s"|} exec else exec in
     match Sys.command exec with
     | 0 ->
         let ic = open_in_bin tmp in
@@ -168,10 +172,9 @@ let get_tool_commands tool =
       | _ :: lines -> find_subs lines
       | [] -> []
       in
-      let exec =
-        strf "%s --__complete %s --__complete=" (quote_tool tool) cmd
-      in
-      let comps = exec_stdout exec |> error_to_failure in
+      let subs = if cmd = "" then [] else String.split_on_char ' ' cmd in
+      let args = "--__complete" :: (subs @ ["--__complete="]) in
+      let comps = exec_stdout tool ~args |> error_to_failure in
       let comps = String.split_on_char '\n' comps in
       match comps with
       | "1" :: comps -> find_subs comps
@@ -190,8 +193,6 @@ let get_tool_commands tool =
   with Failure e -> Error e
 
 let get_tool_command_man tool ~name cmd =
-  let tool = quote_tool tool in
-  let exec = if cmd = "" then tool else String.concat " " [tool; cmd] in
   let man_basename =
     let exec = if cmd = "" then name else String.concat " " [name; cmd] in
     (String.map (function ' ' -> '-' | c -> c) exec)
@@ -204,12 +205,14 @@ let get_tool_command_man tool ~name cmd =
         | exception Scanf.Scan_failure _ -> extract_section lines
         end
     | [] ->
-        Error (strf "%s command: Could not extract section from manual" exec)
+        Error (strf "%s command: Could not extract section from manual"
+                 (tool ^ " " ^ cmd))
     in
     extract_section (String.split_on_char '\n' man)
   in
-  let get_groff = exec ^ " --help=groff" in
-  match exec_stdout get_groff with
+  let subs = if cmd = "" then [] else String.split_on_char ' ' cmd in
+  let args = subs @ ["--help=groff"] in
+  match exec_stdout tool ~args with
   | Error _ as e -> e
   | Ok man -> add_section man
 
