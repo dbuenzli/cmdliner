@@ -31,7 +31,8 @@ let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   in
   let run_cmd args =
     let cmd = String.concat " " (List.map Filename.quote args) in
-    let exit = Sys.command cmd in
+    let cmd = if Sys.win32 then strf {|"%s"|} cmd else cmd in
+    let exit =  Sys.command cmd in
     if exit = 0 then () else err_cmd exit cmd
   in
   let parent = Filename.dirname dir in
