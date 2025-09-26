@@ -561,7 +561,11 @@ module Cmd : sig
          are intercepted and their stack trace is written to the [err]
          formatter}
       {- [help] is the formatter used to print help, version messages
-         or completions, (defaults to {!Format.std_formatter})}
+         or completions, (defaults to {!Format.std_formatter}). Note
+         that the completion protocol needs to output ['\n'] line ending,
+         if you are outputing to a channel make sure it is in binary
+         mode to avoid newline translation (this is done automatically
+         before completion when [help] is {!Format.std_formatter}).}
       {- [err] is the formatter used to print error messages
          (defaults to {!Format.err_formatter}).}} *)
 

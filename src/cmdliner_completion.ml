@@ -133,6 +133,8 @@ let output ~out_ppf ~err_ppf eval comp cline =
   | Opt_name ->
       `Directives (add_options_group ~err_ppf ~subst eval comp dirs)
   in
+  if out_ppf == Format.std_formatter
+  then set_binary_mode_out stdout true;
   match res with
   | `Raw raw -> Cmdliner_base.Fmt.pf out_ppf "%s@?" raw
   | `Directives dirs -> Cmdliner_base.Fmt.pf out_ppf "%a@?" pp_protocol dirs
