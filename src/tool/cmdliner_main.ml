@@ -94,11 +94,13 @@ let exec_stdout tool ~args =
     match Sys.command exec with
     | 0 ->
         let ic = open_in_bin tmp in
-        let finally () = close_in_noerr ic in
+        let finally () =
+          close_in_noerr ic;
+          try Sys.remove tmp with Sys_error _ -> () (* not that important *)
+        in
         let len = in_channel_length ic in
         Fun.protect ~finally @@ fun () ->
         let stdout = really_input_string ic len in
-        Sys.remove tmp;
         Ok stdout
     | exit -> Error (strf "%s: exited with %d" exec exit)
   with
