@@ -6,6 +6,11 @@
 let strf = Printf.sprintf
 let error_to_failure = function Ok v -> v | Error e -> failwith e
 
+let quote_tool tool =
+  (* Can be replaced by Filename.quote_command once we drop OCaml < 4.10 *)
+  Filename.quote @@
+  if Sys.win32 then String.map (function '/' -> '\\' | c -> c) tool else tool
+
 let find_sub ?(start = 0) ~sub s =
   (* naive algorithm, worst case O(length sub * length s) *)
   let len_sub = String.length sub in
@@ -29,10 +34,9 @@ let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   let err_cmd exit cmd =
     raise (Sys_error (strf "exited with %d: %s\n" exit cmd))
   in
-  let quote_cmd = if Sys.win32 then fun cmd -> strf "\"%s\"" cmd else Fun.id in
   let run_cmd args =
     let cmd = String.concat " " (List.map Filename.quote args) in
-    let exit = Sys.command (quote_cmd cmd) in
+    let exit = Sys.command cmd in
     if exit = 0 then () else err_cmd exit cmd
   in
   let parent = Filename.dirname dir in
@@ -165,7 +169,7 @@ let get_tool_commands tool =
       | [] -> []
       in
       let exec =
-        strf "%s --__complete %s --__complete=" (Filename.quote tool) cmd
+        strf "%s --__complete %s --__complete=" (quote_tool tool) cmd
       in
       let comps = exec_stdout exec |> error_to_failure in
       let comps = String.split_on_char '\n' comps in
@@ -186,7 +190,7 @@ let get_tool_commands tool =
   with Failure e -> Error e
 
 let get_tool_command_man tool ~name cmd =
-  let tool = Filename.quote tool in
+  let tool = quote_tool tool in
   let exec = if cmd = "" then tool else String.concat " " [tool; cmd] in
   let man_basename =
     let exec = if cmd = "" then name else String.concat " " [name; cmd] in
