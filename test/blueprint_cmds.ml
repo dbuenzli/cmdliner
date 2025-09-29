@@ -12,7 +12,7 @@ open Cmdliner.Term.Syntax
 let flag = Arg.(value & flag & info ["flag"] ~doc:"The flag")
 let infile =
   let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
-  Arg.(value & pos 0 file "-" & info [] ~doc ~docv:"FILE")
+  Arg.(value & pos 0 filepath "-" & info [] ~doc ~docv:"FILE")
 
 let hey_cmd =
   let doc = "The hey command synopsis is TODO" in

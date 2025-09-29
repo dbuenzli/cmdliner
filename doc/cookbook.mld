@@ -172,7 +172,7 @@ let cmd =
   Cmd.group (Cmd.info "tool") ~default @@
   [Cmd_import.cmd; Cmd_serve.cmd; Cmd_user.cmd]
 
-let main () = Cmd.value' cmd
+let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
 ]}
 
@@ -254,11 +254,11 @@ to support these conventions:
 {[
 let infile =
   let doc = "$(docv) is the file to read from. Use $(b,-) for $(b,stdin)" in
-  Arg.(value & opt string "-" & info ["i", "input-file"] ~doc ~docv:"FILE")
+  Arg.(value & opt filepath "-" & info ["i", "input-file"] ~doc ~docv:"FILE")
 
 let outfile =
   let doc = "$(docv) is the file to write to. Use $(b,-) for $(b,stdout)" in
-  Arg.(value & opt string "-" & info ["o", "output-file"] ~doc ~docv:"FILE")
+  Arg.(value & opt filepath "-" & info ["o", "output-file"] ~doc ~docv:"FILE")
 ]}
 
 Here is {!Stdlib} based code to read to a string a file or standard
@@ -660,7 +660,7 @@ open Cmdliner.Term.Syntax
 let flag = Arg.(value & flag & info ["flag"] ~doc:"The flag")
 let infile =
   let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
-  Arg.(value & pos 0 string "-" & info [] ~doc ~docv:"FILE")
+  Arg.(value & pos 0 filepath "-" & info [] ~doc ~docv:"FILE")
 
 let cmd =
   let doc = "The tool synopsis is TODO" in
@@ -696,7 +696,7 @@ open Cmdliner.Term.Syntax
 let flag = Arg.(value & flag & info ["flag"] ~doc:"The flag")
 let infile =
   let doc = "$(docv) is the input file. Use $(b,-) for $(b,stdin)." in
-  Arg.(value & pos 0 file "-" & info [] ~doc ~docv:"FILE")
+  Arg.(value & pos 0 filepath "-" & info [] ~doc ~docv:"FILE")
 
 let hey_cmd =
   let doc = "The hey command synopsis is TODO" in
