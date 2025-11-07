@@ -1,3 +1,8 @@
+
+
+- Improve bash completion on files and directories (#238).
+  Thanks to Brian Ward for the report and fix.
+
 v2.0.0 2025-09-26 Zagreb
 ------------------------
 

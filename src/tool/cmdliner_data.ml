@@ -16,10 +16,12 @@ let bash_generic_completion =
         read group
       elif [[ $type == "dirs" ]] && (type compopt &> /dev/null); then
         if [[ $prefix != -* ]]; then
+          compopt -o filenames
           COMPREPLY+=( $(compgen -d "$prefix") )
         fi
       elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
         if [[ $prefix != -* ]]; then
+          compopt -o filenames
           COMPREPLY+=( $(compgen -f "$prefix") )
         fi
       elif [[ $type == "message" ]]; then
