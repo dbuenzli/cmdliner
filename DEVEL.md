@@ -18,7 +18,10 @@ To test them you can:
     
 This replaces the generic completion function used by tool completion 
 scripts with the new definition. Trying to complete tools should now
-use the new definitions.
+use the new definitions. To test the file, directory and path completions
+you can also use this test (invoke with `--help`)
+
+    b0 -- test_shell 
 
 If you change completion scripts in [`src/tool`](src/tool) you must invoke:
 

@@ -26,6 +26,7 @@ let test ?(requires = []) = B0_ocaml.test ~requires:(cmdliner :: requires)
 
 let testing = `File ~/"test/testing_cmdliner.ml"
 
+let test_shell = test ~/"test/test_shell.ml" ~run:false
 let test_arg = test ~/"test/test_arg.ml" ~srcs:[testing] ~requires:[b0_std]
 let test_cmd = test ~/"test/test_cmd.ml" ~srcs:[testing] ~requires:[b0_std]
 let test_completion =
