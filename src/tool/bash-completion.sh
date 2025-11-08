@@ -1,7 +1,11 @@
 _cmdliner_generic() {
-  local prefix="${COMP_WORDS[COMP_CWORD]}"
-  local w=("${COMP_WORDS[@]}") # Keep COMP_WORDS intact for restart completion
-  w[COMP_CWORD]="--__complete=${COMP_WORDS[COMP_CWORD]}"
+  local words cword
+  # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
+  _get_comp_words_by_ref -n = words cword
+
+  local prefix="${words[cword]}"
+  local w=("${words[@]}") # Keep words intact for restart completion
+  w[cword]="--__complete=${words[cword]}"
   local line="${w[@]:0:1} --__complete ${w[@]:1}"
   local version type group item text_line item_doc msg
   {
@@ -45,19 +49,15 @@ _cmdliner_generic() {
         done
         # Sadly it seems bash does not support doc strings, so we only
         # add item to to the reply. If you know any better get in touch.
-        # Handle glued forms, the completion item is the full option
-        if [[ $group == "Values" ]]; then
-           if [[ $prefix == --* ]]; then
-              item="${prefix%%=*}=$item"
-           elif [[ $prefix == -* ]]; then
-              item="${prefix:0:2}$item"
-           fi
+        if [[ $group == "Values" ]] && [[ $prefix == -* ]] && [[ $prefix != --* ]]; then
+          # properly complete short options
+          item="${prefix:0:2}$item"
         fi
         COMPREPLY+=($item)
       elif [[ $type == "restart" ]]; then
           # N.B. only emitted if there is a -- token
-          for ((i = 0; i < ${#COMP_WORDS[@]}; i++)); do
-              if [[ "${COMP_WORDS[i]}" == "--" ]]; then
+          for ((i = 0; i < ${#words[@]}; i++)); do
+              if [[ "${words[i]}" == "--" ]]; then
                   _comp_command_offset $((i+1))
                   return
               fi

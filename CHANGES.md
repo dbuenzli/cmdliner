@@ -1,5 +1,6 @@
 
-
+- Improve bash completion of long options with `=` (#231).
+  Thanks to Brian Ward for the patch.
 - Improve bash completion on files and directories (#238).
   Thanks to Brian Ward for the report and fix.
 
