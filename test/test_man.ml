@@ -383,24 +383,28 @@ ascii(7), grep(1)|}
 
 let main () =
   let doc = "Test manpage specifications" in
-  let test_help =
-    let doc = "Test manpage interactively as if --help[$(docv)] is invoked" in
-    let help_fmts =
-      ["auto", "=auto"; "pager", "=pager"; "groff", "=groff";
-       "plain", "=plain"; "", ""]
+  let main =
+    let open Cmdliner.Term.Syntax in
+    let+ test_help =
+      let doc = "Test manpage interactively as if --help[$(docv)] is invoked" in
+      let help_fmts =
+        ["auto", "=auto"; "pager", "=pager"; "groff", "=groff";
+         "plain", "=plain"; "", ""]
+      in
+      let help_enum = Cmdliner.Arg.enum help_fmts and docv = "FMT" in
+      Arg.(value & opt ~vopt:(Some "") (some help_enum) None &
+           info ["test-help"] ~docv ~doc)
     in
-    let help_enum = Cmdliner.Arg.enum help_fmts and docv = "FMT" in
-    Arg.(value & opt ~vopt:(Some "") (some help_enum) None &
-         info ["test-help"] ~docv ~doc)
+    fun () -> match test_help with
+    | None ->
+        Test.log "Invoke with %a[=FMT] to test %a[=FMT] interactively"
+          Fmt.code "--test-help" Fmt.code "--help";
+        Test.autorun ()
+    | Some fmt ->
+        Test.set_main_exit @@ fun () ->
+        let argv = Array.of_list (Cmd.name cmd :: ["--help" ^ fmt ]) in
+        Cmd.eval ~argv (Cmd.v info man_test_t)
   in
-  Test.main' test_help ~doc @@ function
-  | None ->
-      Test.log "Invoke with %a[=FMT] to test %a[=FMT] interactively"
-        Fmt.code "--test-help" Fmt.code "--help";
-      Test.autorun ()
-  | Some fmt ->
-      Test.set_main_exit @@ fun () ->
-      let argv = Array.of_list (Cmd.name cmd :: ["--help" ^ fmt ]) in
-      Cmd.eval ~argv (Cmd.v info man_test_t)
+  Test.main' ~doc main
 
 let () = if !Sys.interactive then () else exit (main ())
