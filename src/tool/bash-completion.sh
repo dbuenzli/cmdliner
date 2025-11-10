@@ -1,8 +1,8 @@
 _cmdliner_generic() {
-  local cur prev words cword
+  local words cword
   if (type _get_comp_words_by_ref &> /dev/null); then
     # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
-    _get_comp_words_by_ref -n = cur prev words cword
+    _get_comp_words_by_ref -n = words cword
   else
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
