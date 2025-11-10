@@ -1,13 +1,8 @@
 let bash_generic_completion =
 {|_cmdliner_generic() {
   local words cword
-  if (type _get_comp_words_by_ref &> /dev/null); then
-    # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
-    _get_comp_words_by_ref -n = words cword
-  else
-    words=("${COMP_WORDS[@]}")
-    cword=$COMP_CWORD
-  fi
+  # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
+  _get_comp_words_by_ref -n = words cword
 
   local prefix="${words[cword]}"
   local w=("${words[@]}") # Keep words intact for restart completion
