@@ -1,4 +1,9 @@
 
+- cmdliner tool: add support for generating standalone completion
+  scripts via the `--standalone-completion`. Can be used if your
+  users don't have the cmdliner library installed (#243).
+  Thanks to Brian Ward for suggesting.
+  
 - Improve bash completion of long options with `=` (#231).
   Thanks to Brian Ward for the patch.
 - Improve bash completion on files and directories (#238).

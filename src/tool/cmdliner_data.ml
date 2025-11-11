@@ -1,5 +1,7 @@
-let bash_generic_completion =
-{|_cmdliner_generic() {
+let strf = Printf.sprintf
+
+let bash_generic_completion fun_name = strf 
+{|%s() {
   local words cword
   # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
   _get_comp_words_by_ref -n = words cword
@@ -67,10 +69,10 @@ let bash_generic_completion =
     done } < <(eval $line)
   return 0
 }
-|}
+|} fun_name
 
-let zsh_generic_completion =
-{|function _cmdliner_generic {
+let zsh_generic_completion fun_name = strf 
+{|function %s {
   local w=("${words[@]}") # Keep words intact for restart completion
   local prefix="${words[CURRENT]}"
   w[CURRENT]="--__complete=${words[CURRENT]}"
@@ -142,4 +144,4 @@ let zsh_generic_completion =
     _describe -V unsorted completions -U
   fi
 }
-|}
+|} fun_name

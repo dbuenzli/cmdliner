@@ -253,7 +253,7 @@ module type SHELL = sig
   val generic_script_name : string
   val generic_completion : string
   val tool_script_name : toolname:string -> string
-  val tool_completion : toolname:string -> string
+  val tool_completion : toolname:string -> standalone:bool -> string
 end
 
 type shell = (module SHELL)
@@ -262,27 +262,56 @@ module Bash = struct
   let name = "bash"
   let sharedir = "bash-completion/completions"
   let generic_script_name = "_cmdliner_generic"
-  let generic_completion = Cmdliner_data.bash_generic_completion
+  let generic_completion =
+    Cmdliner_data.bash_generic_completion "_cmdliner_generic"
+
   let tool_script_name ~toolname = toolname
-  let tool_completion ~toolname = strf
+  let tool_completion ~toolname ~standalone =
+    if not standalone then
+      strf
 {|if ! declare -F _cmdliner_generic > /dev/null; then
   _completion_loader _cmdliner_generic
 fi
 complete -F _cmdliner_generic %s
 |} toolname
+    else
+    let munge s = String.map (function '-' -> '_' | c -> c) s in
+    let fun_name = strf "_%s_cmdliner" (munge toolname) in
+    let fun_def = Cmdliner_data.bash_generic_completion fun_name in
+    strf
+{|
+%s
+if ! declare -F %s > /dev/null; then
+  _completion_loader %s
+fi
+complete -F %s %s
+|} fun_def fun_name fun_name fun_name toolname
 end
 
 module Zsh = struct
   let name = "zsh"
   let sharedir = "zsh/site-functions"
   let generic_script_name = "_cmdliner_generic"
-  let generic_completion = Cmdliner_data.zsh_generic_completion
+  let generic_completion =
+    Cmdliner_data.zsh_generic_completion "_cmdliner_generic"
+
   let tool_script_name ~toolname = "_" ^ toolname
-  let tool_completion ~toolname = strf
+  let tool_completion ~toolname ~standalone =
+    if not standalone then
+      strf
 {|#compdef %s
 autoload _cmdliner_generic
 _cmdliner_generic
 |} toolname
+    else
+    let munge s = String.map (function '-' -> '_' | c -> c) s in
+    let fun_name = strf "_%s_cmdliner" (munge toolname) in
+    let fun_def = Cmdliner_data.zsh_generic_completion fun_name in
+    strf
+{|#compdef %s
+%s
+%s
+|} toolname fun_def fun_name
 end
 
 let shells : shell list = [(module Bash); (module Zsh)]
@@ -292,9 +321,9 @@ let generic_completion (module Shell : SHELL) =
   print_string Shell.generic_completion;
   Cmdliner.Cmd.Exit.ok
 
-let tool_completion (module Shell : SHELL) ~toolname =
+let tool_completion (module Shell : SHELL) ~toolname ~standalone =
   with_binary_stdout @@ fun () ->
-  print_string (Shell.tool_completion ~toolname);
+  print_string (Shell.tool_completion ~toolname ~standalone);
   Cmdliner.Cmd.Exit.ok
 
 (* Install commands *)
@@ -317,6 +346,7 @@ let install_generic_completion ~dry_run ~update_opam_install shells sharedir =
 
 let install_tool_completion
     ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
+    ~standalone_completion:standalone
   =
   with_binary_stdout @@ fun () ->
   let install ~dry_run ~toolnames sharedir acc (module Shell : SHELL) =
@@ -325,7 +355,7 @@ let install_tool_completion
         Filename.concat Shell.sharedir (Shell.tool_script_name ~toolname)
       in
       let path = Filename.concat sharedir rel_path  in
-      write_file ~dry_run path (Shell.tool_completion ~toolname);
+      write_file ~dry_run path (Shell.tool_completion ~toolname ~standalone);
       (path, rel_path) :: acc
     in
     mkdir ~dry_run (Filename.concat sharedir Shell.sharedir);
@@ -363,6 +393,7 @@ let install_tool_manpages ~dry_run ~update_opam_install ~tools ~mandir =
 
 let install_tool_support
     ~dry_run ~update_opam_install tools shells ~prefix ~sharedir ~mandir
+    ~standalone_completion
   =
   let sharedir = match sharedir with
   | None -> Filename.concat prefix "share" | Some sharedir -> sharedir
@@ -375,6 +406,7 @@ let install_tool_support
   let toolnames = List.map snd (List.map split_toolname tools) in
   install_tool_completion
     ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
+    ~standalone_completion
 
 (* Tool command listing command *)
 
@@ -390,6 +422,12 @@ open Cmdliner.Term.Syntax
 let dry_run =
   let doc = "Do not install, output paths that would be written." in
   Arg.(value & flag & info ["dry-run"] ~doc)
+
+let standalone_completion =
+  let doc = "Generate standalone completion scripts. These scripts do \
+             not depend on the generic cmdliner completion scripts."
+  in
+  Arg.(value & flag & info ["standalone-completion"] ~doc)
 
 let update_opam_install =
   let doc =
@@ -516,8 +554,9 @@ let tool_completion_cmd =
     ]
   in
   Cmd.make (Cmd.info "tool-completion" ~doc ~man) @@
-  let+ shell = shell_pos0 and+ toolname = toolname_pos1 in
-  tool_completion shell ~toolname
+  let+ shell = shell_pos0 and+ toolname = toolname_pos1
+  and+ standalone = standalone_completion in
+  tool_completion shell ~toolname ~standalone
 
 let install_generic_completion_cmd =
   let doc = "Install generic completion scripts" in
@@ -562,9 +601,11 @@ let install_tool_completion_cmd =
   (* No let punning in < 4.13 *)
   let+ dry_run = dry_run and+ shells = shells_opt
   and+ update_opam_install = update_opam_install
-  and+ toolnames = toolnames_posleft and+ sharedir = sharedir_poslast in
+  and+ toolnames = toolnames_posleft and+ sharedir = sharedir_poslast
+  and+ standalone_completion in
   install_tool_completion
     ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
+    ~standalone_completion
 
 let install_tool_manpages_cmd =
   let doc = "Install tool and subcommand manpages" in
@@ -604,10 +645,12 @@ let install_tool_support_cmd =
   in
   Cmd.make (Cmd.info "tool-support" ~doc ~man) @@
   let+ dry_run = dry_run and+ update_opam_install = update_opam_install
-  and+ shells = shells_opt and+ tools = tools_posleft and+ sharedir = sharedir_opt
-  and+ mandir = mandir_opt and+ prefix = prefix in
+  and+ shells = shells_opt and+ tools = tools_posleft
+  and+ sharedir = sharedir_opt and+ mandir = mandir_opt and+ prefix = prefix
+  and+ standalone_completion in
   install_tool_support
     ~dry_run ~update_opam_install tools shells ~prefix ~sharedir ~mandir
+    ~standalone_completion
 
 let install_cmd =
   let doc = "Install support files for cmdliner tools" in
