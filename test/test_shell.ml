@@ -5,7 +5,7 @@
 
 (* Use to test for completion interactively. *)
 
-let tool ~file ~dir ~path ~choice =
+let tool ~file ~dir ~path ~choice ~cmd =
   print_endline "Happy?";
   Cmdliner.Cmd.Exit.ok
 
@@ -24,11 +24,23 @@ let cmd =
     let doc  = "Use me to test for path completion." in
     Arg.(value & opt (some path) None & info ["path"] ~doc)
   and+ choice =
-    let doc = "Use me to test for enum completion for short and long options." in
+    let doc =
+      "Use me to test for enum completion for short and long options."
+    in
     Arg.(value & opt (enum ["one", `One; "two", `Two; "three", `Three]) `One
          & info ["choice"; "c"] ~doc)
+  and+ cmd =
+    let arg_conv =
+      let completion = Arg.Completion.complete_restart in
+      Arg.Conv.of_conv ~completion Arg.string
+    in
+    let doc =
+      "Use me to test for completion restart of other tools after \
+       the $(b,--) token"
+    in
+    Arg.(value & pos_all arg_conv [] & info [] ~doc ~docv:"ARG")
   in
-  tool ~file ~dir ~path ~choice
+  tool ~file ~dir ~path ~choice ~cmd
 
 let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
