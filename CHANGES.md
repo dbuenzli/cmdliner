@@ -1,4 +1,7 @@
 
+- completion: add support for powershell (#214)
+  Thanks to Brian Ward for the work.
+
 - cmdliner tool: add support for generating standalone completion
   scripts via the `--standalone-completion`. Can be used if your
   users don't have the cmdliner library installed (#243).

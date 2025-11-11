@@ -183,8 +183,8 @@ completion.
 
 The completion process happens via a {{!completion_protocol}protocol}
 which is interpreted by generic shell completion scripts that are
-installed by the library. For now the [zsh] and [bash] shells are
-supported.
+installed by the library. For now the [zsh], [bash], and PowerShell
+([pwsh]) shells are supported.
 
 Tool developers can easily {{!install_tool_completion}install}
 completion definitions that invoke these completion scripts. Tool
@@ -295,6 +295,39 @@ bash-completion [2.12] in favour of [_comp_load] but many distributions
 are on [< 2.12] and in [2.12] [_completion_loader] simply calls
 [_comp_load].
 
+{3:user_pwsh For PowerShell ([pwsh])}
+
+PowerShell Core supports tab completion but lacks the kind of
+discovery mechanism that other shells have for these scripts.
+
+Therefore, you need to explicitly source the completion script
+for cmdliner based tools. This can be done in the
+{{:https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles} [$profile]}
+file by adding something like the following:
+
+{@ps1[
+# first, load the generic cmdliner completion function
+. "$(opam var share)/powershell/cmdliner-generic.ps1"
+# then, register each tool you want completions for
+# for example:
+. "$(opam var share)/powershell/cmdliner_completion.ps1"
+. "$(opam var share)/powershell/odoc_completion.ps1"
+# ...
+]}
+
+Note that these instruction do not react dynamically to [opam]
+switches changes so you may see odd completion behaviours when you do
+so, see this {{:https://github.com/ocaml/opam/issues/6427}this opam
+issue}.
+
+With this setup, if you are using a cmdliner based tool named
+[thetool] that did not {{!install_tool_completion}install} a completion
+definition. You can always do it yourself by invoking:
+
+{@ps1[
+Register-ArgumentCompleter -Native -CommandName thetool -ScriptBlock $Global:_cmdliner_generic
+]}
+
 {2:install_completion Install}
 
 Completion scripts need to be installed in subdirectories of a
@@ -310,7 +343,8 @@ The final destination directory in [share] depends on the shell:
 
 {ul
 {- For [zsh] it is [$SHAREDIR/zsh/site-functions]}
-{- For [bash] it is [$SHAREDIR/bash-completion/completions]}}
+{- For [bash] it is [$SHAREDIR/bash-completion/completions]}
+{- For [pwsh] it is [$SHAREDIR/powershell]}}
 
 If that is unsatisfying you can output the completion scripts directly
 where you want with the [cmdliner generic-completion] and
