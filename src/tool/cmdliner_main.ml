@@ -424,8 +424,10 @@ let dry_run =
   Arg.(value & flag & info ["dry-run"] ~doc)
 
 let standalone_completion =
-  let doc = "Generate standalone completion scripts. These scripts do \
-             not depend on the generic cmdliner completion scripts."
+  let doc =
+    "Generate standalone completion scripts. These scripts do \
+     not depend on the generic cmdliner completion scripts. For some \
+     shells this may result in slower completion."
   in
   Arg.(value & flag & info ["standalone-completion"] ~doc)
 
