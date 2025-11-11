@@ -18,15 +18,36 @@ _cmdliner_generic() {
       if [[ $type == "group" ]]; then
         read group
       elif [[ $type == "dirs" ]] && (type compopt &> /dev/null); then
-        if [[ $prefix != -* ]]; then
-          compopt -o filenames
-          COMPREPLY+=( $(compgen -d "$prefix") )
+        # trim option prefix in cases like --file=<TAB> or -f<TAB>
+        local pattern="$prefix"
+        local reply_prefix=""
+        if [[ $pattern == --* ]]; then
+          pattern="${prefix#*=}"
+        elif [[ $pattern == -* ]]; then
+          pattern="${prefix:2}"
+          reply_prefix="${prefix:0:2}"
         fi
-      elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
-        if [[ $prefix != -* ]]; then
-          compopt -o filenames
-          COMPREPLY+=( $(compgen -f "$prefix") )
+
+        compopt -o filenames -o nospace
+        local dirs=( $(compgen -d "$pattern") )
+        for d in "${dirs[@]}"; do
+          COMPREPLY+=("${reply_prefix}${d}")
+        done
+       elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
+        local pattern="$prefix"
+        local reply_prefix=""
+        if [[ $pattern == --* ]]; then
+          pattern="${prefix#*=}"
+        elif [[ $pattern == -* ]]; then
+          pattern="${prefix:2}"
+          reply_prefix="${prefix:0:2}"
         fi
+
+        compopt -o filenames -o nospace
+        local dirs=( $(compgen -f "$pattern") )
+        for d in "${dirs[@]}"; do
+          COMPREPLY+=("${reply_prefix}${d}")
+        done
       elif [[ $type == "message" ]]; then
           msg="";
           while read text_line; do
