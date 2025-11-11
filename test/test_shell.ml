@@ -36,7 +36,10 @@ let cmd =
     in
     let doc =
       "Use me to test for completion restart of other tools after \
-       the $(b,--) token"
+       the $(b,--) token. This may not work through a $(b,b0) \
+       invocation. Install completion for the $(b,test_shell) tool \
+       and invoke the tool directly from the path output with
+       $(b,b0 --path -- test_shell)."
     in
     Arg.(value & pos_all arg_conv [] & info [] ~doc ~docv:"ARG")
   in
