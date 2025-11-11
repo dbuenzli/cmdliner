@@ -1,6 +1,6 @@
 let strf = Printf.sprintf
 
-let bash_generic_completion fun_name = strf 
+let bash_generic_completion fun_name = strf
 {|%s() {
   local words cword
   # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
@@ -20,16 +20,26 @@ let bash_generic_completion fun_name = strf
     while read type; do
       if [[ $type == "group" ]]; then
         read group
-      elif [[ $type == "dirs" ]] && (type compopt &> /dev/null); then
-        if [[ $prefix != -* ]]; then
-          compopt -o filenames
-          COMPREPLY+=( $(compgen -d "$prefix") )
+      elif [[ $type == "dirs" || $type == "files" ]] && (type compopt &> /dev/null); then
+        # trim option prefix in cases like --file=<TAB> or -f<TAB>
+        local pattern="$prefix"
+        local reply_prefix=""
+        if [[ $pattern == --* ]]; then
+          pattern="${prefix#*=}"
+        elif [[ $pattern == -* ]]; then
+          pattern="${prefix:2}"
+          reply_prefix="${prefix:0:2}"
         fi
-      elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
-        if [[ $prefix != -* ]]; then
-          compopt -o filenames
-          COMPREPLY+=( $(compgen -f "$prefix") )
-        fi
+
+        # enable filename completion features like trailing slash for dirs
+        compopt -o filenames -o nospace
+
+        # need to run compgen with -d or -f flag
+        local flag="${type:0:1}"
+        local completions=( $(compgen -$flag "$pattern") )
+        for c in "${completions[@]}"; do
+          COMPREPLY+=("${reply_prefix}${c}")
+        done
       elif [[ $type == "message" ]]; then
           msg="";
           while read text_line; do
@@ -71,7 +81,7 @@ let bash_generic_completion fun_name = strf
 }
 |} fun_name
 
-let zsh_generic_completion fun_name = strf 
+let zsh_generic_completion fun_name = strf
 {|function %s {
   local w=("${words[@]}") # Keep words intact for restart completion
   local prefix="${words[CURRENT]}"
