@@ -5,7 +5,7 @@
 
 (* Use to test for completion interactively. *)
 
-let tool ~file ~dir ~path ~choice ~cmd =
+let tool ~file ~dir ~path ~choice ~cmd ~message =
   print_endline "Happy?";
   Cmdliner.Cmd.Exit.ok
 
@@ -16,13 +16,13 @@ let cmd =
   Cmd.make (Cmd.info "test_shell" ~version:"%%VERSION%%") @@
   let+ file =
     let doc = "Use me to test for filepath completion." in
-    Arg.(value & opt (some filepath) None & info ["file"] ~doc)
+    Arg.(value & opt (some filepath) None & info ["file"; "f"] ~doc)
   and+ dir =
     let doc = "Use me to test for dirpath completion." in
-    Arg.(value & opt (some dirpath) None & info ["dir"] ~doc)
+    Arg.(value & opt (some dirpath) None & info ["dir"; "d"] ~doc)
   and+ path =
     let doc  = "Use me to test for path completion." in
-    Arg.(value & opt (some path) None & info ["path"] ~doc)
+    Arg.(value & opt (some path) None & info ["path"; "p"] ~doc)
   and+ choice =
     let doc =
       "Use me to test for enum completion for short and long options."
@@ -42,8 +42,19 @@ let cmd =
        $(b,b0 --path -- test_shell)."
     in
     Arg.(value & pos_all arg_conv [] & info [] ~doc ~docv:"ARG")
+  and+ message =
+    let doc = "Use me to test the Message directive in completion" in
+    Arg.(value
+      & opt
+        (some Conv.(of_conv ~completion:(
+            Arg.Completion.make ?context:None
+              (fun _ ~token:_  -> Error "whoops! This is a message!"))
+            string)
+        )
+        None
+      & info ["message"] ~doc)
   in
-  tool ~file ~dir ~path ~choice ~cmd
+  tool ~file ~dir ~path ~choice ~cmd ~message
 
 let main () = Cmd.eval' cmd
 let () = if !Sys.interactive then () else exit (main ())
