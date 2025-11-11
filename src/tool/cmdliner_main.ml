@@ -314,7 +314,29 @@ _cmdliner_generic
 |} toolname fun_def fun_name
 end
 
-let shells : shell list = [(module Bash); (module Zsh)]
+module Pwsh = struct
+  let name = "pwsh"
+  let sharedir = "powershell/Modules/Cmdliner.Completion" (* not sure *)
+  let generic_script_name = "_cmdliner_generic.ps1"
+  let generic_completion = Cmdliner_data.pwsh_generic_completion "_cmdliner_generic"
+  let tool_script_name ~toolname = strf "%s_completion.ps1" toolname
+  let tool_completion ~toolname ~standalone =
+    if not standalone then
+    strf
+{|Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock $Global:_cmdliner_generic
+|} toolname else
+      let munge s = String.map (function '-' -> '_' | c -> c) s in
+    let fun_name = strf "_%s_cmdliner" (munge toolname) in
+    let fun_def = Cmdliner_data.pwsh_generic_completion fun_name in
+    strf
+{|
+%s
+
+Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock %s
+|} fun_def toolname fun_name
+end
+
+let shells : shell list = [(module Bash); (module Zsh); (module Pwsh)]
 
 let generic_completion (module Shell : SHELL) =
   with_binary_stdout @@ fun () ->

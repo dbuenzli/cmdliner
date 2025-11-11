@@ -63,17 +63,22 @@ let update_completion_scripts =
   B0_unit.of_action "update-cmdliner-data" @@ fun env _ ~args:_ ->
   let bash = B0_env.in_scope_dir env ~/"src/tool/bash-completion.sh" in
   let zsh = B0_env.in_scope_dir env ~/"src/tool/zsh-completion.sh" in
+  let pwsh = B0_env.in_scope_dir env ~/"src/tool/pwsh-completion.ps1" in
   let ml = B0_env.in_scope_dir env ~/"src/tool/cmdliner_data.ml" in
   let* bash = Os.File.read bash in
   let bash = String.replace_first ~sub:"_cmdliner_generic" ~by:"%s" bash in
   let* zsh = Os.File.read zsh in
   let zsh = String.replace_first ~sub:"_cmdliner_generic" ~by:"%s" zsh in
+  let* pwsh = Os.File.read pwsh in
+  let pwsh = String.replace_first ~sub:"_cmdliner_generic" ~by:"%s" pwsh in
   let src = Fmt.str
       "let strf = Printf.sprintf\n\n\
-       let bash_generic_completion fun_name = strf\n{|%s\
+       let bash_generic_completion fun_name = strf \n{|%s\
        |} fun_name\n\n\
-       let zsh_generic_completion fun_name = strf\n{|%s\
-       |} fun_name" bash zsh
+       let zsh_generic_completion fun_name = strf \n{|%s\
+       |} fun_name\n\n\
+       let pwsh_generic_completion fun_name = strf \n{|%s\
+       |} fun_name" bash zsh pwsh
   in
   Os.File.write ~force:true ~make_path:false ml src
 

@@ -15,8 +15,7 @@ To test them you can:
 
     source ./src/tool/zsh-completion.sh  # zsh
     source ./src/tool/bash-completion.sh # bash
-    
-This replaces the generic completion function used by tool completion 
+    . ./src/tool/pwsh-completion.ps1     # powershell
 scripts with the new definition. Trying to complete tools should now
 use the new definitions. To test the file, directory and path completions
 you can also use this test (invoke with `--help`)
