@@ -246,8 +246,8 @@ $Global:%s = {
 
         $CompletionResults.Add(
           [System.Management.Automation.CompletionResult]::new(
-            $completionItem,
             $item,
+            $completionItem,
             'ParameterValue',
             $itemDoc))
       }

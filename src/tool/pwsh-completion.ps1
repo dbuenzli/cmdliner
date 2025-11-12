@@ -97,8 +97,8 @@ $Global:_cmdliner_generic = {
 
         $CompletionResults.Add(
           [System.Management.Automation.CompletionResult]::new(
-            $completionItem,
             $item,
+            $completionItem,
             'ParameterValue',
             $itemDoc))
       }
