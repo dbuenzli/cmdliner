@@ -6,16 +6,28 @@ $Global:_cmdliner_generic = {
     )
 
     $exe = $commandAst.CommandElements[0].Extent.Text
+    $otherArgs = ""
 
-    $otherArgs = ($commandAst.CommandElements
-        | Select-Object -Skip 1
-        | ForEach-Object {
-            $_.Extent.Text
-        } | Where-Object {
-            $_ -ne $wordToComplete
-        }) -join " "
+    $seenWordToComplete = $false
+    foreach ($elem in $commandAst.CommandElements | Select-Object -Skip 1) {
+        $text = $elem.Extent.Text
+        if ($otherArgs -ne "") {
+            $otherArgs += " "
+        }
+        if ($text -eq $wordToComplete) {
+            $otherArgs += "--__complete=$text"
+            $seenWordToComplete = $true
+        }
+        else {
+            $otherArgs += $text
+        }
+    }
+    # usually if wordToComplete is not in commandAst, it's because it's an empty string
+    if (-not $seenWordToComplete) {
+        $otherArgs += " --__complete=$wordToComplete"
+    }
 
-    $completions = Invoke-Expression "$exe --__complete $otherArgs --__complete=$wordToComplete"
+    $completions = Invoke-Expression "$exe --__complete $otherArgs"
 
     $version = $completions[0]
     if ($version -ne "1") {
@@ -35,6 +47,8 @@ $Global:_cmdliner_generic = {
         $prefix = $wordToComplete.Substring(0, [Math]::Min(2, $wordToComplete.Length))
         $pattern = $wordToComplete.Substring(2)
     }
+
+    $CompletionResults = [System.Collections.Generic.List[System.Management.Automation.CompletionResult]]::new()
 
     $idx = 1
     $group = ""
@@ -74,43 +88,67 @@ $Global:_cmdliner_generic = {
                     $item = $prefix + $item
                 }
 
-                [System.Management.Automation.CompletionResult]::new(
-                    $completionItem,
-                    $item,
-                    'ParameterValue',
-                    $itemDoc)
+                $CompletionResults.Add(
+                    [System.Management.Automation.CompletionResult]::new(
+                        $completionItem,
+                        $item,
+                        'ParameterValue',
+                        $itemDoc))
             }
             "files" {
                 [Management.Automation.CompletionCompleters]::CompleteFilename($pattern)
                 | ForEach-Object {
-                    [System.Management.Automation.CompletionResult]::new(
-                        $prefix + $_.CompletionText,
-                        $_.ListItemText,
-                        $_.ResultType,
-                        $_.ToolTip)
+                    $CompletionResults.Add(
+                        [System.Management.Automation.CompletionResult]::new(
+                            $prefix + $_.CompletionText,
+                            $_.ListItemText,
+                            $_.ResultType,
+                            $_.ToolTip))
                 }
             }
             "dirs" {
-                $dirs = [Management.Automation.CompletionCompleters]::CompleteFilename($pattern)
+                [Management.Automation.CompletionCompleters]::CompleteFilename($pattern)
                 | Where-Object {
                     Test-Path $_.CompletionText -PathType Container
                 } | ForEach-Object {
-                    [System.Management.Automation.CompletionResult]::new(
-                        $prefix + $_.CompletionText,
-                        $_.ListItemText,
-                        $_.ResultType,
-                        $_.ToolTip)
-                }
-                if ($dirs.Count -gt 0) {
-                    $dirs
-                }
-                else {
-                    # supress default behavior (file completion) when you don't return anything
-                    $null
+                    $CompletionResults.Add(
+                        [System.Management.Automation.CompletionResult]::new(
+                            $prefix + $_.CompletionText,
+                            $_.ListItemText,
+                            $_.ResultType,
+                            $_.ToolTip))
                 }
             }
             "restart" {
-                [Management.Automation.CompletionCompleters]::CompleteCommand($exe)
+                $newCommand = ""
+                $seenDoubleDash = $false
+
+                $newCursorPosition = 0
+                for ($i = 1; $i -lt $commandAst.CommandElements.Count; $i++) {
+                    $elem = $commandAst.CommandElements[$i]
+                    if ($seenDoubleDash) {
+                        if ($newCommand -ne "") {
+                            $newCommand += " "
+                        }
+                        $newCommand += $elem.Extent.Text
+                        if ($elem.Extent.Text -eq $wordToComplete) {
+                            $newCursorPosition = $newCommand.Length
+                        }
+                    }
+                    if ($elem.Extent.Text -eq "--") {
+                        $seenDoubleDash = $true
+                    }
+                }
+
+                if ($newCursorPosition -eq 0) {
+                    $newCommand += " "
+                    $newCursorPosition = $newCommand.Length
+                }
+
+                (TabExpansion2 -InputScript $newCommand -CursorColumn $newCursorPosition
+                ).CompletionMatches | ForEach-Object {
+                    $CompletionResults.Add($_)
+                }
             }
             "message" {
                 $msg = ""
@@ -126,11 +164,19 @@ $Global:_cmdliner_generic = {
                     $msg += $line
                 }
                 Write-Output "$msg" | Out-Host
-                $null
             }
             default {
                 throw "Unknown completion type: $type"
             }
         }
     }
+
+    if ($CompletionResults.Count -gt 0) {
+        return $CompletionResults
+    }
+    else {
+        # supress default behavior (file completion) when there are no completions
+        return $null
+    }
+
 }
