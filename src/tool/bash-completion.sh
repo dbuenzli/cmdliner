@@ -17,7 +17,7 @@ _cmdliner_generic() {
     while read type; do
       if [[ $type == "group" ]]; then
         read group
-      elif [[ $type == "dirs" ]] && (type compopt &> /dev/null); then
+      elif [[ $type == "dirs" || $type == "files" ]] && (type compopt &> /dev/null); then
         # trim option prefix in cases like --file=<TAB> or -f<TAB>
         local pattern="$prefix"
         local reply_prefix=""
@@ -28,25 +28,14 @@ _cmdliner_generic() {
           reply_prefix="${prefix:0:2}"
         fi
 
+        # enable filename completion features like trailing slash for dirs
         compopt -o filenames -o nospace
-        local dirs=( $(compgen -d "$pattern") )
-        for d in "${dirs[@]}"; do
-          COMPREPLY+=("${reply_prefix}${d}")
-        done
-       elif [[ $type == "files" ]] && (type compopt &> /dev/null); then
-        local pattern="$prefix"
-        local reply_prefix=""
-        if [[ $pattern == --* ]]; then
-          pattern="${prefix#*=}"
-        elif [[ $pattern == -* ]]; then
-          pattern="${prefix:2}"
-          reply_prefix="${prefix:0:2}"
-        fi
 
-        compopt -o filenames -o nospace
-        local dirs=( $(compgen -f "$pattern") )
-        for d in "${dirs[@]}"; do
-          COMPREPLY+=("${reply_prefix}${d}")
+        # need to run compgen with -d or -f flag
+        local flag="${type:0:1}"
+        local completions=( $(compgen -$flag "$pattern") )
+        for c in "${completions[@]}"; do
+          COMPREPLY+=("${reply_prefix}${c}")
         done
       elif [[ $type == "message" ]]; then
           msg="";
