@@ -147,7 +147,14 @@ let zsh_generic_completion fun_name = strf
 |} fun_name
 
 let pwsh_generic_completion fun_name = strf 
-{|$Global:%s = {
+{|<#
+Note: PowerShell swallows all errors in tab completion functions.
+If you are hacking on this file and get unexpected results (like
+file completions where you don't expect them), inspect the most
+recent errors with `Get-Error -Newest N` for some small N.
+#>
+
+$Global:%s = {
   param(
     $wordToComplete,
     $commandAst,

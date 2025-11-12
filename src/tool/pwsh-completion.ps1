@@ -1,3 +1,10 @@
+<#
+Note: PowerShell swallows all errors in tab completion functions.
+If you are hacking on this file and get unexpected results (like
+file completions where you don't expect them), inspect the most
+recent errors with `Get-Error -Newest N` for some small N.
+#>
+
 $Global:_cmdliner_generic = {
   param(
     $wordToComplete,
