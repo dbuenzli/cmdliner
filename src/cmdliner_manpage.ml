@@ -487,16 +487,13 @@ let find_pager env =
   in
   find_cmd cmds
 
-let pp_to_pager env print ppf v = match find_pager env with
-| None -> print `Plain ppf v
-| Some (pager, opts) ->
-    let pager =
-      let set_less_env = match env "LESS" with
-      | None -> if Sys.win32 then "set LESS=FRX && " else "LESS=FRX "
-      | Some _ -> "" (* Sys.command will pass it *)
-      in
-      set_less_env ^ pager ^ opts
-    in
+let pp_to_pager env print ppf v =
+  let run cmd = Sys.command cmd = 0 in
+  let plain_pager pager = match pp_to_temp_file (print `Plain) v with
+  | None -> false
+  | Some f -> run (strf "%s < %s" pager f)
+  in
+  let groffed_pager pager =
     let groffer =
       let cmds =
         ["mandoc", " -m man -K utf-8 -T utf8";
@@ -505,32 +502,35 @@ let pp_to_pager env print ppf v = match find_pager env with
       in
       find_cmd cmds
     in
-    let cmd = match groffer with
-    | None ->
-        begin match pp_to_temp_file (print `Plain) v with
-        | None -> None
-        | Some f -> Some (strf "%s < %s" pager f)
-        end
+    match groffer with
+    | None -> false
     | Some (groffer, opts) ->
         let groffer = groffer ^ opts in
-        begin match pp_to_temp_file (print `Groff) v with
-        | None -> None
-        | Some f when Sys.win32 ->
-            (* For some obscure reason the pipe below does not
-               work. We need to use a temporary file.
-               https://github.com/dbuenzli/cmdliner/issues/166 *)
-            begin match tmp_file_for_pager () with
-            | None -> None
-            | Some tmp ->
-                Some (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
-            end
+        match pp_to_temp_file (print `Groff) v with
+        | None -> false
         | Some f ->
-            Some (strf "%s < %s | %s" groffer f pager)
-        end
-    in
-    match cmd with
-    | None -> print `Plain ppf v
-    | Some cmd -> if (Sys.command cmd) <> 0 then print `Plain ppf v
+            (* This used to go through a pipe on non-Windows
+               platforms, but this would hide errors with the groffer
+               and inhibit the graceful degradation to plain text
+               since POSIX shells do not "pipefail" *)
+            match tmp_file_for_pager () with
+            | None -> false
+              | Some tmp ->
+                  run (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
+  in
+  match find_pager env with
+  | None -> print `Plain ppf v
+  | Some (pager, opts) ->
+      let pager =
+        let set_less_env = match env "LESS" with
+        | None -> if Sys.win32 then "set LESS=FRX && " else "LESS=FRX "
+        | Some _ -> "" (* Sys.command will pass it *)
+        in
+        set_less_env ^ pager ^ opts
+      in
+      if groffed_pager pager then () else
+      if plain_pager pager then () else
+      print `Plain ppf v
 
 (* Output *)
 
