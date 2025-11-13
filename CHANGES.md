@@ -9,7 +9,7 @@
 - Improve bash completion on files and directories (#238).
   Thanks to Brian Ward for the report and fix.
 
-- Help output, improve graceful degration on groffer errors (#140).
+- Help output, improve graceful degration on groff or pager errors (#140).
   Thanks to Sergey Fedorov for the report.
 
 v2.0.0 2025-09-26 Zagreb
