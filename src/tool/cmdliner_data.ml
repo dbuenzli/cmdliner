@@ -132,7 +132,7 @@ let zsh_generic_completion fun_name = strf
                 item="${prefix:0:2}${item}"
             fi
         fi
-        # item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
+        item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
         completions+=("${item}":"${item_doc}")
       elif [[ "$type" == "dirs" ]]; then
         _path_files -/
@@ -156,7 +156,7 @@ let zsh_generic_completion fun_name = strf
 }
 |} fun_name
 
-let pwsh_generic_completion fun_name = strf 
+let pwsh_generic_completion fun_name = strf
 {|<#
 Note: PowerShell swallows all errors in tab completion functions.
 If you are hacking on this file and get unexpected results (like

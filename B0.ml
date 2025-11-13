@@ -73,11 +73,11 @@ let update_completion_scripts =
   let pwsh = String.replace_first ~sub:"_cmdliner_generic" ~by:"%s" pwsh in
   let src = Fmt.str
       "let strf = Printf.sprintf\n\n\
-       let bash_generic_completion fun_name = strf \n{|%s\
+       let bash_generic_completion fun_name = strf\n{|%s\
        |} fun_name\n\n\
-       let zsh_generic_completion fun_name = strf \n{|%s\
+       let zsh_generic_completion fun_name = strf\n{|%s\
        |} fun_name\n\n\
-       let pwsh_generic_completion fun_name = strf \n{|%s\
+       let pwsh_generic_completion fun_name = strf\n{|%s\
        |} fun_name" bash zsh pwsh
   in
   Os.File.write ~force:true ~make_path:false ml src

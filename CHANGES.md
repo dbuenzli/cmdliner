@@ -2,15 +2,19 @@
 - completion: add support for powershell (#214)
   Thanks to Brian Ward for the work.
 
+- Improve bash completion of long options with `=` (#231).
+  Thanks to Brian Ward for the patch.
+
+- Improve bash completion on files and directories (#238).
+  Thanks to Brian Ward for the report and fix.
+
+- zsh completion: strip ANSI escapes from doc strings. The experience
+  is too unreliable (#220).
+
 - cmdliner tool: add support for generating standalone completion
   scripts via the `--standalone-completion`. Can be used if your
   users don't have the cmdliner library installed (#243).
   Thanks to Brian Ward for suggesting.
-  
-- Improve bash completion of long options with `=` (#231).
-  Thanks to Brian Ward for the patch.
-- Improve bash completion on files and directories (#238).
-  Thanks to Brian Ward for the report and fix.
 
 - Help output, improve graceful degration on groff or pager errors (#140).
   Thanks to Sergey Fedorov for the report.

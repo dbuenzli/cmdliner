@@ -48,7 +48,7 @@ function _cmdliner_generic {
                 item="${prefix:0:2}${item}"
             fi
         fi
-        # item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
+        item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
         completions+=("${item}":"${item_doc}")
       elif [[ "$type" == "dirs" ]]; then
         _path_files -/
