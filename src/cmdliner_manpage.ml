@@ -515,8 +515,8 @@ let pp_to_pager env print ppf v =
                since POSIX shells do not "pipefail" *)
             match tmp_file_for_pager () with
             | None -> false
-              | Some tmp ->
-                  run (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
+            | Some tmp ->
+                run (strf "%s <%s >%s && %s <%s" groffer f tmp pager tmp)
   in
   match find_pager env with
   | None -> print `Plain ppf v

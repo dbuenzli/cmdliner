@@ -44,15 +44,14 @@ let cmd =
     Arg.(value & pos_all arg_conv [] & info [] ~doc ~docv:"ARG")
   and+ message =
     let doc = "Use me to test the Message directive in completion" in
-    Arg.(value
-      & opt
-        (some Conv.(of_conv ~completion:(
-            Arg.Completion.make ?context:None
-              (fun _ ~token:_  -> Error "whoops! This is a message!"))
-            string)
-        )
-        None
-      & info ["message"] ~doc)
+    let msg_conv =
+      let completion =
+        let complete _ ~token:_ = Error "whoops! This is a message!" in
+        Arg.Completion.make ?context:None complete
+      in
+      Arg.Conv.of_conv ~completion Arg.string
+    in
+    Arg.(value & opt (some msg_conv) None & info ["message"] ~doc)
   in
   tool ~file ~dir ~path ~choice ~cmd ~message
 
