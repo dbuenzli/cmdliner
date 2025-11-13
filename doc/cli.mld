@@ -322,8 +322,13 @@ issue}.
 
 With this setup, if you are using a cmdliner based tool named
 [thetool] that did not {{!install_tool_completion}install} a completion
-definition. You can always do it yourself by invoking the result of
-[cmdliner tool-completion pwsh thetool]:
+definition. You can always do it yourself by invoking:
+
+{@ps1[
+Invoke-Expression $(cmdliner tool-completion pwsh thetool)
+]}
+
+or if you find that easier to remember:
 
 {@ps1[
 Register-ArgumentCompleter -Native -CommandName thetool -ScriptBlock $Global:_cmdliner_generic
