@@ -307,7 +307,7 @@ file by adding something like the following:
 
 {@ps1[
 # first, load the generic cmdliner completion function
-. "$(opam var share)/powershell/cmdliner-generic.ps1"
+. "$(opam var share)/powershell/cmdliner_generic_completion.ps1"
 # then, register each tool you want completions for
 # for example:
 . "$(opam var share)/powershell/cmdliner_completion.ps1"
@@ -322,7 +322,8 @@ issue}.
 
 With this setup, if you are using a cmdliner based tool named
 [thetool] that did not {{!install_tool_completion}install} a completion
-definition. You can always do it yourself by invoking:
+definition. You can always do it yourself by invoking the result of
+[cmdliner tool-completion pwsh thetool]:
 
 {@ps1[
 Register-ArgumentCompleter -Native -CommandName thetool -ScriptBlock $Global:_cmdliner_generic

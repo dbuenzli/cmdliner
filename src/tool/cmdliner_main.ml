@@ -317,7 +317,7 @@ end
 module Pwsh = struct
   let name = "pwsh"
   let sharedir = "powershell"
-  let generic_script_name = "_cmdliner_generic.ps1"
+  let generic_script_name = "cmdliner_generic_completion.ps1"
   let generic_completion =
     Cmdliner_data.pwsh_generic_completion "_cmdliner_generic"
 

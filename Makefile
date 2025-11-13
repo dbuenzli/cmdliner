@@ -20,6 +20,7 @@ DOCDIR=$(SHAREDIR)/doc/cmdliner
 MANDIR=$(SHAREDIR)/man
 BASHCOMPDIR=$(SHAREDIR)/bash-completion/completions
 ZSHCOMPDIR=$(SHAREDIR)/zsh/site-functions
+PWSHCOMPDIR=$(SHAREDIR)/powershell
 NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
 # EXT_LIB     by default value of OCaml's Makefile.config
 # NATDYNLINK  by default value of OCaml's Makefile.config
@@ -75,6 +76,8 @@ build-completions: $(BUILD-EXE)
 	$(TOOL) tool-completion bash cmdliner > $(TOOLBDIR)/bash-cmdliner.sh
 	$(TOOL) generic-completion zsh > $(TOOLBDIR)/zsh-completion.sh
 	$(TOOL) tool-completion zsh cmdliner > $(TOOLBDIR)/zsh-cmdliner.sh
+	$(TOOL) generic-completion pwsh > $(TOOLBDIR)/pwsh-completion.ps1
+	$(TOOL) tool-completion pwsh cmdliner > $(TOOLBDIR)/pwsh-cmdliner.ps1
 
 build-man: $(BUILD-EXE)
 	$(TOOL) install tool-manpages $(TOOLBDIR)/cmdliner $(TOOLBDIR)/man
@@ -120,6 +123,12 @@ install-completions:
 	$(INSTALL) -m 644 $(TOOLBDIR)/zsh-completion.sh \
 	  "$(ZSHCOMPDIR)/_cmdliner_generic"
 	$(INSTALL) -m 644 $(TOOLBDIR)/zsh-cmdliner.sh "$(ZSHCOMPDIR)/_cmdliner"
+	$(INSTALL) -d "$(PWSHCOMPDIR)"
+	$(INSTALL) -m 644 $(TOOLBDIR)/pwsh-completion.ps1 \
+	  "$(PWSHCOMPDIR)/cmdliner_generic_completion.ps1"
+	$(INSTALL) -m 644 $(TOOLBDIR)/pwsh-cmdliner.ps1 \
+	   "$(PWSHCOMPDIR)/cmdliner_completion.ps1"
+
 
 .PHONY: all install install-doc clean build-byte build-native \
 	build-native-dynlink build-byte-exe build-native-exe build-completions \
