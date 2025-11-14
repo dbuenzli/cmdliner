@@ -217,19 +217,42 @@ invocation.
 
 First make sure your understand the
 {{!tip_tool_support_with_opam}above basic instructions} for [opam].
-You then
-{{:https://dune.readthedocs.io/en/stable/reference/packages.html#generating-opam-files}need to figure out} how to add the [cmdliner install] instruction to the [build:]
-field of the opam file after your [dune] build instructions. For a tool named
-[tool] the result should eventually look this:
 
-{@sh[
-build: [
-   [ … ] # Your regular dune build instructions
-   ["cmdliner" "install" "tool-support"
-               "--update-opam-install=%{_:name}%.install"
-               "_build/install/default/bin/tool" {os-family != "windows"}
-               "_build/install/default/bin/tool.exe" {os-family = "windows"}
-               "_build/cmdliner-install"]]
+You can use [dune]'s {{:https://dune.readthedocs.io/en/latest/reference/dune/install.html}[install]} stanza to place the
+manpage and completion files the same locations as [cmdliner install tool-support] would with
+the following dune configuration in the same [dune] file as your [executable] stanza:
+
+{@dune[
+(rule
+ (with-stdout-to
+  thetool.1
+  (run %{exe:thetool.exe} --help=groff)))
+
+(install
+ (section man)
+ (files thetool.1))
+
+(rule
+ (with-stdout-to
+  thetool_completion.zsh
+  (run cmdliner tool-completion zsh thetool)))
+
+(rule
+ (with-stdout-to
+  thetool_completion.sh
+  (run cmdliner tool-completion bash thetool)))
+
+(rule
+ (with-stdout-to
+  thetool_completion.ps1
+  (run cmdliner tool-completion pwsh thetool)))
+
+(install
+ (section share_root)
+ (files
+  (thetool_completion.zsh as zsh/site-functions/_thetool)
+  (thetool_completion.sh as bash-completion/completions/thetool)
+  (thetool_completion.ps1 as powershell/thetool_completion.ps1)))
 ]}
 
 {1:conventions Conventions}
