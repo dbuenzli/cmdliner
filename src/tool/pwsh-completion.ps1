@@ -21,7 +21,8 @@ $Global:_cmdliner_generic = {
     if ($otherArgs -ne "") {
       $otherArgs += " "
     }
-    if ($text -eq $wordToComplete) {
+    # wordToComplete has had quoting removed, so we need to remove it before comparison
+    if ($text -replace "[`"']", "" -eq $wordToComplete) {
       $otherArgs += "--__complete=$text"
       $seenWordToComplete = $true
     }
@@ -90,15 +91,20 @@ $Global:_cmdliner_generic = {
         }
 
         $completionItem = $item
-        # re-add prefix for things like --foo=
+
         if ($group -eq "Values") {
-          $item = $prefix + $item
+          # quote replies with powershell separators
+          if ($completionItem -match "[,|;]") {
+            $completionItem = '"' + $completionItem + '"'
+          }
+          # re-add prefix for things like --foo=
+          $completionItem = $prefix + $completionItem
         }
 
         $CompletionResults.Add(
           [System.Management.Automation.CompletionResult]::new(
-            $item,
             $completionItem,
+            $item,
             'ParameterValue',
             $itemDoc))
       }
