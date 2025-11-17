@@ -90,15 +90,20 @@ $Global:_cmdliner_generic = {
         }
 
         $completionItem = $item
-        # re-add prefix for things like --foo=
+
         if ($group -eq "Values") {
-          $item = $prefix + $item
+          # quote replies with commas, since powershell considers those separators
+          if ($completionItem -match ',') {
+            $completionItem = '"' + $completionItem + '"'
+          }
+          # re-add prefix for things like --foo=
+          $completionItem = $prefix + $completionItem
         }
 
         $CompletionResults.Add(
           [System.Management.Automation.CompletionResult]::new(
-            $item,
             $completionItem,
+            $item,
             'ParameterValue',
             $itemDoc))
       }
