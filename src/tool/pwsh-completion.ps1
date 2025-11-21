@@ -21,7 +21,8 @@ $Global:_cmdliner_generic = {
     if ($otherArgs -ne "") {
       $otherArgs += " "
     }
-    if ($text -eq $wordToComplete) {
+    # wordToComplete has had quoting removed, so we need to remove it before comparison
+    if ($text -replace "[`"']", "" -eq $wordToComplete) {
       $otherArgs += "--__complete=$text"
       $seenWordToComplete = $true
     }
@@ -92,8 +93,8 @@ $Global:_cmdliner_generic = {
         $completionItem = $item
 
         if ($group -eq "Values") {
-          # quote replies with commas, since powershell considers those separators
-          if ($completionItem -match ',') {
+          # quote replies with powershell separators
+          if ($completionItem -match "[,|;]") {
             $completionItem = '"' + $completionItem + '"'
           }
           # re-add prefix for things like --foo=
