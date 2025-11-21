@@ -96,8 +96,8 @@ If you are porting your command line parsing to [Cmdliner] and that
 you have conventions that clash with [Cmdliner]'s ones but you need to
 preserve backward compatibility, one way of proceeding is to
 pre-process {!Sys.argv} into a new array of the right shape before
-giving it to command {{!Cmdliner.Cmd.section-eval}evaluation
-functions} via the [?argv] optional argument.
+giving it to command {{!Cmdliner.Cmd.section-eval}evaluation functions}
+via the [?argv] optional argument.
 
 These are two common cases:
 
@@ -215,20 +215,60 @@ invocation.
 
 {3:tip_tool_support_with_opam_dune With [opam] and [dune]}
 
+Users of [dune] 3.5 or later can use the [cmdliner install tool-support]
+command described above, along with the
+{{:https://dune.readthedocs.io/en/stable/reference/dune/rule.html#directory-targets}[directory-targets]}
+feature and {{:https://dune.readthedocs.io/en/latest/reference/dune/install.html}[install]} stanza,
+to hook into the existing [dune build @install] command.
+
+For an executable named [mytool] defined in a [dune] file, you can add the following
+to the same [dune] file to populate the completion scripts and manpages
+when running [dune build @install] (which is what is used by [opam install]):
+
+{@dune[
+(rule
+ (target
+  (dir cmdliner-support))
+ (deps mytool.exe)
+ (action
+  (ignore-stdout
+   (run cmdliner install tool-support ./mytool.exe:mytool cmdliner-support))))
+
+(install
+ (section share_root)
+ (dirs
+  (cmdliner-support/share as .)))
+]}
+
+If these features of dune are not available to your project, you may instead need to update
+the opam file rather than use dune's configuration.
+
 First make sure your understand the
 {{!tip_tool_support_with_opam}above basic instructions} for [opam].
-You then
-{{:https://dune.readthedocs.io/en/stable/reference/packages.html#generating-opam-files}need to figure out} how to add the [cmdliner install] instruction to the [build:]
-field of the opam file after your [dune] build instructions. For a tool named
-[tool] the result should eventually look this:
+You then {{:https://dune.readthedocs.io/en/stable/reference/packages.html#generating-opam-files}need to add a [.opam.template]} file which inserts
+the [cmdliner install] instruction to the [build:] field of the opam file after your [dune] build instructions. For a tool named
+[mytool] the [mytool.opam.template] file should contain:
 
 {@sh[
 build: [
-   [ … ] # Your regular dune build instructions
-   ["cmdliner" "install" "tool-support"
+    # these first two commands are what dune would generate if you did not have a template
+     ["dune" "subst"] {dev}
+     [
+       "dune"
+       "build"
+       "-p"
+       name
+       "-j"
+       jobs
+       "@install"
+       "@runtest" {with-test}
+       "@doc" {with-doc}
+     ]
+    # this is the important command for cmdliner's files
+     ["cmdliner" "install" "tool-support"
                "--update-opam-install=%{_:name}%.install"
-               "_build/install/default/bin/tool" {os-family != "windows"}
-               "_build/install/default/bin/tool.exe" {os-family = "windows"}
+               "_build/install/default/bin/mytool" {os-family != "windows"}
+               "_build/install/default/bin/mytool.exe" {os-family = "windows"}
                "_build/cmdliner-install"]]
 ]}
 
