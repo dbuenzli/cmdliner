@@ -16,6 +16,10 @@
   users don't have the cmdliner library installed (#243).
   Thanks to Brian Ward for suggesting.
 
+- Add alternative instructions to the cookbook for installing tool support
+  files with `dune` (#250).
+  Thanks to Brian Ward for the patch and research.
+
 - Help output, improve graceful degration on groff or pager errors (#140).
   Thanks to Sergey Fedorov for the report.
 
