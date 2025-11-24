@@ -134,10 +134,21 @@ let zsh_generic_completion fun_name = strf
         fi
         item_doc="${item_doc//$'\e'\[(01m|04m|m)/}"
         completions+=("${item}":"${item_doc}")
-      elif [[ "$type" == "dirs" ]]; then
-        _path_files -/
-      elif [[ "$type" == "files" ]]; then
-        _path_files -f
+      elif [[ "$type" == "dirs" || "$type" == "files" ]]; then
+          local pre=""
+          local pat="$prefix"
+          if [[ "$prefix" == --* ]]; then
+              pre="${prefix%%=*}="
+              pat="${prefix#*=}"
+          elif [[ "$prefix" == -* ]]; then
+              pre="${prefix:0:2}"
+              pat="${prefix:2}"
+          fi
+          if [[ "$type" == "dirs" ]]; then
+              _path_files -/ -P "$pre" "$pat"
+          else
+              _path_files -f -P "$pre" "$pat"
+          fi
       elif [[ "$type" == "restart" ]]; then
         # N.B. only emitted if there is a -- token
         while [[ $words[1] != "--" ]]; do

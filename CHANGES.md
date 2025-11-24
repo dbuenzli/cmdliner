@@ -11,6 +11,10 @@
 - zsh completion: strip ANSI escapes from doc strings. The experience
   is too unreliable (#220).
 
+- zsh completion: fix completion of files and directories on glued
+  forms (#230).
+  Thanks to Brian Ward for the help.
+
 - cmdliner tool: add support for generating standalone completion
   scripts via the `--standalone-completion`. Can be used if your
   users don't have the cmdliner library installed (#243).
