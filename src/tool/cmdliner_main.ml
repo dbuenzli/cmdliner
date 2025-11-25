@@ -629,7 +629,7 @@ let install_tool_completion_cmd =
   let+ dry_run = dry_run and+ shells = shells_opt
   and+ update_opam_install = update_opam_install
   and+ toolnames = toolnames_posleft and+ sharedir = sharedir_poslast
-  and+ standalone_completion in
+  and+ standalone_completion = standalone_completion in
   install_tool_completion
     ~dry_run ~update_opam_install ~shells ~toolnames ~sharedir
     ~standalone_completion
@@ -674,7 +674,7 @@ let install_tool_support_cmd =
   let+ dry_run = dry_run and+ update_opam_install = update_opam_install
   and+ shells = shells_opt and+ tools = tools_posleft
   and+ sharedir = sharedir_opt and+ mandir = mandir_opt and+ prefix = prefix
-  and+ standalone_completion in
+  and+ standalone_completion = standalone_completion in
   install_tool_support
     ~dry_run ~update_opam_install tools shells ~prefix ~sharedir ~mandir
     ~standalone_completion
