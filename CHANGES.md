@@ -1,30 +1,34 @@
+v2.1.0 2025-11-25 Zagreb
+------------------------
 
-- completion: add support for powershell (#214)
+- completion: add support for powershell (#214).
   Thanks to Brian Ward for the work.
 
-- Improve bash completion of long options with `=` (#231).
-  Thanks to Brian Ward for the patch.
-
-- Improve bash completion on files and directories (#238).
+- bash completion: improve bash completion on files and directories (#238).
   Thanks to Brian Ward for the report and fix.
 
-- zsh completion: strip ANSI escapes from doc strings. The experience
-  is too unreliable (#220).
+- bash completion: improve completion of long options with `=` (#231).
+  Thanks to Brian Ward for the patch.
 
 - zsh completion: fix completion of files and directories on glued
   forms (#230).
   Thanks to Brian Ward for the help.
 
+- zsh completion: strip ANSI escapes from doc strings. The experience
+  is too unreliable (#220).
+
 - cmdliner tool: add support for generating standalone completion
-  scripts via the `--standalone-completion`. Can be used if your
-  users don't have the cmdliner library installed (#243).
+  scripts via the `--standalone-completion` option. Can be used if you
+  distribute your software in a context where the cmdliner library
+  may not be installed (#243).
   Thanks to Brian Ward for suggesting.
 
 - Add alternative instructions to the cookbook for installing tool support
   files with `dune` (#250).
   Thanks to Brian Ward for the patch and research.
 
-- Help output, improve graceful degration on groff or pager errors (#140).
+- `--help` output, improve graceful degradation on groff or pager
+  errors (#140).
   Thanks to Sergey Fedorov for the report.
 
 v2.0.0 2025-09-26 Zagreb

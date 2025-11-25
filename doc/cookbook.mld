@@ -213,7 +213,7 @@ If [cmdliner] is only an optional dependency of your package use the
 opam filter [{cmdliner:installed}] after the closing bracket of the command
 invocation.
 
-{3:top_tool_support_with_dune_install With [dune] [@install]}
+{3:top_tool_support_with_dune_install With [dune build @install]}
 
 Users of [dune] 3.5 or later can use the [cmdliner install
 tool-support] command described above, along with the
