@@ -1,3 +1,9 @@
+
+
+
+- Add `.NOTPARALLEL` to makefile. 
+  Thanks to Antonin Decimo for the report and patch (#252).
+
 v2.1.0 2025-11-25 Zagreb
 ------------------------
 
