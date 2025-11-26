@@ -142,11 +142,15 @@ let exe ar src =
   let lib = build_dir Lib in
   ["-I"; lib; ar] @ common src
 
+let host_exe_ext = if Sys.win32 || Sys.cygwin then ".exe" else ""
+
+let cmdliner_exe = "cmdliner" ^ host_exe_ext
+
 let build_natexe srcs =
-  run_cmd ([ocamlopt ()] @ exe "cmdliner.cmxa" srcs @ ["-o"; "cmdliner"])
+  run_cmd ([ocamlopt ()] @ exe "cmdliner.cmxa" srcs @ ["-o"; cmdliner_exe])
 
 let build_bytexe srcs =
-  run_cmd ([ocamlc ()] @ exe "cmdliner.cma" srcs @ ["-o"; "cmdliner"])
+  run_cmd ([ocamlc ()] @ exe "cmdliner.cma" srcs @ ["-o"; cmdliner_exe])
 
 let build_cma srcs =
   run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
