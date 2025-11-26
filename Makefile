@@ -134,3 +134,4 @@ install-completions:
 	build-native-dynlink build-byte-exe build-native-exe build-completions \
 	prepare-prefix install-common install-byte install-native install-dynlink \
 	install-exe install-completions build-man
+.NOTPARALLEL:
