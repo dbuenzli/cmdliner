@@ -11,9 +11,7 @@ type unit = Lib | Bin
 let unit_dir = function Lib -> "src" | Bin -> "src/tool"
 let build_dir u = Filename.concat root_build_dir (unit_dir u)
 
-let base_ocaml_opts =
-  [ "-g"; "-bin-annot";
-    "-safe-string"; (* Remove once we require >= 4.06 *) ]
+let base_ocaml_opts = [ "-g"; "-bin-annot" ]
 
 (* Logging *)
 
