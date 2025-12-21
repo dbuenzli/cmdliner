@@ -142,11 +142,13 @@ let exe ar src =
   let lib = build_dir Lib in
   ["-I"; lib; ar] @ common src
 
-let build_natexe srcs =
-  run_cmd ([ocamlopt ()] @ exe "cmdliner.cmxa" srcs @ ["-o"; "cmdliner"])
+let build_natexe ~exe_ext srcs =
+  let tool = "cmdliner" ^ exe_ext in
+  run_cmd ([ocamlopt ()] @ exe "cmdliner.cmxa" srcs @ ["-o"; tool])
 
-let build_bytexe srcs =
-  run_cmd ([ocamlc ()] @ exe "cmdliner.cma" srcs @ ["-o"; "cmdliner"])
+let build_bytexe ~exe_ext srcs =
+  let tool = "cmdliner" ^ exe_ext in
+  run_cmd ([ocamlc ()] @ exe "cmdliner.cma" srcs @ ["-o"; tool])
 
 let build_cma srcs =
   run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
@@ -169,8 +171,8 @@ let in_build_dir u f =
   Sys.chdir build_dir; f srcs; Sys.chdir root_dir
 
 let main () = match Array.to_list Sys.argv with
-| _ :: [ "natexe" ] -> in_build_dir Bin build_natexe
-| _ :: [ "bytexe" ] -> in_build_dir Bin build_bytexe
+| _ :: [ "natexe"; exe_ext ] -> in_build_dir Bin (build_natexe ~exe_ext)
+| _ :: [ "bytexe"; exe_ext ] -> in_build_dir Bin (build_bytexe ~exe_ext)
 | _ :: [ "cma" ] -> in_build_dir Lib build_cma
 | _ :: [ "cmxa" ] -> in_build_dir Lib build_cmxa
 | _ :: [ "cmxs" ] -> in_build_dir Lib build_cmxs

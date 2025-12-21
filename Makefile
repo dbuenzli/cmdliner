@@ -24,6 +24,7 @@ PWSHCOMPDIR=$(SHAREDIR)/powershell
 NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
 # EXT_LIB     by default value of OCaml's Makefile.config
 # NATDYNLINK  by default value of OCaml's Makefile.config
+# EXE         by default value of OCaml's Makefile.config
 
 INSTALL=install
 B=_build
@@ -66,10 +67,10 @@ build-native-dynlink:
 	ocaml build.ml cmxs
 
 build-byte-exe: build-byte
-	ocaml build.ml bytexe
+	ocaml build.ml bytexe "$(EXE)"
 
 build-native-exe: build-native
-	ocaml build.ml natexe
+	ocaml build.ml natexe "$(EXE)"
 
 build-completions: $(BUILD-EXE)
 	$(TOOL) generic-completion bash > $(TOOLBDIR)/bash-completion.sh
