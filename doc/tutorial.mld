@@ -86,8 +86,8 @@ let () = if !Sys.interactive then () else exit (main ())
 The combinators in the {!Cmdliner.Arg} module allow to extract command
 line arguments as terms. These terms can then be applied to lifted
 OCaml functions to be evaluated. A term that uses terms that correspond
-to command line argument implicitely defines a command line syntax
-fragment. We show this on an concrete example.
+to command line arguments implicitly defines a command line syntax
+fragment. We show this on a concrete example.
 
 In a [chorus.ml] file, consider the [chorus] function that prints
 repeatedly a given message :
@@ -143,7 +143,7 @@ using the {{!term_syntax}term syntax} and the obscure but handy
 let-punning} OCaml notation. This also shows that the
 value {!Cmdliner.Cmd.val-info} can be given more
 information about the term we execute which is notably used to
-to generate the tool's man page.
+generate the tool's man page.
 
 {@ocaml name=example_chorus.ml[
 let chorus_cmd =
