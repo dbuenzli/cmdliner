@@ -12,7 +12,7 @@ form of invocation is:
 tool [OPTION]… [ARG]…
 v}
 
-The tool automatically reponds to the [--help] option by printing
+The tool automatically responds to the [--help] option by printing
 {{!help}the help}. If a version string is provided in the
 {{!Cmdliner.Cmd.val-info}command information}, it also automatically
 responds to the [--version] option by printing this string on standard
@@ -130,7 +130,7 @@ Note that environment variables are not supported for
 
 {1:help Help and man pages}
 
-Help and man pages are are generated when you call your tool or a subcommand
+Help and man pages are generated when you call your tool or a subcommand
 with [--help]. By default, if the [TERM] environment variable
 is not [dumb] or unset, the tool tries to {{!paging}page} the manual
 so that you can directly search it. Otherwise it outputs the manual
@@ -230,7 +230,7 @@ function can be looked by invoking it (this will result in an error).
 _cmdliner_generic:1: words: assignment to invalid subscript range
 ]}
 
-If the function cannnot be found make sure the [cmdliner] library is
+If the function cannot be found make sure the [cmdliner] library is
 installed, that the generic scripts were
 {{!install_generic_completion}installed} and that the
 [_cmdliner_generic] file can be found in one of the directories
@@ -472,7 +472,7 @@ The semantics of directives is as follows:
    have a line that is exactly made of the text [item-end] as it is
    used to signal the end of the item.}
 {- A [file] directive indicates that the script should add existing
-   files staring with [ARG] to completion values.}
+   files starting with [ARG] to completion values.}
 {- A [dir] directive indicates that the script should add existing
    directories starting with [ARG] to completion values.}
 {- A [restart] directive indicates that the script should restart
@@ -519,6 +519,6 @@ them with [CMDLINER_LEGACY_PREFIXES=true] set in the environment to
 recover the old behaviour. {b However the scripts should be fixed: this
 escape hatch will be removed in the future.}
 
-The [CMDLINER_LEGACY_PREFIX=true] escape hatch should not be used for
+The [CMDLINER_LEGACY_PREFIXES=true] escape hatch should not be used for
 interactive tool interaction. In particular the behaviour of Cmdliner
 completion support under this setting is undefined.

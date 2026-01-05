@@ -302,11 +302,11 @@ to support these conventions:
 {[
 let infile =
   let doc = "$(docv) is the file to read from. Use $(b,-) for $(b,stdin)" in
-  Arg.(value & opt filepath "-" & info ["i", "input-file"] ~doc ~docv:"FILE")
+  Arg.(value & opt filepath "-" & info ["i"; "input-file"] ~doc ~docv:"FILE")
 
 let outfile =
   let doc = "$(docv) is the file to write to. Use $(b,-) for $(b,stdout)" in
-  Arg.(value & opt filepath "-" & info ["o", "output-file"] ~doc ~docv:"FILE")
+  Arg.(value & opt filepath "-" & info ["o"; "output-file"] ~doc ~docv:"FILE")
 ]}
 
 Here is {!Stdlib} based code to read to a string a file or standard
@@ -544,7 +544,7 @@ let cmd =
 
 {2:cmds_exit_code_docs How do I document command exit codes?}
 
-Exit codes are documentd by {!Cmdliner.Cmd.Exit.type-info} values and
+Exit codes are documented by {!Cmdliner.Cmd.Exit.type-info} values and
 must be given to the command's {!Cmdliner.Cmd.type-info} value via the
 [exits] optional arguments. For example:
 
