@@ -119,9 +119,18 @@ let rec rmdir dir =
 
 (* Lookup OCaml compilers and ocamldep *)
 
-let really_find_cmd alts = match find_cmd alts with
-| Some cmd -> cmd
-| None -> err "No %s found in PATH\n" (List.hd @@ List.rev alts)
+let really_find_cmd alts =
+  match Sys.getenv_opt "OCAMLFIND_TOOLCHAIN" with
+  | Some toolchain -> (
+      match find_cmd [ "ocamlfind" ] with
+      | Some ocamlfind ->
+        [ocamlfind; "-toolchain"; toolchain; List.hd @@ List.rev alts]
+      | None ->
+          err "OCAMLFIND_TOOLCHAIN is set but ocamlfind not found in PATH\n")
+  | None -> (
+      match find_cmd alts with
+      | Some cmd -> [cmd]
+      | None -> err "No %s found in PATH\n" (List.hd @@ List.rev alts))
 
 let ocamlc () = really_find_cmd ["ocamlc.opt"; "ocamlc"]
 let ocamlopt () = really_find_cmd ["ocamlopt.opt"; "ocamlopt"]
@@ -131,7 +140,7 @@ let ocamldep () = really_find_cmd ["ocamldep.opt"; "ocamldep"]
 
 let sort_srcs srcs =
   let srcs = List.sort String.compare srcs in
-  read_cmd (ocamldep () :: "-slash" :: "-sort" :: srcs)
+  read_cmd (ocamldep () @ "-slash" :: "-sort" :: srcs)
   |> String.trim |> cuts ~sep:' '
 
 let common srcs = base_ocaml_opts @ sort_srcs srcs
@@ -142,20 +151,20 @@ let exe ar src =
 
 let build_natexe ~exe_ext srcs =
   let tool = "cmdliner" ^ exe_ext in
-  run_cmd ([ocamlopt ()] @ exe "cmdliner.cmxa" srcs @ ["-o"; tool])
+  run_cmd (ocamlopt () @ exe "cmdliner.cmxa" srcs @ ["-o"; tool])
 
 let build_bytexe ~exe_ext srcs =
   let tool = "cmdliner" ^ exe_ext in
-  run_cmd ([ocamlc ()] @ exe "cmdliner.cma" srcs @ ["-o"; tool])
+  run_cmd (ocamlc () @ exe "cmdliner.cma" srcs @ ["-o"; tool])
 
 let build_cma srcs =
-  run_cmd ([ocamlc ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
+  run_cmd (ocamlc () @ common srcs @ ["-a"; "-o"; "cmdliner.cma"])
 
 let build_cmxa srcs =
-  run_cmd ([ocamlopt ()] @ common srcs @ ["-a"; "-o"; "cmdliner.cmxa"])
+  run_cmd (ocamlopt () @ common srcs @ ["-a"; "-o"; "cmdliner.cmxa"])
 
 let build_cmxs srcs =
-  run_cmd ([ocamlopt ()] @ common srcs @ ["-shared"; "-o"; "cmdliner.cmxs"])
+  run_cmd (ocamlopt () @ common srcs @ ["-shared"; "-o"; "cmdliner.cmxs"])
 
 let clean () = rmdir root_build_dir
 
