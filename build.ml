@@ -121,16 +121,16 @@ let rec rmdir dir =
 
 let really_find_cmd alts =
   match Sys.getenv_opt "OCAMLFIND_TOOLCHAIN" with
+  | None | Some "" -> (
+      match find_cmd alts with
+      | Some cmd -> [cmd]
+      | None -> err "No %s found in PATH\n" (List.hd @@ List.rev alts))
   | Some toolchain -> (
       match find_cmd [ "ocamlfind" ] with
       | Some ocamlfind ->
         [ocamlfind; "-toolchain"; toolchain; List.hd @@ List.rev alts]
       | None ->
           err "OCAMLFIND_TOOLCHAIN is set but ocamlfind not found in PATH\n")
-  | None -> (
-      match find_cmd alts with
-      | Some cmd -> [cmd]
-      | None -> err "No %s found in PATH\n" (List.hd @@ List.rev alts))
 
 let ocamlc () = really_find_cmd ["ocamlc.opt"; "ocamlc"]
 let ocamlopt () = really_find_cmd ["ocamlopt.opt"; "ocamlopt"]
