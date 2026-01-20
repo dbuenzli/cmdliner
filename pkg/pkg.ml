@@ -12,6 +12,5 @@ let distrib =
   Pkg.distrib ~exclude_paths ()
 
 let () =
-  let opams = [Pkg.opam_file "cmdliner.opam"] in
-  Pkg.describe "cmdliner" ~distrib ~opams @@ fun c ->
+  Pkg.describe "cmdliner" ~distrib @@ fun c ->
   Ok [ Pkg.mllib ~api:["Cmdliner"] "src/cmdliner.mllib" ]

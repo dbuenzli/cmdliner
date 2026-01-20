@@ -88,7 +88,7 @@ prepare-prefix:
 
 install-common: prepare-prefix
 	$(INSTALL) -m 644 pkg/META $(BASE).cmi "$(LIBDIR)"
-	$(INSTALL) -m 644 cmdliner.opam "$(LIBDIR)/opam"
+	$(INSTALL) -m 644 opam "$(LIBDIR)/opam"
 
 install-srcs: prepare-prefix
 	$(INSTALL) -m 644 $(wildcard $(BASE)*.mli) $(wildcard $(BASE)*.ml) \
