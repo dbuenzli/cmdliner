@@ -1,5 +1,8 @@
 
 
+- bash completion: add compatibility with `bash-completions` < 2.12 (#261).
+  Thanks to Brian Ward for the patch.
+
 - Fix build on Windows with `sys-msvc`.
   Thanks to Antonin Décimo and Nicolás Ojeda Bär (#253).
 

@@ -71,7 +71,7 @@ let bash_generic_completion fun_name = strf
           # N.B. only emitted if there is a -- token
           for ((i = 0; i < ${#words[@]}; i++)); do
               if [[ "${words[i]}" == "--" ]]; then
-                  _comp_command_offset $((i+1))
+                  _command_offset $((i+1))
                   return
               fi
           done
