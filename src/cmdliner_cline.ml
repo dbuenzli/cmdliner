@@ -202,7 +202,7 @@ let parse_opt_args
           in
           let cline = Cmdliner_def.Cline.add arg_info arg cline in
           loop errs (k + 1) comp cline pargs args
-      | Error `Not_found when for_completion ->
+      | Error (`Not_found | `Ambiguous) when for_completion ->
           if not is_completion then
             (* Drop the data, if the user thought this was an opt with
                an argument this may confuse positional args but there's

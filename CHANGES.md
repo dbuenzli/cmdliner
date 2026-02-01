@@ -9,6 +9,9 @@
   `$(ocamlc -where)/libasmrun$(LIB_EXT)` (#268). Thanks to Yuriy Krasilnikov
   for the report.
 
+- Fix completion when `CMDLINER_LEGACY_PREFIXES` is enabled (#262, #263).
+  Thanks to Brian Ward for the report and the patch.
+
 - bash completion: add compatibility with `bash-completions` < 2.12 (#261).
   Thanks to Brian Ward for the patch.
 
