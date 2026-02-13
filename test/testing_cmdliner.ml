@@ -59,27 +59,27 @@ let test_eval_result ?__POS__ ?env t cmd args exp =
   Test.eq ?__POS__ (t_eval_result t) ret exp
 
 let snap_parse ?env t cmd args exp =
-  let loc = Test.Snapshot.loc exp in
+  let loc = Test.Snapshot.exp_loc exp in
   let argv = make_argv cmd args in
   let ret = Cmd.eval_value ?env cmd ~argv in
   Test.snap t (get_eval_value ~__POS__:loc ret) exp
 
 let snap_parse_warnings ?env cmd args exp =
-  let loc = Test.Snapshot.loc exp in
+  let loc = Test.Snapshot.exp_loc exp in
   let argv = make_argv cmd args in
   let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ?env ~err cmd ~argv in
   ignore (get_eval_value ~__POS__:loc ret);
   Snap.lines err exp
 
 let snap_eval_error ?env error cmd args exp =
-  let loc = Test.Snapshot.loc exp in
+  let loc = Test.Snapshot.exp_loc exp in
   let argv = make_argv cmd args in
   let ret, err = capture_fmt @@ fun err -> Cmd.eval_value ?env ~err cmd ~argv in
   Test.eq (t_eval_result Test.T.any) ret (Error error) ~__POS__:loc ;
   Snap.lines err exp
 
 let snap_help ?env retv cmd args exp =
-  let loc = Test.Snapshot.loc exp in
+  let loc = Test.Snapshot.exp_loc exp in
   let argv = make_argv cmd args in
   let (ret, help), err =
     capture_fmt @@ fun err ->

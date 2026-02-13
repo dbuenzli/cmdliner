@@ -35,27 +35,27 @@ let test_with_used_args =
   let t = Test.T.(t2 (list string) (t3 bool (option string) (list string))) in
   let parse = Testing_cmdliner.snap_parse t cmd in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
-  parse [] @@ __POS_OF__
+  parse [] @> __POS_OF__
     ([], (false, None, []));
   (* Note some of these are bugs, see issue #204 *)
-  parse ["--"] @@ __POS_OF__
+  parse ["--"] @> __POS_OF__
     ([], (false, None, []));
-  parse ["hoho"; "-a"; "-bmsg"] @@ __POS_OF__
+  parse ["hoho"; "-a"; "-bmsg"] @> __POS_OF__
     (["-a"; "-b"; "msg"; "hoho"], (true, Some "msg", ["hoho"]));
-  parse ["hoho"; "-a"; "-bmsg"; "hihi"] @@ __POS_OF__
+  parse ["hoho"; "-a"; "-bmsg"; "hihi"] @> __POS_OF__
     (["-a"; "-b"; "msg"; "hoho"; "hihi"], (true, Some "msg", ["hoho"; "hihi"]));
-  parse ["--"; "hoho"; "-a"; "-bbla"; "hihi"] @@ __POS_OF__
+  parse ["--"; "hoho"; "-a"; "-bbla"; "hihi"] @> __POS_OF__
     (["hoho"; "-a"; "-bbla"; "hihi"],
      (false, None, ["hoho"; "-a"; "-bbla"; "hihi"]));
-  parse ["hoho"; "-a"; "--bbb=msg"; "hihi"] @@ __POS_OF__
+  parse ["hoho"; "-a"; "--bbb=msg"; "hihi"] @> __POS_OF__
     (["-a"; "--bbb"; "msg"; "hoho"; "hihi"],
      (true, Some "msg", ["hoho"; "hihi"]));
   (**)
-  error `Term ["--opt"] @@ __POS_OF__
+  error `Term ["--opt"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_with_used_args\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--aaa\u{001B}[m] [\u{001B}[01m--bbb\u{001B}[m=\u{001B}[04mVAL\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mARG\u{001B}[m]…\n\
 test_with_used_args: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m--opt\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_with_used_args - Test cli arg capture
 
@@ -100,15 +100,15 @@ let term_duplication =
   let t = Test.T.(t4 string string bool bool) in
   let parse = Testing_cmdliner.snap_parse t cmd in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
-  parse [] @@ __POS_OF__ ("popopo", "popopo", false, false);
-  parse ["0"] @@ __POS_OF__ ("0", "0", false, false);
-  parse ["0"; "-f"] @@ __POS_OF__ ("0", "0", true, true);
+  parse [] @> __POS_OF__ ("popopo", "popopo", false, false);
+  parse ["0"] @> __POS_OF__ ("0", "0", false, false);
+  parse ["0"; "-f"] @> __POS_OF__ ("0", "0", true, true);
   (**)
-  error `Term ["0"; "1"] @@ __POS_OF__
+  error `Term ["0"; "1"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_term_dups\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--flag\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mPOS\u{001B}[m]\n\
 test_term_dups: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01m1\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_term_dups - Test multiple term usage
 

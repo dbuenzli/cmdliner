@@ -109,7 +109,7 @@ let cmd = Cmd.make info man_test_t
 
 let test_plain =
   Test.test "plain text manpage" @@ fun () ->
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
     {|NAME
        man_test - UTF-8 test: 🐫 íöüóőúűéáăîâșț
        ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝
@@ -239,7 +239,7 @@ SEE ALSO|}
 
 let test_groff =
   Test.test "groff manpage" @@ fun () ->
-  Testing_cmdliner.snap_man ~args:["--help=groff"] cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man ~args:["--help=groff"] cmd @> __POS_OF__
     {|.\" Pipe this output to groff -m man -K utf8 -T utf8 | less -R
 .\"
 .mso an.tmac
@@ -397,7 +397,7 @@ let main () =
     in
     fun () -> match test_help with
     | None ->
-        Test.log "Invoke with %a[=FMT] to test %a[=FMT] interactively"
+        Test.Log.msg "Invoke with %a[=FMT] to test %a[=FMT] interactively"
           Fmt.code "--test-help" Fmt.code "--help";
         Test.autorun ()
     | Some fmt ->

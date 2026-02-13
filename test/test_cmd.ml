@@ -25,30 +25,30 @@ let test_groups =
   let parse = Testing_cmdliner.snap_parse Test.T.unit cmd in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   let warning = Testing_cmdliner.snap_parse_warnings cmd in
-  parse ["birds"] @@ __POS_OF__ ();
-  parse ["birds"] @@ __POS_OF__ ();
-  parse ["birds"; "fly"] @@ __POS_OF__ ();
-  parse ["birds"; "land"] @@ __POS_OF__ ();
-  parse ["mammals"] @@ __POS_OF__ ();
+  parse ["birds"] @> __POS_OF__ ();
+  parse ["birds"] @> __POS_OF__ ();
+  parse ["birds"; "fly"] @> __POS_OF__ ();
+  parse ["birds"; "land"] @> __POS_OF__ ();
+  parse ["mammals"] @> __POS_OF__ ();
   (**)
-  warning ["camels"] @@ __POS_OF__
+  warning ["camels"] @> __POS_OF__
     "test_group: \u{001B}[33mdeprecated\u{001B}[m command \u{001B}[01mcamels\u{001B}[m: Use \u{001B}[01mmammals\u{001B}[m instead.\n";
   (**)
-  error `Term [] @@ __POS_OF__
+  error `Term [] @> __POS_OF__
   "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
    test_group: required \u{001B}[04mCOMMAND\u{001B}[m name is \u{001B}[31mmissing\u{001B}[m, must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m,\n\
   \            \u{001B}[01mfishs\u{001B}[m, \u{001B}[01mlookup\u{001B}[m or \u{001B}[01mmammals\u{001B}[m\n";
-  error `Term ["bla"] @@ __POS_OF__ "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
+  error `Term ["bla"] @> __POS_OF__ "Usage: \u{001B}[01mtest_group\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[04mCOMMAND\u{001B}[m …\n\
                                      test_group: \u{001B}[31munknown\u{001B}[m command \u{001B}[01mbla\u{001B}[m. Must be one of \u{001B}[01mbirds\u{001B}[m, \u{001B}[01mcamels\u{001B}[m, \u{001B}[01mfishs\u{001B}[m, \u{001B}[01mlookup\u{001B}[m\n\
                                     \            or \u{001B}[01mmammals\u{001B}[m\n";
-  error `Parse ["birds"; "-k"] @@ __POS_OF__
+  error `Parse ["birds"; "-k"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_group birds\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mCOMMAND\u{001B}[m] …\n\
 test_group: option \u{001B}[01m-k\u{001B}[m \u{001B}[31mneeds an argument\u{001B}[m\n";
-  error `Term ["mammals"; "land"] @@ __POS_OF__
+  error `Term ["mammals"; "land"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_group mammals\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]…\n\
 test_group: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01mland\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_group
 
@@ -92,7 +92,7 @@ EXIT STATUS
 
        124 on command line parsing errors.
 |};
-  Testing_cmdliner.snap_man ~args:["birds"; "--help=plain"] cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man ~args:["birds"; "--help=plain"] cmd @> __POS_OF__
   {|NAME
        test_group-birds - Operate on birds.
 
@@ -138,7 +138,7 @@ EXIT STATUS
 
 SEE ALSO|};
   ();
-  Testing_cmdliner.snap_man ~args:["birds"; "fly"; "--help=plain"] cmd @@
+  Testing_cmdliner.snap_man ~args:["birds"; "fly"; "--help=plain"] cmd @>
   __POS_OF__
  {|NAME
        test_group-birds-fly - Fly birds.
@@ -178,7 +178,7 @@ EXIT STATUS
        125 on unexpected internal errors (bugs).
 
 SEE ALSO|};
-  Testing_cmdliner.snap_man ~args:["birds"; "land"; "--help=plain"] cmd @@
+  Testing_cmdliner.snap_man ~args:["birds"; "land"; "--help=plain"] cmd @>
   __POS_OF__
 {|NAME
        test_group-birds-land - Land birds.
@@ -215,7 +215,7 @@ EXIT STATUS
 
 SEE ALSO|};
   ();
-  Testing_cmdliner.snap_man ~args:["fishs"; "--help=plain"] cmd @@
+  Testing_cmdliner.snap_man ~args:["fishs"; "--help=plain"] cmd @>
   __POS_OF__
     {|NAME
        test_group-fishs - Operate on fishs.
@@ -251,7 +251,7 @@ EXIT STATUS
        125 on unexpected internal errors (bugs).
 
 SEE ALSO|};
-  Testing_cmdliner.snap_man ~args:["mammals"; "--help=plain"] cmd @@
+  Testing_cmdliner.snap_man ~args:["mammals"; "--help=plain"] cmd @>
   __POS_OF__
     {|NAME
        test_group-mammals - Operate on mammals.
@@ -283,7 +283,7 @@ EXIT STATUS
        125 on unexpected internal errors (bugs).
 
 SEE ALSO|};
-  Testing_cmdliner.snap_man ~args:["camels"; "--help=plain"] cmd @@
+  Testing_cmdliner.snap_man ~args:["camels"; "--help=plain"] cmd @>
   __POS_OF__
     {|NAME
        (Deprecated) test_group-camels - Use mammals instead. Operate on
@@ -340,9 +340,9 @@ let test_std_opts =
     let env = Testing_cmdliner.env_dumb_term in
     Testing_cmdliner.test_eval_result ?__POS__ ~env Test.T.unit cmd
   in
-  snap_version ["--version"] @@ __POS_OF__ "X.Y.Z\n";
-  snap_version ["--version"; "birds"] @@ __POS_OF__ "X.Y.Z\n";
-  snap_version ["fishs"; "--version"; "birds"] @@ __POS_OF__ "X.Y.Z\n";
+  snap_version ["--version"] @> __POS_OF__ "X.Y.Z\n";
+  snap_version ["--version"; "birds"] @> __POS_OF__ "X.Y.Z\n";
+  snap_version ["fishs"; "--version"; "birds"] @> __POS_OF__ "X.Y.Z\n";
   ret ["--help"; "--version"] (Ok `Help) ~__POS__;
   ret ["--help"; "--version"] (Ok `Help) ~__POS__;
   ret ["fishs"; "--version"; "birds"; "--help"] (Ok `Help) ~__POS__;

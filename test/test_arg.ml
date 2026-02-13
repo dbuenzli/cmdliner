@@ -30,17 +30,17 @@ let test_pos_all =
   in
   let parse = Testing_cmdliner.snap_parse Test.T.(list string) cmd in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
-  parse [] @@ __POS_OF__ [];
-  parse ["0"] @@ __POS_OF__ ["0"];
-  parse ["--"; "0"] @@ __POS_OF__ ["0"];
-  parse ["0";"1"] @@ __POS_OF__ ["0"; "1"];
-  parse ["0";"--"; "1"] @@ __POS_OF__ ["0"; "1"];
+  parse [] @> __POS_OF__ [];
+  parse ["0"] @> __POS_OF__ ["0"];
+  parse ["--"; "0"] @> __POS_OF__ ["0"];
+  parse ["0";"1"] @> __POS_OF__ ["0"; "1"];
+  parse ["0";"--"; "1"] @> __POS_OF__ ["0"; "1"];
   (**)
-  error `Term ["--opt"] @@ __POS_OF__
+  error `Term ["--opt"] @> __POS_OF__
   "Usage: \u{001B}[01mtest_pos_all\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mTHEARG\u{001B}[m]…\n\
    test_pos_all: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m--opt\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_pos_all - Test pos all
 
@@ -73,17 +73,17 @@ let test_pos_left =
   in
   let parse = Testing_cmdliner.snap_parse Test.T.(list string) cmd in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
-  parse [] @@ __POS_OF__ [];
-  parse ["--"] @@ __POS_OF__ [];
-  parse ["0"] @@ __POS_OF__ ["0"];
-  parse ["0"; "--"; "1" ] @@ __POS_OF__ ["0"; "1"];
-  parse ["0"; "1" ] @@ __POS_OF__ ["0"; "1"];
+  parse [] @> __POS_OF__ [];
+  parse ["--"] @> __POS_OF__ [];
+  parse ["0"] @> __POS_OF__ ["0"];
+  parse ["0"; "--"; "1" ] @> __POS_OF__ ["0"; "1"];
+  parse ["0"; "1" ] @> __POS_OF__ ["0"; "1"];
   (**)
-  error `Term ["0"; "1"; "2"] @@ __POS_OF__
+  error `Term ["0"; "1"; "2"] @> __POS_OF__
   "Usage: \u{001B}[01mtest_pos_left\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mLEFT\u{001B}[m] [\u{001B}[04mLEFT\u{001B}[m]\n\
    test_pos_left: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01m2\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_pos_left - Test pos left
 
@@ -121,25 +121,25 @@ let test_pos_req =
   in
   let t = Test.T.(t4 string string string (list string)) in
   let parse = Testing_cmdliner.snap_parse t cmd in
-  parse ["r1"; "r2"; "r3"; "r4"] @@ __POS_OF__ ("r1", "r2", "r3", ["r4"]);
-  parse ["r1"; "r2"; "r3"; "r4"; "r5"] @@ __POS_OF__
+  parse ["r1"; "r2"; "r3"; "r4"] @> __POS_OF__ ("r1", "r2", "r3", ["r4"]);
+  parse ["r1"; "r2"; "r3"; "r4"; "r5"] @> __POS_OF__
     ("r1", "r2", "r3", ["r4"; "r5"]);
   (**)
   let error = Testing_cmdliner.snap_eval_error `Term cmd in
-  error [] @@ __POS_OF__
+  error [] @> __POS_OF__
 "Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
 test_pos_req: required arguments \u{001B}[04mR1\u{001B}[m, \u{001B}[04mR2\u{001B}[m, \u{001B}[04mR3\u{001B}[m, \u{001B}[04mRIGHT\u{001B}[m are \u{001B}[31mmissing\u{001B}[m\n";
-  error ["r1"] @@ __POS_OF__
+  error ["r1"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
 test_pos_req: required arguments \u{001B}[04mR2\u{001B}[m, \u{001B}[04mR3\u{001B}[m, \u{001B}[04mRIGHT\u{001B}[m are \u{001B}[31mmissing\u{001B}[m\n";
-  error ["r1"; "r2"] @@ __POS_OF__
+  error ["r1"; "r2"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
 test_pos_req: required arguments \u{001B}[04mR3\u{001B}[m, \u{001B}[04mRIGHT\u{001B}[m are \u{001B}[31mmissing\u{001B}[m\n";
-  error ["r1"; "r2"; "r3"] @@ __POS_OF__
+  error ["r1"; "r2"; "r3"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_pos_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… \u{001B}[04mR1\u{001B}[m \u{001B}[04mR2\u{001B}[m \u{001B}[04mR3\u{001B}[m \u{001B}[04mRIGHT\u{001B}[m…\n\
 test_pos_req: required argument \u{001B}[04mRIGHT\u{001B}[m is \u{001B}[31mmissing\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_pos_req - Test pos req arguments
 
@@ -174,14 +174,14 @@ let test_pos_left_right =
   in
   let t = Test.T.(t3 (list string) string (list string)) in
   let snap = Testing_cmdliner.snap_parse t cmd in
-  snap [] @@ __POS_OF__ ([], "undefined", []);
-  snap ["0"] @@ __POS_OF__ (["0"], "undefined", []);
-  snap ["0"; "1"] @@ __POS_OF__ (["0"; "1"], "undefined", []);
-  snap ["0"; "1"; "2"] @@ __POS_OF__ (["0"; "1"], "2", []);
-  snap ["0"; "1"; "2"; "3"] @@ __POS_OF__ (["0"; "1"], "2", ["3"]);
-  snap ["0"; "1"; "2"; "3"; "4"] @@ __POS_OF__ (["0"; "1"], "2", ["3"; "4"]);
+  snap [] @> __POS_OF__ ([], "undefined", []);
+  snap ["0"] @> __POS_OF__ (["0"], "undefined", []);
+  snap ["0"; "1"] @> __POS_OF__ (["0"; "1"], "undefined", []);
+  snap ["0"; "1"; "2"] @> __POS_OF__ (["0"; "1"], "2", []);
+  snap ["0"; "1"; "2"; "3"] @> __POS_OF__ (["0"; "1"], "2", ["3"]);
+  snap ["0"; "1"; "2"; "3"; "4"] @> __POS_OF__ (["0"; "1"], "2", ["3"; "4"]);
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_pos - Test pos arguments
 
@@ -218,16 +218,16 @@ let test_pos_left_right_rev =
   in
   let t = Test.T.(t3 (list string) string (list string)) in
   let snap = Testing_cmdliner.snap_parse t cmd in
-  snap [] @@ __POS_OF__ ([], "undefined", []);
-  snap ["0"] @@ __POS_OF__ ([], "undefined", ["0"]);
-  snap ["0"; "1"] @@ __POS_OF__ ([], "undefined", ["0"; "1"]);
-  snap ["0"; "1"; "2"] @@ __POS_OF__ ([], "0", ["1"; "2"]);
-  snap ["0"; "1"; "2"; "3"] @@ __POS_OF__ (["0"], "1", ["2"; "3"]);
-  snap ["0"; "1"; "2"; "3"; "4"] @@ __POS_OF__ (["0"; "1"], "2", ["3"; "4"]);
-  snap ["0"; "1"; "2"; "3"; "4"; "5"] @@ __POS_OF__
+  snap [] @> __POS_OF__ ([], "undefined", []);
+  snap ["0"] @> __POS_OF__ ([], "undefined", ["0"]);
+  snap ["0"; "1"] @> __POS_OF__ ([], "undefined", ["0"; "1"]);
+  snap ["0"; "1"; "2"] @> __POS_OF__ ([], "0", ["1"; "2"]);
+  snap ["0"; "1"; "2"; "3"] @> __POS_OF__ (["0"], "1", ["2"; "3"]);
+  snap ["0"; "1"; "2"; "3"; "4"] @> __POS_OF__ (["0"; "1"], "2", ["3"; "4"]);
+  snap ["0"; "1"; "2"; "3"; "4"; "5"] @> __POS_OF__
     (["0"; "1"; "2"], "3", ["4"; "5"]);
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_pos - Test pos arguments
 
@@ -264,24 +264,24 @@ let test_opt_required =
     req
   in
   let snap = Testing_cmdliner.snap_parse Test.T.string cmd in
-  snap ["-ra"] @@ __POS_OF__ "a";
-  snap ["--req"; "a"] @@ __POS_OF__ "a";
+  snap ["-ra"] @> __POS_OF__ "a";
+  snap ["--req"; "a"] @> __POS_OF__ "a";
   (**)
   let error err = Testing_cmdliner.snap_eval_error err cmd in
-  error `Parse [] @@ __POS_OF__
+  error `Parse [] @> __POS_OF__
 "Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
 test_opt_req: required option \u{001B}[01m--req\u{001B}[m is \u{001B}[31mmissing\u{001B}[m\n";
-    error `Term ["a"] @@ __POS_OF__
+    error `Term ["a"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
 test_opt_req: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01ma\u{001B}[m\n";
-    error `Term ["-ra"; "a"] @@ __POS_OF__
+    error `Term ["-ra"; "a"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
 test_opt_req: \u{001B}[31mtoo many arguments\u{001B}[m, don't know what to do with \u{001B}[01ma\u{001B}[m\n";
-    error `Parse ["-r"] @@ __POS_OF__
+    error `Parse ["-r"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_opt_req\u{001B}[m [\u{001B}[01m--help\u{001B}[m] \u{001B}[01m--req\u{001B}[m=\u{001B}[04mARG\u{001B}[m [\u{001B}[04mOPTION\u{001B}[m]…\n\
 test_opt_req: option \u{001B}[01m-r\u{001B}[m \u{001B}[31mneeds an argument\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_opt_req - Test optional required arguments (don't do this)
 
@@ -318,11 +318,11 @@ let test_arg_info_docv =
   in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   (**)
-  error `Term ["-z"; "a"] @@ __POS_OF__
+  error `Term ["-z"; "a"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_arg_docv\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--field\u{001B}[m=\u{001B}[04mVAL\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mARG\u{001B}[m]…\n\
 test_arg_docv: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m-z\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_arg_docv - Test pos all
 
@@ -360,11 +360,11 @@ let test_conv_docv =
   in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   (**)
-  error `Term ["-z"; "a"] @@ __POS_OF__
+  error `Term ["-z"; "a"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_conv_docv\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[01m--field\u{001B}[m=\u{001B}[04mFIELD\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mFIELD\u{001B}[m]…\n\
 test_conv_docv: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m-z\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_conv_docv - Test conv docv
 
@@ -400,13 +400,13 @@ let test_arg_file =
   in
   let error err = Testing_cmdliner.snap_eval_error err cmd in
   let parse = Testing_cmdliner.snap_parse Test.T.(list string) cmd in
-  parse ["-"] @@ __POS_OF__ ["-"];
+  parse ["-"] @> __POS_OF__ ["-"];
   (**)
-  error `Term ["-z"; "a"] @@ __POS_OF__
+  error `Term ["-z"; "a"] @> __POS_OF__
 "Usage: \u{001B}[01mtest_arg_file\u{001B}[m [\u{001B}[01m--help\u{001B}[m] [\u{001B}[04mOPTION\u{001B}[m]… [\u{001B}[04mPATH\u{001B}[m]…\n\
 test_arg_file: \u{001B}[31munknown\u{001B}[m option \u{001B}[01m-z\u{001B}[m\n";
   (**)
-  Testing_cmdliner.snap_man cmd @@ __POS_OF__
+  Testing_cmdliner.snap_man cmd @> __POS_OF__
 {|NAME
        test_arg_file - Test conv docv
 

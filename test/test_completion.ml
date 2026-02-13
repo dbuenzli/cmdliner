@@ -20,7 +20,7 @@ let complete = Testing_cmdliner.snap_completion cmd
 
 let test_groups =
   Test.test "Cmd.group completions" @@ fun () ->
-  complete ["--__complete="] @@  __POS_OF__
+  complete ["--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -56,7 +56,7 @@ let test_groups =
      lookup\n\
      Lookup animal by name.\n\
      item-end\n";
-  complete ["birds"; "--__complete="] @@  __POS_OF__
+  complete ["birds"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -96,7 +96,7 @@ let test_groups =
 
 let test_no_options_after_dashsash =
   Test.test "no options after --" @@ fun () ->
-  complete ["birds"; "fly"; "--__complete="] @@ __POS_OF__
+  complete ["birds"; "fly"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -114,13 +114,13 @@ let test_no_options_after_dashsash =
      or \u{001B}[01mplain\u{001B}[m. With \u{001B}[01mauto\u{001B}[m, the format is \u{001B}[01mpager\u{001B}[m or \u{001B}[01mplain\u{001B}[m whenever the \u{001B}[01mTERM\u{001B}[m env var\n\
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
-  complete ["birds"; "fly"; "--"; "--__complete="] @@ __POS_OF__
+  complete ["birds"; "fly"; "--"; "--__complete="] @> __POS_OF__
     "1\n";
   ()
 
 let test_opts_starts =
   Test.test "complete optional argument names" @@ fun () ->
-  complete ["birds"; "--__complete=-"] @@ __POS_OF__
+  complete ["birds"; "--__complete=-"] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -148,7 +148,7 @@ let test_opts_starts =
      item-end\n\
      group\n\
      Subcommands\n";
-  complete ["birds"; "--__complete=--"] @@ __POS_OF__
+  complete ["birds"; "--__complete=--"] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -175,7 +175,7 @@ let test_opts_starts =
 let test_opt_value =
   Test.test "complete optional argument values" @@ fun () ->
   (* Glued *)
-  complete ["birds"; "--__complete=--can-fly="] @@ __POS_OF__
+  complete ["birds"; "--__complete=--can-fly="] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -188,7 +188,7 @@ let test_opt_value =
      \n\
      item-end\n";
   (* next token *)
-  complete ["birds"; "--can-fly"; "--__complete="] @@ __POS_OF__
+  complete ["birds"; "--can-fly"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -200,7 +200,7 @@ let test_opt_value =
      false\n\
      \n\
      item-end\n";
-  complete ["birds"; "--can-fly=true"; "--__complete="] @@ __POS_OF__
+  complete ["birds"; "--can-fly=true"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -226,7 +226,7 @@ let test_opt_value =
      or \u{001B}[01mplain\u{001B}[m. With \u{001B}[01mauto\u{001B}[m, the format is \u{001B}[01mpager\u{001B}[m or \u{001B}[01mplain\u{001B}[m whenever the \u{001B}[01mTERM\u{001B}[m env var\n\
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
-  complete ["birds"; "--can-fly"; "true"; "--__complete="] @@ __POS_OF__
+  complete ["birds"; "--can-fly"; "true"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -256,7 +256,7 @@ let test_opt_value =
 
 let test_context_sensitive =
   Test.test "context sensitive completions" @@ fun () ->
-  complete ["lookup"; "--__complete="] @@ __POS_OF__
+  complete ["lookup"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -304,7 +304,7 @@ let test_context_sensitive =
      or \u{001B}[01mplain\u{001B}[m. With \u{001B}[01mauto\u{001B}[m, the format is \u{001B}[01mpager\u{001B}[m or \u{001B}[01mplain\u{001B}[m whenever the \u{001B}[01mTERM\u{001B}[m env var\n\
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
-  complete ["lookup"; "-kfish"; "--__complete=s"] @@ __POS_OF__
+  complete ["lookup"; "-kfish"; "--__complete=s"] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -312,7 +312,7 @@ let test_context_sensitive =
      salmon\n\
      \n\
      item-end\n";
-  complete ["lookup"; "-kbird"; "--__complete=p"] @@ __POS_OF__
+  complete ["lookup"; "-kbird"; "--__complete=p"] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -344,7 +344,7 @@ let test_restart_restricted_tool =
     ()
   in
   let complete = Testing_cmdliner.snap_completion cmd in
-  complete ["--__complete="] @@ __POS_OF__
+  complete ["--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -368,7 +368,7 @@ let test_restart_restricted_tool =
      or \u{001B}[01mplain\u{001B}[m. With \u{001B}[01mauto\u{001B}[m, the format is \u{001B}[01mpager\u{001B}[m or \u{001B}[01mplain\u{001B}[m whenever the \u{001B}[01mTERM\u{001B}[m env var\n\
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
-  complete ["--__complete=g"] @@ __POS_OF__
+  complete ["--__complete=g"] @> __POS_OF__
     "1\n\
      group\n\
      Values\n\
@@ -377,7 +377,7 @@ let test_restart_restricted_tool =
      \n\
      item-end\n";
   (* Note no reset here: as there is no -- token *)
-  complete ["git"; "--__complete="] @@ __POS_OF__
+  complete ["git"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -391,7 +391,7 @@ let test_restart_restricted_tool =
      or \u{001B}[01mplain\u{001B}[m. With \u{001B}[01mauto\u{001B}[m, the format is \u{001B}[01mpager\u{001B}[m or \u{001B}[01mplain\u{001B}[m whenever the \u{001B}[01mTERM\u{001B}[m env var\n\
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
-  complete ["--"; "git"; "--__complete="] @@ __POS_OF__
+  complete ["--"; "git"; "--__complete="] @> __POS_OF__
     "1\n\
      restart\n";
   ()
@@ -410,7 +410,7 @@ let test_restart_any_tool =
     ()
   in
   let complete = Testing_cmdliner.snap_completion cmd in
-  complete ["--__complete="] @@ __POS_OF__
+  complete ["--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -425,9 +425,9 @@ let test_restart_any_tool =
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
   (* The following two do not restart because -- is missing *)
-  complete ["--__complete=gi"] @@ __POS_OF__
+  complete ["--__complete=gi"] @> __POS_OF__
     "1\n";
-  complete ["git"; "--__complete="] @@ __POS_OF__
+  complete ["git"; "--__complete="] @> __POS_OF__
     "1\n\
      group\n\
      Options\n\
@@ -442,10 +442,10 @@ let test_restart_any_tool =
      is \u{001B}[01mdumb\u{001B}[m or undefined.\n\
      item-end\n";
   (* These must restart *)
-  complete ["--"; "--__complete=gi"] @@ __POS_OF__
+  complete ["--"; "--__complete=gi"] @> __POS_OF__
     "1\n\
      restart\n";
-  complete ["--"; "git"; "--__complete="] @@ __POS_OF__
+  complete ["--"; "git"; "--__complete="] @> __POS_OF__
     "1\n\
      restart\n";
   ()
@@ -472,7 +472,7 @@ let test_context =
       ()
     in
     let complete = Testing_cmdliner.snap_completion cmd in
-    complete ["--dep"; "--__complete="] @@ __POS_OF__
+    complete ["--dep"; "--__complete="] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -480,7 +480,7 @@ let test_context =
        no-context\n\
        \n\
        item-end\n";
-    complete ["--ctx=hey"; "--dep"; "--__complete="] @@ __POS_OF__
+    complete ["--ctx=hey"; "--dep"; "--__complete="] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -488,7 +488,7 @@ let test_context =
        ctx-parse-error\n\
        \n\
        item-end\n";
-    complete ["--ctx=true"; "--dep"; "--__complete="] @@ __POS_OF__
+    complete ["--ctx=true"; "--dep"; "--__complete="] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -496,7 +496,7 @@ let test_context =
        true\n\
        \n\
        item-end\n";
-    complete ["--dep"; "--__complete="; "--ctx=true"] @@ __POS_OF__
+    complete ["--dep"; "--__complete="; "--ctx=true"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -513,7 +513,7 @@ let test_context =
       ()
     in
     let complete = Testing_cmdliner.snap_completion cmd in
-    complete ["--__complete=a"] @@ __POS_OF__
+    complete ["--__complete=a"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -521,7 +521,7 @@ let test_context =
        no-context\n\
        \n\
        item-end\n";
-    complete ["--ctx=hey"; "--__complete=a"] @@ __POS_OF__
+    complete ["--ctx=hey"; "--__complete=a"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -529,7 +529,7 @@ let test_context =
        ctx-parse-error\n\
        \n\
        item-end\n";
-    complete ["--ctx=true"; "--__complete=a"] @@ __POS_OF__
+    complete ["--ctx=true"; "--__complete=a"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -537,7 +537,7 @@ let test_context =
        true\n\
        \n\
        item-end\n";
-    complete ["--__complete=a"; "--ctx=true"] @@ __POS_OF__
+    complete ["--__complete=a"; "--ctx=true"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -568,7 +568,7 @@ let test_context =
       ()
     in
     let complete = Testing_cmdliner.snap_completion cmd in
-    complete ["--dep"; "--__complete="] @@ __POS_OF__
+    complete ["--dep"; "--__complete="] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -576,7 +576,7 @@ let test_context =
        no-context\n\
        \n\
        item-end\n";
-    complete ["bla"; "--dep"; "--__complete="] @@ __POS_OF__
+    complete ["bla"; "--dep"; "--__complete="] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -584,7 +584,7 @@ let test_context =
        ctx-parse-error\n\
        \n\
        item-end\n";
-    complete ["true"; "--dep"; "--__complete="] @@ __POS_OF__
+    complete ["true"; "--dep"; "--__complete="] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -592,7 +592,7 @@ let test_context =
        true\n\
        \n\
        item-end\n";
-    complete ["--dep"; "--__complete="; "true"] @@ __POS_OF__
+    complete ["--dep"; "--__complete="; "true"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -609,7 +609,7 @@ let test_context =
       ()
     in
     let complete = Testing_cmdliner.snap_completion cmd in
-    complete ["hey"; "--__complete=a"] @@ __POS_OF__
+    complete ["hey"; "--__complete=a"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
@@ -617,7 +617,7 @@ let test_context =
        ctx-parse-error\n\
        \n\
        item-end\n";
-    complete ["true"; "--__complete=a"] @@ __POS_OF__
+    complete ["true"; "--__complete=a"] @> __POS_OF__
       "1\n\
        group\n\
        Values\n\
