@@ -374,7 +374,10 @@ let markup_to_groff ~errs b s =
   | false -> Buffer.add_substring b s start (stop - start + 1)
   in
   let need_escape = function '.' | '\'' | '-' | '\\' -> true | _ -> false in
-  let escape b c = Printf.bprintf b "\\N'%d'" (Char.code c) in
+  let escape b = function
+  | '-' -> Printf.bprintf b "\\-" (* Make man-db and debian tools happy *)
+  | c -> Printf.bprintf b "\\N'%d'" (Char.code c)
+  in
   let rec end_text start i = Buffer.add_string b "\\fR"; loop start i
   and loop start i =
     if i > max_i then flush start max_i else

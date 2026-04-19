@@ -111,8 +111,7 @@ let test_plain =
   Test.test "plain text manpage" @@ fun () ->
   Testing_cmdliner.snap_man cmd @> __POS_OF__
     {|NAME
-       man_test - UTF-8 test: 🐫 íöüóőúűéáăîâșț
-       ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝
+       man_test - UTF-8 test: 🐫 íöüóőúűéáăîâșț ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝
 
 SYNOPSIS
        man_test [OPTION]…
@@ -249,7 +248,7 @@ let test_groff =
 .ad l
 .SH NAME
 .P
-man_test \N'45' UTF\N'45'8 test: 🐫 íöüóőúűéáăîâșț ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝
+man_test \- UTF\-8 test: 🐫 íöüóőúűéáăîâșț ÍÜÓŐÚŰÉÁĂÎÂȘȚ 雙峰駱駝
 .SH SYNOPSIS
 .P
 \fBman_test\fR [\fIOPTION\fR]…
@@ -281,11 +280,11 @@ This is a preformatted paragraph for \fBman_test\fR no filling will occur do the
 
 \N'46'\N'46'\N'46' Should not break
 a\N'46'\N'46'\N'46' Should not break
-+\N'45'\N'45'\N'45'+
++\-\-\-+
 |  /|
-| / | \N'45'\N'45'\N'45'\N'45'> Let\N'39's swim to the moon\N'46'
+| / | \-\-\-\-> Let\N'39's swim to the moon\N'46'
 |/  |
-+\N'45'\N'45'\N'45'+
++\-\-\-+
 .fi
 .P
 These are escapes escaped $ ( ) \N'92'
@@ -314,29 +313,29 @@ lebal
 item lebal
 .P
 The last paragraph
-.SH MIAOUW SECTION (non\N'45'standard unpositioned do not do this)
+.SH MIAOUW SECTION (non\-standard unpositioned do not do this)
 .TP 4
 \fBTEST_MIAOUW\fR
-See option \fB\N'45'm\fR\N'46' These are term names \fBman_test\fR \fBman_test\fR
+See option \fB\-m\fR\N'46' These are term names \fBman_test\fR \fBman_test\fR
 .SH OPTIONS
 .TP 4
-\fB\N'45'i\fR [\fIID)\fR], \fB\N'45'\N'45'id\fR[=\fIID)\fR] (default=\fB10\fR) (absent=\fB0\fR or \fBTEST_ID\fR env)
-Whatever \fIID)\fR bla \fBTEST_ID\fR and \fB\N'45'\N'45'id\fR\N'46'
+\fB\-i\fR [\fIID)\fR], \fB\-\-id\fR[=\fIID)\fR] (default=\fB10\fR) (absent=\fB0\fR or \fBTEST_ID\fR env)
+Whatever \fIID)\fR bla \fBTEST_ID\fR and \fB\-\-id\fR\N'46'
 .TP 4
-\fB\N'45'm\fR \fIMIAOUW\fR (absent=\fBmiaouw\fR or \fBTEST_MIAOUW\fR env)
-Whatever this is the doc var \fIMIAOUW\fR this is the env var \fBTEST_MIAOUW\fR this is the opt \fB\N'45'm\fR and this is \fIitalic\fR and this is \fBbold\fR and this \fB$(opt)\fR is $(opt) in bold and this $ is a dollar\N'46' \fBman_test\fR is the main command name, \fBman_test\fR is the subcommand name and \fBman_test\fR the command invocation\N'46'
+\fB\-m\fR \fIMIAOUW\fR (absent=\fBmiaouw\fR or \fBTEST_MIAOUW\fR env)
+Whatever this is the doc var \fIMIAOUW\fR this is the env var \fBTEST_MIAOUW\fR this is the opt \fB\-m\fR and this is \fIitalic\fR and this is \fBbold\fR and this \fB$(opt)\fR is $(opt) in bold and this $ is a dollar\N'46' \fBman_test\fR is the main command name, \fBman_test\fR is the subcommand name and \fBman_test\fR the command invocation\N'46'
 .TP 4
-\fB\N'45'\N'45'repodir\fR=\fIDIR\fR (absent=\fB\N'46'\fR or \fBTEST_REPODDIR\fR env)
+\fB\-\-repodir\fR=\fIDIR\fR (absent=\fB\N'46'\fR or \fBTEST_REPODDIR\fR env)
 Run the program in repository directory \fIDIR\fR\N'46'
 .TP 4
-\fB\N'45'y\fR, \fB\N'45'\N'45'hey\fR (absent \fBTEST_ENV\fR env)
+\fB\-y\fR, \fB\-\-hey\fR (absent \fBTEST_ENV\fR env)
 Set hey\N'46'
 .SH COMMON OPTIONS
 .TP 4
-\fB\N'45'\N'45'help\fR[=\fIFMT\fR] (default=\fBauto\fR)
+\fB\-\-help\fR[=\fIFMT\fR] (default=\fBauto\fR)
 Show this help in format \fIFMT\fR\N'46' The value \fIFMT\fR must be one of \fBauto\fR, \fBpager\fR, \fBgroff\fR or \fBplain\fR\N'46' With \fBauto\fR, the format is \fBpager\fR or \fBplain\fR whenever the \fBTERM\fR env var is \fBdumb\fR or undefined\N'46'
 .TP 4
-\fB\N'45'\N'45'version\fR
+\fB\-\-version\fR
 Show version information\N'46'
 .SH EXIT STATUS
 .P
@@ -348,7 +347,7 @@ on success\N'46'
 1
 This is a 1 for \fBman_test\fR
 .TP 4
-2\N'45'10
+2\-10
 Ranges from 2 to 10
 .TP 4
 123
@@ -364,16 +363,16 @@ on unexpected internal errors (bugs)\N'46'
 These environment variables affect the execution of \fBman_test\fR:
 .TP 4
 \fBTEST_ENV\fR
-Equivalent to set \fB\N'45'\N'45'hey\fR\N'46'
+Equivalent to set \fB\-\-hey\fR\N'46'
 .TP 4
 \fBTEST_ID\fR
-See option \fB\N'45'\N'45'id\fR\N'46'
+See option \fB\-\-id\fR\N'46'
 .TP 4
 \fBTEST_IT\fR
 This is \fBTEST_IT\fR for \fBman_test\fR
 .TP 4
 \fBTEST_REPODDIR\fR
-See option \fB\N'45'\N'45'repodir\fR\N'46'
+See option \fB\-\-repodir\fR\N'46'
 .SH BUGS
 .P
 Email bug reports to <hehey at example\N'46'org>\N'46'

@@ -1,4 +1,8 @@
 
+- Change hyphen escaping in groff output to make `man-db` and Debian
+  tools happy (#254, #267). Thanks to Benjamin Somers for suggesting
+  and the patch.
+
 - Better build environment insulation for byte-code only environments
   We no longer look up the `.opt` tools and detect the availability of
   the native code toolchain by checking for the file 
