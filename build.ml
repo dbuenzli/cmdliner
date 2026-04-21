@@ -132,9 +132,9 @@ let really_find_cmd alts =
       | None ->
           err "OCAMLFIND_TOOLCHAIN is set but ocamlfind not found in PATH\n")
 
-let ocamlc () = really_find_cmd ["ocamlc.opt"; "ocamlc"]
-let ocamlopt () = really_find_cmd ["ocamlopt.opt"; "ocamlopt"]
-let ocamldep () = really_find_cmd ["ocamldep.opt"; "ocamldep"]
+let ocamlc () = really_find_cmd ["ocamlc"]
+let ocamlopt () = really_find_cmd ["ocamlopt"]
+let ocamldep () = really_find_cmd ["ocamldep"]
 
 (* Build *)
 
