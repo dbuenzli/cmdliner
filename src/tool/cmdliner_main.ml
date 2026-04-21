@@ -448,6 +448,23 @@ let dry_run =
   let doc = "Do not install, output paths that would be written." in
   Arg.(value & flag & info ["dry-run"] ~doc)
 
+(* Since the program uses functions like Filename.basename we need to
+   make sure the given filepaths have the right separator. This may
+   not be the case e.g. in package manager build instructions. *)
+
+let path_to_platform_path s =
+  if Sys.win32
+  then String.map (function '/' -> '\\' | c -> c) s
+  else String.map (function '\\' -> '/' | c -> c) s
+
+let platform_dirpath =
+  let parser s = Ok (path_to_platform_path s) in
+  Arg.Conv.of_conv ~parser Arg.dirpath
+
+let platform_filepath =
+  let parser s = Ok (path_to_platform_path s) in
+  Arg.Conv.of_conv ~parser Arg.filepath
+
 let standalone_completion =
   let doc =
     "Generate standalone completion scripts. These scripts do \
@@ -462,36 +479,36 @@ let update_opam_install =
      from the installed files to the corresponding opam install sections. \
      Also performed if $(b,--dry-run) is specified."
   in
-  Arg.(value & opt (some filepath) None &
+  Arg.(value & opt (some platform_filepath) None &
        info ["update-opam-install"] ~doc ~docv:"PKG.install")
 
 let prefix =
   let doc = "$(docv) is the install prefix. For example $(b,/usr/local)." in
-  Arg.(required & pos ~rev:true 0 (some dirpath) None &
+  Arg.(required & pos ~rev:true 0 (some platform_dirpath) None &
        info [] ~doc ~docv:"PREFIX")
 
 let sharedir_doc = "$(docv) is the $(b,share) directory to install to."
 let sharedir_docv = "SHAREDIR"
 let sharedir_posn ~rev n =
-  Arg.(required & pos ~rev n (some dirpath) None &
+  Arg.(required & pos ~rev n (some platform_dirpath) None &
        info [] ~doc:sharedir_doc ~docv:sharedir_docv)
 
 let sharedir_pos0 = sharedir_posn ~rev:false 0
 let sharedir_poslast = sharedir_posn ~rev:true 0
 let sharedir_opt =
   let absent = "$(i,PREFIX)$(b,/share)" in
-  Arg.(value & opt (some dirpath) None &
+  Arg.(value & opt (some platform_dirpath) None &
        info ["sharedir"] ~doc:sharedir_doc ~docv:sharedir_docv ~absent)
 
 let mandir_doc = "$(docv) is the root $(b,man) directory to install to."
 let mandir_docv = "MANDIR"
 let mandir_poslast =
-  Arg.(required & pos ~rev:true 0 (some dirpath) None &
+  Arg.(required & pos ~rev:true 0 (some platform_dirpath) None &
        info [] ~doc:mandir_doc ~docv:mandir_docv)
 
 let mandir_opt =
   let absent = "$(i,SHAREDIR)$(b,/man)" in
-  Arg.(value & opt (some dirpath) None &
+  Arg.(value & opt (some platform_dirpath) None &
        info ["mandir"] ~doc:mandir_doc ~docv:mandir_docv ~absent)
 
 let shell_assoc = List.map (fun ((module S : SHELL) as s) -> S.name, s) shells
@@ -511,7 +528,8 @@ let shell_pos1 = shell_posn 1
 
 let toolname_posn n =
   let doc = "$(docv) is the name of the tool to complete." in
-  Arg.(required & pos n (some filepath) None & info [] ~doc ~docv:"TOOLNAME")
+  Arg.(required & pos n (some platform_filepath) None &
+       info [] ~doc ~docv:"TOOLNAME")
 
 let toolname_pos0 = toolname_posn 0
 let toolname_pos1 = toolname_posn 1
@@ -528,7 +546,8 @@ let tools_posleft =
      stripping any $(b,.exe) extension. Repeatable."
   in
   let docv = "TOOLEXEC[:NAME]" in
-  Arg.(non_empty & pos_left ~rev:true 0 filepath [] & info [] ~doc ~docv)
+  Arg.(non_empty & pos_left ~rev:true 0 platform_filepath [] &
+       info [] ~doc ~docv)
 
 let generic_completion_cmd =
   let doc = "Output generic completion scripts" in
@@ -563,7 +582,8 @@ let tool_commands_cmd =
       "$(docv) is the tool executable. Searched in the $(b,PATH) unless \
        an explicit file path is specified."
     in
-    Arg.(required & pos 0 (some filepath) None & info [] ~doc ~docv:"TOOLEXEC")
+    Arg.(required & pos 0 (some platform_filepath) None &
+         info [] ~doc ~docv:"TOOLEXEC")
   in
   tool_commands tool
 

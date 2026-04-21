@@ -1,4 +1,9 @@
 
+- Fix `cmdliner` tool on Windows when given Unix style paths. All
+  given paths are converted on cli argument parsing to use the
+  platform directory separator. This ensure that the `Stdlib.Filename`
+  functions used by the tool munge paths correctly. #257
+
 - Change hyphen escaping in groff output to make `man-db` and Debian
   tools happy (#254, #267). Thanks to Benjamin Somers for suggesting
   and the patch.
