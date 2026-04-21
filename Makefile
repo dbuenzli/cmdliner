@@ -10,7 +10,9 @@
 
 # Adjust the following on the cli invocation for configuring
 
--include $(shell ocamlc -where)/Makefile.config
+OCAMLC_WHERE=$(shell ocamlc -where)
+
+-include $(OCAMLC_WHERE)/Makefile.config
 
 PREFIX=/usr
 BINDIR=$(DESTDIR)$(PREFIX)/bin
@@ -21,7 +23,14 @@ MANDIR=$(SHAREDIR)/man
 BASHCOMPDIR=$(SHAREDIR)/bash-completion/completions
 ZSHCOMPDIR=$(SHAREDIR)/zsh/site-functions
 PWSHCOMPDIR=$(SHAREDIR)/powershell
-NATIVE=$(shell ocamlopt -version > /dev/null 2>&1 && echo true)
+
+# Once we require OCaml >= 4.10 we can use NATIVE_COMPILER
+ifeq ($(wildcard $(OCAMLC_WHERE)/libasmrun$(EXT_LIB)),)
+  NATIVE=false
+else
+  NATIVE=true
+endif
+
 # EXT_LIB     by default value of OCaml's Makefile.config
 # NATDYNLINK  by default value of OCaml's Makefile.config
 # EXE         by default value of OCaml's Makefile.config

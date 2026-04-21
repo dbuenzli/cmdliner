@@ -1,7 +1,9 @@
 
 - Better build environment insulation for byte-code only environments
-  (#268). We no longer look up the `.opt` tools. Thanks to Yuriy
-  Krasilnikov for the report.
+  We no longer look up the `.opt` tools and detect the availability of
+  the native code toolchain by checking for the file 
+  `$(ocamlc -where)/libasmrun$(LIB_EXT)` (#268). Thanks to Yuriy Krasilnikov
+  for the report.
 
 - bash completion: add compatibility with `bash-completions` < 2.12 (#261).
   Thanks to Brian Ward for the patch.
