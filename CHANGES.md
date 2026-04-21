@@ -1,24 +1,26 @@
+v2.1.1 2026-04-21 La Forclaz (VS)
+---------------------------------
 
-- Fix `cmdliner` tool on Windows when given Unix style paths. All
-  given paths are converted on cli argument parsing to use the
-  platform directory separator. This ensure that the `Stdlib.Filename`
-  functions used by the tool munge paths correctly. #257
+- bash completion: add compatibility with `bash-completions` < 2.12 (#261).
+  Thanks to Brian Ward for the patch.
+
+- Fix completion when `CMDLINER_LEGACY_PREFIXES` is enabled (#262, #263).
+  Thanks to Brian Ward for the report and the patch.
 
 - Change hyphen escaping in groff output to make `man-db` and Debian
   tools happy (#254, #267). Thanks to Benjamin Somers for suggesting
   and the patch.
 
-- Better build environment insulation for byte-code only environments
+- Better build environment insulation for byte-code only environments.
   We no longer look up the `.opt` tools and detect the availability of
   the native code toolchain by checking for the file 
   `$(ocamlc -where)/libasmrun$(LIB_EXT)` (#268). Thanks to Yuriy Krasilnikov
   for the report.
 
-- Fix completion when `CMDLINER_LEGACY_PREFIXES` is enabled (#262, #263).
-  Thanks to Brian Ward for the report and the patch.
-
-- bash completion: add compatibility with `bash-completions` < 2.12 (#261).
-  Thanks to Brian Ward for the patch.
+- Fix `cmdliner` tool on Windows when given Unix style paths. All
+  given paths are converted on cli argument parsing to use the
+  platform directory separator. This ensure that the `Stdlib.Filename`
+  functions used by the tool munge paths correctly. #257
 
 - Fix build on Windows with `sys-msvc`.
   Thanks to Antonin Décimo and Nicolás Ojeda Bär (#253).
