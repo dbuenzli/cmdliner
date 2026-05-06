@@ -153,7 +153,7 @@ let split_toolname toolexec =
   let name =
     if name <> "" then name else
     let name = Filename.basename tool in
-    match Filename.chop_suffix_opt ~suffix:".exe" tool with
+    match Filename.chop_suffix_opt ~suffix:".exe" name with
     | None -> name | Some name -> name
   in
   tool, name

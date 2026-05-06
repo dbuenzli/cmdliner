@@ -1,3 +1,8 @@
+
+
+- Fix `cmdliner` tool on Windows when given path to executables with
+  `.exe` extension. Thanks to Pierre Villemot for reporting (#269).
+
 v2.1.1 2026-04-21 La Forclaz (VS)
 ---------------------------------
 
