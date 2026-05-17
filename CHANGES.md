@@ -104,7 +104,7 @@ v2.0.0 2025-09-26 Zagreb
 - Make `--help` request work in any context, except after `--` or on
   the arguments after an unknown command error in which case that
   error is reported (less confusing). Since the option has an optional
-  argument value, one had to be carefull that it would not pickup the
+  argument value, one had to be careful that it would not pickup the
   next argument and try to parse it according to `FMT`. This is no
   longer the case. If the argument fails to parse `--help=auto` is
   assumed. (#201).
@@ -116,7 +116,7 @@ v2.0.0 2025-09-26 Zagreb
 - Reserve the `--__complete` option for library use.
 
 - Documentation language, `$(cmd)`, `$(cmd.name)` and `$(tool)` can be
-  used and should be prefered over of `$(iname)`, `$(tname)` and
+  used and should be preferred over of `$(iname)`, `$(tname)` and
   `$(mname)`. `$(cmd.parent)` is added to refer to a command's parent
   or itself at the root.
 
@@ -146,7 +146,7 @@ v2.0.0 2025-09-26 Zagreb
 - Add `Arg.Conv` module to define converters. This should be used in
   new code. 
 
-- Add `Arg.{file,dir,}path` string converters equiped with appropriate
+- Add `Arg.{file,dir,}path` string converters equipped with appropriate
   file system completions.
 
 - Add `docv` optional parameter to `Arg.enum`.
@@ -407,7 +407,7 @@ v1.0.1 2017-08-03 Zagreb
 ------------------------
 
 - Add a `Makefile` to build and install cmdliner without `topkg` and
-  opam `.install` files. Helps bootstraping opam in OS package
+  opam `.install` files. Helps bootstrapping opam in OS package
   managers. Thanks to Hendrik Tews for the patches.
 
 v1.0.0 2017-03-02 La Forclaz (VS)
