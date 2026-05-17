@@ -46,7 +46,7 @@ let t_eval_result ok =
 let get_eval_value ?__POS__ = function
 | Ok (`Ok v) -> v
 | (Error _ | Ok `Version | Ok `Help) as v ->
-    Test.failstop ?__POS__ "Unexpected evalution: %a"
+    Test.failstop ?__POS__ "Unexpected evaluation: %a"
       (Test.T.pp (t_eval_result Test.T.any)) v
 
 let test_eval_result ?__POS__ ?env t cmd args exp =

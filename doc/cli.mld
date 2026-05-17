@@ -407,7 +407,7 @@ protocol is versioned but can change even between minor versions of
 Cmdliner. Generic scripts for popular shells can be inspected via
 the [cmdliner generic-completion] command.
 
-The protocol betwen the shell completion {e script} and a
+The protocol between the shell completion {e script} and a
 cmdliner based {e tool} is as follows:
 
 {ol
@@ -477,7 +477,7 @@ The semantics of directives is as follows:
    directories starting with [ARG] to completion values.}
 {- A [restart] directive indicates that the script should restart
    shell completion as if the command line was starting after the leftmost
-   [--] disambiguation token. The directive never gets emited if
+   [--] disambiguation token. The directive never gets emitted if
    there is no [--] on the command line.}}
 
 You can easily inspect the completions of any cmdliner based tool by
