@@ -1,4 +1,6 @@
 
+- Fix `pwsh` standalone completion script output by `cmdliner` tool.
+  It was not working. Thanks to Ali Caglayan for the fix (#273).
 
 - Fix `cmdliner` tool on Windows when given path to executables with
   `.exe` extension. Thanks to Pierre Villemot for reporting (#269).

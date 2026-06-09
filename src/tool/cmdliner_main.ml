@@ -335,7 +335,7 @@ module Pwsh = struct
 {|
 %s
 
-Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock %s
+Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock $%s
 |} fun_def toolname fun_name
 end
 
