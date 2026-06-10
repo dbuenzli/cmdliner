@@ -361,7 +361,7 @@ $Global:%s = {
     return $CompletionResults
   }
   else {
-    # supress default behavior (file completion) when there are no completions
+    # suppress default behavior (file completion) when there are no completions
     return $null
   }
 }

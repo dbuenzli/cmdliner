@@ -45,7 +45,7 @@ by `git`).
 
 The [`B0.ml`](B0.ml) file of cmdliner includes `test/b0/B0.ml` and the
 `default` pack of `B0.ml` is unlocked so that when a test executable
-requires `b0.std` it is looked up and built againt the development
+requires `b0.std` it is looked up and built against the development
 version of cmdliner. After that testing remains [as usual].
 
 [as usual]: https://erratique.ch/software/b0/doc/occasionally.html#test

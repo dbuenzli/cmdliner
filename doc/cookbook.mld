@@ -343,7 +343,7 @@ let write_file file s =
 
 Cmdliner has support to back values defined by arguments with
 environment variables. The value specified via an environment variable
-should never take over an argument specified explicitely on the
+should never take over an argument specified explicitly on the
 command line. The environment variable should be seen as providing
 the default value when the argument is absent.
 
@@ -384,7 +384,7 @@ let loud =
   Arg.(value & flag & info ["l"; "loud"] ~doc)
 ]}
 
-The following defines the [-m] and [--message] options. The term [msg] evalutes
+The following defines the [-m] and [--message] options. The term [msg] evaluates
 to ["Revolt!"] when the option is absent on the command line.
 {[
 let msg =
