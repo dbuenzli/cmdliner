@@ -1,4 +1,8 @@
 
+
+- Fix bash completion escaping issues. Thanks to Kyriel Abad for the fix 
+  and Brian Ward for the review (#277).
+
 - Fix `pwsh` standalone completion script output by `cmdliner` tool.
   It was not working. Thanks to Ali Caglayan for the fix (#273).
 

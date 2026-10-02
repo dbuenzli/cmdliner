@@ -1,6 +1,6 @@
 _cmdliner_generic() {
   local words cword
-  # Equivalent of COMP_WORDS, COMP_CWORD but allow us to  exclude '=' as a word separator
+  # Equivalent of COMP_WORDS, COMP_CWORD but allow us to exclude '=' as a word separator
   _get_comp_words_by_ref -n = words cword
 
   local prefix="${words[cword]}"
@@ -11,7 +11,7 @@ _cmdliner_generic() {
   {
     read version
     if [[ $version != "1" ]]; then
-      printf "\nUnsupported cmdliner completion protocol: $version" >&2
+      printf "\nUnsupported cmdliner completion protocol: %s" "$version" >&2
       return 1
     fi
     while read type; do
@@ -46,7 +46,7 @@ _cmdliner_generic() {
               fi
               msg+=$'\n'"$text_line"
           done
-          printf "$msg" >&2
+          printf "%s" "$msg" >&2
       elif [[ $type == "item" ]]; then
         read item;
         item_doc="";
