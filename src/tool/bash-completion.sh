@@ -1,7 +1,12 @@
 _cmdliner_generic() {
-  local words cword
   # Equivalent of COMP_WORDS, COMP_CWORD but allow us to exclude '=' as a word separator
-  _get_comp_words_by_ref -n = words cword
+  local words cword cur prev
+  _init_completion -n =
+  if [ $? -ne 0 ]; then
+    # this is how bash-completion signals that nothing further is needed, e.g.
+    # _init_completion already handled a filename completion after a > redirect.
+    return 0
+  fi
 
   local prefix="${words[cword]}"
   local w=("${words[@]}") # Keep words intact for restart completion

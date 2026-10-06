@@ -1,5 +1,8 @@
 
 
+- Fix bash completion on redirections. Thanks to Brian Ward for 
+  the report and the fix (#278, #279).
+
 - Fix bash completion escaping issues. Thanks to Kyriel Abad for the fix 
   and Brian Ward for the review (#277).
 
