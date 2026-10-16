@@ -400,15 +400,15 @@ terms. The following says that the first positional argument is required:
 
 {[
 let msg =
-  let msg = "$(docv) is the message to utter." and docv = "MSG" in
-  Arg.(required & pos 0 (some string) None & info [] ~absent ~doc ~docv)
+  let doc = "$(docv) is the message to utter." and docv = "MSG" in
+  Arg.(required & pos 0 (some string) None & info [] ~doc ~docv)
 ]}
 
 The value [msg] ends up being a term of type [string]. If the argument
 is not provided, Cmdliner will automatically bail out during evaluation
 with an error message.
 
-Note that while it is possible to define required positional argument
+Note that while it is possible to define required optional arguments
 it is {{!tip_avoid_required_opt}discouraged}.
 
 {2:args_detect_absent How can I know if an argument was absent?}
@@ -421,7 +421,7 @@ wrap its result in a [Some].
 
 {[
 let msg =
-  let msg = "$(docv) is the message to utter." in
+  let doc = "$(docv) is the message to utter." in
   let absent = "Random quote." in
   Arg.(value & pos 0 (some string) None & info [] ~absent ~doc ~docv:"MSG")
 ]}
@@ -553,7 +553,7 @@ let conf_not_found = 1
 let tool … =
 let tool_cmd =
   let exits =
-    Cmd.Exit.info conf_not_found "if no configuration could be found." ::
+    Cmd.Exit.info conf_not_found ~doc:"if no configuration could be found." ::
     Cmd.Exit.defaults
   in
   Cmd.make (Cmd.info "mycmd" ~exits) @@
@@ -665,7 +665,7 @@ of your tool and its subcommands. See also {!tip_tool_support}.
 These blueprints when copied to a [src.ml] file can be compiled and run with:
 
 {@sh[
-ocamlfind ocamlopt -package cmdliner -linkgpkg src.ml
+ocamlfind ocamlopt -package cmdliner -linkpkg src.ml
 ./a.out --help
 ]}
 
