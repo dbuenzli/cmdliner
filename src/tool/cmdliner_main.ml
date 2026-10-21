@@ -29,15 +29,20 @@ let rec mkdir dir = (* Can be replaced by Sys.mkdir once we drop OCaml < 4.12 *)
   let err_cmd exit cmd =
     raise (Sys_error (strf "exited with %d: %s\n" exit cmd))
   in
-  let run_cmd args =
-    let cmd = String.concat " " (List.map Filename.quote args) in
-    let cmd = if Sys.win32 then strf {|"%s"|} cmd else cmd in
+  let run_cmd cmd args =
+    let cmd =
+      if Sys.win32 then
+        let cmd = String.concat " " (cmd :: List.map Filename.quote args) in
+        strf {|"%s"|} cmd
+      else
+      String.concat " " (List.map Filename.quote (cmd :: args))
+    in
     let exit =  Sys.command cmd in
     if exit = 0 then () else err_cmd exit cmd
   in
   let parent = Filename.dirname dir in
   (if String.equal dir parent then () else mkdir (Filename.dirname dir));
-  (if Sys.file_exists dir then () else run_cmd ["mkdir"; dir])
+  (if Sys.file_exists dir then () else run_cmd "mkdir" [dir])
 
 let read_file file =
   (* In_channel is < 4.14 *)
