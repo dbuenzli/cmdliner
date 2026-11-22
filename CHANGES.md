@@ -1,4 +1,5 @@
-
+v2.1.2 2026-11-22 Zagreb
+------------------------
 
 - Fix bash completion on redirections. Thanks to Brian Ward for 
   the report and the fix (#278, #279).
