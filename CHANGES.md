@@ -15,6 +15,9 @@
 - Fix `cmdliner` tool's use of `mkdir`on Windows. Do not quote the 
   command. Thanks to Louis Gesbert for the patch (#282).
 
+- Improve performance of `Term.app`.
+  Thanks to Thomas Gazagnaire for the report (#283).
+
 v2.1.1 2026-04-21 La Forclaz (VS)
 ---------------------------------
 
